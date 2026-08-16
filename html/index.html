@@ -16,6 +16,7 @@
       href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Nunito+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&display=swap"
       rel="stylesheet"
     />
+
     <!-- Tailwind CSS -->
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
 
@@ -33,19 +34,19 @@
 
     <!-- Custom CSS -->
     <link rel="stylesheet" href="../css/style.css" />
+
     <!-- Favicon -->
-    <link rel="icon" type="image/svg+xml" href="../images/PetHaven_logo-cropped.svg">
+    <link rel="icon" type="image/svg+xml" href="../images/PetHaven_logo-cropped.svg" />
   </head>
   <body class="bg-background text-tertiary font-body">
     <!-- Header -->
     <header class="py-4 border-b border-primary/25 bg-background relative">
       <!-- Contenedor principal: padding ajustado para móviles (px-5) y amplio para PC (lg:px-12) -->
       <div class="max-w-7xl mx-auto px-5 lg:px-12 flex items-center justify-between">
-
         <!-- 1. Logo -->
         <!-- Reducimos el logo en móvil (h-12) y lo crecemos en escritorio (lg:h-20) -->
         <a href="#" class="shrink-0 flex items-center">
-          <img src="../images/PetHaven_logo-cropped.svg" alt="PetHaven" class="h-12 lg:h-20 w-auto"/>
+          <img src="../images/PetHaven_logo-cropped.svg" alt="PetHaven" class="h-12 lg:h-20 w-auto" />
         </a>
 
         <!-- 2. Navegación Escritorio (Oculta en móvil con 'hidden lg:flex') -->
@@ -59,25 +60,44 @@
 
         <!-- 3. Contenedor Derecha (Botones y Menú) -->
         <div class="flex items-center gap-3 lg:gap-6 shrink-0">
-          
           <!-- Enlace Registrarse (Solo PC) -->
           <a href="#" class="hidden lg:flex items-center gap-1 hover:opacity-75 transition-opacity">
             Registrarse
-            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <path d="m6 9 6 6 6-6"/>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="16"
+              height="16"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="m6 9 6 6 6-6" />
             </svg>
           </a>
 
           <!-- Botón Iniciar Sesión (Visible siempre) -->
           <!-- En móvil: texto más pequeño (text-sm) y menos padding para que no empuje a los lados -->
-          <button class="bg-primary text-background px-4 py-2 lg:px-6 lg:py-2.5 text-sm lg:text-base rounded-full font-bold hover:opacity-90 transition-opacity shadow-sm whitespace-nowrap">
+          <button
+            class="bg-primary text-background px-4 py-2 lg:px-6 lg:py-2.5 text-sm lg:text-base rounded-full font-bold hover:opacity-90 transition-opacity shadow-sm whitespace-nowrap"
+          >
             Iniciar Sesión
           </button>
 
           <!-- Menú Hamburguesa (Solo Móvil) -->
           <button id="menu-btn" class="lg:hidden text-tertiary focus:outline-none hover:opacity-75 cursor-pointer p-1">
-            <svg xmlns="http://www.w3.org/2000/svg" width="28" height="28" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="28"
+              height="28"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              stroke-width="2"
+            >
+              <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
             </svg>
           </button>
         </div>
@@ -85,22 +105,82 @@
 
       <!-- Menú Desplegable Móvil (Controlado por JS) -->
       <!-- Inicia oculto con la clase 'hidden' y se posiciona justo debajo del header -->
-      <div id="mobile-menu" class="hidden lg:hidden absolute top-full left-0 w-full bg-background border-b border-primary/25 shadow-lg z-50">
+      <div
+        id="mobile-menu"
+        class="hidden lg:hidden absolute top-full left-0 w-full bg-background border-b border-primary/25 shadow-lg z-50"
+      >
         <nav class="flex flex-col px-6 py-4 space-y-4">
           <a href="#" class="text-lg hover:opacity-75 transition-opacity">Servicios</a>
           <a href="#" class="text-lg hover:opacity-75 transition-opacity">Cómo funciona</a>
           <a href="#" class="text-lg hover:opacity-75 transition-opacity">Nosotros</a>
           <a href="#" class="text-lg hover:opacity-75 transition-opacity">FAQ</a>
           <a href="#" class="text-lg hover:opacity-75 transition-opacity">Contacto</a>
-          <hr class="border-primary/20">
+          <hr class="border-primary/20" />
           <a href="#" class="text-lg font-bold flex items-center justify-between hover:opacity-75 transition-opacity">
             Registrarse
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg>
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="20"
+              height="20"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="2"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+            >
+              <path d="m9 18 6-6-6-6" />
+            </svg>
           </a>
         </nav>
       </div>
     </header>
-    <main></main>
+    <main>
+      <!-- Hero Section -->
+      <section class="py-12 lg:py-24">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-10 px-5 lg:px-8">
+          <!-- Contenedor Izquierda (Texto y CTA) -->
+          <div class="w-full lg:w-1/2 text-left">
+            <h1 class="text-4xl lg:text-6xl font-display font-bold mb-4">
+              Hospitalización caninca y felina con amor de hogar
+            </h1>
+            <p class="text-lg lg:text-2xl mb-8">
+              Entendemos que dejar a tu mejor amigo hospitalizado es difícil. En PetHaven combinamos el monitoreo médico
+              especializado 24/7 con un ambiente cálido y de bajo estrés para su pronta recuperación.
+            </p>
+            <!-- Botones CTA -->
+            <div class="flex gap-4">
+              <a
+                href="#"
+                class="bg-primary text-background px-4 py-2 lg:px-6 lg:py-2.5 text-sm lg:text-base rounded-full font-bold hover:opacity-90 transition-opacity shadow-sm whitespace-nowrap"
+              >
+                Comienza ahora
+              </a>
+              <a
+                href="#"
+                class="bg-background text-primary border-2 border-primary hover:bg-primary hover:text-background px-4 py-2 lg:px-6 lg:py-2.5 text-sm lg:text-base rounded-full font-bold hover:opacity-90 transition-opacity shadow-sm whitespace-nowrap"
+              >
+                Conoce más
+              </a>
+            </div>
+          </div>
+
+          <!-- Contenedor Derecha (Imagen) -->
+          <div class="w-full lg:w-1/2 flex justify-center">
+            <div class="relative z-0 w-fit">
+              <!-- Circulo detrás de la imagen -->
+              <div class="absolute -top-[12%] -left-[12%] w-full h-full rounded-full bg-secondary -z-10"></div>
+              <!-- Imagen -->
+              <div
+                class="w-48 h-48 sm:w-56 sm:h-56 md:w-72 md:h-72 lg:w-96 lg:h-96 rounded-full overflow-hidden bg-secondary/40"
+              >
+                <img src="../images/hero-image.png" alt="Hero Image" class="w-full h-full object-cover" />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
     <footer></footer>
   </body>
   <script src="../js/script.js"></script>
