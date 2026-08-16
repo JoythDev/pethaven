@@ -298,11 +298,11 @@
       </section>
     </main>
 
-    <footer class="justify-center bg-tertiary text-background text-center pb-8 pt-20 px-15">
+    <footer class="bg-tertiary text-background text-center pb-8 pt-20 px-15">
       <!-- Enlaces de navegación -->
-      <div class="flex flex-row justify-between gap-4 text-left text-sm pb-15">
+      <div class="flex flex-col lg:flex-row lg:justify-between gap-4 text-left text-sm pb-15">
         <!-- Columna 1 -->
-        <div class="flex flex-col w-1/4 gap-4">
+        <div class="flex flex-col w-full lg:w-1/4 gap-4">
           <img src="../images/logo-footer.png" alt="PetHaven" class="w-3/5" />
           <p>La clínica de hospitalización y cuidado crítico de confianza para las familias modernas.</p>
         </div>
@@ -330,9 +330,9 @@
         </div>
       </div>
       <!-- Derechos de autor -->
-      <div class="flex flex-row justify-between border-t border-background/15 pt-4 text-background/75">
+      <div class="flex justify-between border-t border-background/15 pt-4 text-background/75 text-sm">
         <p>© 2023 PetHaven. Todos los derechos reservados</p>
-        <p>Hecho con ♥ por las mascotas</p>
+        <p class="hidden md:block">Hecho con ♥ por las mascotas</p>
       </div>
     </footer>
   </body>
