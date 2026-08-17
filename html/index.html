@@ -69,7 +69,7 @@
           <!-- Botón Iniciar Sesión (Visible siempre) -->
           <!-- En móvil: texto más pequeño (text-sm) y menos padding para que no empuje a los lados -->
           <button
-            class="bg-primary text-background px-4 py-2 lg:px-6 lg:py-2.5 text-sm lg:text-base rounded-full font-bold hover:opacity-90 transition-opacity shadow-sm whitespace-nowrap"
+            class="bg-primary text-background px-4 py-2 lg:px-6 lg:py-2.5 text-sm lg:text-base rounded-full font-bold hover:opacity-90 cursor-pointer transition-opacity shadow-sm whitespace-nowrap"
           >
             Iniciar Sesión
           </button>
@@ -116,7 +116,7 @@
               especializado 24/7 con un ambiente cálido y de bajo estrés para su pronta recuperación.
             </p>
             <!-- Botones CTA -->
-            <div class="flex gap-4">
+            <div class="flex flex-col gap-4 sm:flex-row">
               <a
                 href="#"
                 class="bg-primary text-background px-4 py-2 lg:px-6 lg:py-2.5 text-sm lg:text-base rounded-full font-bold hover:opacity-90 transition-opacity shadow-sm whitespace-nowrap"
@@ -213,6 +213,7 @@
           </div>
           <!-- Cards de portales -->
           <div class="flex flex-col gap-5 lg:flex-row">
+            <!-- Portal Cliente -->
             <article class="flex w-full flex-col gap-3 rounded-3xl bg-background p-5 lg:p-10 text-left lg:flex-1">
               <div class="flex h-12 w-12 shrink-0 items-center justify-center self-start rounded-xl bg-secondary">
                 <img src="../images/icons/user-icon.svg" alt="" class="h-6 w-6" />
@@ -227,6 +228,7 @@
                 >Ingresar</a
               >
             </article>
+            <!-- Portal Veterinario -->
             <article class="flex w-full flex-col gap-3 rounded-3xl bg-background p-5 lg:p-10 text-left lg:flex-1">
               <div class="flex h-12 w-12 shrink-0 items-center justify-center self-start rounded-xl bg-secondary">
                 <img src="../images/icons/clipboard-icon.svg" alt="" class="h-6 w-6" />
@@ -241,6 +243,7 @@
                 >Ingresar</a
               >
             </article>
+            <!-- Portal Administrador -->
             <article class="flex w-full flex-col gap-3 rounded-3xl bg-background p-5 lg:p-10 text-left lg:flex-1">
               <div class="flex h-12 w-12 shrink-0 items-center justify-center self-start rounded-xl bg-secondary">
                 <img src="../images/icons/gear-icon.svg" alt="" class="h-6 w-6" />
@@ -301,17 +304,17 @@
         <!-- Columna 2 -->
         <div class="flex flex-col gap-2">
           <h4 class="font-display text-xl font-bold pb-2">Navegación</h4>
-          <a href="#services">Servicios</a>
-          <a href="#how-it-works">Cómo funciona</a>
-          <a href="#us">Nosotros</a>
-          <a href="#faq">FAQ</a>
+          <a href="#services" class="hover:opacity-75 transition-opacity">Servicios</a>
+          <a href="#how-it-works" class="hover:opacity-75 transition-opacity">Cómo funciona</a>
+          <a href="#us" class="hover:opacity-75 transition-opacity">Nosotros</a>
+          <a href="#faq" class="hover:opacity-75 transition-opacity">FAQ</a>
         </div>
         <!-- Columna 3 -->
         <div class="flex flex-col gap-2">
           <h4 class="font-display text-xl font-bold pb-2">Portales</h4>
-          <a href="#">Portal Cliente</a>
-          <a href="#">Portal Veterinario</a>
-          <a href="#">Portal Administrador</a>
+          <a href="#" class="hover:opacity-75 transition-opacity">Portal Cliente</a>
+          <a href="#" class="hover:opacity-75 transition-opacity">Portal Veterinario</a>
+          <a href="#" class="hover:opacity-75 transition-opacity">Portal Administrador</a>
         </div>
         <!-- Columna 4 -->
         <div class="flex flex-col gap-2">
@@ -343,7 +346,7 @@
         <button
           id="wip-close"
           type="button"
-          class="absolute right-4 top-4 text-tertiary transition-opacity hover:opacity-70"
+          class="absolute right-4 top-4 text-tertiary transition-opacity hover:opacity-70 cursor-pointer"
           aria-label="Cerrar modal"
         >
           <img src="../images/icons/close-rounded-icon.svg" alt="" class="h-6 w-6" />
