@@ -469,6 +469,46 @@
         <p class="hidden md:block">Hecho con ♥ por las mascotas</p>
       </div>
     </footer>
+
+    <!-- Modal de funcionalidad en progreso -->
+    <div
+      id="wip-modal"
+      class="fixed inset-0 z-[100] hidden items-center justify-center bg-tertiary/40 px-5"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="wip-title"
+      aria-hidden="true"
+    >
+      <div
+        class="relative w-full max-w-md rounded-3xl border border-primary/25 bg-background p-8 text-center shadow-xl"
+      >
+        <button
+          id="wip-close"
+          type="button"
+          class="absolute right-4 top-4 text-tertiary transition-opacity hover:opacity-70"
+          aria-label="Cerrar modal"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="24"
+            height="24"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+          >
+            <path d="M18 6 6 18" />
+            <path d="m6 6 12 12" />
+          </svg>
+        </button>
+        <h2 id="wip-title" class="font-display text-4xl font-bold">WIP</h2>
+        <p class="mt-4 text-base">
+          Esta funcionalidad todavía está en progreso. Estamos trabajando para habilitarla muy pronto.
+        </p>
+      </div>
+    </div>
   </body>
   <script src="../js/script.js"></script>
 </html>
