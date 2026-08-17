@@ -1,7 +1,10 @@
-// WIP modal
+// ===========================
+// ======== WIP Modal ========
+// ===========================
 const wipModal = document.getElementById("wip-modal");
 const wipClose = document.getElementById("wip-close");
 
+// Función para abrir el modal
 const openWipModal = () => {
   wipModal.classList.remove("hidden");
   wipModal.classList.add("flex");
@@ -10,6 +13,7 @@ const openWipModal = () => {
   wipClose.focus();
 };
 
+// Función para cerrar el modal
 const closeWipModal = () => {
   wipModal.classList.add("hidden");
   wipModal.classList.remove("flex");
@@ -17,8 +21,11 @@ const closeWipModal = () => {
   document.body.classList.remove("overflow-hidden");
 };
 
+// Agregar evento de abrir modal a todos los botones no funcionales
 document.querySelectorAll("button, a").forEach(element => {
   const href = element.getAttribute("href");
+
+  // Verificar si es un enlace de sección
   const isSectionLink = href && href.startsWith("#") && href !== "#";
 
   if (!element.closest("#wip-modal") && !isSectionLink) {
@@ -29,4 +36,5 @@ document.querySelectorAll("button, a").forEach(element => {
   }
 });
 
+// Agregar evento de cerrar modal a la X del mismo
 wipClose.addEventListener("click", closeWipModal);
