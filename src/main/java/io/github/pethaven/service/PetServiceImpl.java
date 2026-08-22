@@ -24,7 +24,7 @@ public class PetServiceImpl implements PetService {
     }
 
     @Override
-    public void savePet(Pet pet) {
+    public void createPet(Pet pet) {
         petRepository.save(pet);
     }
 
@@ -32,5 +32,5 @@ public class PetServiceImpl implements PetService {
     public void deletePetById(Long id) {
         petRepository.deleteById(id);
     }
-    
+
 }
