@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 
 @Controller
 @RequestMapping("/pets")
@@ -18,8 +19,13 @@ public class PetController {
     private PetService petService;
 
     @GetMapping()
-    public String listPets(Model model) {
-        model.addAttribute("pets", petService.getAllPets());
+    public String listPets(@RequestParam(required = false) String search, 
+                           @RequestParam(required = false) String status, 
+                           Model model) {
+        model.addAttribute("pets", petService.getAllPets(search, status));
+        // Devolvemos los valores al HTML para que la barra de búsqueda no se borre al recargar
+        model.addAttribute("search", search);
+        model.addAttribute("status", status);
         return "pets_list";
     }
 
