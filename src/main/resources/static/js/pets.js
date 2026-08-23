@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
   
-    // 3. El Efecto Instagram (Debounce)
+    // 3. Debounce
     let timeout = null;
     searchInput.addEventListener('input', () => {
       clearTimeout(timeout); 

@@ -22,7 +22,7 @@ public class PetRepository {
         return pets.values().stream()
                 .filter(pet -> search == null || search.isEmpty() || 
                         pet.getName().toLowerCase().contains(search.toLowerCase()) || 
-                        pet.getBreed().toLowerCase().contains(search.toLowerCase())) // <-- ¡Aquí agregamos la raza!
+                        pet.getBreed().toLowerCase().contains(search.toLowerCase()))
                 .filter(pet -> {
                     if (status == null || status.equals("todos")) return true;
                     if (status.equals("estable")) return pet.getDisease().equals("None");

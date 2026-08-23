@@ -25,7 +25,7 @@
   </head>
 
   <body>
-    <!-- Fragmento del Header (Ahora SÍ incluye el menú móvil) -->
+    <!-- Fragmento del Header -->
     <header th:fragment="header" class="py-2 border-b border-primary/25 bg-background relative">
       <div class="max-w-7xl mx-auto px-5 lg:px-12 flex items-center justify-between">
         <a th:href="@{/}" class="shrink-0 flex items-center">
@@ -56,7 +56,7 @@
         </div>
       </div>
 
-      <!-- Menú móvil añadido aquí dentro del fragmento del header -->
+      <!-- Menú móvil  -->
       <div id="mobile-menu" class="hidden lg:hidden absolute top-full left-0 w-full bg-background border-b border-primary/25 shadow-lg z-50" aria-hidden="true">
         <nav class="flex flex-col px-6 py-4 space-y-4">
           <a href="#services" class="text-lg hover:opacity-75 transition-opacity">Servicios</a>
@@ -80,7 +80,6 @@
           <img th:src="@{/images/logo-footer.png}" alt="PetHaven" class="w-3/5" />
           <p>La clínica de hospitalización y cuidado crítico de confianza para las familias modernas.</p>
         </div>
-        <!-- (Dejé los enlaces igual, están perfectos) -->
         <div class="flex flex-col gap-2">
           <h4 class="font-display text-xl font-bold pb-2">Navegación</h4>
           <a href="#services" class="hover:opacity-75 transition-opacity">Servicios</a>
