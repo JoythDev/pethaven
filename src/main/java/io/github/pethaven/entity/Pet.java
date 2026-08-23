@@ -9,6 +9,7 @@ public class Pet {
 
     private Long id;
     private String name;
+    private Species species;
     private String breed;
     private Integer age;
     private Double weight;
