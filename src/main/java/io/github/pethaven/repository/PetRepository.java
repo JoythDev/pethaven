@@ -19,8 +19,18 @@ public class PetRepository {
         pets.put(3L, new Pet(3L, "Charlie", Species.DOG, "Beagle", 5, 20.0, "Arthritis", "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRWp3zpN9nyTOC-i1UVNYwutRtjTHDpc40wIIE1BSUTn0kMqAk6ztLwffh&s=10"));
     }
 
-    public List<Pet> findAll() {
-        return List.copyOf(pets.values());
+    public List<Pet> findAll(String search, String status) {
+        return pets.values().stream()
+                .filter(pet -> search == null || search.isEmpty() || 
+                        pet.getName().toLowerCase().contains(search.toLowerCase()) || 
+                        pet.getBreed().toLowerCase().contains(search.toLowerCase()))
+                .filter(pet -> {
+                    if (status == null || status.equals("todos")) return true;
+                    if (status.equals("estable")) return pet.getDisease().equals("None");
+                    if (status.equals("enfermo")) return !pet.getDisease().equals("None");
+                    return true;
+                })
+                .toList();
     }
 
     public Pet findById(Long id) {
