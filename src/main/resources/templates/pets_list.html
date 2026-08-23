@@ -61,6 +61,7 @@
             <thead>
               <tr class="text-text/50 text-sm font-body border-b border-text/10">
                 <th class="pb-4 px-4 font-normal">Paciente</th>
+                <th class="pb-4 px-4 font-normal">Especie</th>
                 <th class="pb-4 px-4 font-normal">Ficha Médica</th>
                 <th class="pb-4 px-4 font-normal">Estado</th>
                 <th class="pb-4 px-4 font-normal">Acciones</th>
@@ -84,8 +85,24 @@
                     </div>
                   </div>
                 </td>
-                
-                <!-- Columna 2: Subject / Ficha Médica (Dato principal + ID) -->
+
+                <!-- Columna 2: Especie -->
+                <td class="py-4 px-4">
+                  <div class="inline-flex items-center gap-2">
+                    <img th:if="${pet.species == T(io.github.pethaven.entity.Species).DOG}"
+                         th:src="@{/images/icons/dog-icon.svg}"
+                         alt=""
+                         class="w-6 h-6 shrink-0" />
+                    <img th:if="${pet.species == T(io.github.pethaven.entity.Species).CAT}"
+                         th:src="@{/images/icons/cat-icon.svg}"
+                         alt=""
+                         class="w-6 h-6 shrink-0" />
+                    <span class="font-bold text-sm text-text"
+                          th:text="${pet.species == T(io.github.pethaven.entity.Species).DOG ? 'Perro' : 'Gato'}">Especie</span>
+                  </div>
+                </td>
+
+                <!-- Columna 3: Subject / Ficha Médica (Dato principal + ID) -->
                 <td class="py-4 px-4">
                   <div class="flex flex-col">
                     <span class="font-bold text-sm text-text" th:text="${pet.age} + ' años'">Edad</span>
@@ -93,7 +110,7 @@
                   </div>
                 </td>
                 
-                <!-- Columna 3: Status / Estado (Badges / Etiquetas de colores) -->
+                <!-- Columna 4: Status / Estado (Badges / Etiquetas de colores) -->
                 <td class="py-4 px-4">
                   <!-- Lógica de Thymeleaf: Si está sano (Enfermedad == 'None') muestra badge estilo verde/primary -->
                   <span th:if="${pet.disease == 'None'}" class="inline-flex items-center bg-primary/20 text-tertiary px-3 py-1 rounded-md text-xs font-bold">
@@ -106,7 +123,7 @@
                   </span>
                 </td>
                 
-                <!-- Columna 4: Acciones -->
+                <!-- Columna 5: Acciones -->
                 <td class="py-4 px-4">
                   <!-- Las rutas usan el ID dinámico de la mascota -->
                   <div class="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
