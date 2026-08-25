@@ -1,0 +1,242 @@
+<!doctype html>
+
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments :: head}"></head>
+
+<body class="bg-background text-text font-body min-h-screen flex flex-col">
+
+    <!-- Header / Sidebar -->
+    <div th:replace="~{fragments :: header}"></div>
+
+
+    <main class="flex-1 max-w-7xl mx-auto px-5 lg:px-12 py-10 lg:py-12 w-full">
+
+        <!-- Volver -->
+        <div class="mb-8">
+            <a
+                th:href="@{/pets}"
+                class="text-sm font-semibold text-primary hover:text-tertiary transition-colors">
+                ← Volver a Mis Mascotas
+            </a>
+        </div>
+
+
+        <!-- Tarjeta principal de la mascota -->
+        <section class="bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm">
+
+            <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8">
+
+                <!-- Imagen -->
+                <div>
+                    <img
+                        th:src="${pet.photoUrl}" th:alt="${pet.name}"
+                        class="w-full h-64 lg:h-72 object-cover rounded-2xl">
+                </div>
+
+
+                <!-- Información -->
+                <div class="flex flex-col justify-center">
+
+                    <!-- Nombre + Estado -->
+                    <div class="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+
+                        <div>
+
+                            <h1 th:text="${pet.name}" class="font-display text-4xl lg:text-5xl font-bold">
+                                Buddy
+                            </h1>
+
+                            <p class="mt-2 text-text/60">
+
+                                <!-- Especie -->
+                                <span
+                                    th:text="${pet.species == T(io.github.pethaven.entity.Species).DOG ? 'Perro' : 'Gato'}">
+                                    Perro
+                                </span>
+
+                                ·
+
+                                <!-- Raza -->
+                                <span th:text="${pet.breed}">
+                                    Golden Retriever
+                                </span>
+
+                                ·
+
+                                <!-- Edad -->
+                                <span th:text="${pet.age}">
+                                    3
+                                </span>
+                                años
+
+                                ·
+
+                                <!-- Peso -->
+                                <span th:text="${pet.weight}">
+                                    30
+                                </span>
+                                kg
+
+                            </p>
+
+                        </div>
+
+
+                        <!-- Estado -->
+                        <span th:if="${pet.disease == 'None'}"
+                            class="inline-flex items-center w-fit bg-primary/20 text-tertiary px-4 py-2 rounded-full text-sm font-bold">
+                            Estable
+                        </span>
+
+                        <span th:unless="${pet.disease == 'None'}"
+                            class="inline-flex items-center w-fit bg-secondary/50 text-tertiary px-4 py-2 rounded-full text-sm font-bold">
+                            En tratamiento
+                        </span>
+
+                    </div>
+
+
+                    <!-- Separador -->
+                    <div class="border-t border-text/10 my-6"></div>
+
+
+                    <!-- Diagnóstico -->
+                    <div>
+
+                        <h2 class="font-bold text-base mb-2">
+                            Diagnóstico
+                        </h2>
+
+                        <p
+                            th:if="${pet.disease != 'None'}"
+                            th:text="${pet.disease}"
+                            class="text-text/70 leading-relaxed">
+                            Feline Leukemia
+                        </p>
+
+                        <p
+                            th:if="${pet.disease == 'None'}"
+                            class="text-text/70 leading-relaxed">
+                            No presenta enfermedades registradas.
+                        </p>
+
+                    </div>
+
+                </div>
+
+            </div>
+
+        </section>
+
+
+        <!-- Información de la mascota -->
+        <section class="mt-10">
+
+            <h2 class="font-display text-3xl font-bold mb-6">
+                Información de la Mascota
+            </h2>
+
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+
+                <!-- Especie -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm">
+
+                    <p class="text-sm text-text/50 mb-2">
+                        Especie
+                    </p>
+
+                    <p th:text="${pet.species == T(io.github.pethaven.entity.Species).DOG ? 'Perro' : 'Gato'}"
+                        class="font-bold text-lg">
+                        Perro
+                    </p>
+
+                </div>
+
+
+                <!-- Raza -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm">
+
+                    <p class="text-sm text-text/50 mb-2">
+                        Raza
+                    </p>
+
+                    <p th:text="${pet.breed}" class="font-bold text-lg">
+                        Golden Retriever
+                    </p>
+
+                </div>
+
+
+                <!-- Edad -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm">
+
+                    <p class="text-sm text-text/50 mb-2">
+                        Edad
+                    </p>
+
+                    <p class="font-bold text-lg">
+
+                        <span th:text="${pet.age}">
+                            3
+                        </span>
+                        años
+                    </p>
+
+                </div>
+
+
+                <!-- Peso -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm">
+
+                    <p class="text-sm text-text/50 mb-2">
+                        Peso
+                    </p>
+
+                    <p class="font-bold text-lg">
+
+                        <span th:text="${pet.weight}">
+                            30
+                        </span>
+
+                        kg
+
+                    </p>
+                </div>
+            </div>
+        </section>
+
+
+        <!-- Diagnóstico detallado -->
+        <section class="mt-10">
+
+            <div class="bg-white rounded-2xl p-6 lg:p-8 shadow-sm">
+
+                <h2 class="font-display text-3xl font-bold mb-4">
+                    Diagnóstico
+                </h2>
+
+                <p
+                    th:if="${pet.disease != 'None'}" th:text="${pet.disease}"
+                    class="text-text/70">
+                    Feline Leukemia
+                </p>
+
+                <p th:if="${pet.disease == 'None'}" class="text-text/70">
+                    Esta mascota no tiene enfermedades registradas actualmente.
+                </p>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- Footer -->
+    <div th:replace="~{fragments :: footer}"></div>
+
+</body>
+
+</html>

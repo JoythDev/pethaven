@@ -19,12 +19,12 @@ public class PetServiceImpl implements PetService {
     }
 
     @Override
-    public List<Pet> getAllPets() {
-        return petRepository.findAll();
+    public List<Pet> getAllPets(String search, String status) {
+        return petRepository.findAll(search, status);
     }
 
     @Override
-    public void savePet(Pet pet) {
+    public void createPet(Pet pet) {
         petRepository.save(pet);
     }
 
@@ -32,5 +32,5 @@ public class PetServiceImpl implements PetService {
     public void deletePetById(Long id) {
         petRepository.deleteById(id);
     }
-    
+
 }

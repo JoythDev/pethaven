@@ -8,9 +8,9 @@ public interface PetService {
 
     public Pet getPetById(Long id);
 
-    public List<Pet> getAllPets();
+    public List<Pet> getAllPets(String search, String status);
 
-    public void savePet(Pet pet);
+    public void createPet(Pet pet);
 
     public void deletePetById(Long id);
 
