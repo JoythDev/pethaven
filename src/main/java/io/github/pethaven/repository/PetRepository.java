@@ -42,7 +42,16 @@ public class PetRepository {
     }
 
     public void save(Pet pet) {
+        if (pet.getId() == null) {
+            pet.setId(nextId());
+        }
         pets.put(pet.getId(), pet);
+    }
+
+    private Long nextId() {
+        return pets.keySet().stream()
+                .max(Long::compareTo)
+                .orElse(0L) + 1;
     }
 
     public void deleteById(Long id) {

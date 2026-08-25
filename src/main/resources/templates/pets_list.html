@@ -89,16 +89,16 @@
                 <!-- Columna 2: Especie -->
                 <td class="py-4 px-4">
                   <div class="inline-flex items-center gap-2">
-                    <img th:if="${pet.species == T(io.github.pethaven.entity.Species).DOG}"
+                    <img th:if="${pet.species?.name() == 'DOG'}"
                          th:src="@{/images/icons/dog-icon.svg}"
                          alt=""
                          class="w-6 h-6 shrink-0" />
-                    <img th:if="${pet.species == T(io.github.pethaven.entity.Species).CAT}"
+                    <img th:if="${pet.species?.name() == 'CAT'}"
                          th:src="@{/images/icons/cat-icon.svg}"
                          alt=""
                          class="w-6 h-6 shrink-0" />
                     <span class="font-bold text-sm text-text"
-                          th:text="${pet.species == T(io.github.pethaven.entity.Species).DOG ? 'Perro' : 'Gato'}">Especie</span>
+                          th:text="${pet.species?.name() == 'DOG' ? 'Perro' : 'Gato'}">Especie</span>
                   </div>
                 </td>
 
