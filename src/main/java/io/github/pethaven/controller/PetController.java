@@ -55,6 +55,13 @@ public class PetController {
         return "pet_form";
     }
 
+    @PostMapping("/update/{id}")
+    public String saveUpdatedPet(@PathVariable Long id, Pet pet) {
+        pet.setId(id);
+        petService.createPet(pet);
+        return "redirect:/pets/" + id;
+    }
+
     @GetMapping("/delete/{id}")
     public String deletePet(@PathVariable Long id) {
         petService.deletePetById(id);
