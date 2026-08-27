@@ -22,6 +22,7 @@ public class OwnerController {
         model.addAttribute("owners", ownerService.getAllOwners());
         return "owners_list";
     }
+
     @GetMapping("/{id}")
     public String getOwner(@PathVariable Long id, Model model) {
         model.addAttribute("owner", ownerService.getOwnerById(id));
