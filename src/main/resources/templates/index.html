@@ -8,10 +8,10 @@
 
     <main>
       <!-- section: hero -->
-      <section class="relative overflow-hidden py-12 lg:py-24">
+      <section class="relative py-12 lg:py-24">
         <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12 px-5 lg:px-8">
-          <!-- Columna izquierda: texto y CTAs -->
-          <div class="w-full lg:w-1/2 text-left reveal">
+          <!-- Columna izquierda: texto y CTAs (siempre por encima de los blobs) -->
+          <div class="relative z-10 w-full lg:w-1/2 text-left reveal">
             <p class="font-bold uppercase text-xs lg:text-sm tracking-[0.25em] text-primary mb-4">
               Clínica veterinaria · Monitoreo 24/7
             </p>
@@ -41,23 +41,36 @@
             </div>
           </div>
 
-          <!-- Columna derecha: imagen con blobs -->
+          <!-- Columna derecha: video en silueta blob con blobs acompañantes (geometría en style.css) -->
           <div class="w-full lg:w-1/2 flex justify-center">
-            <div class="relative z-0 w-fit">
-              <!-- Blob rosa -->
-              <div data-parallax="0.12" aria-hidden="true" class="absolute -top-[24%] -left-[26%] w-[95%] -z-10">
-                <div class="blob aspect-square w-full bg-secondary"></div>
+            <div class="hero-media">
+              <!-- Blob sage: solitario, sangra por el borde izquierdo del hero -->
+              <div class="hero-blob hero-blob-sage" aria-hidden="true">
+                <div class="blob aspect-square w-full bg-sage"></div>
               </div>
-              <!-- Blob miel -->
-              <div data-parallax="0.2" aria-hidden="true" class="absolute -bottom-[20%] -right-[22%] w-[72%] -z-10">
+              <!-- Blob miel: asoma por detrás del borde superior-izquierdo del video -->
+              <div class="hero-blob hero-blob-honey" data-parallax="0.2" aria-hidden="true">
                 <div class="blob blob-alt aspect-square w-full bg-honey"></div>
               </div>
-              <!-- Imagen -->
-              <div
-                class="w-48 h-48 sm:w-56 sm:h-56 md:w-72 md:h-72 lg:w-96 lg:h-96 rounded-full overflow-hidden bg-secondary/40 animate-float"
-              >
-                <img src="/images/hero-image.png" alt="Imagen de una mascota en PetHaven" class="w-full h-full object-cover" />
+              <!-- Blob rosa: acompaña por detrás del borde inferior-derecho -->
+              <div class="hero-blob hero-blob-pink" data-parallax="0.12" aria-hidden="true">
+                <div class="blob aspect-square w-full bg-secondary"></div>
               </div>
+              <!-- Video en silueta blob: en lg se pega al borde derecho y se corta con el header -->
+              <figure aria-hidden="true" class="hero-video">
+                <video
+                  autoplay
+                  loop
+                  muted
+                  playsinline
+                  preload="metadata"
+                  poster="/images/hero-image.png"
+                  class="absolute inset-0 h-full w-full object-cover"
+                >
+                  <source src="/videos/hero.mp4" type="video/mp4" />
+                  <img src="/images/hero-image.png" alt="" class="h-full w-full object-cover" />
+                </video>
+              </figure>
             </div>
           </div>
         </div>

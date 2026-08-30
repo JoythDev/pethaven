@@ -78,6 +78,133 @@ html.js .reveal.is-visible {
 }
 
 /* --------------------------------------------------------------------------
+   Composición del hero: video en silueta blob + blobs acompañantes.
+   La geometría vive en CSS plano con media queries propias (no en
+   utilidades con variantes) para controlar la cascada exacta entre
+   breakpoints.
+   La silueta del video es una MÁSCARA SVG embebida (data URI, coordenadas
+   0–100 con preserveAspectRatio="none" → escala con el contenedor) aplicada
+   directamente al <video>: sin referencias por id no hay parpadeos de
+   rasterización (el bug del flash cuadrado). En desktop la silueta es
+   ondulada y el box se mete debajo del header (el header, z-30, lo tapa)
+   y sangra por el borde derecho de la página.
+   -------------------------------------------------------------------------- */
+.hero-media {
+  position: relative;
+  z-index: 0;
+  width: fit-content;
+}
+
+.hero-blob {
+  position: absolute;
+  z-index: -10;
+}
+
+.hero-blob-sage {
+  left: -20%;
+  bottom: 8%;
+  width: 55%;
+}
+
+.hero-blob-honey {
+  top: -10%;
+  left: -24%;
+  width: 78%;
+}
+
+.hero-blob-pink {
+  bottom: -16%;
+  right: -18%;
+  width: 80%;
+}
+
+.hero-video {
+  position: relative;
+  margin: 0;
+  width: 15rem;
+  aspect-ratio: 1 / 1;
+}
+
+.hero-video video {
+  --mask-mobile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath fill='%23000' d='M55,3C70,-1,88,8,94,24C99,38,92,50,97,63C101,76,93,90,78,96C64,101,50,96,36,100C22,103,8,94,4,80C0,67,6,55,2,42C-2,29,3,13,18,6C30,0,44,5,55,3Z'/%3E%3C/svg%3E");
+  --mask-desktop: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath fill='%23000' d='M28,3C40,14,52,10,64,6C76,2,88,10,100,24C106,36,94,44,98,56C104,68,102,80,90,89C78,98,66,94,54,100C42,106,26,102,15,93C4,84,0,72,5,58C10,44,-2,32,6,19C11,8,19,6,28,3Z'/%3E%3C/svg%3E");
+  -webkit-mask-image: var(--mask-mobile);
+  -webkit-mask-size: 100% 100%;
+  -webkit-mask-repeat: no-repeat;
+  mask-image: var(--mask-mobile);
+  mask-size: 100% 100%;
+  mask-repeat: no-repeat;
+  transform: translateZ(0);
+}
+
+@media (min-width: 640px) {
+  .hero-video {
+    width: 19rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .hero-video {
+    width: 21rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  /* El wrapper deja de posicionar: blobs y video se anclan a la sección.
+     El texto (relative z-10) queda siempre por encima de ellos. */
+  .hero-media {
+    position: static;
+    z-index: auto;
+  }
+
+  .hero-blob {
+    z-index: 0;
+  }
+
+  /* Sage: solitario, sangra por el borde izquierdo del hero */
+  .hero-blob-sage {
+    left: -20vw;
+    bottom: 24%;
+    width: 36vw;
+    max-width: 36rem;
+  }
+
+  /* Miel: más grande y más atrás del video, asomando por su borde superior-izquierdo */
+  .hero-blob-honey {
+    top: -10%;
+    left: 48vw;
+    width: 36vw;
+    max-width: 30rem;
+  }
+
+  /* Rosa: más grande, asomando por el borde inferior-derecho del video */
+  .hero-blob-pink {
+    bottom: 10%;
+    left: 52vw;
+    right: auto;
+    width: 24vw;
+    max-width: 32rem;
+  }
+
+  /* Video: se mete debajo del header (que lo tapa con su fondo), sangra por
+     el borde derecho y queda un respiro sobre la trust bar. */
+  .hero-video {
+    position: absolute;
+    top: -7rem;
+    bottom: 1rem;
+    right: -6vw;
+    left: auto;
+    width: min(56vw, 60rem);
+    aspect-ratio: auto;
+  }
+
+  .hero-video video {
+    -webkit-mask-image: var(--mask-desktop);
+    mask-image: var(--mask-desktop);
+  }
+}
+
+/* --------------------------------------------------------------------------
    Blobs orgánicos grandes que se deforman suavemente (ref: pa'lais.bio)
    Técnica: border-radius animado — cruzado entre navegadores, sin morphing
    de paths. El parallax vive en el wrapper, el morph en el div interior.
@@ -123,12 +250,16 @@ html.js .reveal.is-visible {
 }
 
 .divider-wave path {
-  d: path("M-80 55C160 95 420 10 740 44C1060 78 1300 96 1520 38L1520 100L-80 100Z");
+  d: path(
+    "M-80 55C160 95 420 10 740 44C1060 78 1300 96 1520 38L1520 100L-80 100Z"
+  );
   animation: wave-morph-a 16s ease-in-out infinite alternate;
 }
 
 .divider-wave path.wave-alt {
-  d: path("M-80 42C200 90 470 16 750 54C1030 92 1310 84 1520 34L1520 100L-80 100Z");
+  d: path(
+    "M-80 42C200 90 470 16 750 54C1030 92 1310 84 1520 34L1520 100L-80 100Z"
+  );
   animation-name: wave-morph-b;
   animation-duration: 19s;
   animation-delay: -6s;
@@ -145,25 +276,37 @@ html.js .reveal.is-visible {
 
 @keyframes wave-morph-a {
   0% {
-    d: path("M-80 55C160 95 420 10 740 44C1060 78 1300 96 1520 38L1520 100L-80 100Z");
+    d: path(
+      "M-80 55C160 95 420 10 740 44C1060 78 1300 96 1520 38L1520 100L-80 100Z"
+    );
   }
   50% {
-    d: path("M-80 32C150 62 430 88 740 58C1060 22 1290 38 1520 60L1520 100L-80 100Z");
+    d: path(
+      "M-80 32C150 62 430 88 740 58C1060 22 1290 38 1520 60L1520 100L-80 100Z"
+    );
   }
   100% {
-    d: path("M-80 68C170 25 410 32 730 28C1050 55 1310 92 1520 34L1520 100L-80 100Z");
+    d: path(
+      "M-80 68C170 25 410 32 730 28C1050 55 1310 92 1520 34L1520 100L-80 100Z"
+    );
   }
 }
 
 @keyframes wave-morph-b {
   0% {
-    d: path("M-80 42C200 90 470 16 750 54C1030 92 1310 84 1520 34L1520 100L-80 100Z");
+    d: path(
+      "M-80 42C200 90 470 16 750 54C1030 92 1310 84 1520 34L1520 100L-80 100Z"
+    );
   }
   50% {
-    d: path("M-80 62C190 28 460 75 750 30C1030 45 1300 95 1520 58L1520 100L-80 100Z");
+    d: path(
+      "M-80 62C190 28 460 75 750 30C1030 45 1300 95 1520 58L1520 100L-80 100Z"
+    );
   }
   100% {
-    d: path("M-80 30C210 70 480 20 760 66C1040 18 1290 50 1520 40L1520 100L-80 100Z");
+    d: path(
+      "M-80 30C210 70 480 20 760 66C1040 18 1290 50 1520 40L1520 100L-80 100Z"
+    );
   }
 }
 

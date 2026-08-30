@@ -226,6 +226,14 @@ if (!prefersReducedMotion) {
   }
 }
 
+// --- Video del hero: con prefers-reduced-motion queda el poster estático ---
+if (prefersReducedMotion) {
+  document.querySelectorAll("video[autoplay]").forEach(video => {
+    video.removeAttribute("autoplay");
+    video.pause();
+  });
+}
+
 // --- Paw-print cursor trail (fase 2): solo desktop y sin reduced-motion ---
 if (!prefersReducedMotion && window.matchMedia("(pointer: fine)").matches) {
   const TRAIL_SVG =
