@@ -42,6 +42,20 @@ public class OwnerController {
         return "redirect:/owners";
     }
 
+    @GetMapping("/update/{id}")
+    public String updateOwner(@PathVariable Long id, Model model) {
+        Owner owner = ownerService.getOwnerById(id);
+        model.addAttribute("owner", owner);
+        return "owner_form";
+    }
+
+    @PostMapping("/update/{id}")
+    public String saveUpdatedOwner(@PathVariable Long id, Owner owner) {
+        owner.setId(id);
+        ownerService.createOwner(owner);
+        return "redirect:/owners/" + id;
+    }
+
     @GetMapping("/delete/{id}")
     public String deleteOwner(@PathVariable Long id) {
         ownerService.deleteOwnerById(id);
