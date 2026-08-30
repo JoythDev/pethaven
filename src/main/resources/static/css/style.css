@@ -1,0 +1,124 @@
+/* --------------------------------------------------------------------------
+   PetHaven — Landing motion (ref: DESIGN.md)
+   Solo transform/opacity. prefers-reduced-motion siempre respetado.
+   -------------------------------------------------------------------------- */
+
+/* Los blobs sangran por los bordes del viewport (efecto pa'lais) sin generar
+   scroll horizontal: el eje X se clipea a nivel documento; el scroll vertical
+   se conserva intacto. */
+html {
+  overflow-x: clip;
+}
+
+/* JS añade esta clase; sin JS el contenido nunca queda oculto */
+html.js .reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.6s ease-out,
+    transform 0.6s ease-out;
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+html.js .reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Keyframes referenciados por los tokens --animate-* del @theme */
+@keyframes float {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes drift {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(6px, -10px) scale(1.04);
+  }
+}
+
+@keyframes bounce-soft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(6px);
+  }
+}
+
+/* Accesibilidad: sin movimiento si el usuario lo prefiere */
+@media (prefers-reduced-motion: reduce) {
+  html.js .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Blobs orgánicos grandes que se deforman suavemente (ref: pa'lais.bio)
+   Técnica: border-radius animado — cruzado entre navegadores, sin morphing
+   de paths. El parallax vive en el wrapper, el morph en el div interior.
+   -------------------------------------------------------------------------- */
+.blob {
+  border-radius: 42% 58% 63% 37% / 45% 42% 58% 55%;
+  animation: blob-morph 16s ease-in-out infinite alternate;
+}
+
+.blob-alt {
+  animation-duration: 20s;
+  animation-delay: -8s;
+}
+
+@keyframes blob-morph {
+  0% {
+    border-radius: 42% 58% 63% 37% / 45% 42% 58% 55%;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  33% {
+    border-radius: 57% 43% 38% 62% / 50% 61% 39% 50%;
+    transform: translate(10px, -12px) rotate(5deg) scale(1.05);
+  }
+  66% {
+    border-radius: 45% 55% 61% 39% / 36% 54% 46% 64%;
+    transform: translate(-8px, 8px) rotate(-4deg) scale(0.96);
+  }
+  100% {
+    border-radius: 55% 45% 47% 53% / 56% 39% 61% 44%;
+    transform: translate(6px, -6px) rotate(3deg) scale(1.03);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Divisores ondulados: mecen su curva muy suavemente.
+   El path sobre-dibuja el viewBox (-80…1520) para que el vaivén lateral
+   nunca deje bordes visibles.
+   -------------------------------------------------------------------------- */
+.divider-wave {
+  animation: divider-sway 18s ease-in-out infinite alternate;
+}
+
+@keyframes divider-sway {
+  from {
+    transform: translateX(-14px);
+  }
+  to {
+    transform: translateX(14px);
+  }
+}

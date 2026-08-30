@@ -7,15 +7,19 @@
     <div th:replace="~{fragments :: header}"></div>
 
     <main>
-      <!-- Hero Section -->
-      <section class="py-12 lg:py-24">
-        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-10 px-5 lg:px-8">
-          <!-- Contenedor Izquierda (Texto y CTA) -->
-          <div class="w-full lg:w-1/2 text-left">
-            <h1 class="text-4xl lg:text-6xl font-display font-bold mb-4">
+      <!-- section: hero -->
+      <section class="relative overflow-hidden py-12 lg:py-24">
+        <div class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12 px-5 lg:px-8">
+          <!-- Columna izquierda: texto y CTAs -->
+          <div class="w-full lg:w-1/2 text-left reveal">
+            <p class="font-bold uppercase text-xs lg:text-sm tracking-[0.25em] text-primary mb-4">
+              Clínica veterinaria · Monitoreo 24/7
+            </p>
+            <h1 class="font-display font-bold text-4xl sm:text-5xl lg:text-7xl leading-[0.95] tracking-[-0.01em] mb-4">
               Hospitalización canina y felina con amor de hogar
             </h1>
-            <p class="text-lg lg:text-2xl mb-8">
+            <p class="font-script text-3xl lg:text-4xl text-terracotta mb-5">porque son familia</p>
+            <p class="text-lg lg:text-xl opacity-80 mb-8 max-w-xl">
               Entendemos que dejar a tu mejor amigo hospitalizado es difícil. En PetHaven combinamos el monitoreo médico
               especializado 24/7 con un ambiente cálido y de bajo estrés para su pronta recuperación.
             </p>
@@ -23,160 +27,249 @@
             <div class="flex flex-col gap-4 sm:flex-row">
               <a
                 href="#"
-                class="bg-primary text-background px-4 py-2 lg:px-6 lg:py-2.5 text-sm lg:text-base rounded-full font-bold hover:opacity-90 transition-opacity shadow-sm whitespace-nowrap"
+                class="bg-primary text-background px-6 py-2.5 lg:px-8 text-sm lg:text-base rounded-full font-bold hover:opacity-90 transition-opacity shadow-sm whitespace-nowrap"
               >
                 Comienza ahora
               </a>
               <a
                 href="#"
-                class="bg-background text-primary border-2 border-primary hover:bg-primary hover:text-background px-4 py-2 lg:px-6 lg:py-2.5 text-sm lg:text-base rounded-full font-bold hover:opacity-90 transition-opacity shadow-sm whitespace-nowrap"
+                class="bg-background text-terracotta border-2 border-terracotta hover:bg-terracotta hover:text-background px-6 py-2.5 lg:px-8 text-sm lg:text-base rounded-full font-bold transition-colors shadow-sm whitespace-nowrap inline-flex items-center justify-center gap-2"
               >
                 Conoce más
+                <img src="/images/icons/arrow-down-bold-icon.svg" alt="" class="h-4 w-4 rotate-[-90deg]" />
               </a>
             </div>
           </div>
 
-          <!-- Contenedor Derecha (Imagen) -->
+          <!-- Columna derecha: imagen con blobs -->
           <div class="w-full lg:w-1/2 flex justify-center">
             <div class="relative z-0 w-fit">
-              <!-- Circulo detrás de la imagen -->
-              <div class="absolute -top-[12%] -left-[12%] w-full h-full rounded-full bg-secondary -z-10"></div>
+              <!-- Blob rosa -->
+              <div data-parallax="0.12" aria-hidden="true" class="absolute -top-[24%] -left-[26%] w-[95%] -z-10">
+                <div class="blob aspect-square w-full bg-secondary"></div>
+              </div>
+              <!-- Blob miel -->
+              <div data-parallax="0.2" aria-hidden="true" class="absolute -bottom-[20%] -right-[22%] w-[72%] -z-10">
+                <div class="blob blob-alt aspect-square w-full bg-honey"></div>
+              </div>
               <!-- Imagen -->
               <div
-                class="w-48 h-48 sm:w-56 sm:h-56 md:w-72 md:h-72 lg:w-96 lg:h-96 rounded-full overflow-hidden bg-secondary/40"
+                class="w-48 h-48 sm:w-56 sm:h-56 md:w-72 md:h-72 lg:w-96 lg:h-96 rounded-full overflow-hidden bg-secondary/40 animate-float"
               >
-                <img src="/images/hero-image.png" alt="Hero Image" class="w-full h-full object-cover" />
+                <img src="/images/hero-image.png" alt="Imagen de una mascota en PetHaven" class="w-full h-full object-cover" />
               </div>
             </div>
           </div>
         </div>
+
+        <!-- Indicador de scroll -->
+        <div class="mt-12 lg:mt-16 flex justify-center reveal">
+          <a
+            href="#services"
+            class="flex h-12 w-12 items-center justify-center rounded-full border-[1.5px] border-primary text-primary animate-bounce-soft hover:bg-secondary/40 transition-colors"
+            aria-label="Ir a la sección de servicios"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              class="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </a>
+        </div>
       </section>
 
-      <!-- Trust Bar -->
+      <!-- section: trust-bar -->
       <section class="w-full max-w-full bg-white border-y border-primary/15 flex items-center py-4">
         <div
           class="max-w-7xl mx-auto flex flex-wrap items-center justify-center gap-y-4 px-5 lg:px-12 lg:gap-y-0 w-full"
+          data-reveal-stagger
         >
           <!-- Item 1 -->
-          <article class="flex w-1/2 lg:flex-1 items-center justify-center gap-3">
+          <article class="reveal flex w-1/2 lg:flex-1 items-center justify-center gap-3">
             <div class="w-12 h-12 rounded-full bg-secondary flex items-center justify-center shrink-0">
               <img src="/images/icons/paw-print-icon.svg" alt="" class="h-7 w-7" />
             </div>
             <div class="flex flex-col text-left leading-none">
-              <p class="text-base font-display lg:text-2xl font-bold">+5,000</p>
+              <p class="text-base font-display lg:text-2xl font-bold" data-counter="5000" data-prefix="+">+5,000</p>
               <p class="text-xs lg:text-sm">mascotas atendidas</p>
             </div>
           </article>
           <!-- Item 2 -->
-          <article class="flex flex-1 w-1/2 lg:flex-1 items-center justify-center gap-3">
+          <article class="reveal flex flex-1 w-1/2 lg:flex-1 items-center justify-center gap-3">
             <div class="w-12 h-12 rounded-full bg-secondary flex items-center justify-center shrink-0">
               <img src="/images/icons/clock-icon.svg" alt="" class="h-7 w-7" />
             </div>
             <div class="flex flex-col text-left leading-none">
-              <p class="text-base font-display lg:text-2xl font-bold">24/7</p>
+              <p class="text-base font-display lg:text-2xl font-bold" data-counter="24" data-suffix="/7">24/7</p>
               <p class="text-xs lg:text-sm">monitoreo clínico</p>
             </div>
           </article>
           <!-- Item 3 -->
-          <article class="flex w-1/2 lg:flex-1 items-center justify-center gap-3">
+          <article class="reveal flex w-1/2 lg:flex-1 items-center justify-center gap-3">
             <div class="w-12 h-12 rounded-full bg-secondary flex items-center justify-center shrink-0">
               <img src="/images/icons/medal-icon.svg" alt="" class="h-7 w-7" />
             </div>
             <div class="flex flex-col text-left leading-none">
-              <p class="text-base font-display lg:text-2xl font-bold">+15 años</p>
+              <p class="text-base font-display lg:text-2xl font-bold" data-counter="15" data-prefix="+" data-suffix=" años">
+                +15 años
+              </p>
               <p class="text-xs lg:text-sm">de experiencia</p>
             </div>
           </article>
           <!-- Item 4 -->
-          <article class="flex w-1/2 lg:flex-1 items-center justify-center gap-3">
+          <article class="reveal flex w-1/2 lg:flex-1 items-center justify-center gap-3">
             <div class="w-12 h-12 rounded-full bg-secondary flex items-center justify-center shrink-0">
               <img src="/images/icons/heart-icon.svg" alt="" class="h-7 w-7" />
             </div>
             <div class="flex flex-col text-left leading-none">
-              <p class="text-base font-display lg:text-2xl font-bold">98%</p>
+              <p class="text-base font-display lg:text-2xl font-bold" data-counter="98" data-suffix="%">98%</p>
               <p class="text-xs lg:text-sm">satisfacción</p>
             </div>
           </article>
         </div>
       </section>
 
-      <!-- Servicios -->
-      <section id="services" class="py-12 lg:py-24">
+      <!-- Divisor ondulado: trust bar (blanco) → servicios (crema) -->
+      <div class="relative z-10 overflow-hidden bg-white" aria-hidden="true">
+        <svg class="divider-wave block h-16 w-[110%] max-w-none -ml-[5%] lg:h-32 text-background" viewBox="-80 0 1600 100" preserveAspectRatio="none">
+          <path fill="currentColor" d="M-80 55C160 95 420 10 740 44C1060 78 1300 96 1520 38L1520 100L-80 100Z" />
+        </svg>
+      </div>
+
+      <!-- section: servicios -->
+      <section id="services" class="relative overflow-hidden bg-background py-12 lg:py-24">
+        <img
+          src="/images/illustrations/stethoscope-line.svg"
+          alt=""
+          aria-hidden="true"
+          class="absolute top-2 right-0 w-24 lg:w-32 rotate-12 opacity-70 hidden md:block"
+        />
         <div class="max-w-7xl mx-auto px-5 lg:px-12">
-          <div class="text-center max-w-3xl mx-auto mb-10 lg:mb-14">
-            <h2 class="font-display text-3xl lg:text-5xl font-bold mb-4">Nuestros Servicios Hospitalarios</h2>
+          <div class="text-center max-w-3xl mx-auto mb-10 lg:mb-14 reveal">
+            <p class="font-bold uppercase text-xs lg:text-sm tracking-[0.25em] text-primary mb-3">Cuidado especializado</p>
+            <h2 class="font-display text-4xl lg:text-6xl font-bold mb-4">Nuestros Servicios Hospitalarios</h2>
             <p class="text-base lg:text-lg opacity-80">
               Instalaciones de primer nivel diseñadas exclusivamente para salvaguardar la salud y el bienestar de tus
               pequeños compañeros.
             </p>
           </div>
 
-          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            <!-- Servicio 1: Hospitalización 24/7 -->
-            <article class="flex flex-col gap-3 rounded-3xl bg-white p-6 lg:p-8 shadow-sm">
-              <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-secondary">
-                <img src="/images/icons/hospital-bed-icon.svg" alt="" class="h-6 w-6" />
-              </div>
-              <h3 class="font-display text-lg font-bold text-text">Hospitalización 24/7</h3>
-              <p class="text-sm lg:text-base opacity-75 leading-relaxed">
-                Monitoreo constante e infusión de medicamentos continua con cubículos climatizados individuales.
-              </p>
-            </article>
+          <div class="relative z-0">
+            <!-- Washes orgánicos -->
+            <div aria-hidden="true" class="absolute -left-36 top-1/4 -z-10 w-72 lg:w-[28rem]">
+              <div class="blob aspect-square w-full bg-sage opacity-50"></div>
+            </div>
+            <div aria-hidden="true" class="absolute -right-32 bottom-0 -z-10 w-64 lg:w-[24rem]">
+              <div class="blob blob-alt aspect-square w-full bg-honey opacity-40"></div>
+            </div>
 
-            <!-- Servicio 2: Cuidados Intensivos -->
-            <article class="flex flex-col gap-3 rounded-3xl bg-white p-6 lg:p-8 shadow-sm">
-              <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-secondary">
-                <img src="/images/icons/pulse-icon.svg" alt="" class="h-6 w-6" />
-              </div>
-              <h3 class="font-display text-lg font-bold text-text">Cuidados Intensivos</h3>
-              <p class="text-sm lg:text-base opacity-75 leading-relaxed">
-                Oxigenoterapia, control crítico de fluidos y atención inmediata ante cualquier inestabilidad metabólica.
-              </p>
-            </article>
+            <div data-reveal-stagger class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              <!-- Servicio 1: Hospitalización 24/7 -->
+              <article
+                class="reveal flex flex-col gap-3 rounded-3xl bg-white p-6 lg:p-8 shadow-sm transition duration-300 hover:-translate-y-1.5 hover:shadow-lg"
+              >
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-secondary">
+                  <img src="/images/icons/hospital-bed-icon.svg" alt="" class="h-6 w-6" />
+                </div>
+                <h3 class="font-display text-lg font-bold text-text">Hospitalización 24/7</h3>
+                <p class="text-sm lg:text-base opacity-75 leading-relaxed">
+                  Monitoreo constante e infusión de medicamentos continua con cubículos climatizados individuales.
+                </p>
+              </article>
 
-            <!-- Servicio 3: Cirugía y Recuperación -->
-            <article class="flex flex-col gap-3 rounded-3xl bg-white p-6 lg:p-8 shadow-sm">
-              <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-secondary">
-                <img src="/images/icons/scissors-icon.svg" alt="" class="h-6 w-6" />
-              </div>
-              <h3 class="font-display text-lg font-bold text-text">Cirugía y Recuperación</h3>
-              <p class="text-sm lg:text-base opacity-75 leading-relaxed">
-                Quirófano equipado de última generación y sala de recuperación tranquila de baja estimulación sensorial.
-              </p>
-            </article>
+              <!-- Servicio 2: Cuidados Intensivos -->
+              <article
+                class="reveal flex flex-col gap-3 rounded-3xl bg-white p-6 lg:p-8 shadow-sm transition duration-300 hover:-translate-y-1.5 hover:shadow-lg"
+              >
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-secondary">
+                  <img src="/images/icons/pulse-icon.svg" alt="" class="h-6 w-6" />
+                </div>
+                <h3 class="font-display text-lg font-bold text-text">Cuidados Intensivos</h3>
+                <p class="text-sm lg:text-base opacity-75 leading-relaxed">
+                  Oxigenoterapia, control crítico de fluidos y atención inmediata ante cualquier inestabilidad metabólica.
+                </p>
+              </article>
 
-            <!-- Servicio 4: Consulta Especializada -->
-            <article class="flex flex-col gap-3 rounded-3xl bg-white p-6 lg:p-8 shadow-sm">
-              <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-secondary">
-                <img src="/images/icons/stethoscope-icon.svg" alt="" class="h-6 w-6" />
-              </div>
-              <h3 class="font-display text-lg font-bold text-text">Consulta Especializada</h3>
-              <p class="text-sm lg:text-base opacity-75 leading-relaxed">
-                Diagnósticos profundos, laboratorios inmediatos y planes de tratamiento personalizados para patologías
-                agudas.
-              </p>
-            </article>
+              <!-- Servicio 3: Cirugía y Recuperación -->
+              <article
+                class="reveal flex flex-col gap-3 rounded-3xl bg-white p-6 lg:p-8 shadow-sm transition duration-300 hover:-translate-y-1.5 hover:shadow-lg"
+              >
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-secondary">
+                  <img src="/images/icons/scissors-icon.svg" alt="" class="h-6 w-6" />
+                </div>
+                <h3 class="font-display text-lg font-bold text-text">Cirugía y Recuperación</h3>
+                <p class="text-sm lg:text-base opacity-75 leading-relaxed">
+                  Quirófano equipado de última generación y sala de recuperación tranquila de baja estimulación sensorial.
+                </p>
+              </article>
+
+              <!-- Servicio 4: Consulta Especializada -->
+              <article
+                class="reveal flex flex-col gap-3 rounded-3xl bg-white p-6 lg:p-8 shadow-sm transition duration-300 hover:-translate-y-1.5 hover:shadow-lg"
+              >
+                <div class="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-secondary">
+                  <img src="/images/icons/stethoscope-icon.svg" alt="" class="h-6 w-6" />
+                </div>
+                <h3 class="font-display text-lg font-bold text-text">Consulta Especializada</h3>
+                <p class="text-sm lg:text-base opacity-75 leading-relaxed">
+                  Diagnósticos profundos, laboratorios inmediatos y planes de tratamiento personalizados para patologías
+                  agudas.
+                </p>
+              </article>
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- Cómo funciona -->
+      <!-- Divisor ondulado: servicios (crema) → cómo funciona (blanco) -->
+      <div class="relative z-10 overflow-hidden bg-background" aria-hidden="true">
+        <svg class="divider-wave block h-16 w-[110%] max-w-none -ml-[5%] lg:h-32 text-white" viewBox="-80 0 1600 100" preserveAspectRatio="none">
+          <path fill="currentColor" d="M-80 42C200 90 470 16 750 54C1030 92 1310 84 1520 34L1520 100L-80 100Z" />
+        </svg>
+      </div>
+
+      <!-- section: como-funciona -->
       <section id="how-it-works" class="bg-white py-12 lg:py-24">
         <div class="max-w-7xl mx-auto px-5 lg:px-12">
-          <div class="text-center max-w-3xl mx-auto mb-10 lg:mb-14">
-            <h2 class="font-display text-3xl lg:text-5xl font-bold mb-4">¿Cómo Funciona?</h2>
+          <div class="text-center max-w-3xl mx-auto mb-10 lg:mb-14 reveal">
+            <p class="font-bold uppercase text-xs lg:text-sm tracking-[0.25em] text-primary mb-3">Así de simple</p>
+            <h2 class="font-display text-4xl lg:text-6xl font-bold mb-4">¿Cómo Funciona?</h2>
             <p class="text-base lg:text-lg opacity-80">
               Paso a paso, un proceso transparente y cálido para mantenerte cerca de tu mascota en todo momento.
             </p>
           </div>
 
           <div class="relative">
-            <!-- Línea que conecta los 4 pasos (solo en escritorio) -->
-            <div class="absolute left-0 right-0 top-6 hidden h-px bg-primary/25 lg:block" aria-hidden="true"></div>
+            <!-- Conector curvo punteado (solo escritorio) -->
+            <svg
+              class="absolute left-0 right-0 top-6 hidden h-12 w-full lg:block"
+              viewBox="0 0 1200 48"
+              preserveAspectRatio="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M40 24C220 -6 420 54 620 24C820 -6 1000 50 1160 24"
+                fill="none"
+                stroke="currentColor"
+                class="text-primary"
+                stroke-width="2"
+                stroke-dasharray="2 10"
+                stroke-linecap="round"
+                opacity="0.5"
+                vector-effect="non-scaling-stroke"
+              />
+            </svg>
 
-            <div class="relative grid grid-cols-1 gap-10 lg:grid-cols-4 lg:gap-6">
+            <div data-reveal-stagger class="relative grid grid-cols-1 gap-10 lg:grid-cols-4 lg:gap-6">
               <!-- Paso 1 -->
-              <div class="text-center">
+              <div class="reveal text-center">
                 <div
                   class="relative z-10 mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-secondary font-display text-lg font-bold text-tertiary"
                 >
@@ -189,7 +282,7 @@
               </div>
 
               <!-- Paso 2 -->
-              <div class="text-center">
+              <div class="reveal text-center">
                 <div
                   class="relative z-10 mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-secondary font-display text-lg font-bold text-tertiary"
                 >
@@ -202,7 +295,7 @@
               </div>
 
               <!-- Paso 3 -->
-              <div class="text-center">
+              <div class="reveal text-center">
                 <div
                   class="relative z-10 mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-secondary font-display text-lg font-bold text-tertiary"
                 >
@@ -215,7 +308,7 @@
               </div>
 
               <!-- Paso 4 -->
-              <div class="text-center">
+              <div class="reveal text-center">
                 <div
                   class="relative z-10 mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-secondary font-display text-lg font-bold text-tertiary"
                 >
@@ -231,19 +324,45 @@
         </div>
       </section>
 
-      <!-- Portales de Acceso -->
-      <section class="bg-tertiary text-background text-center py-25 px-15">
-        <div class="flex flex-col gap-15">
-          <div class="flex flex-col gap-3">
-            <h3 class="text-2xl lg:text-4xl font-display font-bold">Portales de Acceso Integrados</h3>
+      <!-- Divisor ondulado: cómo funciona (blanco) → portales (marrón) -->
+      <div class="relative z-10 overflow-hidden bg-white" aria-hidden="true">
+        <svg class="divider-wave block h-16 w-[110%] max-w-none -ml-[5%] lg:h-32 text-tertiary" viewBox="-80 0 1600 100" preserveAspectRatio="none">
+          <path fill="currentColor" d="M-80 55C160 95 420 10 740 44C1060 78 1300 96 1520 38L1520 100L-80 100Z" />
+        </svg>
+      </div>
+
+      <!-- section: portales -->
+      <section class="relative z-20 bg-tertiary text-background text-center py-20 lg:py-28 px-5 lg:px-15">
+        <!-- Blobs decorativos (recortados por la ola superior vía capas z) -->
+        <div
+          aria-hidden="true"
+          data-parallax="0.08"
+          class="absolute -left-32 lg:-left-44 -top-12 lg:-top-20 w-80 lg:w-[34rem]"
+        >
+          <div class="blob aspect-square w-full bg-secondary opacity-20"></div>
+        </div>
+        <div
+          aria-hidden="true"
+          data-parallax="0.1"
+          class="absolute -right-32 lg:-right-44 -bottom-16 lg:-bottom-32 w-80 lg:w-[36rem]"
+        >
+          <div class="blob blob-alt aspect-square w-full bg-honey opacity-20"></div>
+        </div>
+
+        <div class="relative max-w-7xl mx-auto flex flex-col gap-15">
+          <div class="flex flex-col gap-3 reveal">
+            <p class="font-bold uppercase text-xs lg:text-sm tracking-[0.25em] text-background/70 mb-1">
+              Plataformas PetHaven
+            </p>
+            <h3 class="text-3xl lg:text-5xl font-display font-bold">Portales de Acceso Integrados</h3>
             <p class="text-sm lg:text-lg">
               Simplificamos el flujo de comunicación operativa entre familias, médicos y administración.
             </p>
           </div>
           <!-- Cards de portales -->
-          <div class="flex flex-col gap-5 lg:flex-row">
+          <div data-reveal-stagger class="flex flex-col gap-5 lg:flex-row">
             <!-- Portal Cliente -->
-            <article class="flex w-full flex-col gap-3 rounded-3xl bg-background p-5 lg:p-10 text-left lg:flex-1">
+            <article class="reveal flex w-full flex-col gap-3 rounded-3xl bg-background p-5 lg:p-10 text-left lg:flex-1">
               <div class="flex h-12 w-12 shrink-0 items-center justify-center self-start rounded-xl bg-secondary">
                 <img src="/images/icons/user-icon.svg" alt="" class="h-6 w-6" />
               </div>
@@ -258,7 +377,7 @@
               >
             </article>
             <!-- Portal Veterinario -->
-            <article class="flex w-full flex-col gap-3 rounded-3xl bg-background p-5 lg:p-10 text-left lg:flex-1">
+            <article class="reveal flex w-full flex-col gap-3 rounded-3xl bg-background p-5 lg:p-10 text-left lg:flex-1">
               <div class="flex h-12 w-12 shrink-0 items-center justify-center self-start rounded-xl bg-secondary">
                 <img src="/images/icons/clipboard-icon.svg" alt="" class="h-6 w-6" />
               </div>
@@ -273,7 +392,7 @@
               >
             </article>
             <!-- Portal Administrador -->
-            <article class="flex w-full flex-col gap-3 rounded-3xl bg-background p-5 lg:p-10 text-left lg:flex-1">
+            <article class="reveal flex w-full flex-col gap-3 rounded-3xl bg-background p-5 lg:p-10 text-left lg:flex-1">
               <div class="flex h-12 w-12 shrink-0 items-center justify-center self-start rounded-xl bg-secondary">
                 <img src="/images/icons/gear-icon.svg" alt="" class="h-6 w-6" />
               </div>
@@ -291,20 +410,38 @@
         </div>
       </section>
 
-      <!-- Nosotros -->
-      <section id="us" class="py-12 lg:py-24">
+      <!-- Divisor ondulado: portales (marrón) → nosotros (crema) -->
+      <div class="relative z-10 overflow-hidden bg-tertiary" aria-hidden="true">
+        <svg class="divider-wave block h-16 w-[110%] max-w-none -ml-[5%] lg:h-32 text-background" viewBox="-80 0 1600 100" preserveAspectRatio="none">
+          <path fill="currentColor" d="M-80 42C200 90 470 16 750 54C1030 92 1310 84 1520 34L1520 100L-80 100Z" />
+        </svg>
+      </div>
+
+      <!-- section: nosotros -->
+      <section id="us" class="relative overflow-hidden py-12 lg:py-24 bg-background">
         <div class="max-w-7xl mx-auto px-5 lg:px-12 grid grid-cols-1 lg:grid-cols-2 gap-12 lg:gap-16 items-center">
-          <!-- Columna de la izquierda para Imagen y mision-->
+          <!-- Columna izquierda: imagen y misión -->
           <div class="flex flex-col gap-6">
-            <!-- Imagen del equipo -->
-            <img
-              src="/images/team.png"
-              alt="Equipo veterinario de PetHaven"
-              class="w-full h-[250px] sm:h-[350px] lg:h-[400px] object-cover rounded-3xl shadow-sm"
-            />
-            <div class="flex flex-col gap-4 mt-2">
-              <h2 class="font-display text-3xl lg:text-4xl font-body leading-tight font-bold">
-                Nuestra Misión es Brindar Tranquilidad
+            <div class="relative z-0 reveal">
+              <!-- Blob ámbar -->
+              <div aria-hidden="true" class="absolute -top-12 -right-14 w-56 lg:w-72 -z-10">
+                <div class="blob blob-alt aspect-square w-full bg-honey opacity-70"></div>
+              </div>
+              <img
+                src="/images/team.png"
+                alt="Equipo veterinario de PetHaven"
+                class="w-full h-[250px] sm:h-[350px] lg:h-[400px] object-cover rounded-3xl shadow-sm"
+              />
+              <img
+                src="/images/illustrations/dog-sitting-line.svg"
+                alt=""
+                aria-hidden="true"
+                class="absolute -bottom-8 -left-6 w-24 -rotate-6 opacity-90"
+              />
+            </div>
+            <div class="flex flex-col gap-4 mt-2 reveal">
+              <h2 class="font-display text-3xl lg:text-4xl leading-tight font-bold">
+                Nuestra Misión es Brindar <span class="font-script font-normal text-4xl lg:text-5xl text-terracotta">Tranquilidad</span>
               </h2>
               <p class="text-base lg:text-lg opacity-80 leading-relaxed">
                 Fundada en base a la empatía, PetHaven busca redefinir la experiencia de hospitalización veterinaria.
@@ -313,20 +450,20 @@
               </p>
             </div>
           </div>
-          <!-- Columna de la derecha -->
+          <!-- Columna derecha -->
           <div class="flex flex-col gap-6">
-            <h3 class="font-display text-2xl lg:text-3xl font-bold">Especialistas al Cuidado</h3>
+            <h3 class="font-display text-2xl lg:text-3xl font-bold reveal">Especialistas al Cuidado</h3>
 
             <!-- Contenedor para las tarjetas -->
-            <div class="flex flex-col gap-4">
-              <!-- Tarjeta 1-->
+            <div data-reveal-stagger class="flex flex-col gap-4">
+              <!-- Tarjeta 1 -->
               <article
-                class="bg-white rounded-2xl p-5 flex items-center gap-5 shadow-sm transition-transform hover_scale-[1.02]"
+                class="reveal bg-white rounded-2xl p-5 flex items-center gap-5 shadow-sm transition duration-300 hover:scale-[1.02] hover:shadow-md"
               >
                 <img
                   src="/images/valentina_soler.png"
                   alt="Dra. Valentina Soler"
-                  class="w-16 h-16 rounder-full object-cover shrink-0"
+                  class="w-16 h-16 rounded-full object-cover shrink-0"
                 />
                 <div class="flex flex-col">
                   <h4 class="font-display text-xl font-bold">Dra. Valentina Soler</h4>
@@ -335,12 +472,12 @@
               </article>
               <!-- Tarjeta 2 -->
               <article
-                class="bg-white rounded-2xl p-5 flex items-center gap-5 shadow-sm transition-transform hover_scale-[1.02]"
+                class="reveal bg-white rounded-2xl p-5 flex items-center gap-5 shadow-sm transition duration-300 hover:scale-[1.02] hover:shadow-md"
               >
                 <img
                   src="/images/esteban_ruiz.png"
                   alt="Dr. Esteban Ruiz"
-                  class="w-16 h-16 rounder-full object-cover shrink-0"
+                  class="w-16 h-16 rounded-full object-cover shrink-0"
                 />
                 <div class="flex flex-col">
                   <h4 class="font-display text-xl font-bold">Dr. Esteban Ruiz</h4>
@@ -349,12 +486,12 @@
               </article>
               <!-- Tarjeta 3 -->
               <article
-                class="bg-white rounded-2xl p-5 flex items-center gap-5 shadow-sm transition-transform hover_scale-[1.02]"
+                class="reveal bg-white rounded-2xl p-5 flex items-center gap-5 shadow-sm transition duration-300 hover:scale-[1.02] hover:shadow-md"
               >
                 <img
                   src="/images/amalia_carter.png"
                   alt="Dra. Amalia Carter"
-                  class="w-16 h-16 rounder-full object-cover shrink-0"
+                  class="w-16 h-16 rounded-full object-cover shrink-0"
                 />
                 <div class="flex flex-col">
                   <h4 class="font-display text-xl font-bold">Dra. Amalia Carter</h4>
@@ -366,74 +503,112 @@
         </div>
       </section>
 
-      <!-- Instalaciones -->
+      <!-- Divisor ondulado: nosotros (crema) → instalaciones (blanco) -->
+      <div class="relative z-10 overflow-hidden bg-background" aria-hidden="true">
+        <svg class="divider-wave block h-16 w-[110%] max-w-none -ml-[5%] lg:h-32 text-white" viewBox="-80 0 1600 100" preserveAspectRatio="none">
+          <path fill="currentColor" d="M-80 55C160 95 420 10 740 44C1060 78 1300 96 1520 38L1520 100L-80 100Z" />
+        </svg>
+      </div>
+
+      <!-- section: instalaciones -->
       <section class="py-12 lg:py-24 bg-white">
         <div class="max-w-7xl mx-auto px-5 lg:px-12">
           <!-- Encabezado de la sección -->
-          <div class="text-center max-w-3xl mx-auto mb-10 lg:mb-16">
-            <h2 class="font-display text-3xl lg:text-5xl font-bold mb-4">Nuestras Instalaciones</h2>
+          <div class="text-center max-w-3xl mx-auto mb-10 lg:mb-16 reveal">
+            <p class="font-bold uppercase text-xs lg:text-sm tracking-[0.25em] text-primary mb-3">Conoce cada rincón</p>
+            <h2 class="font-display text-4xl lg:text-6xl font-bold mb-4">Nuestras Instalaciones</h2>
             <p class="text-base lg:text-lg opacity-80">
               Un recorrido visual por las salas diseñadas especialmente para la curación, calma y confort de tu mascota.
             </p>
           </div>
 
-          <!-- Grid -->
-          <!-- grid-cols-1 para móviles, y md:grid-cols-2 para dividirlo en 2 columnas en pantallas más grandes -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8">
-            <!-- Imagen Recepción -->
+          <!-- Grid editorial -->
+          <div class="relative" data-reveal-stagger>
             <img
-              src="/images/instalacion_recepcion.jpg"
-              alt="Recepción de PetHaven"
-              class="w-full h-64 sm:h-72 lg:h-[350px] object-cover rounded-3xl shadow-sm hover:shadow-md transition-shadow"
+              src="/images/illustrations/paw-line.svg"
+              alt=""
+              aria-hidden="true"
+              class="absolute -top-10 right-4 w-20 rotate-12 opacity-60 hidden lg:block"
+            />
+            <img
+              src="/images/illustrations/paw-line.svg"
+              alt=""
+              aria-hidden="true"
+              class="absolute -bottom-10 left-4 w-16 -rotate-12 opacity-50 hidden lg:block"
             />
 
-            <!-- Imagen Consultorio -->
-            <img
-              src="/images/instalacion_consultorio.jpg"
-              alt="Sala de consulta veterinaria"
-              class="w-full h-64 sm:h-72 lg:h-[350px] object-cover rounded-3xl shadow-sm hover:shadow-md transition-shadow"
-            />
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 lg:gap-8 items-start">
+              <!-- Imagen Recepción -->
+              <div class="reveal overflow-hidden rounded-3xl shadow-sm transition-shadow hover:shadow-lg">
+                <img
+                  src="/images/instalacion_recepcion.jpg"
+                  alt="Recepción de PetHaven"
+                  class="w-full h-64 sm:h-72 lg:h-[400px] object-cover transition-transform duration-500 hover:scale-105"
+                />
+              </div>
 
-            <!-- Imagen Hospitalización -->
-            <img
-              src="/images/instalacion_hospitalizacion.jpg"
-              alt="Área de hospitalización con cubículos de cristal"
-              class="w-full h-64 sm:h-72 lg:h-[350px] object-cover rounded-3xl shadow-sm hover:shadow-md transition-shadow"
-            />
+              <!-- Imagen Consultorio -->
+              <div class="reveal overflow-hidden rounded-3xl shadow-sm transition-shadow hover:shadow-lg">
+                <img
+                  src="/images/instalacion_consultorio.jpg"
+                  alt="Sala de consulta veterinaria"
+                  class="w-full h-64 sm:h-72 lg:h-[320px] object-cover transition-transform duration-500 hover:scale-105"
+                />
+              </div>
 
-            <!-- Imagen Quirófano -->
-            <img
-              src="/images/instalacion_quirofano.jpg"
-              alt="Quirófano veterinario de alta tecnología"
-              class="w-full h-64 sm:h-72 lg:h-[350px] object-cover rounded-3xl shadow-sm hover:shadow-md transition-shadow"
-            />
+              <!-- Imagen Hospitalización -->
+              <div class="reveal overflow-hidden rounded-3xl shadow-sm transition-shadow hover:shadow-lg">
+                <img
+                  src="/images/instalacion_hospitalizacion.jpg"
+                  alt="Área de hospitalización con cubículos de cristal"
+                  class="w-full h-64 sm:h-72 lg:h-[320px] object-cover transition-transform duration-500 hover:scale-105"
+                />
+              </div>
+
+              <!-- Imagen Quirófano -->
+              <div class="reveal overflow-hidden rounded-3xl shadow-sm transition-shadow hover:shadow-lg">
+                <img
+                  src="/images/instalacion_quirofano.jpg"
+                  alt="Quirófano veterinario de alta tecnología"
+                  class="w-full h-64 sm:h-72 lg:h-[400px] object-cover transition-transform duration-500 hover:scale-105"
+                />
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
-      <!-- Testimonios -->
-      <section id="testimonios" class="py-12 lg:py-24 bg-secondary">
-        <div class="container mx-auto py-12 px-4">
-          <div class="text-center max-w-3xl mx-auto mb-10 lg:mb-16">
-            <h2 class="font-display text-3xl lg:text-5xl font-bold mb-4">Lo que dicen nuestros clientes</h2>
+      <!-- Divisor ondulado: instalaciones (blanco) → testimonios (rosa) -->
+      <div class="relative z-10 overflow-hidden bg-white" aria-hidden="true">
+        <svg class="divider-wave block h-16 w-[110%] max-w-none -ml-[5%] lg:h-32 text-secondary" viewBox="-80 0 1600 100" preserveAspectRatio="none">
+          <path fill="currentColor" d="M-80 42C200 90 470 16 750 54C1030 92 1310 84 1520 34L1520 100L-80 100Z" />
+        </svg>
+      </div>
 
+      <!-- section: testimonios -->
+      <section id="testimonios" class="py-12 lg:py-24 bg-secondary">
+        <div class="max-w-7xl mx-auto px-5 lg:px-12">
+          <div class="text-center max-w-3xl mx-auto mb-10 lg:mb-16 reveal">
+            <p class="font-bold uppercase text-xs lg:text-sm tracking-[0.25em] text-primary mb-3">Historias reales</p>
+            <h2 class="font-display text-4xl lg:text-6xl font-bold mb-4">Lo que dicen nuestros clientes</h2>
             <p class="text-base lg:text-lg opacity-80">
               Historias de curación y confianza directa de quienes han vivido la experiencia PetHaven.
             </p>
           </div>
 
           <!-- Grid: 2 columnas x 2 filas -->
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+          <div data-reveal-stagger class="grid grid-cols-1 md:grid-cols-2 gap-5">
             <!-- Testimonio 1 -->
-            <article class="bg-white rounded-3xl p-6 lg:p-8 flex flex-col justify-between h-full">
+            <article class="reveal bg-white rounded-3xl p-6 lg:p-8 flex flex-col justify-between h-full">
               <div>
+                <img src="/images/illustrations/quote-line.svg" alt="" aria-hidden="true" class="h-9 w-auto mb-4" />
                 <p class="italic text-base lg:text-lg opacity-80 leading-relaxed">
                   "Dejar a Max hospitalizado fue aterrador, pero los reportes médicos continuos y las fotos en el portal
                   de PetHaven me permitieron dormir tranquila sabiendo que estaba bien cuidado".
                 </p>
 
                 <!-- Estrellas -->
-                <div class="flex gap-1 mt-5 text-lg" aria-label="5 de 5 estrellas">★★★★★</div>
+                <div class="flex gap-1 mt-5 text-lg text-honey" aria-label="5 de 5 estrellas">★★★★★</div>
               </div>
 
               <div class="border-t border-text/10 my-6"></div>
@@ -454,15 +629,16 @@
             </article>
 
             <!-- Testimonio 2 -->
-            <article class="bg-white rounded-3xl p-6 lg:p-8 flex flex-col justify-between h-full">
+            <article class="reveal bg-white rounded-3xl p-6 lg:p-8 flex flex-col justify-between h-full">
               <div>
+                <img src="/images/illustrations/quote-line.svg" alt="" aria-hidden="true" class="h-9 w-auto mb-4" />
                 <p class="italic text-base lg:text-lg opacity-80 leading-relaxed">
                   "La calidez humana de los veterinarios es insuperable. No se siente como una veterinaria fría y
                   metálica, de verdad adaptaron el box de Luna con cobijas suaves y música calmante."
                 </p>
 
                 <!-- Estrellas -->
-                <div class="flex gap-1 mt-5 text-lg" aria-label="4 de 5 estrellas">★★★★☆</div>
+                <div class="flex gap-1 mt-5 text-lg text-honey" aria-label="4 de 5 estrellas">★★★★☆</div>
               </div>
 
               <div class="border-t border-text/10 my-6"></div>
@@ -483,15 +659,16 @@
             </article>
 
             <!-- Testimonio 3 -->
-            <article class="bg-white rounded-3xl p-6 lg:p-8 flex flex-col justify-between h-full">
+            <article class="reveal bg-white rounded-3xl p-6 lg:p-8 flex flex-col justify-between h-full">
               <div>
+                <img src="/images/illustrations/quote-line.svg" alt="" aria-hidden="true" class="h-9 w-auto mb-4" />
                 <p class="italic text-base lg:text-lg opacity-80 leading-relaxed">
                   "Desde la primera consulta sentí que mi Toby estaba en las mejores manos. El equipo fue muy atento y
                   me explicó cada paso del tratamiento de una manera clara y sencilla."
                 </p>
 
                 <!-- Estrellas -->
-                <div class="flex gap-1 mt-5 text-lg" aria-label="5 de 5 estrellas">★★★★★</div>
+                <div class="flex gap-1 mt-5 text-lg text-honey" aria-label="5 de 5 estrellas">★★★★★</div>
               </div>
 
               <div class="border-t border-text/10 my-6"></div>
@@ -512,15 +689,16 @@
             </article>
 
             <!-- Testimonio 4 -->
-            <article class="bg-white rounded-3xl p-6 lg:p-8 flex flex-col justify-between h-full">
+            <article class="reveal bg-white rounded-3xl p-6 lg:p-8 flex flex-col justify-between h-full">
               <div>
+                <img src="/images/illustrations/quote-line.svg" alt="" aria-hidden="true" class="h-9 w-auto mb-4" />
                 <p class="italic text-base lg:text-lg opacity-80 leading-relaxed">
                   "PetHaven se convirtió en nuestra veterinaria de confianza. Mi pequeña Nala recibió una atención
                   increíble y siempre estuvieron pendientes de resolver todas mis dudas."
                 </p>
 
                 <!-- Estrellas -->
-                <div class="flex gap-1 mt-5 text-lg" aria-label="4 de 5 estrellas">★★★★☆</div>
+                <div class="flex gap-1 mt-5 text-lg text-honey" aria-label="4 de 5 estrellas">★★★★☆</div>
               </div>
 
               <div class="border-t border-text/10 my-6"></div>
@@ -543,11 +721,19 @@
         </div>
       </section>
 
-      <!-- FAQ -->
+      <!-- Divisor ondulado: testimonios (rosa) → FAQ (crema) -->
+      <div class="relative z-10 overflow-hidden bg-secondary" aria-hidden="true">
+        <svg class="divider-wave block h-16 w-[110%] max-w-none -ml-[5%] lg:h-32 text-background" viewBox="-80 0 1600 100" preserveAspectRatio="none">
+          <path fill="currentColor" d="M-80 55C160 95 420 10 740 44C1060 78 1300 96 1520 38L1520 100L-80 100Z" />
+        </svg>
+      </div>
+
+      <!-- section: faq -->
       <section id="faq" class="bg-background py-12 lg:py-24">
         <div class="max-w-5xl mx-auto px-5 lg:px-12">
-          <div class="text-center max-w-3xl mx-auto mb-10 lg:mb-14">
-            <h2 class="font-display text-3xl lg:text-5xl font-bold mb-4">Preguntas Frecuentes</h2>
+          <div class="text-center max-w-3xl mx-auto mb-10 lg:mb-14 reveal">
+            <p class="font-bold uppercase text-xs lg:text-sm tracking-[0.25em] text-primary mb-3">Resolvemos tus dudas</p>
+            <h2 class="font-display text-4xl lg:text-6xl font-bold mb-4">Preguntas Frecuentes</h2>
 
             <p class="text-base lg:text-lg opacity-80">
               Todo lo que necesitas saber sobre el bienestar y la estadía de tu mejor amigo.
@@ -555,12 +741,12 @@
           </div>
 
           <div class="flex flex-col gap-4">
-            <details class="group bg-white rounded-2xl px-6 py-5 shadow-sm">
+            <details class="reveal group bg-white rounded-2xl px-6 py-5 shadow-sm transition-shadow hover:shadow-md">
               <summary
-                class="relative list-none cursor-pointer font-display font-bold text-base lg:text-lg text-center pr-10">
+                class="relative list-none cursor-pointer font-display font-bold text-base lg:text-lg text-center pr-12">
                 ¿Puedo visitar a mi mascota durante la hospitalización?
                 <span
-                  class="absolute right-0 top-1/2 -translate-y-1/2 text-primary text-2xl font-body font-normal group-open:rotate-45 transition-transform">
+                  class="absolute right-0 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-primary text-2xl font-body font-normal group-open:rotate-45 transition-transform">
                   +
                 </span>
               </summary>
@@ -570,12 +756,12 @@
               </p>
             </details>
 
-            <details class="group bg-white rounded-2xl px-6 py-5 shadow-sm">
+            <details class="reveal group bg-white rounded-2xl px-6 py-5 shadow-sm transition-shadow hover:shadow-md">
               <summary
-                class="relative list-none cursor-pointer font-display font-bold text-base lg:text-lg text-center pr-10">
+                class="relative list-none cursor-pointer font-display font-bold text-base lg:text-lg text-center pr-12">
                 ¿Qué incluye el servicio de hospitalización?
                 <span
-                  class="absolute right-0 top-1/2 -translate-y-1/2 text-primary text-2xl font-body font-normal group-open:rotate-45 transition-transform">
+                  class="absolute right-0 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-primary text-2xl font-body font-normal group-open:rotate-45 transition-transform">
                   +
                 </span>
               </summary>
@@ -586,12 +772,12 @@
               </p>
             </details>
 
-            <details class="group bg-white rounded-2xl px-6 py-5 shadow-sm">
+            <details class="reveal group bg-white rounded-2xl px-6 py-5 shadow-sm transition-shadow hover:shadow-md">
               <summary
-                class="relative list-none cursor-pointer font-display font-bold text-base lg:text-lg text-center pr-10">
+                class="relative list-none cursor-pointer font-display font-bold text-base lg:text-lg text-center pr-12">
                 ¿Cómo recibo actualizaciones?
                 <span
-                  class="absolute right-0 top-1/2 -translate-y-1/2 text-primary text-2xl font-body font-normal group-open:rotate-45 transition-transform">
+                  class="absolute right-0 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-primary text-2xl font-body font-normal group-open:rotate-45 transition-transform">
                   +
                 </span>
               </summary>
@@ -602,12 +788,12 @@
               </p>
             </details>
 
-            <details class="group bg-white rounded-2xl px-6 py-5 shadow-sm">
+            <details class="reveal group bg-white rounded-2xl px-6 py-5 shadow-sm transition-shadow hover:shadow-md">
               <summary
-                class="relative list-none cursor-pointer font-display font-bold text-base lg:text-lg text-center pr-10">
+                class="relative list-none cursor-pointer font-display font-bold text-base lg:text-lg text-center pr-12">
                 ¿Aceptan emergencias?
                 <span
-                  class="absolute right-0 top-1/2 -translate-y-1/2 text-primary text-2xl font-body font-normal group-open:rotate-45 transition-transform">
+                  class="absolute right-0 top-1/2 -translate-y-1/2 flex h-9 w-9 items-center justify-center rounded-full bg-secondary text-primary text-2xl font-body font-normal group-open:rotate-45 transition-transform">
                   +
                 </span>
               </summary>
@@ -621,19 +807,45 @@
         </div>
       </section>
 
-      <!-- Último CTA -->
-      <section class="bg-primary text-background text-center py-25 px-15">
-        <div class="max-w-3xl mx-auto flex flex-col gap-5">
-          <h2 class="text-3xl lg:text-5xl font-display font-bold">Tu mascota merece el mejor cuidado médico</h2>
+      <!-- Divisor ondulado: FAQ (crema) → CTA final (marrón) -->
+      <div class="relative z-10 overflow-hidden bg-background" aria-hidden="true">
+        <svg class="divider-wave block h-16 w-[110%] max-w-none -ml-[5%] lg:h-32 text-tertiary" viewBox="-80 0 1600 100" preserveAspectRatio="none">
+          <path fill="currentColor" d="M-80 42C200 90 470 16 750 54C1030 92 1310 84 1520 34L1520 100L-80 100Z" />
+        </svg>
+      </div>
+
+      <!-- section: cta-final -->
+      <section class="relative z-20 bg-tertiary text-background text-center py-20 lg:py-28 px-5 lg:px-15">
+        <!-- Blobs decorativos (recortados por la ola superior vía capas z) -->
+        <div
+          aria-hidden="true"
+          data-parallax="0.08"
+          class="absolute -left-32 lg:-left-40 -top-12 lg:-top-20 w-80 lg:w-[32rem]"
+        >
+          <div class="blob aspect-square w-full bg-secondary opacity-20"></div>
+        </div>
+        <div
+          aria-hidden="true"
+          data-parallax="0.1"
+          class="absolute -right-32 lg:-right-40 bottom-0 w-80 lg:w-[34rem]"
+        >
+          <div class="blob blob-alt aspect-square w-full bg-honey opacity-20"></div>
+        </div>
+
+        <div class="relative max-w-3xl mx-auto flex flex-col gap-5 reveal">
+          <h2 class="text-4xl lg:text-6xl font-display font-bold leading-tight">
+            Tu mascota merece el mejor cuidado médico
+          </h2>
           <p class="text-sm lg:text-lg">
             Permite que nuestro equipo de profesionales cuide de tu mejor amigo en nuestras instalaciones premium
             diseñadas para su total calma y recuperación.
           </p>
+          <p class="font-script text-3xl text-honey">porque su tranquilidad también importa</p>
 
           <!-- Botón CTA -->
           <a
             href="#"
-            class="button self-center font-bold border-2 border-background hover:bg-background hover:text-primary px-4 py-2 lg:px-6 lg:py-2.5 text-sm lg:text-base rounded-full whitespace-nowrap">
+            class="button self-center font-bold border-2 border-background hover:bg-background hover:text-primary px-6 py-2.5 lg:px-8 text-sm lg:text-base rounded-full transition-colors whitespace-nowrap">
             Comienza ahora
           </a>
         </div>
