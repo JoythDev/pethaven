@@ -4,9 +4,15 @@
    -------------------------------------------------------------------------- */
 
 /* Los blobs sangran por los bordes del viewport (efecto pa'lais) sin generar
-   scroll horizontal: el eje X se clipea a nivel documento; el scroll vertical
-   se conserva intacto. */
+   scroll horizontal: el clip en html impide el pan del viewport y el clip en
+   body elimina el desborde de LAYOUT de los wrappers de blobs (los blobs
+   siguen sangrando visualmente, pero no "piden espacio" más allá del ancho
+   de la página — clave para el responsive). */
 html {
+  overflow-x: clip;
+}
+
+body {
   overflow-x: clip;
 }
 
