@@ -1,12 +1,100 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-    <head th:replace="~{fragments :: head}"></head>
-    <body class="bg-background text-text font-body min-h-screen flex flex-col">
+  <head th:replace="~{fragments :: head}"></head>
+  <body class="bg-background text-text font-body min-h-screen flex flex-col">
+    <div th:replace="~{fragments :: header}"></div>
 
-        <div th:replace="~{fragments :: header}"></div>
+    <main class="flex-1 max-w-2xl mx-auto px-5 lg:px-12 py-10 lg:py-16 w-full">
+      <div class="mb-8">
+        <a
+          th:href="@{/owners}"
+          class="text-sm font-semibold text-primary hover:text-tertiary transition-colors"
+        >
+          ← Volver a Dueños
+        </a>
+      </div>
 
-        <main></main>
+      <h1
+        class="font-display text-3xl font-bold mb-8"
+        th:text="${owner.id == null} ? 'Registrar Nuevo Dueño' : 'Editar Dueño'"
+      >
+        Registrar Nuevo Dueño
+      </h1>
 
-        <div th:replace="~{fragments :: footer}"></div>
-    </body>
+      <div class="bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm">
+        <form
+          method="POST"
+          th:action="${owner.id == null} ? @{/owners/add} : @{/owners/update/{id}(id=${owner.id})}"
+          th:object="${owner}"
+          class="flex flex-col gap-5"
+        >
+          <!-- Nombre -->
+          <div class="flex flex-col gap-1">
+            <label for="name" class="text-sm font-bold">Nombre</label>
+            <input
+              type="text"
+              id="name"
+              th:field="*{name}"
+              required
+              class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm"
+            />
+          </div>
+
+          <!-- Documento -->
+          <div class="flex flex-col gap-1">
+            <label for="document" class="text-sm font-bold">Documento</label>
+            <input
+              type="text"
+              id="document"
+              th:field="*{document}"
+              required
+              class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm"
+            />
+          </div>
+
+          <!-- Correo -->
+          <div class="flex flex-col gap-1">
+            <label for="email" class="text-sm font-bold">Correo</label>
+            <input
+              type="email"
+              id="email"
+              th:field="*{email}"
+              required
+              class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm"
+            />
+          </div>
+
+          <!-- Teléfono -->
+          <div class="flex flex-col gap-1">
+            <label for="phone" class="text-sm font-bold">Teléfono</label>
+            <input
+              type="text"
+              id="phone"
+              th:field="*{phone}"
+              required
+              class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm"
+            />
+          </div>
+
+          <!-- Botones -->
+          <div class="flex items-center gap-4 mt-4">
+            <button
+              type="submit"
+              class="bg-primary text-background px-6 py-2.5 rounded-full text-sm font-bold shadow-sm hover:opacity-90 transition-opacity cursor-pointer"
+            >
+              Guardar
+            </button>
+            <a
+              th:href="@{/owners}"
+              class="text-sm font-bold text-text/60 hover:text-tertiary transition-colors"
+            >
+              Cancelar
+            </a>
+          </div>
+        </form>
+      </div>
+    </main>
+
+    <div th:replace="~{fragments :: footer}"></div>
+  </body>
 </html>
