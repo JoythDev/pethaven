@@ -45,13 +45,13 @@
               >
                 <!-- Columna 1: Nombre del dueño -->
                 <td class="py-4 px-4">
-                  <div class="flex items-center gap-4">
+                  <a th:href="@{/owners/{id}(id=${owner.id})}" class="flex items-center gap-4">
                     <span
                       class="font-bold text-base text-text"
                       th:text="${owner.name}"
                       >Nombre</span
                     >
-                  </div>
+                  </a>
                 </td>
 
                 <!-- Columna 2: Documento -->
@@ -99,6 +99,11 @@
                     <!-- Enlace para editar (/pets/update/{id}) -->
                     <a th:href="@{/owners/update/{id}(id=${owner.id})}" class="text-sm font-bold text-text/60 hover:text-tertiary transition-colors">
                       Editar
+                    </a>
+                    <span class="text-text/20">|</span>
+                    <!-- Enlace para eliminar (/pets/delete/{id}) -->
+                    <a th:href="@{/owners/delete/{id}(id=${owner.id})}" class="text-sm font-bold text-red-400 hover:text-red-500 transition-colors">
+                      Eliminar
                     </a>
                   </div>
                 </td>
