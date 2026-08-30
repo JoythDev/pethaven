@@ -122,3 +122,51 @@ html.js .reveal.is-visible {
     transform: translateX(14px);
   }
 }
+
+/* --------------------------------------------------------------------------
+   Marquee ribbon (fase 2): cinta infinita; se pausa al pasar el cursor.
+   El track se duplica (2 grupos idénticos) y avanza -50% = un grupo exacto.
+   -------------------------------------------------------------------------- */
+.marquee-track {
+  animation: marquee 28s linear infinite;
+}
+
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Paw-print cursor trail (fase 2): solo desktop (pointer: fine) y sin
+   reduced-motion (lo controla el guard de script.js). Partículas que
+   nacen en el cursor, rotan al azar y se desvanecen.
+   -------------------------------------------------------------------------- */
+.paw-trail {
+  position: fixed;
+  z-index: 40;
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
+  color: #a09c6d;
+  opacity: 0;
+  animation: paw-fade 0.6s ease-out forwards;
+}
+
+@keyframes paw-fade {
+  0% {
+    opacity: 0.5;
+    transform: translate(-50%, -50%) rotate(var(--paw-rot, 0deg)) scale(0.55);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -70%) rotate(var(--paw-rot, 0deg)) scale(0.95);
+  }
+}
