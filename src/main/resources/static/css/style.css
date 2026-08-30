@@ -106,12 +106,26 @@ html.js .reveal.is-visible {
 }
 
 /* --------------------------------------------------------------------------
-   Divisores ondulados: mecen su curva muy suavemente.
-   El path sobre-dibuja el viewBox (-80…1520) para que el vaivén lateral
-   nunca deje bordes visibles.
+   Divisores ondulados vivos: el path se deforma continuamente entre tres
+   estados orgánicos (CSS d: path() — igual de fluido que el morph de los
+   blobs) más un vaivén lateral sutil. El path sobre-dibuja el viewBox
+   (-80…1520) para que nunca se vean bordes. Donde d: no está soportado
+   (Safari) degrada a la ola estática con vaivén.
    -------------------------------------------------------------------------- */
 .divider-wave {
   animation: divider-sway 18s ease-in-out infinite alternate;
+}
+
+.divider-wave path {
+  d: path("M-80 55C160 95 420 10 740 44C1060 78 1300 96 1520 38L1520 100L-80 100Z");
+  animation: wave-morph-a 16s ease-in-out infinite alternate;
+}
+
+.divider-wave path.wave-alt {
+  d: path("M-80 42C200 90 470 16 750 54C1030 92 1310 84 1520 34L1520 100L-80 100Z");
+  animation-name: wave-morph-b;
+  animation-duration: 19s;
+  animation-delay: -6s;
 }
 
 @keyframes divider-sway {
@@ -120,6 +134,30 @@ html.js .reveal.is-visible {
   }
   to {
     transform: translateX(14px);
+  }
+}
+
+@keyframes wave-morph-a {
+  0% {
+    d: path("M-80 55C160 95 420 10 740 44C1060 78 1300 96 1520 38L1520 100L-80 100Z");
+  }
+  50% {
+    d: path("M-80 32C150 62 430 88 740 58C1060 22 1290 38 1520 60L1520 100L-80 100Z");
+  }
+  100% {
+    d: path("M-80 68C170 25 410 32 730 28C1050 55 1310 92 1520 34L1520 100L-80 100Z");
+  }
+}
+
+@keyframes wave-morph-b {
+  0% {
+    d: path("M-80 42C200 90 470 16 750 54C1030 92 1310 84 1520 34L1520 100L-80 100Z");
+  }
+  50% {
+    d: path("M-80 62C190 28 460 75 750 30C1030 45 1300 95 1520 58L1520 100L-80 100Z");
+  }
+  100% {
+    d: path("M-80 30C210 70 480 20 760 66C1040 18 1290 50 1520 40L1520 100L-80 100Z");
   }
 }
 
