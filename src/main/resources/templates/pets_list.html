@@ -74,7 +74,7 @@
                 
                 <!-- Columna 1: Creado por / Paciente (Foto + Nombre + Subtexto) -->
                 <td class="py-4 px-4">
-                  <div class="flex items-center gap-4">
+                  <a th:href="@{/pets/{id}(id=${pet.id})}" class="flex items-center gap-4">
                     <!-- Foto de la mascota -->
                     <img th:src="${pet.photoUrl}" th:alt="${pet.name}" class="w-11 h-11 rounded-full object-cover bg-secondary/50 shrink-0" />
                     <div class="flex flex-col">
@@ -83,7 +83,7 @@
                       <!-- Raza de la mascota -->
                       <span class="text-xs text-text/60" th:text="${pet.breed}">Raza</span>
                     </div>
-                  </div>
+                  </a>
                 </td>
 
                 <!-- Columna 2: Especie -->

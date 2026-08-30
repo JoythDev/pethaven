@@ -1,12 +1,119 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
-    <head th:replace="~{fragments :: head}"></head>
-    <body class="bg-background text-text font-body min-h-screen flex flex-col">
+  <head th:replace="~{fragments :: head}"></head>
 
-        <div th:replace="~{fragments :: header}"></div>
+  <body class="bg-background text-text font-body min-h-screen flex flex-col">
+    <div th:replace="~{fragments :: header}"></div>
 
-        <main></main>
+    <main class="flex-1 max-w-7xl mx-auto px-5 lg:px-12 py-10 lg:py-16 w-full">
+      <div
+        class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4"
+      >
+        <h1 class="font-display text-3xl font-bold">Dueños</h1>
 
-        <div th:replace="~{fragments :: footer}"></div>
-    </body>
+        <!-- Botón Nuevo -->
+        <a
+          th:href="@{/owners/add}"
+          class="bg-primary text-background px-5 py-2.5 rounded-full text-sm font-bold shadow-sm hover:opacity-90 transition-opacity flex items-center gap-2"
+        >
+          <span>+</span> Nuevo
+        </a>
+      </div>
+
+      <!-- Contenedor de la tabla -->
+      <div class="bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left whitespace-nowrap">
+            <!-- Encabezados -->
+            <thead>
+              <tr
+                class="text-text/50 text-sm font-body border-b border-text/10"
+              >
+                <th class="pb-4 px-4 font-normal">Dueño</th>
+                <th class="pb-4 px-4 font-normal">Documento</th>
+                <th class="pb-4 px-4 font-normal">Correo</th>
+                <th class="pb-4 px-4 font-normal">Teléfono</th>
+                <th class="pb-4 px-4 font-normal">Acciones</th>
+              </tr>
+            </thead>
+
+            <tbody id="tableBody" class="divide-y divide-text/10">
+              <!-- Iteración de Thymeleaf: Crea una fila (tr) por cada dueño -->
+              <tr
+                th:each="owner : ${owners}"
+                class="border-b border-text/5 hover:bg-background/50 transition-colors group"
+              >
+                <!-- Columna 1: Nombre del dueño -->
+                <td class="py-4 px-4">
+                  <a th:href="@{/owners/{id}(id=${owner.id})}" class="flex items-center gap-4">
+                    <span
+                      class="font-bold text-base text-text"
+                      th:text="${owner.name}"
+                      >Nombre</span
+                    >
+                  </a>
+                </td>
+
+                <!-- Columna 2: Documento -->
+                <td class="py-4 px-4">
+                  <div class="inline-flex items-center gap-2">
+                    <span
+                      class="font-bold text-sm text-text"
+                      th:text="${owner.document}"
+                      >Documento</span
+                    >
+                  </div>
+                </td>
+
+                <!-- Columna 3: Correo -->
+                <td class="py-4 px-4">
+                  <div class="inline-flex items-center gap-2">
+                    <span
+                      class="font-bold text-sm text-text"
+                      th:text="${owner.email}"
+                      >Correo</span
+                    >
+                  </div>
+                </td>
+
+                <!-- Columna 4: Teléfono -->
+                <td class="py-4 px-4">
+                  <div class="inline-flex items-center gap-2">
+                    <span
+                      class="font-bold text-sm text-text"
+                      th:text="${owner.phone}"
+                      >Teléfono</span
+                    >
+                  </div>
+                </td>
+
+                <!-- Columna 5: Acciones -->
+                <td class="py-4 px-4">
+                  <!-- Las rutas usan el ID dinámico de la mascota -->
+                  <div class="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <!-- Enlace a los detalles (/pets/{id}) -->
+                    <a th:href="@{/owners/{id}(id=${owner.id})}" class="text-sm font-bold text-primary hover:text-tertiary transition-colors">
+                      Ver Ficha
+                    </a>
+                    <span class="text-text/20">|</span>
+                    <!-- Enlace para editar (/pets/update/{id}) -->
+                    <a th:href="@{/owners/update/{id}(id=${owner.id})}" class="text-sm font-bold text-text/60 hover:text-tertiary transition-colors">
+                      Editar
+                    </a>
+                    <span class="text-text/20">|</span>
+                    <!-- Enlace para eliminar (/pets/delete/{id}) -->
+                    <a th:href="@{/owners/delete/{id}(id=${owner.id})}" class="text-sm font-bold text-red-400 hover:text-red-500 transition-colors">
+                      Eliminar
+                    </a>
+                  </div>
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </main>
+
+    <div th:replace="~{fragments :: footer}"></div>
+  </body>
 </html>
