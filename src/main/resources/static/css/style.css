@@ -119,31 +119,39 @@ html.js .reveal.is-visible {
   width: 80%;
 }
 
-.hero-video {
-  --mask-mobile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath fill='%23000' d='M55,3C70,-1,88,8,94,24C99,38,92,50,97,63C101,76,93,90,78,96C64,101,50,96,36,100C22,103,8,94,4,80C0,67,6,55,2,42C-2,29,3,13,18,6C30,0,44,5,55,3Z'/%3E%3C/svg%3E");
-  --mask-desktop: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath fill='%23000' d='M28,3C40,14,52,10,64,6C76,2,88,10,100,24C106,36,94,44,98,56C104,68,102,80,90,89C78,98,66,94,54,100C42,106,26,102,15,93C4,84,0,72,5,58C10,44,-2,32,6,19C11,8,19,6,28,3Z'/%3E%3C/svg%3E");
+.hero-video-pos {
   position: relative;
-  margin: 0;
   width: 15rem;
   aspect-ratio: 1 / 1;
-  -webkit-mask-image: var(--mask-mobile);
-  -webkit-mask-size: 100% 100%;
-  -webkit-mask-repeat: no-repeat;
-  mask-image: var(--mask-mobile);
-  mask-size: 100% 100%;
-  mask-repeat: no-repeat;
-  isolation: isolate;
-  transform: translateZ(0);
+}
+
+/* Contenedor de clip: overflow hidden (respaldo estable) + clip-path
+   vectorial. Nunca aplicar mask al <video>: una máscara alfa sobre la
+   superficie de video acelerada por hardware provoca el flash rectangular
+   durante invalidaciones de composición. */
+.hero-video-clip {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  clip-path: url(#hero-clip-mobile);
+}
+
+.hero-video-clip video,
+.hero-video-clip img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 @media (min-width: 640px) {
-  .hero-video {
+  .hero-video-pos {
     width: 19rem;
   }
 }
 
 @media (min-width: 768px) {
-  .hero-video {
+  .hero-video-pos {
     width: 21rem;
   }
 }
@@ -187,19 +195,19 @@ html.js .reveal.is-visible {
 
   /* Video: se mete debajo del header (que lo tapa con su fondo), sangra por
      el borde derecho y queda un respiro sobre la trust bar. */
-  .hero-video {
+  .hero-video-pos {
     position: absolute;
     top: -7rem;
     bottom: 1rem;
     right: -6vw;
     left: auto;
     width: min(56vw, 60rem);
+    height: auto;
     aspect-ratio: auto;
   }
 
-  .hero-video {
-    -webkit-mask-image: var(--mask-desktop);
-    mask-image: var(--mask-desktop);
+  .hero-video-clip {
+    clip-path: url(#hero-clip-desktop);
   }
 }
 

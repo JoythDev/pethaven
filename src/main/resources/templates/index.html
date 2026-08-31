@@ -57,6 +57,21 @@
           <!-- Columna derecha: video en silueta blob con blobs acompañantes (geometría en style.css) -->
           <div class="w-full lg:w-1/2 flex justify-center">
             <div class="hero-media">
+              <!-- Siluetas blob normalizadas 0–1 (equivalentes exactas a las máscaras previas) -->
+              <svg width="0" height="0" class="absolute h-0 w-0" aria-hidden="true" focusable="false">
+                <defs>
+                  <clipPath id="hero-clip-mobile" clipPathUnits="objectBoundingBox">
+                    <path
+                      d="M0.55,0.03C0.7,-0.01,0.88,0.08,0.94,0.24C0.99,0.38,0.92,0.5,0.97,0.63C1.01,0.76,0.93,0.9,0.78,0.96C0.64,1.01,0.5,0.96,0.36,1C0.22,1.03,0.08,0.94,0.04,0.8C0,0.67,0.06,0.55,0.02,0.42C-0.02,0.29,0.03,0.13,0.18,0.06C0.3,0,0.44,0.05,0.55,0.03Z"
+                    />
+                  </clipPath>
+                  <clipPath id="hero-clip-desktop" clipPathUnits="objectBoundingBox">
+                    <path
+                      d="M0.28,0.03C0.4,0.14,0.52,0.1,0.64,0.06C0.76,0.02,0.88,0.1,1,0.24C1.06,0.36,0.94,0.44,0.98,0.56C1.04,0.68,1.02,0.8,0.9,0.9C0.8,0.98,0.64,0.96,0.52,1C0.4,1.03,0.26,1,0.16,0.92C0.06,0.84,0.02,0.7,0.05,0.58C0.1,0.44,-0.02,0.32,0.06,0.19C0.11,0.08,0.19,0.06,0.28,0.03Z"
+                    />
+                  </clipPath>
+                </defs>
+              </svg>
               <!-- Blob sage: solitario, sangra por el borde izquierdo del hero -->
               <div class="hero-blob hero-blob-sage" aria-hidden="true">
                 <div class="blob aspect-square w-full bg-sage"></div>
@@ -77,19 +92,26 @@
               >
                 <div class="blob aspect-square w-full bg-secondary"></div>
               </div>
-              <!-- Video en silueta blob: en lg se pega al borde derecho y se corta con el header -->
-              <figure aria-hidden="true" class="hero-video">
-                <video
-                  autoplay
-                  loop
-                  muted
-                  playsinline
-                  preload="metadata"
-                  class="absolute inset-0 h-full w-full object-cover"
-                >
-                  <source src="/videos/hero.mp4" type="video/mp4" />
-                </video>
-              </figure>
+              <!-- Video en silueta blob: en lg se pega al borde derecho y se mete bajo el header.
+                   Estructura Pa'lais: posicionamiento → contenedor de clip (overflow + clip-path) → video limpio. -->
+              <div class="hero-video-pos" aria-hidden="true">
+                <div class="hero-video-clip">
+                  <figure class="m-0 h-full w-full">
+                    <video
+                      autoplay
+                      loop
+                      muted
+                      playsinline
+                      preload="metadata"
+                      poster="/images/hero-image.avif"
+                      class="block h-full w-full object-cover"
+                    >
+                      <source src="/videos/hero.mp4" type="video/mp4" />
+                      <img src="/images/hero-image.avif" alt="" class="block h-full w-full object-cover" />
+                    </video>
+                  </figure>
+                </div>
+              </div>
             </div>
           </div>
         </div>
