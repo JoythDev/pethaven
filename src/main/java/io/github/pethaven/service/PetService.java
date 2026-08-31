@@ -14,4 +14,6 @@ public interface PetService {
 
     public void deletePetById(Long id);
 
+    public List<Pet> getPetsByOwnerId(Long ownerId);
+
 }

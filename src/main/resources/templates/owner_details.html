@@ -7,13 +7,20 @@
     <div th:replace="~{fragments :: header}"></div>
 
     <main class="flex-1 max-w-7xl mx-auto px-5 lg:px-12 py-10 lg:py-12 w-full">
-      <!-- Volver -->
+      <!-- Volver / Navegación -->
       <div class="mb-8">
-        <a
+        <!-- Solo lo ve el personal clínico (no hay sesión de dueño) -->
+        <a th:if="${session.loggedOwner == null}"
           th:href="@{/owners}"
-          class="text-sm font-semibold text-primary hover:text-tertiary transition-colors"
-        >
+          class="text-sm font-semibold text-primary hover:text-tertiary transition-colors">
           ← Volver a Dueños
+        </a>
+
+        <!-- Solo lo ve el dueño logueado -->
+        <a th:if="${session.loggedOwner != null}"
+          th:href="@{/logout}"
+          class="text-sm font-semibold text-red-500 hover:text-red-700 transition-colors">
+          ← Cerrar Sesión
         </a>
       </div>
 
@@ -39,20 +46,16 @@
           </div>
 
           <!-- Acciones -->
-          <div class="flex items-center gap-4 shrink-0">
-            <!-- Enlace para editar (/owners/update/{id}) -->
-            <a
-              th:href="@{/owners/update/{id}(id=${owner.id})}"
-              class="bg-background text-primary border-2 border-primary hover:bg-primary hover:text-background px-6 py-2.5 rounded-full text-sm font-bold shadow-sm transition-colors"
-            >
+          <div th:if="${session.loggedOwner == null}" class="flex items-center gap-4 shrink-0">
+            <!-- Enlace para editar -->
+            <a th:href="@{/owners/update/{id}(id=${owner.id})}"
+              class="bg-background text-primary border-2 border-primary hover:bg-primary hover:text-background px-6 py-2.5 rounded-full text-sm font-bold shadow-sm transition-colors">
               Editar
             </a>
 
-            <!-- Enlace para eliminar (/owners/delete/{id}) -->
-            <a
-              th:href="@{/owners/delete/{id}(id=${owner.id})}"
-              class="bg-background text-tertiary border-2 border-tertiary hover:bg-tertiary hover:text-background px-6 py-2.5 rounded-full text-sm font-bold shadow-sm transition-colors"
-            >
+            <!-- Enlace para eliminar -->
+            <a th:href="@{/owners/delete/{id}(id=${owner.id})}"
+              class="bg-background text-tertiary border-2 border-tertiary hover:bg-tertiary hover:text-background px-6 py-2.5 rounded-full text-sm font-bold shadow-sm transition-colors">
               Eliminar dueño
             </a>
           </div>

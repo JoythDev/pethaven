@@ -73,6 +73,7 @@ const wipClose = document.getElementById("wip-close");
 
 // Función para abrir el modal
 const openWipModal = () => {
+  if (!wipModal) return;
   wipModal.classList.remove("hidden");
   wipModal.classList.add("flex");
   wipModal.setAttribute("aria-hidden", "false");
@@ -82,33 +83,25 @@ const openWipModal = () => {
 
 // Función para cerrar el modal
 const closeWipModal = () => {
+  if (!wipModal) return;
   wipModal.classList.add("hidden");
   wipModal.classList.remove("flex");
   wipModal.setAttribute("aria-hidden", "true");
   document.body.classList.remove("overflow-hidden");
 };
 
-// Agregar evento de abrir modal a todos los botones no funcionales
-document.querySelectorAll("button, a").forEach((element) => {
-  const href = element.getAttribute("href");
-
-  // Verificar si es un enlace de sección
-  const isSectionLink = href && href.startsWith("#") && href !== "#";
-
-  if (
-    element !== menuButton &&
-    !element.closest("#wip-modal") &&
-    !isSectionLink
-  ) {
-    element.addEventListener("click", (event) => {
-      event.preventDefault();
-      openWipModal();
-    });
-  }
+// SOLO interceptar enlaces vacíos (href="#") que no sean funcionales
+document.querySelectorAll('a[href="#"]').forEach((element) => {
+  element.addEventListener("click", (event) => {
+    event.preventDefault(); // Evita que la página salte hacia arriba
+    openWipModal();
+  });
 });
 
-// Agregar evento de cerrar modal a la X del mismo
-wipClose.addEventListener("click", closeWipModal);
+// Agregar evento de cerrar modal a la X del mismo si existe
+if (wipClose) {
+  wipClose.addEventListener("click", closeWipModal);
+}
 
 // ========================
 // ======== Motion ========

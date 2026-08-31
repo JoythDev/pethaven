@@ -15,5 +15,6 @@ public class Pet {
     private Double weight;
     private String disease;
     private String photoUrl;
+    private Long ownerId;
 
 }

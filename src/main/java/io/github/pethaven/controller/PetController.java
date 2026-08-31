@@ -37,7 +37,7 @@ public class PetController {
 
     @GetMapping("/add")
     public String showAddPetForm(Model model) {
-        Pet pet = new Pet(null, "", null, "", 0, 0.0, "", "");
+        Pet pet = new Pet(null, "", null, "", 0, 0.0, "", "",null);
         model.addAttribute("pet", pet);
         return "pet_form";
     }

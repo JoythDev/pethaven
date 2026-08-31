@@ -33,4 +33,9 @@ public class PetServiceImpl implements PetService {
         petRepository.deleteById(id);
     }
 
+    @Override
+    public List<Pet> getPetsByOwnerId(Long ownerId) {
+        return petRepository.findByOwnerId(ownerId);
+    }
+
 }
