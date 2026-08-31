@@ -84,10 +84,11 @@ html.js .reveal.is-visible {
    breakpoints.
    La silueta del video es una MÁSCARA SVG embebida (data URI, coordenadas
    0–100 con preserveAspectRatio="none" → escala con el contenedor) aplicada
-   directamente al <video>: sin referencias por id no hay parpadeos de
-   rasterización (el bug del flash cuadrado). En desktop la silueta es
-   ondulada y el box se mete debajo del header (el header, z-30, lo tapa)
-   y sangra por el borde derecho de la página.
+   al wrapper estable del video: el frame acelerado del <video> se compone
+   primero dentro del wrapper y el recorte se aplica después, evitando que
+   una actualización de la superficie de video pueda mostrar el box cuadrado.
+   En desktop la silueta es ondulada y el box se mete debajo del header (el
+   header, z-30, lo tapa) y sangra por el borde derecho de la página.
    -------------------------------------------------------------------------- */
 .hero-media {
   position: relative;
@@ -119,21 +120,19 @@ html.js .reveal.is-visible {
 }
 
 .hero-video {
+  --mask-mobile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath fill='%23000' d='M55,3C70,-1,88,8,94,24C99,38,92,50,97,63C101,76,93,90,78,96C64,101,50,96,36,100C22,103,8,94,4,80C0,67,6,55,2,42C-2,29,3,13,18,6C30,0,44,5,55,3Z'/%3E%3C/svg%3E");
+  --mask-desktop: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath fill='%23000' d='M28,3C40,14,52,10,64,6C76,2,88,10,100,24C106,36,94,44,98,56C104,68,102,80,90,89C78,98,66,94,54,100C42,106,26,102,15,93C4,84,0,72,5,58C10,44,-2,32,6,19C11,8,19,6,28,3Z'/%3E%3C/svg%3E");
   position: relative;
   margin: 0;
   width: 15rem;
   aspect-ratio: 1 / 1;
-}
-
-.hero-video video {
-  --mask-mobile: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath fill='%23000' d='M55,3C70,-1,88,8,94,24C99,38,92,50,97,63C101,76,93,90,78,96C64,101,50,96,36,100C22,103,8,94,4,80C0,67,6,55,2,42C-2,29,3,13,18,6C30,0,44,5,55,3Z'/%3E%3C/svg%3E");
-  --mask-desktop: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100' preserveAspectRatio='none'%3E%3Cpath fill='%23000' d='M28,3C40,14,52,10,64,6C76,2,88,10,100,24C106,36,94,44,98,56C104,68,102,80,90,89C78,98,66,94,54,100C42,106,26,102,15,93C4,84,0,72,5,58C10,44,-2,32,6,19C11,8,19,6,28,3Z'/%3E%3C/svg%3E");
   -webkit-mask-image: var(--mask-mobile);
   -webkit-mask-size: 100% 100%;
   -webkit-mask-repeat: no-repeat;
   mask-image: var(--mask-mobile);
   mask-size: 100% 100%;
   mask-repeat: no-repeat;
+  isolation: isolate;
   transform: translateZ(0);
 }
 
@@ -198,7 +197,7 @@ html.js .reveal.is-visible {
     aspect-ratio: auto;
   }
 
-  .hero-video video {
+  .hero-video {
     -webkit-mask-image: var(--mask-desktop);
     mask-image: var(--mask-desktop);
   }
