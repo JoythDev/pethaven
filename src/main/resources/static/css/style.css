@@ -1,13 +1,3 @@
-/* --------------------------------------------------------------------------
-   PetHaven — Landing motion (ref: DESIGN.md)
-   Solo transform/opacity. prefers-reduced-motion siempre respetado.
-   -------------------------------------------------------------------------- */
-
-/* Los blobs sangran por los bordes del viewport (efecto pa'lais) sin generar
-   scroll horizontal: el clip en html impide el pan del viewport y el clip en
-   body elimina el desborde de LAYOUT de los wrappers de blobs (los blobs
-   siguen sangrando visualmente, pero no "piden espacio" más allá del ancho
-   de la página — clave para el responsive). */
 html {
   overflow-x: clip;
 }
@@ -16,7 +6,7 @@ body {
   overflow-x: clip;
 }
 
-/* JS añade esta clase; sin JS el contenido nunca queda oculto */
+/* JS añade esta clase */
 html.js .reveal {
   opacity: 0;
   transform: translateY(24px);
@@ -60,7 +50,6 @@ html.js .reveal.is-visible {
   }
 }
 
-/* Accesibilidad: sin movimiento si el usuario lo prefiere */
 @media (prefers-reduced-motion: reduce) {
   html.js .reveal {
     opacity: 1;
@@ -78,17 +67,7 @@ html.js .reveal.is-visible {
 }
 
 /* --------------------------------------------------------------------------
-   Composición del hero: video en silueta blob + blobs acompañantes.
-   La geometría vive en CSS plano con media queries propias (no en
-   utilidades con variantes) para controlar la cascada exacta entre
-   breakpoints.
-   La silueta del video es una MÁSCARA SVG embebida (data URI, coordenadas
-   0–100 con preserveAspectRatio="none" → escala con el contenedor) aplicada
-   al wrapper estable del video: el frame acelerado del <video> se compone
-   primero dentro del wrapper y el recorte se aplica después, evitando que
-   una actualización de la superficie de video pueda mostrar el box cuadrado.
-   En desktop la silueta es ondulada y el box se mete debajo del header (el
-   header, z-30, lo tapa) y sangra por el borde derecho de la página.
+   Composición del hero: video en silueta blob + blobs acompañantes
    -------------------------------------------------------------------------- */
 .hero-media {
   position: relative;
@@ -125,10 +104,7 @@ html.js .reveal.is-visible {
   aspect-ratio: 1 / 1;
 }
 
-/* Contenedor de clip: overflow hidden (respaldo estable) + clip-path
-   vectorial. Nunca aplicar mask al <video>: una máscara alfa sobre la
-   superficie de video acelerada por hardware provoca el flash rectangular
-   durante invalidaciones de composición. */
+/* Contenedor de video */
 .hero-video-clip {
   width: 100%;
   height: 100%;
@@ -157,8 +133,6 @@ html.js .reveal.is-visible {
 }
 
 @media (min-width: 1024px) {
-  /* El wrapper deja de posicionar: blobs y video se anclan a la sección.
-     El texto (relative z-10) queda siempre por encima de ellos. */
   .hero-media {
     position: static;
     z-index: auto;
@@ -168,7 +142,7 @@ html.js .reveal.is-visible {
     z-index: 0;
   }
 
-  /* Sage: solitario, sangra por el borde izquierdo del hero */
+  /* Blob verde a la izquierda */
   .hero-blob-sage {
     left: -20vw;
     bottom: 24%;
@@ -176,7 +150,7 @@ html.js .reveal.is-visible {
     max-width: 36rem;
   }
 
-  /* Miel: más grande y más atrás del video, asomando por su borde superior-izquierdo */
+  /* Blob miel detrás del video y arriba */
   .hero-blob-honey {
     top: -10%;
     left: 48vw;
@@ -184,7 +158,7 @@ html.js .reveal.is-visible {
     max-width: 30rem;
   }
 
-  /* Rosa: más grande, asomando por el borde inferior-derecho del video */
+  /* Blob rosa detrás del video y abajo */
   .hero-blob-pink {
     bottom: 10%;
     left: 52vw;
@@ -193,8 +167,7 @@ html.js .reveal.is-visible {
     max-width: 32rem;
   }
 
-  /* Video: se mete debajo del header (que lo tapa con su fondo), sangra por
-     el borde derecho y queda un respiro sobre la trust bar. */
+  /* Video se mete debajo del header */
   .hero-video-pos {
     position: absolute;
     top: -7rem;
@@ -212,9 +185,7 @@ html.js .reveal.is-visible {
 }
 
 /* --------------------------------------------------------------------------
-   Blobs orgánicos grandes que se deforman suavemente (ref: pa'lais.bio)
-   Técnica: border-radius animado — cruzado entre navegadores, sin morphing
-   de paths. El parallax vive en el wrapper, el morph en el div interior.
+   Blobs orgánicos grandes que se deforman suavemente
    -------------------------------------------------------------------------- */
 .blob {
   border-radius: 42% 58% 63% 37% / 45% 42% 58% 55%;
@@ -246,11 +217,7 @@ html.js .reveal.is-visible {
 }
 
 /* --------------------------------------------------------------------------
-   Divisores ondulados vivos: el path se deforma continuamente entre tres
-   estados orgánicos (CSS d: path() — igual de fluido que el morph de los
-   blobs) más un vaivén lateral sutil. El path sobre-dibuja el viewBox
-   (-80…1520) para que nunca se vean bordes. Donde d: no está soportado
-   (Safari) degrada a la ola estática con vaivén.
+   Divisores ondulados
    -------------------------------------------------------------------------- */
 .divider-wave {
   animation: divider-sway 18s ease-in-out infinite alternate;
@@ -318,8 +285,7 @@ html.js .reveal.is-visible {
 }
 
 /* --------------------------------------------------------------------------
-   Marquee ribbon (fase 2): cinta infinita; se pausa al pasar el cursor.
-   El track se duplica (2 grupos idénticos) y avanza -50% = un grupo exacto.
+   Marquee ribbon (cinta infinita) que se pausa al pasar el cursor
    -------------------------------------------------------------------------- */
 .marquee-track {
   animation: marquee 28s linear infinite;
@@ -339,9 +305,7 @@ html.js .reveal.is-visible {
 }
 
 /* --------------------------------------------------------------------------
-   Paw-print cursor trail (fase 2): solo desktop (pointer: fine) y sin
-   reduced-motion (lo controla el guard de script.js). Partículas que
-   nacen en el cursor, rotan al azar y se desvanecen.
+   Paw-print cursor trail (solo desktop)
    -------------------------------------------------------------------------- */
 .paw-trail {
   position: fixed;

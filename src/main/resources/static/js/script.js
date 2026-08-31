@@ -36,23 +36,30 @@ const toggleMobileMenu = () => {
 menuButton.addEventListener("click", toggleMobileMenu);
 
 // Cerrar el dropdown después de presionar algún enlace de navegación
-mobileMenu.querySelectorAll("a").forEach(link => {
+mobileMenu.querySelectorAll("a").forEach((link) => {
   link.addEventListener("click", closeMobileMenu);
 });
 
 // Cerrar el dropdown después de presionar en cualquier parte de la página (fuera del menú)
-document.addEventListener("click", event => {
+document.addEventListener("click", (event) => {
   // Vertificar si se hizo click fuera del menú
-  const clickedOutsideMenu = !mobileMenu.contains(event.target) && !menuButton.contains(event.target);
+  const clickedOutsideMenu =
+    !mobileMenu.contains(event.target) && !menuButton.contains(event.target);
 
-  if (menuButton.getAttribute("aria-expanded") === "true" && clickedOutsideMenu) {
+  if (
+    menuButton.getAttribute("aria-expanded") === "true" &&
+    clickedOutsideMenu
+  ) {
     closeMobileMenu();
   }
 });
 
 // Cerrar el dropdown al presionar la tecla "Esc"
-document.addEventListener("keydown", event => {
-  if (event.key === "Escape" && menuButton.getAttribute("aria-expanded") === "true") {
+document.addEventListener("keydown", (event) => {
+  if (
+    event.key === "Escape" &&
+    menuButton.getAttribute("aria-expanded") === "true"
+  ) {
     closeMobileMenu();
     menuButton.focus();
   }
@@ -82,14 +89,18 @@ const closeWipModal = () => {
 };
 
 // Agregar evento de abrir modal a todos los botones no funcionales
-document.querySelectorAll("button, a").forEach(element => {
+document.querySelectorAll("button, a").forEach((element) => {
   const href = element.getAttribute("href");
 
   // Verificar si es un enlace de sección
   const isSectionLink = href && href.startsWith("#") && href !== "#";
 
-  if (element !== menuButton && !element.closest("#wip-modal") && !isSectionLink) {
-    element.addEventListener("click", event => {
+  if (
+    element !== menuButton &&
+    !element.closest("#wip-modal") &&
+    !isSectionLink
+  ) {
+    element.addEventListener("click", (event) => {
       event.preventDefault();
       openWipModal();
     });
@@ -99,56 +110,62 @@ document.querySelectorAll("button, a").forEach(element => {
 // Agregar evento de cerrar modal a la X del mismo
 wipClose.addEventListener("click", closeWipModal);
 
-// ===========================
-// ===== Motion (DESIGN.md) ==
-// ===========================
-// Solo transform/opacity. prefers-reduced-motion siempre respetado.
+// ========================
+// ======== Motion ========
+// ========================
 document.documentElement.classList.add("js");
 
-const prefersReducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const prefersReducedMotion = window.matchMedia(
+  "(prefers-reduced-motion: reduce)",
+).matches;
 
-// --- Reveals al scroll (IntersectionObserver, one-shot) ---
+// Reveals al scroll
 const revealElements = document.querySelectorAll(".reveal");
 
 // Escalonado: los .reveal hijos de un contenedor [data-reveal-stagger]
 // reciben delays incrementales vía --reveal-delay
-document.querySelectorAll("[data-reveal-stagger]").forEach(group => {
+document.querySelectorAll("[data-reveal-stagger]").forEach((group) => {
   group.querySelectorAll(".reveal").forEach((el, index) => {
     el.style.setProperty("--reveal-delay", `${index * 90}ms`);
   });
 });
 
-if (!prefersReducedMotion && "IntersectionObserver" in window && revealElements.length > 0) {
+if (
+  !prefersReducedMotion &&
+  "IntersectionObserver" in window &&
+  revealElements.length > 0
+) {
   const revealObserver = new IntersectionObserver(
-    entries => {
-      entries.forEach(entry => {
+    (entries) => {
+      entries.forEach((entry) => {
         if (entry.isIntersecting) {
           entry.target.classList.add("is-visible");
           revealObserver.unobserve(entry.target);
         }
       });
     },
-    { threshold: 0.15, rootMargin: "0px 0px -40px 0px" }
+    { threshold: 0.15, rootMargin: "0px 0px -40px 0px" },
   );
 
-  revealElements.forEach(el => revealObserver.observe(el));
+  revealElements.forEach((el) => revealObserver.observe(el));
 } else {
-  revealElements.forEach(el => el.classList.add("is-visible"));
+  revealElements.forEach((el) => el.classList.add("is-visible"));
 }
 
 // --- Contadores animados de la trust bar ---
 const counterElements = document.querySelectorAll("[data-counter]");
 
-const animateCounter = element => {
+const animateCounter = (element) => {
   const target = parseFloat(element.dataset.counter);
   const prefix = element.dataset.prefix ?? "";
   const suffix = element.dataset.suffix ?? "";
   const duration = 1400;
   const start = performance.now();
 
-  const format = value => value.toLocaleString("en-US", { maximumFractionDigits: 0 });
+  const format = (value) =>
+    value.toLocaleString("en-US", { maximumFractionDigits: 0 });
 
-  const step = now => {
+  const step = (now) => {
     const progress = Math.min((now - start) / duration, 1);
     const eased = 1 - Math.pow(1 - progress, 3);
     element.textContent = prefix + format(Math.round(target * eased)) + suffix;
@@ -161,29 +178,35 @@ const animateCounter = element => {
   requestAnimationFrame(step);
 };
 
-if (!prefersReducedMotion && "IntersectionObserver" in window && counterElements.length > 0) {
+if (
+  !prefersReducedMotion &&
+  "IntersectionObserver" in window &&
+  counterElements.length > 0
+) {
   const counterObserver = new IntersectionObserver(
-    entries => {
-      entries.forEach(entry => {
+    (entries) => {
+      entries.forEach((entry) => {
         if (entry.isIntersecting) {
           animateCounter(entry.target);
           counterObserver.unobserve(entry.target);
         }
       });
     },
-    { threshold: 0.4 }
+    { threshold: 0.4 },
   );
 
-  counterElements.forEach(el => counterObserver.observe(el));
+  counterElements.forEach((el) => counterObserver.observe(el));
 }
 
-// --- Parallax sutil de blobs (rAF-throttled, con clamp) ---
+// Parallax sutil de blobs
 if (!prefersReducedMotion) {
-  const parallaxItems = Array.from(document.querySelectorAll("[data-parallax]")).map(el => ({
+  const parallaxItems = Array.from(
+    document.querySelectorAll("[data-parallax]"),
+  ).map((el) => ({
     el,
     factor: parseFloat(el.dataset.parallax) || 0.1,
     baseTop: 0,
-    height: 0
+    height: 0,
   }));
 
   if (parallaxItems.length > 0) {
@@ -208,9 +231,9 @@ if (!prefersReducedMotion) {
       }
     };
 
-    // Mide posiciones base (sin transform) y recalcula al redimensionar
+    // Mide posiciones base y recalcula al redimensionar
     const measureParallax = () => {
-      parallaxItems.forEach(item => {
+      parallaxItems.forEach((item) => {
         item.el.style.transform = "none";
         const rect = item.el.getBoundingClientRect();
         item.baseTop = rect.top + window.scrollY;
@@ -226,15 +249,15 @@ if (!prefersReducedMotion) {
   }
 }
 
-// --- Video del hero: con prefers-reduced-motion queda el poster estático ---
+// Video del hero
 if (prefersReducedMotion) {
-  document.querySelectorAll("video[autoplay]").forEach(video => {
+  document.querySelectorAll("video[autoplay]").forEach((video) => {
     video.removeAttribute("autoplay");
     video.pause();
   });
 }
 
-// --- Paw-print cursor trail (fase 2): solo desktop y sin reduced-motion ---
+// Paw-print cursor trail (solo desktop)
 if (!prefersReducedMotion && window.matchMedia("(pointer: fine)").matches) {
   const TRAIL_SVG =
     '<svg viewBox="0 0 96 96" width="100%" height="100%" fill="currentColor" aria-hidden="true">' +
@@ -260,17 +283,21 @@ if (!prefersReducedMotion && window.matchMedia("(pointer: fine)").matches) {
     paw.className = "paw-trail";
     paw.style.left = `${x}px`;
     paw.style.top = `${y}px`;
-    paw.style.setProperty("--paw-rot", `${(Math.random() * 50 - 25).toFixed(1)}deg`);
+    paw.style.setProperty(
+      "--paw-rot",
+      `${(Math.random() * 50 - 25).toFixed(1)}deg`,
+    );
     paw.innerHTML = TRAIL_SVG;
     paw.addEventListener("animationend", () => paw.remove());
     document.body.appendChild(paw);
   };
 
-  document.addEventListener("pointermove", event => {
+  document.addEventListener("pointermove", (event) => {
     const now = performance.now();
     const distance = Math.hypot(event.clientX - lastX, event.clientY - lastY);
 
-    if (now - lastSpawn < TRAIL_MIN_INTERVAL || distance < TRAIL_MIN_DISTANCE) return;
+    if (now - lastSpawn < TRAIL_MIN_INTERVAL || distance < TRAIL_MIN_DISTANCE)
+      return;
 
     lastSpawn = now;
     lastX = event.clientX;
