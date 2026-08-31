@@ -136,6 +136,13 @@
                     <a th:href="@{/pets/update/{id}(id=${pet.id})}" class="text-sm font-bold text-text/60 hover:text-tertiary transition-colors">
                       Editar
                     </a>
+                    <span class="text-text/20">|</span>
+                    <!-- Enlace para eliminar (/pets/delete/{id}), con confirmación antes de borrar -->
+                    <a th:href="@{/pets/delete/{id}(id=${pet.id})}"
+                     th:onclick="'return confirm(\'¿Eliminar a ' + ${pet.name} + '? Esta acción no se puede deshacer.\')'"
+                     class="text-sm font-bold text-red-500 hover:text-red-700 transition-colors">
+                      Eliminar
+                    </a>
                   </div>
                 </td>  
               </tr>
