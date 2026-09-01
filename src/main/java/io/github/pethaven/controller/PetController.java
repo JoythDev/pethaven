@@ -1,6 +1,7 @@
 package io.github.pethaven.controller;
 
 import io.github.pethaven.entity.Pet;
+import io.github.pethaven.service.OwnerService;
 import io.github.pethaven.service.PetService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -17,6 +18,9 @@ public class PetController {
 
     @Autowired
     private PetService petService;
+
+    @Autowired
+    private OwnerService ownerService;
 
     @GetMapping()
     public String listPets(@RequestParam(required = false) String search, 
@@ -38,6 +42,7 @@ public class PetController {
     @GetMapping("/add")
     public String showAddPetForm(Model model) {
         Pet pet = new Pet(null, "", null, "", 0, 0.0, "", "",null);
+        model.addAttribute("owners", ownerService.getAllOwners());
         model.addAttribute("pet", pet);
         return "pet_form";
     }
@@ -52,6 +57,7 @@ public class PetController {
     public String updatePet(@PathVariable Long id, Model model) {
         Pet pet = petService.getPetById(id);
         model.addAttribute("pet", pet);
+        model.addAttribute("owners", ownerService.getAllOwners());
         return "pet_form";
     }
 
