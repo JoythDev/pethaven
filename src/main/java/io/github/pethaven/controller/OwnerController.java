@@ -27,12 +27,11 @@ public class OwnerController {
     public String listOwners(HttpSession session, Model model) {
         Owner loggedOwner = (Owner) session.getAttribute("loggedOwner");
         
-        // Si hay un dueño en sesión, no puede ver la lista de todos. Lo encerramos en su perfil.
-        if (loggedOwner != null) {
+        // Regla: Solo el veterinario ve la lista completa
+        if (!ownerService.isVeterinarian(loggedOwner)) {
             return "redirect:/owners/" + loggedOwner.getId();
         }
         
-        // Si NO hay sesión (loggedOwner es null), es el Veterinario. Le mostramos la lista.
         model.addAttribute("owners", ownerService.getAllOwners());
         return "owners_list";
     }
@@ -41,12 +40,11 @@ public class OwnerController {
     public String getOwner(@PathVariable Long id, HttpSession session, Model model) {
         Owner loggedOwner = (Owner) session.getAttribute("loggedOwner");
         
-        // Si el que navega es un dueño, pero intenta ver el ID de OTRO dueño, lo devolvemos al suyo.
-        if (loggedOwner != null && !loggedOwner.getId().equals(id)) {
+        // Regla: Validar si este usuario tiene permiso de ver este ID
+        if (!ownerService.canAccessOwner(loggedOwner, id)) {
             return "redirect:/owners/" + loggedOwner.getId();
         }
         
-        // Si es el Veterinario (null) o el dueño viendo su propio perfil, lo dejamos pasar.
         model.addAttribute("owner", ownerService.getOwnerById(id));
         model.addAttribute("pets", petService.getPetsByOwnerId(id));
         return "owner_details";
@@ -54,24 +52,17 @@ public class OwnerController {
 
     @GetMapping("/add")
     public String showAddOwnerForm(HttpSession session, Model model) {
-        // Bloqueo: Un cliente no debería poder ver el formulario de registro
-        if (session.getAttribute("loggedOwner") != null) {
-            Owner loggedOwner = (Owner) session.getAttribute("loggedOwner");
-            return "redirect:/owners/" + loggedOwner.getId(); 
-        }
+        Owner loggedOwner = (Owner) session.getAttribute("loggedOwner");
+        if (!ownerService.isVeterinarian(loggedOwner)) return "redirect:/owners/" + loggedOwner.getId(); 
 
-        Owner owner = new Owner(null, "", "", "", "", "");
-        model.addAttribute("owner", owner);
+        model.addAttribute("owner", new Owner(null, "", "", "", "", ""));
         return "owner_form";
     }
 
     @PostMapping("/add")
     public String addOwner(Owner owner, HttpSession session) {
-        // Bloqueo: Evitar que un cliente inyecte un POST manual para crear dueños
-        if (session.getAttribute("loggedOwner") != null) {
-            Owner loggedOwner = (Owner) session.getAttribute("loggedOwner");
-            return "redirect:/owners/" + loggedOwner.getId(); 
-        }
+        Owner loggedOwner = (Owner) session.getAttribute("loggedOwner");
+        if (!ownerService.isVeterinarian(loggedOwner)) return "redirect:/owners/" + loggedOwner.getId(); 
 
         ownerService.createOwner(owner);
         return "redirect:/owners";
@@ -79,26 +70,18 @@ public class OwnerController {
 
     @GetMapping("/update/{id}")
     public String updateOwner(@PathVariable Long id, HttpSession session, Model model) {
-        // Solo el Veterinario (sin sesión) puede editar
-        if (session.getAttribute("loggedOwner") != null) {
-            Owner loggedOwner = (Owner) session.getAttribute("loggedOwner");
-            return "redirect:/owners/" + loggedOwner.getId(); // Lo expulsamos a su perfil
-        }
+        Owner loggedOwner = (Owner) session.getAttribute("loggedOwner");
+        if (!ownerService.isVeterinarian(loggedOwner)) return "redirect:/owners/" + loggedOwner.getId(); 
         
-        Owner owner = ownerService.getOwnerById(id);
-        model.addAttribute("owner", owner);
+        model.addAttribute("owner", ownerService.getOwnerById(id));
         return "owner_form";
     }
 
     @PostMapping("/update/{id}")
     public String saveUpdatedOwner(@PathVariable Long id, Owner owner, HttpSession session) {
-        // Bloqueo de seguridad: Si es un cliente, lo expulsamos antes de que guarde nada
-        if (session.getAttribute("loggedOwner") != null) {
-            Owner loggedOwner = (Owner) session.getAttribute("loggedOwner");
-            return "redirect:/owners/" + loggedOwner.getId(); 
-        }
+        Owner loggedOwner = (Owner) session.getAttribute("loggedOwner");
+        if (!ownerService.isVeterinarian(loggedOwner)) return "redirect:/owners/" + loggedOwner.getId(); 
 
-        // Si es el Veterinario implícito (sesión vacía), procedemos a actualizar
         owner.setId(id);
         ownerService.createOwner(owner);
         return "redirect:/owners/" + id;
@@ -106,14 +89,10 @@ public class OwnerController {
 
     @GetMapping("/delete/{id}")
     public String deleteOwner(@PathVariable Long id, HttpSession session) {
-        // Solo el Veterinario (sin sesión) puede eliminar
-        if (session.getAttribute("loggedOwner") != null) {
-            Owner loggedOwner = (Owner) session.getAttribute("loggedOwner");
-            return "redirect:/owners/" + loggedOwner.getId(); // Lo expulsamos a su perfil
-        }
+        Owner loggedOwner = (Owner) session.getAttribute("loggedOwner");
+        if (!ownerService.isVeterinarian(loggedOwner)) return "redirect:/owners/" + loggedOwner.getId(); 
         
         ownerService.deleteOwnerById(id);
         return "redirect:/owners";
     }
-
 }
