@@ -26,17 +26,15 @@ public class LoginController {
                          @RequestParam String password,
                          HttpSession session,
                          Model model) {
-        Owner owner = ownerService.getOwnerByEmail(email);
+        
+        // Delegamos toda la validación al Service
+        Owner owner = ownerService.authenticate(email, password);
 
-        // Comparación directa de texto plano: es provisional, sin
-        // encriptar contraseñas todavía, ya que trabajamos con datos quemados
-        if (owner == null || !owner.getPassword().equals(password)) {
+        if (owner == null) {
             model.addAttribute("error", "Correo o contraseña incorrectos.");
             return "login";
         }
 
-        // Guardamos al dueño en la sesión, para más adelante poder
-        // filtrar "sus" mascotas una vez se relacione Owner con Pet
         session.setAttribute("loggedOwner", owner);
         return "redirect:/owners/" + owner.getId();
     }
