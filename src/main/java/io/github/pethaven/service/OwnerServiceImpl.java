@@ -43,8 +43,6 @@ public class OwnerServiceImpl implements OwnerService {
         ownerRepository.deleteById(id);
     }
 
-    // --- IMPLEMENTACIÓN DE REGLAS DE NEGOCIO ---
-
     @Override
     public Owner authenticate(String email, String password) {
         Owner owner = ownerRepository.findByEmail(email);
@@ -52,18 +50,6 @@ public class OwnerServiceImpl implements OwnerService {
         if (owner != null && owner.getPassword().equals(password)) {
             return owner;
         }
-        return null;
-    }
-
-    @Override
-    public boolean isVeterinarian(Owner loggedOwner) {
-        // La regla de negocio dicta que si no hay sesión de dueño, es el Veterinario implícito
-        return loggedOwner == null;
-    }
-
-    @Override
-    public boolean canAccessOwner(Owner loggedOwner, Long targetOwnerId) {
-        // Puede acceder si es el veterinario O si es su propio perfil
-        return isVeterinarian(loggedOwner) || loggedOwner.getId().equals(targetOwnerId);
+        throw new RuntimeException("usuario no encontrado");
     }
 }

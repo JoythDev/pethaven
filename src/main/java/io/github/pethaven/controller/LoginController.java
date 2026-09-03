@@ -2,7 +2,6 @@ package io.github.pethaven.controller;
 
 import io.github.pethaven.entity.Owner;
 import io.github.pethaven.service.OwnerService;
-import jakarta.servlet.http.HttpSession;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -24,25 +23,17 @@ public class LoginController {
     @PostMapping("/login")
     public String login(@RequestParam String email,
                          @RequestParam String password,
-                         HttpSession session,
                          Model model) {
-        
-        // Delegamos toda la validación al Service
-        Owner owner = ownerService.authenticate(email, password);
 
-        if (owner == null) {
+        // Delegamos toda la validación al Service
+        try {
+            Owner owner = ownerService.authenticate(email, password);
+            return "redirect:/owners/" + owner.getId();
+        } catch (Exception ex){
             model.addAttribute("error", "Correo o contraseña incorrectos.");
             return "login";
         }
-
-        session.setAttribute("loggedOwner", owner);
-        return "redirect:/owners/" + owner.getId();
-    }
-
-    @GetMapping("/logout")
-    public String logout(HttpSession session) {
-        session.invalidate();
-        return "redirect:/login";
+        
     }
 
 }
