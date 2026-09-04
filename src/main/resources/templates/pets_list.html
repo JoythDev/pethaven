@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+  
+  <head th:replace="~{fragments :: head}"></head>
+
+  <!-- min-h-screen y flex-col para mantener el footer siempre abajo -->
+  <body class="bg-background text-text font-body min-h-screen flex flex-col">
+    
+    <div th:replace="~{fragments :: header}"></div>
+
+    <main class="flex-1 max-w-7xl mx-auto px-5 lg:px-12 py-10 lg:py-16 w-full">
+
+      <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+        <h1 class="font-display text-3xl font-bold">Pacientes</h1>
+        <!-- Formulario para Búsqueda en Vivo -->
+        <form id="filterForm" th:action="@{/pets}" method="GET" class="flex flex-wrap items-center gap-3">  
+          <!-- Barra de Búsqueda -->
+          <div class="relative">
+            <input type="text" id="searchInput" name="search" th:value="${search}" placeholder="Buscar por nombre o raza..." 
+                  class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-full text-sm focus:outline-none focus:border-primary shadow-sm w-full sm:w-48 lg:w-64 transition-colors">
+          </div>
+
+          <!-- Contenedor del Botón de Filtros y Dropdown -->
+          <div class="relative">
+            <!-- Botón Filtros -->
+            <button type="button" id="filterMenuBtn" class="bg-white border border-text/10 text-text px-5 py-2.5 rounded-full text-sm font-bold shadow-sm hover:bg-secondary/20 transition-colors flex items-center gap-2 cursor-pointer">
+              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
+              Filtros
+            </button>
+            
+            <!-- Menú Desplegable (Oculto por defecto con 'hidden') -->
+            <div id="filterDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white border border-text/10 rounded-2xl shadow-lg z-50 overflow-hidden flex flex-col">
+              <label class="flex items-center px-4 py-3 hover:bg-secondary/20 cursor-pointer border-b border-text/5 transition-colors">
+                <input type="radio" name="status" value="todos" th:checked="${status == null || status == 'todos'}" class="mr-3 accent-primary">
+                <span class="text-sm font-bold">Todos</span>
+              </label>
+              <label class="flex items-center px-4 py-3 hover:bg-secondary/20 cursor-pointer border-b border-text/5 transition-colors">
+                <input type="radio" name="status" value="estable" th:checked="${status == 'estable'}" class="mr-3 accent-primary">
+                <span class="text-sm font-bold">Solo Estables</span>
+              </label>
+              <label class="flex items-center px-4 py-3 hover:bg-secondary/20 cursor-pointer transition-colors">
+                <input type="radio" name="status" value="enfermo" th:checked="${status == 'enfermo'}" class="mr-3 accent-primary">
+                <span class="text-sm font-bold">En Tratamiento</span>
+              </label>
+            </div>
+          </div>
+
+          <!-- Botón Nuevo -->
+          <a th:href="@{/pets/add}" class="bg-primary text-background px-5 py-2.5 rounded-full text-sm font-bold shadow-sm hover:opacity-90 transition-opacity flex items-center gap-2">
+            <span>+</span> Nuevo
+          </a>
+        </form>
+      </div>
+
+      <!-- Contenedor de la tabla -->
+      <div class="bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm overflow-hidden">
+        <div class="overflow-x-auto">
+          <table class="w-full text-left whitespace-nowrap">
+            
+            <!-- Encabezados -->
+            <thead>
+              <tr class="text-text/50 text-sm font-body border-b border-text/10">
+                <th class="pb-4 px-4 font-normal">Paciente</th>
+                <th class="pb-4 px-4 font-normal">Especie</th>
+                <th class="pb-4 px-4 font-normal">Ficha Médica</th>
+                <th class="pb-4 px-4 font-normal">Estado</th>
+                <th class="pb-4 px-4 font-normal">Acciones</th>
+              </tr>
+            </thead>
+            
+            <tbody id="tableBody" class="divide-y divide-text/10">
+              <!-- Iteración de Thymeleaf: Crea una fila (tr) por cada mascota -->
+              <tr th:each="pet : ${pets}" class="border-b border-text/5 hover:bg-background/50 transition-colors group">
+                
+                <!-- Columna 1: Creado por / Paciente (Foto + Nombre + Subtexto) -->
+                <td class="py-4 px-4">
+                  <a th:href="@{/pets/{id}(id=${pet.id})}" class="flex items-center gap-4">
+                    <!-- Foto de la mascota -->
+                    <img th:src="${pet.photoUrl}" th:alt="${pet.name}" class="w-11 h-11 rounded-full object-cover bg-secondary/50 shrink-0" />
+                    <div class="flex flex-col">
+                      <!-- Nombre de la mascota -->
+                      <span class="font-bold text-base text-text" th:text="${pet.name}">Nombre</span>
+                      <!-- Raza de la mascota -->
+                      <span class="text-xs text-text/60" th:text="${pet.breed}">Raza</span>
+                    </div>
+                  </a>
+                </td>
+
+                <!-- Columna 2: Especie -->
+                <td class="py-4 px-4">
+                  <div class="inline-flex items-center gap-2">
+                    <img th:if="${pet.species?.name() == 'DOG'}"
+                         th:src="@{/images/icons/dog-icon.svg}"
+                         alt=""
+                         class="w-6 h-6 shrink-0" />
+                    <img th:if="${pet.species?.name() == 'CAT'}"
+                         th:src="@{/images/icons/cat-icon.svg}"
+                         alt=""
+                         class="w-6 h-6 shrink-0" />
+                    <span class="font-bold text-sm text-text"
+                          th:text="${pet.species?.name() == 'DOG' ? 'Perro' : 'Gato'}">Especie</span>
+                  </div>
+                </td>
+
+                <!-- Columna 3: Subject / Ficha Médica (Dato principal + ID) -->
+                <td class="py-4 px-4">
+                  <div class="flex flex-col">
+                    <span class="font-bold text-sm text-text" th:text="${pet.age} + ' años'">Edad</span>
+                    <span class="text-xs text-text/60" th:text="'Peso: ' + ${pet.weight} + ' kg'">Peso</span>
+                  </div>
+                </td>
+                
+                <!-- Columna 4: Status / Estado (Badges / Etiquetas de colores) -->
+                <td class="py-4 px-4">
+                  <!-- Lógica de Thymeleaf: Si está sano (Enfermedad == 'None') muestra badge estilo verde/primary -->
+                  <span th:if="${pet.disease == 'None'}" class="inline-flex items-center bg-primary/20 text-tertiary px-3 py-1 rounded-md text-xs font-bold">
+                    Estable
+                  </span>
+                  
+                  <!-- Si tiene enfermedad, muestra la enfermedad con badge estilo advertencia/tertiary -->
+                  <span th:unless="${pet.disease == 'None'}" class="inline-flex items-center bg-secondary/50 text-tertiary px-3 py-1 rounded-md text-xs font-bold" th:text="${pet.disease}">
+                    Enfermedad
+                  </span>
+                </td>
+                
+                <!-- Columna 5: Acciones -->
+                <td class="py-4 px-4">
+                  <!-- Las rutas usan el ID dinámico de la mascota -->
+                  <div class="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <!-- Enlace a los detalles (/pets/{id}) -->
+                    <a th:href="@{/pets/{id}(id=${pet.id})}" class="text-sm font-bold text-primary hover:text-tertiary transition-colors">
+                      Ver Ficha
+                    </a>
+                    <span class="text-text/20">|</span>
+                    <!-- Enlace para editar (/pets/update/{id}) -->
+                    <a th:href="@{/pets/update/{id}(id=${pet.id})}" class="text-sm font-bold text-text/60 hover:text-tertiary transition-colors">
+                      Editar
+                    </a>
+                    <span class="text-text/20">|</span>
+                    <!-- Enlace para eliminar (/pets/delete/{id}), con confirmación antes de borrar -->
+                    <a th:href="@{/pets/delete/{id}(id=${pet.id})}"
+                     th:onclick="|'return confirm('¿Eliminar a ' + ${pet.name} + '? Esta acción no se puede deshacer.')|'"
+                     class="text-sm font-bold text-red-500 hover:text-red-700 transition-colors">
+                      Eliminar
+                    </a>
+                  </div>
+                </td>  
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+    </main>
+    <div th:replace="~{fragments :: footer}"></div>
+    <script th:src="@{/js/pets.js}"></script>
+  </body>
+</html>

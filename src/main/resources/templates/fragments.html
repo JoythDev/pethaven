@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+  
+  <head th:fragment="head">
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PetHaven | Clínica Veterinaria</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fraunces:ital,wght@0,300;0,400;0,500;0,600;0,700;1,400&family=Nunito+Sans:ital,wght@0,300;0,400;0,600;0,700;1,400&family=Caveat:wght@400;600&display=swap"
+      rel="stylesheet"
+    />
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style type="text/tailwindcss">
+      @theme {
+        --color-primary: #a09c6d;
+        --color-secondary: #eacecb;
+        --color-tertiary: #7a502a;
+        --color-text: #261a10;
+        --color-background: #f2ece0;
+        --color-honey: #e8b04b;
+        --color-terracotta: #c96f4a;
+        --color-sage: #9db38a;
+        --font-display: "Fraunces", serif;
+        --font-body: "Nunito Sans", sans-serif;
+        --font-script: "Caveat", cursive;
+
+        --animate-float: float 6s ease-in-out infinite alternate;
+        --animate-drift: drift 10s ease-in-out infinite alternate;
+        --animate-bounce-soft: bounce-soft 2s ease-in-out infinite;
+      }
+    </style>
+    <link rel="stylesheet" th:href="@{/css/style.css}" />
+    <link rel="icon" type="image/svg+xml" th:href="@{/images/favicon.png}" />
+  </head>
+
+  <body>
+    <!-- Fragmento del Header -->
+    <header th:fragment="header" class="relative z-30 py-2 border-b border-primary/25 bg-background">
+      <div class="max-w-7xl mx-auto px-5 lg:px-12 flex items-center justify-between">
+        <a th:href="@{/}" class="shrink-0 flex items-center">
+          <img th:src="@{/images/logo-header.png}" alt="PetHaven" class="h-12 lg:h-20 w-auto" />
+        </a>
+        
+        <nav class="hidden lg:flex items-center gap-6 xl:gap-8">
+            <a href="#services" class="hover:opacity-75 transition-opacity">Servicios</a>
+            <a href="#how-it-works" class="hover:opacity-75 transition-opacity">Cómo funciona</a>
+            <a href="#us" class="hover:opacity-75 transition-opacity">Nosotros</a>
+            <a href="#faq" class="hover:opacity-75 transition-opacity">FAQ</a>
+            <a href="#footer" class="hover:opacity-75 transition-opacity">Contacto</a>
+        </nav>
+  
+        <div class="flex items-center gap-3 lg:gap-6 shrink-0">
+          <a href="#" class="hidden lg:flex items-center gap-1 hover:opacity-75 transition-opacity">
+            Registrarse
+            <img th:src="@{/images/icons/arrow-down-bold-icon.svg}" alt="" class="h-4 w-4" />
+          </a>
+  
+          <a th:href="@{/login}" class="bg-primary text-background px-4 py-2 lg:px-6 lg:py-2.5 text-sm lg:text-base rounded-full font-bold hover:opacity-90 cursor-pointer transition-opacity shadow-sm whitespace-nowrap">
+            Iniciar Sesión
+          </a>
+  
+          <button id="menu-btn" type="button" class="lg:hidden text-text focus:outline-none hover:opacity-75 cursor-pointer p-1" aria-controls="mobile-menu" aria-expanded="false" aria-label="Abrir menú de navegación">
+            <img th:src="@{/images/icons/menu-rounded-icon.svg}" alt="" class="h-7 w-7" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Menú móvil  -->
+      <div id="mobile-menu" class="hidden lg:hidden absolute top-full left-0 w-full bg-background border-b border-primary/25 shadow-lg z-50" aria-hidden="true">
+        <nav class="flex flex-col px-6 py-4 space-y-4">
+          <a href="#services" class="text-lg hover:opacity-75 transition-opacity">Servicios</a>
+          <a href="#how-it-works" class="text-lg hover:opacity-75 transition-opacity">Cómo funciona</a>
+          <a href="#us" class="text-lg hover:opacity-75 transition-opacity">Nosotros</a>
+          <a href="#faq" class="text-lg hover:opacity-75 transition-opacity">FAQ</a>
+          <a href="#footer" class="text-lg hover:opacity-75 transition-opacity">Contacto</a>
+          <hr class="border-primary/20" />
+          <a href="#" class="text-lg font-bold flex items-center justify-between hover:opacity-75 transition-opacity">
+            Registrarse
+            <img th:src="@{/images/icons/arrow-down-bold-icon.svg}" alt="" class="h-5 w-5 rotate-[-90deg]" />
+          </a>
+        </nav>
+      </div>
+    </header>
+
+    <!-- Fragmento del Footer con rutas corregidas -->
+    <footer th:fragment="footer" id="footer" class="bg-tertiary text-background text-center pb-8 pt-20 px-15">
+      <div class="flex flex-col lg:flex-row lg:justify-between gap-4 text-left text-sm pb-15">
+        <div class="flex flex-col w-full lg:w-1/4 gap-4">
+          <img th:src="@{/images/logo-footer.png}" alt="PetHaven" class="w-3/5" />
+          <p>La clínica de hospitalización y cuidado crítico de confianza para las familias modernas.</p>
+        </div>
+        <div class="flex flex-col gap-2">
+          <h4 class="font-display text-xl font-bold pb-2">Navegación</h4>
+          <a href="#services" class="hover:opacity-75 transition-opacity">Servicios</a>
+          <a href="#how-it-works" class="hover:opacity-75 transition-opacity">Cómo funciona</a>
+          <a href="#us" class="hover:opacity-75 transition-opacity">Nosotros</a>
+          <a href="#faq" class="hover:opacity-75 transition-opacity">FAQ</a>
+        </div>
+        <div class="flex flex-col gap-2">
+          <h4 class="font-display text-xl font-bold pb-2">Portales</h4>
+          <a href="#" class="hover:opacity-75 transition-opacity">Portal Cliente</a>
+          <a href="#" class="hover:opacity-75 transition-opacity">Portal Veterinario</a>
+          <a href="#" class="hover:opacity-75 transition-opacity">Portal Administrador</a>
+        </div>
+        <div class="flex flex-col gap-2">
+          <h4 class="font-display text-xl font-bold pb-2">Contacto</h4>
+          <p>Av. San Francisco 123, Ciudad, Estado</p>
+          <p>contacto@pethaven.com</p>
+          <p>(123) 456-7890</p>
+        </div>
+      </div>
+      <div class="flex justify-between border-t border-background/15 pt-4 text-background/75 text-sm">
+        <p>© 2026 PetHaven. Todos los derechos reservados</p>
+        <p class="hidden md:block">Hecho con ♥ por las mascotas</p>
+      </div>
+    </footer>
+  </body>
+</html>

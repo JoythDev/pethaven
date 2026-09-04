@@ -1,0 +1,176 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+  <head th:replace="~{fragments :: head}"></head>
+
+  <body class="bg-background text-text font-body min-h-screen flex flex-col">
+    <!-- Header / Sidebar -->
+    <div th:replace="~{fragments :: header}"></div>
+
+    <main class="flex-1 max-w-7xl mx-auto px-5 lg:px-12 py-10 lg:py-12 w-full">
+      <!-- Volver / Navegación -->
+      <div class="mb-8">
+        <a
+          th:href="@{/owners}"
+          class="text-sm font-semibold text-primary hover:text-tertiary transition-colors">
+          ← Volver a Dueños
+        </a>
+      </div>
+
+      <!-- Tarjeta principal del dueño -->
+      <section class="bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm">
+        <!-- Etiqueta + Nombre + Acciones -->
+        <div
+          class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6"
+        >
+          <div>
+            <p
+              class="text-xs font-bold tracking-[0.2em] uppercase text-text/50"
+            >
+              Ficha del dueño
+            </p>
+
+            <h1
+              th:text="${owner.name}"
+              class="font-display text-4xl lg:text-5xl font-bold mt-2"
+            >
+              María García
+            </h1>
+          </div>
+
+          <!-- Acciones -->
+          <div class="flex items-center gap-4 shrink-0">
+            <!-- Enlace para editar -->
+            <a th:href="@{/owners/update/{id}(id=${owner.id})}"
+              class="bg-background text-primary border-2 border-primary hover:bg-primary hover:text-background px-6 py-2.5 rounded-full text-sm font-bold shadow-sm transition-colors">
+              Editar
+            </a>
+
+            <!-- Enlace para eliminar -->
+            <a th:href="@{/owners/delete/{id}(id=${owner.id})}"
+              class="bg-background text-tertiary border-2 border-tertiary hover:bg-tertiary hover:text-background px-6 py-2.5 rounded-full text-sm font-bold shadow-sm transition-colors">
+              Eliminar dueño
+            </a>
+          </div>
+        </div>
+
+        <!-- Datos de contacto -->
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-6 mt-8">
+          <!-- Documento -->
+          <div>
+            <p
+              class="text-xs font-bold tracking-[0.15em] uppercase text-text/50 mb-1"
+            >
+              Cédula
+            </p>
+
+            <p th:text="${owner.document}" class="font-bold text-lg">
+              1023456789
+            </p>
+          </div>
+
+          <!-- Correo -->
+          <div>
+            <p
+              class="text-xs font-bold tracking-[0.15em] uppercase text-text/50 mb-1"
+            >
+              Correo
+            </p>
+
+            <p th:text="${owner.email}" class="font-bold text-lg">
+              maria.garcia@mail.com
+            </p>
+          </div>
+
+          <!-- Celular -->
+          <div>
+            <p
+              class="text-xs font-bold tracking-[0.15em] uppercase text-text/50 mb-1"
+            >
+              Celular
+            </p>
+
+            <p th:text="${owner.phone}" class="font-bold text-lg">
+              300 123 4567
+            </p>
+          </div>
+        </div>
+      </section>
+
+      <!-- Mascotas del dueño -->
+      <section class="mt-10">
+        <h2 class="font-display text-3xl font-bold mb-6">
+          Mascotas de este dueño
+        </h2>
+
+        <div class="flex flex-col gap-5">
+          <!-- Iteración de Thymeleaf: Crea una card por cada mascota del dueño
+                     (la relación Owner-Pets aún no existe, este es el ejemplo base) -->
+          <div
+            th:each="pet : ${pets}"
+            class="bg-white rounded-[2rem] p-6 shadow-sm flex flex-col sm:flex-row sm:items-center gap-6"
+          >
+            <!-- Foto de la mascota -->
+            <img
+              th:src="${pet.photoUrl}"
+              th:alt="${pet.name}"
+              class="w-full sm:w-40 h-40 sm:h-32 object-cover rounded-2xl bg-secondary/50 shrink-0"
+            />
+
+            <!-- Información -->
+            <div class="flex-1">
+              <h3 th:text="${pet.name}" class="font-display text-2xl font-bold">
+                Max
+              </h3>
+
+              <p class="mt-1 text-text/60">
+                <!-- Especie -->
+                <span
+                  th:text="${pet.species?.name() == 'DOG' ? 'Perro' : 'Gato'}"
+                >
+                  Perro
+                </span>
+
+                ·
+
+                <!-- Raza -->
+                <span th:text="${pet.breed}"> Labrador </span>
+
+                ·
+
+                <!-- Edad -->
+                <span th:text="${pet.age}"> 4 </span>
+                años
+              </p>
+
+              <!-- Estado -->
+              <span
+                th:if="${pet.disease == 'None'}"
+                class="inline-flex items-center bg-primary text-background px-4 py-1.5 rounded-full text-sm font-bold mt-3"
+              >
+                Activa
+              </span>
+
+              <span
+                th:unless="${pet.disease == 'None'}"
+                class="inline-flex items-center bg-text/30 text-white px-4 py-1.5 rounded-full text-sm font-bold mt-3"
+              >
+                Inactiva
+              </span>
+            </div>
+
+            <!-- Ver ficha -->
+            <a
+              th:href="@{/pets/{id}(id=${pet.id})}"
+              class="text-sm font-bold text-primary underline underline-offset-4 hover:text-tertiary transition-colors shrink-0"
+            >
+              Ver ficha
+            </a>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- Footer -->
+    <div th:replace="~{fragments :: footer}"></div>
+  </body>
+</html>

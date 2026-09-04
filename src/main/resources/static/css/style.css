@@ -1,0 +1,330 @@
+html {
+  overflow-x: clip;
+}
+
+body {
+  overflow-x: clip;
+}
+
+/* JS añade esta clase */
+html.js .reveal {
+  opacity: 0;
+  transform: translateY(24px);
+  transition:
+    opacity 0.6s ease-out,
+    transform 0.6s ease-out;
+  transition-delay: var(--reveal-delay, 0ms);
+}
+
+html.js .reveal.is-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Keyframes referenciados por los tokens --animate-* del @theme */
+@keyframes float {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes drift {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(6px, -10px) scale(1.04);
+  }
+}
+
+@keyframes bounce-soft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(6px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html.js .reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Composición del hero: video en silueta blob + blobs acompañantes
+   -------------------------------------------------------------------------- */
+.hero-media {
+  position: relative;
+  z-index: 0;
+  width: fit-content;
+}
+
+.hero-blob {
+  position: absolute;
+  z-index: -10;
+}
+
+.hero-blob-sage {
+  left: -20%;
+  bottom: 8%;
+  width: 55%;
+}
+
+.hero-blob-honey {
+  top: -10%;
+  left: -24%;
+  width: 78%;
+}
+
+.hero-blob-pink {
+  bottom: -16%;
+  right: -18%;
+  width: 80%;
+}
+
+.hero-video-pos {
+  position: relative;
+  width: 15rem;
+  aspect-ratio: 1 / 1;
+}
+
+/* Contenedor de video */
+.hero-video-clip {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  clip-path: url(#hero-clip-mobile);
+}
+
+.hero-video-clip video,
+.hero-video-clip img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+@media (min-width: 640px) {
+  .hero-video-pos {
+    width: 19rem;
+  }
+}
+
+@media (min-width: 768px) {
+  .hero-video-pos {
+    width: 21rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  .hero-media {
+    position: static;
+    z-index: auto;
+  }
+
+  .hero-blob {
+    z-index: 0;
+  }
+
+  /* Blob verde a la izquierda */
+  .hero-blob-sage {
+    left: -20vw;
+    bottom: 24%;
+    width: 36vw;
+    max-width: 36rem;
+  }
+
+  /* Blob miel detrás del video y arriba */
+  .hero-blob-honey {
+    top: -10%;
+    left: 48vw;
+    width: 36vw;
+    max-width: 30rem;
+  }
+
+  /* Blob rosa detrás del video y abajo */
+  .hero-blob-pink {
+    bottom: 10%;
+    left: 52vw;
+    right: auto;
+    width: 24vw;
+    max-width: 32rem;
+  }
+
+  /* Video se mete debajo del header */
+  .hero-video-pos {
+    position: absolute;
+    top: -7rem;
+    bottom: 1rem;
+    right: -6vw;
+    left: auto;
+    width: min(56vw, 60rem);
+    height: auto;
+    aspect-ratio: auto;
+  }
+
+  .hero-video-clip {
+    clip-path: url(#hero-clip-desktop);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Blobs orgánicos grandes que se deforman suavemente
+   -------------------------------------------------------------------------- */
+.blob {
+  border-radius: 42% 58% 63% 37% / 45% 42% 58% 55%;
+  animation: blob-morph 16s ease-in-out infinite alternate;
+}
+
+.blob-alt {
+  animation-duration: 20s;
+  animation-delay: -8s;
+}
+
+@keyframes blob-morph {
+  0% {
+    border-radius: 42% 58% 63% 37% / 45% 42% 58% 55%;
+    transform: translate(0, 0) rotate(0deg) scale(1);
+  }
+  33% {
+    border-radius: 57% 43% 38% 62% / 50% 61% 39% 50%;
+    transform: translate(10px, -12px) rotate(5deg) scale(1.05);
+  }
+  66% {
+    border-radius: 45% 55% 61% 39% / 36% 54% 46% 64%;
+    transform: translate(-8px, 8px) rotate(-4deg) scale(0.96);
+  }
+  100% {
+    border-radius: 55% 45% 47% 53% / 56% 39% 61% 44%;
+    transform: translate(6px, -6px) rotate(3deg) scale(1.03);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Divisores ondulados
+   -------------------------------------------------------------------------- */
+.divider-wave {
+  animation: divider-sway 18s ease-in-out infinite alternate;
+}
+
+.divider-wave path {
+  d: path(
+    "M-80 55C160 95 420 10 740 44C1060 78 1300 96 1520 38L1520 100L-80 100Z"
+  );
+  animation: wave-morph-a 16s ease-in-out infinite alternate;
+}
+
+.divider-wave path.wave-alt {
+  d: path(
+    "M-80 42C200 90 470 16 750 54C1030 92 1310 84 1520 34L1520 100L-80 100Z"
+  );
+  animation-name: wave-morph-b;
+  animation-duration: 19s;
+  animation-delay: -6s;
+}
+
+@keyframes divider-sway {
+  from {
+    transform: translateX(-14px);
+  }
+  to {
+    transform: translateX(14px);
+  }
+}
+
+@keyframes wave-morph-a {
+  0% {
+    d: path(
+      "M-80 55C160 95 420 10 740 44C1060 78 1300 96 1520 38L1520 100L-80 100Z"
+    );
+  }
+  50% {
+    d: path(
+      "M-80 32C150 62 430 88 740 58C1060 22 1290 38 1520 60L1520 100L-80 100Z"
+    );
+  }
+  100% {
+    d: path(
+      "M-80 68C170 25 410 32 730 28C1050 55 1310 92 1520 34L1520 100L-80 100Z"
+    );
+  }
+}
+
+@keyframes wave-morph-b {
+  0% {
+    d: path(
+      "M-80 42C200 90 470 16 750 54C1030 92 1310 84 1520 34L1520 100L-80 100Z"
+    );
+  }
+  50% {
+    d: path(
+      "M-80 62C190 28 460 75 750 30C1030 45 1300 95 1520 58L1520 100L-80 100Z"
+    );
+  }
+  100% {
+    d: path(
+      "M-80 30C210 70 480 20 760 66C1040 18 1290 50 1520 40L1520 100L-80 100Z"
+    );
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Marquee ribbon (cinta infinita) que se pausa al pasar el cursor
+   -------------------------------------------------------------------------- */
+.marquee-track {
+  animation: marquee 28s linear infinite;
+}
+
+.marquee:hover .marquee-track {
+  animation-play-state: paused;
+}
+
+@keyframes marquee {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Paw-print cursor trail (solo desktop)
+   -------------------------------------------------------------------------- */
+.paw-trail {
+  position: fixed;
+  z-index: 40;
+  width: 22px;
+  height: 22px;
+  pointer-events: none;
+  color: #a09c6d;
+  opacity: 0;
+  animation: paw-fade 0.6s ease-out forwards;
+}
+
+@keyframes paw-fade {
+  0% {
+    opacity: 0.5;
+    transform: translate(-50%, -50%) rotate(var(--paw-rot, 0deg)) scale(0.55);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -70%) rotate(var(--paw-rot, 0deg)) scale(0.95);
+  }
+}
