@@ -12,44 +12,11 @@
 
       <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
         <h1 class="font-display text-3xl font-bold">Pacientes</h1>
-        <!-- Formulario para Búsqueda en Vivo -->
-        <form id="filterForm" th:action="@{/pets}" method="GET" class="flex flex-wrap items-center gap-3">  
-          <!-- Barra de Búsqueda -->
-          <div class="relative">
-            <input type="text" id="searchInput" name="search" th:value="${search}" placeholder="Buscar por nombre o raza..." 
-                  class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-full text-sm focus:outline-none focus:border-primary shadow-sm w-full sm:w-48 lg:w-64 transition-colors">
-          </div>
 
-          <!-- Contenedor del Botón de Filtros y Dropdown -->
-          <div class="relative">
-            <!-- Botón Filtros -->
-            <button type="button" id="filterMenuBtn" class="bg-white border border-text/10 text-text px-5 py-2.5 rounded-full text-sm font-bold shadow-sm hover:bg-secondary/20 transition-colors flex items-center gap-2 cursor-pointer">
-              <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"/></svg>
-              Filtros
-            </button>
-            
-            <!-- Menú Desplegable (Oculto por defecto con 'hidden') -->
-            <div id="filterDropdown" class="hidden absolute right-0 mt-2 w-48 bg-white border border-text/10 rounded-2xl shadow-lg z-50 overflow-hidden flex flex-col">
-              <label class="flex items-center px-4 py-3 hover:bg-secondary/20 cursor-pointer border-b border-text/5 transition-colors">
-                <input type="radio" name="status" value="todos" th:checked="${status == null || status == 'todos'}" class="mr-3 accent-primary">
-                <span class="text-sm font-bold">Todos</span>
-              </label>
-              <label class="flex items-center px-4 py-3 hover:bg-secondary/20 cursor-pointer border-b border-text/5 transition-colors">
-                <input type="radio" name="status" value="estable" th:checked="${status == 'estable'}" class="mr-3 accent-primary">
-                <span class="text-sm font-bold">Solo Estables</span>
-              </label>
-              <label class="flex items-center px-4 py-3 hover:bg-secondary/20 cursor-pointer transition-colors">
-                <input type="radio" name="status" value="enfermo" th:checked="${status == 'enfermo'}" class="mr-3 accent-primary">
-                <span class="text-sm font-bold">En Tratamiento</span>
-              </label>
-            </div>
-          </div>
-
-          <!-- Botón Nuevo -->
-          <a th:href="@{/pets/add}" class="bg-primary text-background px-5 py-2.5 rounded-full text-sm font-bold shadow-sm hover:opacity-90 transition-opacity flex items-center gap-2">
-            <span>+</span> Nuevo
-          </a>
-        </form>
+        <!-- Botón Nuevo -->
+        <a th:href="@{/pets/add}" class="bg-primary text-background px-5 py-2.5 rounded-full text-sm font-bold shadow-sm hover:opacity-90 transition-opacity flex items-center gap-2">
+          <span>+</span> Nuevo
+        </a>
       </div>
 
       <!-- Contenedor de la tabla -->
@@ -153,6 +120,5 @@
       
     </main>
     <div th:replace="~{fragments :: footer}"></div>
-    <script th:src="@{/js/pets.js}"></script>
   </body>
 </html>

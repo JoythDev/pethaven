@@ -15,12 +15,13 @@ public class PetServiceImpl implements PetService {
 
     @Override
     public Pet getPetById(Long id) {
-        return petRepository.findById(id);
+        return petRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("Pet not found with id: " + id));
     }
 
     @Override
-    public List<Pet> getAllPets(String search, String status) {
-        return petRepository.findAll(search, status);
+    public List<Pet> getAllPets() {
+        return petRepository.findAll();
     }
 
     @Override
