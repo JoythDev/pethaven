@@ -1,6 +1,7 @@
 package io.github.pethaven.service;
 
 import io.github.pethaven.entity.Owner;
+import io.github.pethaven.exception.ResourceNotFoundException;
 import io.github.pethaven.repository.OwnerRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,7 +17,7 @@ public class OwnerServiceImpl implements OwnerService {
     @Override
     public Owner getOwnerById(Long id) {
         return ownerRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Owner not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Owner", "id", id));
     }
 
     @Override
@@ -27,13 +28,13 @@ public class OwnerServiceImpl implements OwnerService {
     @Override
     public Owner getOwnerByDocument(String document) {
         return ownerRepository.findByDocument(document)
-                .orElseThrow(() -> new RuntimeException("Owner not found with document: " + document));
+                .orElseThrow(() -> new ResourceNotFoundException("Owner", "document", document));
     }
 
     @Override
     public Owner getOwnerByEmail(String email) {
         return ownerRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Owner not found with email: " + email));
+                .orElseThrow(() -> new ResourceNotFoundException("Owner", "email", email));
     }
 
     @Override
@@ -49,11 +50,10 @@ public class OwnerServiceImpl implements OwnerService {
     @Override
     public Owner authenticate(String email, String password) {
         Owner owner = ownerRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("Owner not found with email: " + email));
-        // Si el usuario existe y la contraseña coincide, retorna el objeto; si no, null.
+                .orElseThrow(() -> new ResourceNotFoundException("Owner", "email", email));
         if (owner.getPassword().equals(password)) {
             return owner;
         }
-        throw new RuntimeException("usuario no encontrado");
+        throw new RuntimeException("Correo o contraseña incorrectos.");
     }
 }

@@ -1,6 +1,7 @@
 package io.github.pethaven.service;
 
 import io.github.pethaven.entity.Pet;
+import io.github.pethaven.exception.ResourceNotFoundException;
 import io.github.pethaven.repository.PetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -16,7 +17,7 @@ public class PetServiceImpl implements PetService {
     @Override
     public Pet getPetById(Long id) {
         return petRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Pet not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("Pet", "id", id));
     }
 
     @Override

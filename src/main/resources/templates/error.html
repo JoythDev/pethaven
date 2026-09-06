@@ -1,0 +1,42 @@
+<!doctype html>
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+  <head th:replace="~{fragments :: head}"></head>
+
+  <!-- min-h-screen y flex-col para mantener el footer siempre abajo -->
+  <body class="bg-background text-text font-body min-h-screen flex flex-col">
+
+    <div th:replace="~{fragments :: header}"></div>
+
+    <main class="flex-1 max-w-7xl mx-auto px-5 lg:px-12 py-10 lg:py-16 w-full flex items-center justify-center">
+
+      <!-- Tarjeta de error -->
+      <div class="bg-white rounded-[2rem] p-8 lg:p-12 shadow-sm max-w-2xl w-full flex flex-col items-center text-center gap-5">
+
+        <img th:src="@{/images/illustrations/paw-line.svg}" alt="" class="w-28 lg:w-36 animate-float" />
+
+        <p class="font-script text-4xl text-terracotta">¡Uy! Algo salió mal</p>
+
+        <h1 class="font-display text-3xl font-bold">No encontramos lo que buscabas</h1>
+
+        <p class="text-text/60" th:text="${errorMessage}">El recurso no fue encontrado</p>
+
+        <div class="flex flex-wrap justify-center gap-3 mt-2">
+          <a th:href="@{/}"
+             class="bg-primary text-background px-5 py-2.5 rounded-full text-sm font-bold shadow-sm hover:opacity-90 transition-opacity">
+            Volver al inicio
+          </a>
+          <a th:href="@{/login}"
+             class="bg-white border border-text/10 text-text px-5 py-2.5 rounded-full text-sm font-bold shadow-sm hover:bg-secondary/20 transition-colors">
+            Iniciar sesión
+          </a>
+        </div>
+
+      </div>
+
+    </main>
+
+    <div th:replace="~{fragments :: footer}"></div>
+
+  </body>
+</html>

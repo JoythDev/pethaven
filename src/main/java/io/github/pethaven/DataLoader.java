@@ -5,10 +5,10 @@ import io.github.pethaven.entity.Pet;
 import io.github.pethaven.entity.Species;
 import io.github.pethaven.repository.OwnerRepository;
 import io.github.pethaven.repository.PetRepository;
-import jakarta.transaction.Transactional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 @Transactional
