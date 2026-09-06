@@ -103,8 +103,7 @@
         </h2>
 
         <div class="flex flex-col gap-5">
-          <!-- Iteración de Thymeleaf: Crea una card por cada mascota del dueño
-                     (la relación Owner-Pets aún no existe, este es el ejemplo base) -->
+          <!-- Iteración de Thymeleaf: Crea una card por cada mascota del dueño -->
           <div
             th:each="pet : ${pets}"
             class="bg-white rounded-[2rem] p-6 shadow-sm flex flex-col sm:flex-row sm:items-center gap-6"

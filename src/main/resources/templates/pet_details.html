@@ -138,7 +138,7 @@
             </h2>
 
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
 
                 <!-- Especie -->
                 <div class="bg-white rounded-2xl p-6 shadow-sm">
@@ -203,6 +203,20 @@
                         kg
 
                     </p>
+                </div>
+
+
+                <!-- Dueño -->
+                <div class="bg-white rounded-2xl p-6 shadow-sm">
+
+                    <p class="text-sm text-text/50 mb-2">
+                        Dueño
+                    </p>
+
+                    <p th:text="${pet.owner?.name ?: 'Sin asignar'}" class="font-bold text-lg">
+                        John Doe
+                    </p>
+
                 </div>
             </div>
         </section>

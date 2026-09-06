@@ -5,6 +5,7 @@ import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
+import lombok.ToString;
 
 @Data
 @AllArgsConstructor
@@ -19,6 +20,11 @@ public class Pet {
 
     @Column(name = "name", length = 50, nullable = false)
     private String name;
+
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id")
+    @ToString.Exclude
+    private Owner owner;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "species", length = 20, nullable = false)
@@ -38,7 +44,5 @@ public class Pet {
 
     @Column(name = "photo_url", length = 255, nullable = true)
     private String photoUrl;
-
-    private Long ownerId;
 
 }

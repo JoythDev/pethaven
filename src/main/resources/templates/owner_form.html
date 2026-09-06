@@ -52,6 +52,18 @@
             />
           </div>
 
+          <!-- Teléfono -->
+          <div class="flex flex-col gap-1">
+            <label for="phone" class="text-sm font-bold">Teléfono</label>
+            <input
+            type="text"
+            id="phone"
+            th:field="*{phone}"
+            required
+            class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm"
+            />
+          </div>
+
           <!-- Correo -->
           <div class="flex flex-col gap-1">
             <label for="email" class="text-sm font-bold">Correo</label>
@@ -64,13 +76,13 @@
             />
           </div>
 
-          <!-- Teléfono -->
+          <!-- Contraseña -->
           <div class="flex flex-col gap-1">
-            <label for="phone" class="text-sm font-bold">Teléfono</label>
+            <label for="password" class="text-sm font-bold">Contraseña</label>
             <input
-              type="text"
-              id="phone"
-              th:field="*{phone}"
+              type="password"
+              id="password"
+              th:field="*{password}"
               required
               class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm"
             />

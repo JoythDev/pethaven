@@ -1,12 +1,14 @@
 package io.github.pethaven.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Builder;
-import lombok.Data;
-import lombok.NoArgsConstructor;
+import lombok.*;
 
-@Data
+import java.util.ArrayList;
+import java.util.List;
+
+@Getter
+@Setter
+@ToString(exclude = "pets")
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
@@ -31,5 +33,9 @@ public class Owner {
 
     @Column(name = "phone", length = 20, nullable = true)
     private String phone;
+
+    @Builder.Default
+    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Pet> pets = new ArrayList<>();
 
 }
