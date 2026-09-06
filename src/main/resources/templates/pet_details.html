@@ -218,7 +218,7 @@
 
 
                 <!-- Dueño -->
-                <div class="bg-white rounded-2xl p-6 shadow-sm">
+                <a th:href="@{/owners/{id}(id=${pet.owner?.id})}" class="bg-white rounded-2xl p-6 shadow-sm">
 
                     <p class="text-sm text-text/50 mb-2">
                         Dueño
@@ -228,7 +228,7 @@
                         John Doe
                     </p>
 
-                </div>
+                </a>
             </div>
         </section>
 
