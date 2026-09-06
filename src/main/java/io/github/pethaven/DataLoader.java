@@ -41,11 +41,12 @@ public class DataLoader implements CommandLineRunner {
         // ==== Cargar mascotas de ejemplo ====
         // ====================================
 
-        petRepository.save(Pet.builder().name("Buddy").species(Species.DOG).breed("Golden Retriever").age(3).weight(15.0).disease("None").photoUrl("https://images.unsplash.com/photo-1633722715463-d30f4f325e24?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cGVycm8lMjBnb2xkZW4lMjByZXRyaWV2ZXJ8ZW58MHx8MHx8fDA%3D").build());
-        petRepository.save(Pet.builder().name("Whiskers").species(Species.CAT).breed("Persian").age(2).weight(4.5).disease("None").photoUrl("https://eu-central-1.graphassets.com/AnwjgMYRvQfWK3bRPjoq3z/resize=height:778,width:1080/output=format:webp/GftmE5Qtm0AtcNcRWRA1").build());
-        petRepository.save(Pet.builder().name("Max").species(Species.DOG).breed("German Shepherd").age(4).weight(20.0).disease("None").photoUrl("https://ask.woodgreen.org.uk/media/pages/images/5979b7d0bc-1727379943/german-shepherd-900x900-crop-52-5-28-8.jpg").build());
-        petRepository.save(Pet.builder().name("Luna").species(Species.CAT).breed("Siamese").age(1).weight(3.0).disease("None").photoUrl("https://assets.elanco.com/8e0bf1c2-1ae4-001f-9257-f2be3c683fb1/fca42f04-2474-4302-a238-990c8aebfe8c/Siamese_cat_1110x740.jpg").build());
-        petRepository.save(Pet.builder().name("Charlie").species(Species.DOG).breed("Beagle").age(5).weight(10.0).disease("None").photoUrl("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRWp3zpN9nyTOC-i1UVNYwutRtjTHDpc40wIIE1BSUTn0kMqAk6ztLwffh&s=10").build());
+        petRepository.save(Pet.builder().name("Buddy").species(Species.DOG).breed("Golden Retriever").age(3).weight(15.0).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1633722715463-d30f4f325e24?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cGVycm8lMjBnb2xkZW4lMjByZXRyaWV2ZXJ8ZW58MHx8MHx8fDA%3D").build());
+        petRepository.save(Pet.builder().name("Whiskers").species(Species.CAT).breed("Persian").age(2).weight(4.5).disease("None").isActive(true).photoUrl("https://eu-central-1.graphassets.com/AnwjgMYRvQfWK3bRPjoq3z/resize=height:778,width:1080/output=format:webp/GftmE5Qtm0AtcNcRWRA1").build());
+        petRepository.save(Pet.builder().name("Max").species(Species.DOG).breed("German Shepherd").age(4).weight(20.0).disease("None").isActive(true).photoUrl("https://ask.woodgreen.org.uk/media/pages/images/5979b7d0bc-1727379943/german-shepherd-900x900-crop-52-5-28-8.jpg").build());
+        petRepository.save(Pet.builder().name("Luna").species(Species.CAT).breed("Siamese").age(1).weight(3.0).disease("None").isActive(true).photoUrl("https://assets.elanco.com/8e0bf1c2-1ae4-001f-9257-f2be3c683fb1/fca42f04-2474-4302-a238-990c8aebfe8c/Siamese_cat_1110x740.jpg").build());
+        petRepository.save(Pet.builder().name("Charlie").species(Species.DOG).breed("Beagle").age(5).weight(10.0).disease("None").isActive(true).photoUrl("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRWp3zpN9nyTOC-i1UVNYwutRtjTHDpc40wIIE1BSUTn0kMqAk6ztLwffh&s=10").build());
+        petRepository.save(Pet.builder().name("Rocky").species(Species.CAT).breed("Sphynx").age(6).weight(4.0).disease("None").photoUrl("https://images.unsplash.com/photo-1574158622682-e40e69881006?fm=jpg&q=60&w=3000&auto=format&fit=crop").isActive(false).build());
 
         // ===========================================
         // ==== Asignar mascotas a dueños al azar ====

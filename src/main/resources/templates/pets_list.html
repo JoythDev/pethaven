@@ -31,13 +31,17 @@
                 <th class="pb-4 px-4 font-normal">Especie</th>
                 <th class="pb-4 px-4 font-normal">Ficha Médica</th>
                 <th class="pb-4 px-4 font-normal">Estado</th>
+                <th class="pb-4 px-4 font-normal">Activo</th>
                 <th class="pb-4 px-4 font-normal">Acciones</th>
               </tr>
             </thead>
             
             <tbody id="tableBody" class="divide-y divide-text/10">
               <!-- Iteración de Thymeleaf: Crea una fila (tr) por cada mascota -->
-              <tr th:each="pet : ${pets}" class="border-b border-text/5 hover:bg-background/50 transition-colors group">
+              <!-- Las mascotas inactivas se muestran atenuadas (opacity-40) -->
+              <tr th:each="pet : ${pets}"
+                  th:classappend="${!pet.isActive} ? 'opacity-40'"
+                  class="border-b border-text/5 hover:bg-background/50 transition-colors">
                 
                 <!-- Columna 1: Creado por / Paciente (Foto + Nombre + Subtexto) -->
                 <td class="py-4 px-4">
@@ -90,10 +94,17 @@
                   </span>
                 </td>
                 
-                <!-- Columna 5: Acciones -->
+                <!-- Columna 5: Activo (toggle de estado) -->
+                <td class="py-4 px-4">
+                  <form th:action="@{/pets/toggle/{id}(id=${pet.id})}" method="post">
+                    <div th:replace="~{fragments :: active-toggle(${pet}, true)}"></div>
+                  </form>
+                </td>
+                
+                <!-- Columna 6: Acciones -->
                 <td class="py-4 px-4">
                   <!-- Las rutas usan el ID dinámico de la mascota -->
-                  <div class="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+                  <div class="flex items-center gap-3">
                     <!-- Enlace a los detalles (/pets/{id}) -->
                     <a th:href="@{/pets/{id}(id=${pet.id})}" class="text-sm font-bold text-primary hover:text-tertiary transition-colors">
                       Ver Ficha
@@ -102,13 +113,6 @@
                     <!-- Enlace para editar (/pets/update/{id}) -->
                     <a th:href="@{/pets/update/{id}(id=${pet.id})}" class="text-sm font-bold text-text/60 hover:text-tertiary transition-colors">
                       Editar
-                    </a>
-                    <span class="text-text/20">|</span>
-                    <!-- Enlace para eliminar (/pets/delete/{id}), con confirmación antes de borrar -->
-                    <a th:href="@{/pets/delete/{id}(id=${pet.id})}"
-                     th:onclick="|'return confirm('¿Eliminar a ' + ${pet.name} + '? Esta acción no se puede deshacer.')|'"
-                     class="text-sm font-bold text-red-500 hover:text-red-700 transition-colors">
-                      Eliminar
                     </a>
                   </div>
                 </td>  

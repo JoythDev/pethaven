@@ -45,4 +45,8 @@ public class Pet {
     @Column(name = "photo_url", length = 255, nullable = true)
     private String photoUrl;
 
+    @Builder.Default
+    @Column(name = "is_active", nullable = false)
+    private boolean isActive = true;
+
 }

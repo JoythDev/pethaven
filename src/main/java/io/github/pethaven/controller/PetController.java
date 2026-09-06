@@ -64,9 +64,11 @@ public class PetController {
         return "redirect:/pets/" + id;
     }
 
-    @GetMapping("/delete/{id}")
-    public String deletePet(@PathVariable Long id) {
-        petService.deletePetById(id);
-        return "redirect:/pets";
+    @PostMapping("/toggle/{id}")
+    public String switchPetActive(@PathVariable Long id,
+                                  @RequestParam(required = false, defaultValue = "false") boolean isActive,
+                                  @RequestParam(defaultValue = "false") boolean redirectToDetails) {
+        petService.switchPetActiveStatus(id, isActive);
+        return redirectToDetails ? "redirect:/pets/" + id : "redirect:/pets";
     }
 }

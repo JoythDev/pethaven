@@ -84,6 +84,19 @@
       </div>
     </header>
 
+    <!-- Fragmento: toggle de estado activo de la mascota
+         autoSubmit=true  -> envía el formulario contenedor al cambiar (listado / detalles)
+         autoSubmit=false -> forma parte de un formulario mayor (form de alta/edición) -->
+    <label th:fragment="active-toggle(pet, autoSubmit)"
+           class="relative inline-flex w-11 h-6 cursor-pointer items-center">
+      <input type="hidden" name="_isActive" value="on" />
+      <input type="checkbox" id="isActive" name="isActive" value="true" th:checked="${pet.isActive}"
+             th:onchange="${autoSubmit} ? 'this.form.submit()'" class="sr-only peer"
+             th:aria-label="${#strings.isEmpty(pet.name)} ? 'Cambiar estado activo' : 'Cambiar estado activo de ' + ${pet.name}" />
+      <div class="w-11 h-6 rounded-full bg-text/20 transition-colors peer-checked:bg-primary"></div>
+      <div class="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5"></div>
+    </label>
+
     <!-- Fragmento del Footer con rutas corregidas -->
     <footer th:fragment="footer" id="footer" class="bg-tertiary text-background text-center pb-8 pt-20 px-15">
       <div class="flex flex-col lg:flex-row lg:justify-between gap-4 text-left text-sm pb-15">

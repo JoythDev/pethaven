@@ -31,8 +31,10 @@ public class PetServiceImpl implements PetService {
     }
 
     @Override
-    public void deletePetById(Long id) {
-        petRepository.deleteById(id);
+    public void switchPetActiveStatus(Long id, boolean isActive) {
+        Pet pet = getPetById(id);
+        pet.setActive(isActive);
+        petRepository.save(pet);
     }
 
     @Override

@@ -101,7 +101,7 @@
                       Editar
                     </a>
                     <span class="text-text/20">|</span>
-                    <!-- Enlace para eliminar (/pets/delete/{id}) -->
+                    <!-- Enlace para eliminar (/owners/delete/{id}); elimina también sus mascotas por cascada -->
                     <a th:href="@{/owners/delete/{id}(id=${owner.id})}" class="text-sm font-bold text-red-400 hover:text-red-500 transition-colors">
                       Eliminar
                     </a>
