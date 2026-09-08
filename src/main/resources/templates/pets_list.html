@@ -40,7 +40,7 @@
               <!-- Iteración de Thymeleaf: Crea una fila (tr) por cada mascota -->
               <!-- Las mascotas inactivas se muestran atenuadas (opacity-40) -->
               <tr th:each="pet : ${pets}"
-                  th:classappend="${!pet.isActive} ? 'opacity-40'"
+                  th:classappend="${!pet.active} ? 'opacity-40'"
                   class="border-b border-text/5 hover:bg-background/50 transition-colors">
                 
                 <!-- Columna 1: Creado por / Paciente (Foto + Nombre + Subtexto) -->
@@ -83,13 +83,13 @@
                 
                 <!-- Columna 4: Status / Estado (Badges / Etiquetas de colores) -->
                 <td class="py-4 px-4">
-                  <!-- Lógica de Thymeleaf: Si está sano (Enfermedad == 'None') muestra badge estilo verde/primary -->
-                  <span th:if="${pet.disease == 'None'}" class="inline-flex items-center bg-primary/20 text-tertiary px-3 py-1 rounded-md text-xs font-bold">
+                  <!-- Si no tiene diagnóstico registrado, muestra badge estilo verde/primary -->
+                  <span th:if="${#strings.isEmpty(pet.disease)}" class="inline-flex items-center bg-primary/20 text-tertiary px-3 py-1 rounded-md text-xs font-bold">
                     Estable
                   </span>
                   
                   <!-- Si tiene enfermedad, muestra la enfermedad con badge estilo advertencia/tertiary -->
-                  <span th:unless="${pet.disease == 'None'}" class="inline-flex items-center bg-secondary/50 text-tertiary px-3 py-1 rounded-md text-xs font-bold" th:text="${pet.disease}">
+                  <span th:unless="${#strings.isEmpty(pet.disease)}" class="inline-flex items-center bg-secondary/50 text-tertiary px-3 py-1 rounded-md text-xs font-bold" th:text="${pet.disease}">
                     Enfermedad
                   </span>
                 </td>

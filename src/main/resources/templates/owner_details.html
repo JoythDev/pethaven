@@ -143,14 +143,14 @@
 
               <!-- Estado -->
               <span
-                th:if="${pet.disease == 'None'}"
+                th:if="${pet.active}"
                 class="inline-flex items-center bg-primary text-background px-4 py-1.5 rounded-full text-sm font-bold mt-3"
               >
                 Activa
               </span>
 
               <span
-                th:unless="${pet.disease == 'None'}"
+                th:unless="${pet.active}"
                 class="inline-flex items-center bg-text/30 text-white px-4 py-1.5 rounded-full text-sm font-bold mt-3"
               >
                 Inactiva

@@ -89,8 +89,8 @@
          autoSubmit=false -> forma parte de un formulario mayor (form de alta/edición) -->
     <label th:fragment="active-toggle(pet, autoSubmit)"
            class="relative inline-flex w-11 h-6 cursor-pointer items-center">
-      <input type="hidden" name="_isActive" value="on" />
-      <input type="checkbox" id="isActive" name="isActive" value="true" th:checked="${pet.isActive}"
+      <input type="hidden" name="_active" value="on" />
+      <input type="checkbox" th:id="'active-' + ${pet.id}" name="active" value="true" th:checked="${pet.active}"
              th:onchange="${autoSubmit} ? 'this.form.submit()'" class="sr-only peer"
              th:aria-label="${#strings.isEmpty(pet.name)} ? 'Cambiar estado activo' : 'Cambiar estado activo de ' + ${pet.name}" />
       <div class="w-11 h-6 rounded-full bg-text/20 transition-colors peer-checked:bg-primary"></div>

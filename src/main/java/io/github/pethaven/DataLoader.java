@@ -9,7 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-
+import java.util.List;
 import java.util.Random;
 
 @Component
@@ -22,10 +22,17 @@ public class DataLoader implements CommandLineRunner {
     @Autowired
     private PetRepository petRepository;
 
+    private final Random random = new Random(42);
+
+    private List<Owner> ownerPool;
+
+    private void savePet(Pet pet) {
+        pet.setOwner(ownerPool.get(random.nextInt(ownerPool.size())));
+        petRepository.save(pet);
+    }
+
     @Override
     public void run(String... args) throws Exception {
-
-        Random random = new Random(42);
 
         // ==================================
         // ==== Cargar dueños de ejemplo ====
@@ -141,176 +148,165 @@ public class DataLoader implements CommandLineRunner {
         ownerRepository.save(Owner.builder().name("Guillermo Fuster").document("173815723").phone("640567891").email("guillermo.fuster@example.com").password("pass1234").build());
         ownerRepository.save(Owner.builder().name("Rodrigo Alcántara").document("284926834").phone("650567892").email("rodrigo.alcantara@example.com").password("ejemplo123").build());
 
+        ownerPool = ownerRepository.findAll();
 
         // ====================================
         // ==== Cargar mascotas de ejemplo ====
         // ====================================
-        petRepository.save(Pet.builder().name("Buddy").species(Species.DOG).breed("Golden Retriever").age(3).weight(15.0).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1633722715463-d30f4f325e24?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cGVycm8lMjBnb2xkZW4lMjByZXRyaWV2ZXJ8ZW58MHx8MHx8fDA%3D").build());
-        petRepository.save(Pet.builder().name("Whiskers").species(Species.CAT).breed("Persian").age(2).weight(4.5).disease("None").isActive(true).photoUrl("https://eu-central-1.graphassets.com/AnwjgMYRvQfWK3bRPjoq3z/resize=height:778,width:1080/output=format:webp/GftmE5Qtm0AtcNcRWRA1").build());
-        petRepository.save(Pet.builder().name("Max").species(Species.DOG).breed("German Shepherd").age(4).weight(20.0).disease("None").isActive(true).photoUrl("https://ask.woodgreen.org.uk/media/pages/images/5979b7d0bc-1727379943/german-shepherd-900x900-crop-52-5-28-8.jpg").build());
-        petRepository.save(Pet.builder().name("Luna").species(Species.CAT).breed("Siamese").age(1).weight(3.0).disease("None").isActive(true).photoUrl("https://assets.elanco.com/8e0bf1c2-1ae4-001f-9257-f2be3c683fb1/fca42f04-2474-4302-a238-990c8aebfe8c/Siamese_cat_1110x740.jpg").build());
-        petRepository.save(Pet.builder().name("Charlie").species(Species.DOG).breed("Beagle").age(5).weight(10.0).disease("None").isActive(true).photoUrl("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRWp3zpN9nyTOC-i1UVNYwutRtjTHDpc40wIIE1BSUTn0kMqAk6ztLwffh&s=10").build());
-        petRepository.save(Pet.builder().name("Rocky").species(Species.CAT).breed("Sphynx").age(6).weight(4.0).disease("None").photoUrl("https://images.unsplash.com/photo-1574158622682-e40e69881006?fm=jpg&q=60&w=3000&auto=format&fit=crop").isActive(false).build());
+        savePet(Pet.builder().name("Buddy").species(Species.DOG).breed("Golden Retriever").age(3).weight(15.0).active(true).photoUrl("https://images.unsplash.com/photo-1633722715463-d30f4f325e24?fm=jpg&q=60&w=3000&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cGVycm8lMjBnb2xkZW4lMjByZXRyaWV2ZXJ8ZW58MHx8MHx8fDA%3D").build());
+        savePet(Pet.builder().name("Whiskers").species(Species.CAT).breed("Persian").age(2).weight(4.5).active(true).photoUrl("https://eu-central-1.graphassets.com/AnwjgMYRvQfWK3bRPjoq3z/resize=height:778,width:1080/output=format:webp/GftmE5Qtm0AtcNcRWRA1").build());
+        savePet(Pet.builder().name("Max").species(Species.DOG).breed("German Shepherd").age(4).weight(20.0).active(true).photoUrl("https://ask.woodgreen.org.uk/media/pages/images/5979b7d0bc-1727379943/german-shepherd-900x900-crop-52-5-28-8.jpg").build());
+        savePet(Pet.builder().name("Luna").species(Species.CAT).breed("Siamese").age(1).weight(3.0).active(true).photoUrl("https://assets.elanco.com/8e0bf1c2-1ae4-001f-9257-f2be3c683fb1/fca42f04-2474-4302-a238-990c8aebfe8c/Siamese_cat_1110x740.jpg").build());
+        savePet(Pet.builder().name("Charlie").species(Species.DOG).breed("Beagle").age(5).weight(10.0).active(true).photoUrl("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRWp3zpN9nyTOC-i1UVNYwutRtjTHDpc40wIIE1BSUTn0kMqAk6ztLwffh&s=10").build());
+        savePet(Pet.builder().name("Rocky").species(Species.CAT).breed("Sphynx").age(6).weight(4.0).photoUrl("https://images.unsplash.com/photo-1574158622682-e40e69881006?fm=jpg&q=60&w=3000&auto=format&fit=crop").active(false).build());
 
-        petRepository.save(Pet.builder().name("Toby").species(Species.DOG).breed("Golden Retriever").age(3).weight(14.5).disease("None").isActive(true).photoUrl("https://placedog.net/500/400?id=1").build());
-        petRepository.save(Pet.builder().name("Thor").species(Species.DOG).breed("Pastor Alemán").age(5).weight(32.0).disease("None").isActive(true).photoUrl("https://placedog.net/500/400?id=2").build());
-        petRepository.save(Pet.builder().name("Kira").species(Species.CAT).breed("Bengalí").age(2).weight(3.8).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=1").build());
-        petRepository.save(Pet.builder().name("Nina").species(Species.CAT).breed("Europeo Común").age(4).weight(4.2).disease("Conjuntivitis").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=2").build());
-        petRepository.save(Pet.builder().name("Zeus").species(Species.DOG).breed("Dóberman").age(4).weight(35.0).disease("None").isActive(true).photoUrl("https://placedog.net/500/400?id=3").build());
-        petRepository.save(Pet.builder().name("Apolo").species(Species.DOG).breed("Labrador Retriever").age(2).weight(12.0).disease("None").isActive(true).photoUrl("https://placedog.net/500/400?id=4").build());
-        petRepository.save(Pet.builder().name("Misha").species(Species.CAT).breed("Persa").age(6).weight(5.1).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=3").build());
-        petRepository.save(Pet.builder().name("Laia").species(Species.CAT).breed("Abisinio").age(3).weight(3.5).disease("Asma felino").isActive(false).photoUrl("https://loremflickr.com/500/400/kitten?lock=4").build());
-        petRepository.save(Pet.builder().name("Rayo").species(Species.DOG).breed("Galgo Español").age(7).weight(27.5).disease("None").isActive(true).photoUrl("https://placedog.net/500/400?id=5").build());
-        petRepository.save(Pet.builder().name("Bruno").species(Species.DOG).breed("Boxer").age(3).weight(28.0).disease("Displasia de cadera").isActive(true).photoUrl("https://placedog.net/500/400?id=6").build());
-        petRepository.save(Pet.builder().name("Mia").species(Species.CAT).breed("Siamés").age(1).weight(2.9).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=5").build());
-        petRepository.save(Pet.builder().name("Nube").species(Species.CAT).breed("Angora Turco").age(5).weight(4.4).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=6").build());
-        petRepository.save(Pet.builder().name("Diesel").species(Species.DOG).breed("Rottweiler").age(6).weight(41.0).disease("Artritis").isActive(true).photoUrl("https://placedog.net/500/400?id=7").build());
-        petRepository.save(Pet.builder().name("Titán").species(Species.DOG).breed("Dogo Argentino").age(5).weight(38.5).disease("None").isActive(true).photoUrl("https://placedog.net/500/400?id=8").build());
-        petRepository.save(Pet.builder().name("India").species(Species.CAT).breed("Bosque de Noruega").age(4).weight(5.6).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=7").build());
-        petRepository.save(Pet.builder().name("Nala").species(Species.CAT).breed("Maine Coon").age(3).weight(6.2).disease("None").isActive(false).photoUrl("https://loremflickr.com/500/400/kitten?lock=8").build());
-        petRepository.save(Pet.builder().name("Duna").species(Species.DOG).breed("Mestizo").age(2).weight(9.8).disease("Leishmaniasis").isActive(true).photoUrl("https://placedog.net/500/400?id=9").build());
-        petRepository.save(Pet.builder().name("Canela").species(Species.DOG).breed("Cocker Spaniel").age(8).weight(13.2).disease("Otitis externa").isActive(true).photoUrl("https://placedog.net/500/400?id=10").build());
-        petRepository.save(Pet.builder().name("Gala").species(Species.CAT).breed("Ragdoll").age(2).weight(4.0).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=9").build());
-        petRepository.save(Pet.builder().name("Frida").species(Species.CAT).breed("Azul Ruso").age(10).weight(5.0).disease("Leucemia felina").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=10").build());
-        petRepository.save(Pet.builder().name("Rocco").species(Species.DOG).breed("Pastor Belga").age(4).weight(30.0).disease("None").isActive(true).photoUrl("https://placedog.net/500/400?id=11").build());
-        petRepository.save(Pet.builder().name("Nero").species(Species.DOG).breed("Schnauzer").age(9).weight(8.5).disease("Cataratas").isActive(true).photoUrl("https://placedog.net/500/400?id=12").build());
-        petRepository.save(Pet.builder().name("Dalí").species(Species.CAT).breed("Europeo Común").age(10).weight(5.0).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=11").build());
-        petRepository.save(Pet.builder().name("Gaudí").species(Species.CAT).breed("Siamés").age(4).weight(3.9).disease("Dermatitis alérgica").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=12").build());
-        petRepository.save(Pet.builder().name("Rudy").species(Species.DOG).breed("Beagle").age(5).weight(11.0).disease("Tos de las perreras").isActive(true).photoUrl("https://placedog.net/500/400?id=13").build());
-        petRepository.save(Pet.builder().name("Cometa").species(Species.DOG).breed("Border Collie").age(3).weight(16.5).disease("None").isActive(true).photoUrl("https://placedog.net/500/400?id=14").build());
-        petRepository.save(Pet.builder().name("Tomasa").species(Species.CAT).breed("Europeo Común").age(12).weight(4.6).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=13").build());
-        petRepository.save(Pet.builder().name("Matilda").species(Species.CAT).breed("Persa").age(7).weight(4.8).disease("Estreñimiento").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=14").build());
-        petRepository.save(Pet.builder().name("Simba").species(Species.DOG).breed("Shar Pei").age(2).weight(19.5).disease("Obesidad").isActive(true).photoUrl("https://placedog.net/500/400?id=15").build());
-        petRepository.save(Pet.builder().name("Otto").species(Species.DOG).breed("Teckel").age(6).weight(8.2).disease("Hernia discal").isActive(true).photoUrl("https://placedog.net/500/400?id=16").build());
-        petRepository.save(Pet.builder().name("Cleo").species(Species.CAT).breed("Bengalí").age(3).weight(4.1).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=15").build());
-        petRepository.save(Pet.builder().name("Casimira").species(Species.CAT).breed("Himalayo").age(8).weight(4.4).disease("Panleucopenia felina").isActive(false).photoUrl("https://loremflickr.com/500/400/kitten?lock=16").build());
-        petRepository.save(Pet.builder().name("Firulais").species(Species.DOG).breed("Mestizo").age(4).weight(12.4).disease("None").isActive(true).photoUrl("https://placedog.net/500/400?id=17").build());
-        petRepository.save(Pet.builder().name("Iker").species(Species.DOG).breed("Husky Siberiano").age(3).weight(24.0).disease("Otitis externa").isActive(false).photoUrl("https://placedog.net/500/400?id=18").build());
-        petRepository.save(Pet.builder().name("Aisha").species(Species.CAT).breed("Abisinio").age(2).weight(3.2).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=17").build());
-        petRepository.save(Pet.builder().name("Mora").species(Species.CAT).breed("Europeo Común").age(5).weight(3.9).disease("Conjuntivitis").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=18").build());
-        petRepository.save(Pet.builder().name("Balto").species(Species.DOG).breed("Akita Inu").age(7).weight(33.0).disease("None").isActive(true).photoUrl("https://placedog.net/500/400?id=19").build());
-        petRepository.save(Pet.builder().name("Trueno").species(Species.DOG).breed("Pastor Alemán").age(4).weight(29.5).disease("Displasia de cadera").isActive(true).photoUrl("https://placedog.net/500/400?id=20").build());
-        petRepository.save(Pet.builder().name("Miel").species(Species.CAT).breed("Persa").age(4).weight(4.3).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=19").build());
-        petRepository.save(Pet.builder().name("Azúcar").species(Species.CAT).breed("Siamés").age(6).weight(3.7).disease("Asma felino").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=20").build());
-        petRepository.save(Pet.builder().name("Lobo").species(Species.DOG).breed("Mestizo").age(11).weight(34.2).disease("None").isActive(true).photoUrl("https://placedog.net/500/400?id=21").build());
-        petRepository.save(Pet.builder().name("Trufa").species(Species.DOG).breed("Caniche").age(9).weight(6.5).disease("None").isActive(true).photoUrl("https://placedog.net/500/400?id=22").build());
-        petRepository.save(Pet.builder().name("Vainilla").species(Species.CAT).breed("Angora Turco").age(5).weight(4.5).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=21").build());
-        petRepository.save(Pet.builder().name("Sol").species(Species.CAT).breed("Europeo Común").age(3).weight(3.3).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=22").build());
-        petRepository.save(Pet.builder().name("Chispa").species(Species.DOG).breed("Carlino").age(4).weight(7.8).disease("None").isActive(true).photoUrl("https://placedog.net/500/400?id=23").build());
-        petRepository.save(Pet.builder().name("Perla").species(Species.DOG).breed("Bichón Frisé").age(6).weight(5.4).disease("Dermatitis alérgica").isActive(true).photoUrl("https://placedog.net/500/400?id=24").build());
-        petRepository.save(Pet.builder().name("Cielo").species(Species.CAT).breed("Bosque de Noruega").age(6).weight(5.4).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=23").build());
-        petRepository.save(Pet.builder().name("Pandora").species(Species.CAT).breed("Persa").age(3).weight(4.2).disease("Urolitiasis (piedras en la vejiga)").isActive(false).photoUrl("https://loremflickr.com/500/400/kitten?lock=24").build());
-        petRepository.save(Pet.builder().name("Anubis").species(Species.DOG).breed("Mastín Español").age(5).weight(42.0).disease("Leishmaniasis").isActive(true).photoUrl("https://placedog.net/500/400?id=25").build());
-        petRepository.save(Pet.builder().name("Halcón").species(Species.DOG).breed("Pointer").age(6).weight(26.0).disease("Tos de las perreras").isActive(true).photoUrl("https://placedog.net/500/400?id=26").build());
-        petRepository.save(Pet.builder().name("Vega").species(Species.CAT).breed("Azul Ruso").age(7).weight(4.6).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=25").build());
-        petRepository.save(Pet.builder().name("Altair").species(Species.CAT).breed("Europeo Común").age(2).weight(3.4).disease("Dermatofitosis (tiña)").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=26").build());
-        petRepository.save(Pet.builder().name("Fénix").species(Species.DOG).breed("Setter Irlandés").age(3).weight(27.0).disease("Parvovirus").isActive(false).photoUrl("https://placedog.net/500/400?id=27").build());
-        petRepository.save(Pet.builder().name("Atlas").species(Species.DOG).breed("Gran Danés").age(4).weight(50.0).disease("None").isActive(true).photoUrl("https://placedog.net/500/400?id=28").build());
-        petRepository.save(Pet.builder().name("Dakar").species(Species.CAT).breed("Ragdoll").age(4).weight(5.5).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=27").build());
-        petRepository.save(Pet.builder().name("Kenya").species(Species.CAT).breed("Bengalí").age(1).weight(2.4).disease("None").isActive(false).photoUrl("https://loremflickr.com/500/400/kitten?lock=28").build());
+        savePet(Pet.builder().name("Toby").species(Species.DOG).breed("Golden Retriever").age(3).weight(14.5).active(true).photoUrl("https://placedog.net/500/400?id=1").build());
+        savePet(Pet.builder().name("Thor").species(Species.DOG).breed("Pastor Alemán").age(5).weight(32.0).active(true).photoUrl("https://placedog.net/500/400?id=2").build());
+        savePet(Pet.builder().name("Kira").species(Species.CAT).breed("Bengalí").age(2).weight(3.8).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=1").build());
+        savePet(Pet.builder().name("Nina").species(Species.CAT).breed("Europeo Común").age(4).weight(4.2).disease("Conjuntivitis").active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=2").build());
+        savePet(Pet.builder().name("Zeus").species(Species.DOG).breed("Dóberman").age(4).weight(35.0).active(true).photoUrl("https://placedog.net/500/400?id=3").build());
+        savePet(Pet.builder().name("Apolo").species(Species.DOG).breed("Labrador Retriever").age(2).weight(12.0).active(true).photoUrl("https://placedog.net/500/400?id=4").build());
+        savePet(Pet.builder().name("Misha").species(Species.CAT).breed("Persa").age(6).weight(5.1).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=3").build());
+        savePet(Pet.builder().name("Laia").species(Species.CAT).breed("Abisinio").age(3).weight(3.5).disease("Asma felino").active(false).photoUrl("https://loremflickr.com/500/400/kitten?lock=4").build());
+        savePet(Pet.builder().name("Rayo").species(Species.DOG).breed("Galgo Español").age(7).weight(27.5).active(true).photoUrl("https://placedog.net/500/400?id=5").build());
+        savePet(Pet.builder().name("Bruno").species(Species.DOG).breed("Boxer").age(3).weight(28.0).disease("Displasia de cadera").active(true).photoUrl("https://placedog.net/500/400?id=6").build());
+        savePet(Pet.builder().name("Mia").species(Species.CAT).breed("Siamés").age(1).weight(2.9).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=5").build());
+        savePet(Pet.builder().name("Nube").species(Species.CAT).breed("Angora Turco").age(5).weight(4.4).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=6").build());
+        savePet(Pet.builder().name("Diesel").species(Species.DOG).breed("Rottweiler").age(6).weight(41.0).disease("Artritis").active(true).photoUrl("https://placedog.net/500/400?id=7").build());
+        savePet(Pet.builder().name("Titán").species(Species.DOG).breed("Dogo Argentino").age(5).weight(38.5).active(true).photoUrl("https://placedog.net/500/400?id=8").build());
+        savePet(Pet.builder().name("India").species(Species.CAT).breed("Bosque de Noruega").age(4).weight(5.6).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=7").build());
+        savePet(Pet.builder().name("Nala").species(Species.CAT).breed("Maine Coon").age(3).weight(6.2).active(false).photoUrl("https://loremflickr.com/500/400/kitten?lock=8").build());
+        savePet(Pet.builder().name("Duna").species(Species.DOG).breed("Mestizo").age(2).weight(9.8).disease("Leishmaniasis").active(true).photoUrl("https://placedog.net/500/400?id=9").build());
+        savePet(Pet.builder().name("Canela").species(Species.DOG).breed("Cocker Spaniel").age(8).weight(13.2).disease("Otitis externa").active(true).photoUrl("https://placedog.net/500/400?id=10").build());
+        savePet(Pet.builder().name("Gala").species(Species.CAT).breed("Ragdoll").age(2).weight(4.0).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=9").build());
+        savePet(Pet.builder().name("Frida").species(Species.CAT).breed("Azul Ruso").age(10).weight(5.0).disease("Leucemia felina").active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=10").build());
+        savePet(Pet.builder().name("Rocco").species(Species.DOG).breed("Pastor Belga").age(4).weight(30.0).active(true).photoUrl("https://placedog.net/500/400?id=11").build());
+        savePet(Pet.builder().name("Nero").species(Species.DOG).breed("Schnauzer").age(9).weight(8.5).disease("Cataratas").active(true).photoUrl("https://placedog.net/500/400?id=12").build());
+        savePet(Pet.builder().name("Dalí").species(Species.CAT).breed("Europeo Común").age(10).weight(5.0).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=11").build());
+        savePet(Pet.builder().name("Gaudí").species(Species.CAT).breed("Siamés").age(4).weight(3.9).disease("Dermatitis alérgica").active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=12").build());
+        savePet(Pet.builder().name("Rudy").species(Species.DOG).breed("Beagle").age(5).weight(11.0).disease("Tos de las perreras").active(true).photoUrl("https://placedog.net/500/400?id=13").build());
+        savePet(Pet.builder().name("Cometa").species(Species.DOG).breed("Border Collie").age(3).weight(16.5).active(true).photoUrl("https://placedog.net/500/400?id=14").build());
+        savePet(Pet.builder().name("Tomasa").species(Species.CAT).breed("Europeo Común").age(12).weight(4.6).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=13").build());
+        savePet(Pet.builder().name("Matilda").species(Species.CAT).breed("Persa").age(7).weight(4.8).disease("Estreñimiento").active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=14").build());
+        savePet(Pet.builder().name("Simba").species(Species.DOG).breed("Shar Pei").age(2).weight(19.5).disease("Obesidad").active(true).photoUrl("https://placedog.net/500/400?id=15").build());
+        savePet(Pet.builder().name("Otto").species(Species.DOG).breed("Teckel").age(6).weight(8.2).disease("Hernia discal").active(true).photoUrl("https://placedog.net/500/400?id=16").build());
+        savePet(Pet.builder().name("Cleo").species(Species.CAT).breed("Bengalí").age(3).weight(4.1).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=15").build());
+        savePet(Pet.builder().name("Casimira").species(Species.CAT).breed("Himalayo").age(8).weight(4.4).disease("Panleucopenia felina").active(false).photoUrl("https://loremflickr.com/500/400/kitten?lock=16").build());
+        savePet(Pet.builder().name("Firulais").species(Species.DOG).breed("Mestizo").age(4).weight(12.4).active(true).photoUrl("https://placedog.net/500/400?id=17").build());
+        savePet(Pet.builder().name("Iker").species(Species.DOG).breed("Husky Siberiano").age(3).weight(24.0).disease("Otitis externa").active(false).photoUrl("https://placedog.net/500/400?id=18").build());
+        savePet(Pet.builder().name("Aisha").species(Species.CAT).breed("Abisinio").age(2).weight(3.2).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=17").build());
+        savePet(Pet.builder().name("Mora").species(Species.CAT).breed("Europeo Común").age(5).weight(3.9).disease("Conjuntivitis").active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=18").build());
+        savePet(Pet.builder().name("Balto").species(Species.DOG).breed("Akita Inu").age(7).weight(33.0).active(true).photoUrl("https://placedog.net/500/400?id=19").build());
+        savePet(Pet.builder().name("Trueno").species(Species.DOG).breed("Pastor Alemán").age(4).weight(29.5).disease("Displasia de cadera").active(true).photoUrl("https://placedog.net/500/400?id=20").build());
+        savePet(Pet.builder().name("Miel").species(Species.CAT).breed("Persa").age(4).weight(4.3).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=19").build());
+        savePet(Pet.builder().name("Azúcar").species(Species.CAT).breed("Siamés").age(6).weight(3.7).disease("Asma felino").active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=20").build());
+        savePet(Pet.builder().name("Lobo").species(Species.DOG).breed("Mestizo").age(11).weight(34.2).active(true).photoUrl("https://placedog.net/500/400?id=21").build());
+        savePet(Pet.builder().name("Trufa").species(Species.DOG).breed("Caniche").age(9).weight(6.5).active(true).photoUrl("https://placedog.net/500/400?id=22").build());
+        savePet(Pet.builder().name("Vainilla").species(Species.CAT).breed("Angora Turco").age(5).weight(4.5).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=21").build());
+        savePet(Pet.builder().name("Sol").species(Species.CAT).breed("Europeo Común").age(3).weight(3.3).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=22").build());
+        savePet(Pet.builder().name("Chispa").species(Species.DOG).breed("Carlino").age(4).weight(7.8).active(true).photoUrl("https://placedog.net/500/400?id=23").build());
+        savePet(Pet.builder().name("Perla").species(Species.DOG).breed("Bichón Frisé").age(6).weight(5.4).disease("Dermatitis alérgica").active(true).photoUrl("https://placedog.net/500/400?id=24").build());
+        savePet(Pet.builder().name("Cielo").species(Species.CAT).breed("Bosque de Noruega").age(6).weight(5.4).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=23").build());
+        savePet(Pet.builder().name("Pandora").species(Species.CAT).breed("Persa").age(3).weight(4.2).disease("Urolitiasis (piedras en la vejiga)").active(false).photoUrl("https://loremflickr.com/500/400/kitten?lock=24").build());
+        savePet(Pet.builder().name("Anubis").species(Species.DOG).breed("Mastín Español").age(5).weight(42.0).disease("Leishmaniasis").active(true).photoUrl("https://placedog.net/500/400?id=25").build());
+        savePet(Pet.builder().name("Halcón").species(Species.DOG).breed("Pointer").age(6).weight(26.0).disease("Tos de las perreras").active(true).photoUrl("https://placedog.net/500/400?id=26").build());
+        savePet(Pet.builder().name("Vega").species(Species.CAT).breed("Azul Ruso").age(7).weight(4.6).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=25").build());
+        savePet(Pet.builder().name("Altair").species(Species.CAT).breed("Europeo Común").age(2).weight(3.4).disease("Dermatofitosis (tiña)").active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=26").build());
+        savePet(Pet.builder().name("Fénix").species(Species.DOG).breed("Setter Irlandés").age(3).weight(27.0).disease("Parvovirus").active(false).photoUrl("https://placedog.net/500/400?id=27").build());
+        savePet(Pet.builder().name("Atlas").species(Species.DOG).breed("Gran Danés").age(4).weight(50.0).active(true).photoUrl("https://placedog.net/500/400?id=28").build());
+        savePet(Pet.builder().name("Dakar").species(Species.CAT).breed("Ragdoll").age(4).weight(5.5).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=27").build());
+        savePet(Pet.builder().name("Kenya").species(Species.CAT).breed("Bengalí").age(1).weight(2.4).active(false).photoUrl("https://loremflickr.com/500/400/kitten?lock=28").build());
 
-        petRepository.save(Pet.builder().name("Neptuno").species(Species.DOG).breed("San Bernardo").age(8).weight(45.0).disease("Moquillo canino").isActive(true).photoUrl("https://placedog.net/500/400?id=29").build());
-        petRepository.save(Pet.builder().name("Sancho").species(Species.DOG).breed("Podenco Andaluz").age(6).weight(20.0).disease("None").isActive(true).photoUrl("https://placedog.net/500/400?id=30").build());
-        petRepository.save(Pet.builder().name("Kiara").species(Species.CAT).breed("Maine Coon").age(5).weight(6.0).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=29").build());
-        petRepository.save(Pet.builder().name("Dakota").species(Species.CAT).breed("Europeo Común").age(9).weight(4.9).disease("Conjuntivitis").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=30").build());
-        petRepository.save(Pet.builder().name("Mordisco").species(Species.DOG).breed("Bulldog Francés").age(4).weight(12.0).disease("Obesidad").isActive(true).photoUrl("https://placedog.net/500/400?id=31").build());
-        petRepository.save(Pet.builder().name("Colmillo").species(Species.DOG).breed("Pastor Belga").age(5).weight(28.5).disease("Hipotiroidismo").isActive(true).photoUrl("https://placedog.net/500/400?id=32").build());
-        petRepository.save(Pet.builder().name("Mamba").species(Species.CAT).breed("Esfinge").age(3).weight(4.8).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=31").build());
-        petRepository.save(Pet.builder().name("Rumba").species(Species.CAT).breed("Munchkin").age(2).weight(3.1).disease("Obesidad").isActive(false).photoUrl("https://loremflickr.com/500/400/kitten?lock=32").build());
-        petRepository.save(Pet.builder().name("Garra").species(Species.DOG).breed("Dóberman").age(5).weight(34.0).disease("None").isActive(true).photoUrl("https://placedog.net/500/400?id=33").build());
-        petRepository.save(Pet.builder().name("Tigre").species(Species.DOG).breed("Mestizo").age(7).weight(22.0).disease("Otitis externa").isActive(true).photoUrl("https://placedog.net/500/400?id=34").build());
-        petRepository.save(Pet.builder().name("Ronda").species(Species.CAT).breed("Europeo Común").age(14).weight(5.2).disease("None").isActive(false).photoUrl("https://loremflickr.com/500/400/kitten?lock=33").build());
-        petRepository.save(Pet.builder().name("Neo").species(Species.CAT).breed("Persa").age(11).weight(4.6).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=34").build());
-        petRepository.save(Pet.builder().name("Osito").species(Species.DOG).breed("Chihuahua").age(3).weight(2.6).disease("None").isActive(true).photoUrl("https://placedog.net/500/400?id=35").build());
-        petRepository.save(Pet.builder().name("Oso").species(Species.DOG).breed("San Bernardo").age(9).weight(52.0).disease("Displasia de cadera").isActive(true).photoUrl("https://placedog.net/500/400?id=36").build());
-        petRepository.save(Pet.builder().name("Eros").species(Species.CAT).breed("Angora Turco").age(8).weight(4.0).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=35").build());
-        petRepository.save(Pet.builder().name("Noa").species(Species.CAT).breed("Europeo Común").age(6).weight(4.4).disease("Alergia alimentaria").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=36").build());
-        petRepository.save(Pet.builder().name("Lupa").species(Species.DOG).breed("Braco Alemán").age(5).weight(27.0).disease("Artritis").isActive(false).photoUrl("https://placedog.net/500/400?id=37").build());
-        petRepository.save(Pet.builder().name("Loba").species(Species.DOG).breed("Mestizo").age(9).weight(30.4).disease("None").isActive(true).photoUrl("https://placedog.net/500/400?id=38").build());
-        petRepository.save(Pet.builder().name("Lua").species(Species.CAT).breed("Maine Coon").age(10).weight(6.4).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=37").build());
-        petRepository.save(Pet.builder().name("Lila").species(Species.CAT).breed("Persa").age(13).weight(4.1).disease("Cataratas").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=38").build());
-        petRepository.save(Pet.builder().name("Quijote").species(Species.DOG).breed("Pointer").age(6).weight(28.0).disease("Tos de las perreras").isActive(true).photoUrl("https://placedog.net/500/400?id=39").build());
-        petRepository.save(Pet.builder().name("Rocinante").species(Species.DOG).breed("Setter Irlandés").age(4).weight(26.5).disease("None").isActive(true).photoUrl("https://placedog.net/500/400?id=40").build());
-        petRepository.save(Pet.builder().name("Bigotes").species(Species.CAT).breed("Siamés").age(9).weight(3.6).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=39").build());
-        petRepository.save(Pet.builder().name("Botas").species(Species.CAT).breed("Europeo Común").age(15).weight(4.7).disease("None").isActive(false).photoUrl("https://loremflickr.com/500/400/kitten?lock=40").build());
-        petRepository.save(Pet.builder().name("Chaplin").species(Species.DOG).breed("Bulldog Francés").age(8).weight(13.5).disease("Leishmaniasis").isActive(true).photoUrl("https://placedog.net/500/400?id=41").build());
-        petRepository.save(Pet.builder().name("Mordelón").species(Species.DOG).breed("Mestizo").age(5).weight(18.0).disease("Intoxicación alimentaria").isActive(true).photoUrl("https://placedog.net/500/400?id=42").build());
-        petRepository.save(Pet.builder().name("Calcetines").species(Species.CAT).breed("Persa").age(10).weight(4.5).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=41").build());
-        petRepository.save(Pet.builder().name("Toño").species(Species.CAT).breed("Abisinio").age(6).weight(3.4).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=42").build());
-        petRepository.save(Pet.builder().name("Duke").species(Species.DOG).breed("Golden Retriever").age(10).weight(30.0).disease("None").isActive(false).photoUrl("https://placedog.net/500/400?id=43").build());
-        petRepository.save(Pet.builder().name("Nico").species(Species.DOG).breed("Mestizo").age(3).weight(10.5).disease("None").isActive(true).photoUrl("https://placedog.net/500/400?id=44").build());
-        petRepository.save(Pet.builder().name("Pepe").species(Species.CAT).breed("Europeo Común").age(8).weight(4.0).disease("Infección del tracto urinario").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=43").build());
-        petRepository.save(Pet.builder().name("Chata").species(Species.CAT).breed("Angora Turco").age(12).weight(4.7).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=44").build());
-        petRepository.save(Pet.builder().name("Atila").species(Species.DOG).breed("Dogo Argentino").age(6).weight(40.0).disease("Moquillo canino").isActive(true).photoUrl("https://placedog.net/500/400?id=45").build());
-        petRepository.save(Pet.builder().name("Sultán").species(Species.DOG).breed("Malamute de Alaska").age(5).weight(36.5).disease("Displasia de cadera").isActive(true).photoUrl("https://placedog.net/500/400?id=46").build());
-        petRepository.save(Pet.builder().name("Rosita").species(Species.CAT).breed("Persa").age(4).weight(3.8).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=45").build());
-        petRepository.save(Pet.builder().name("Manchas").species(Species.CAT).breed("Abisinio").age(2).weight(3.1).disease("None").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=46").build());
-        petRepository.save(Pet.builder().name("Pirata").species(Species.DOG).breed("Mestizo").age(10).weight(21.5).disease("None").isActive(true).photoUrl("https://placedog.net/500/400?id=47").build());
-        petRepository.save(Pet.builder().name("Guapo").species(Species.DOG).breed("Chihuahua").age(6).weight(3.5).disease("Hipotiroidismo").isActive(true).photoUrl("https://placedog.net/500/400?id=48").build());
-        petRepository.save(Pet.builder().name("Mota").species(Species.CAT).breed("Bengalí").age(3).weight(4.3).disease("Conjuntivitis").isActive(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=47").build());
-        petRepository.save(Pet.builder().name("Copo").species(Species.CAT).breed("Europeo Común").age(7).weight(5.2).disease("None").isActive(false).photoUrl("https://loremflickr.com/500/400/kitten?lock=48").build());
-        petRepository.save(Pet.builder().name("Churro").species(Species.DOG).breed("Bulldog Francés").age(5).weight(11.8).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1552053831-71594a27632d?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Bombón").species(Species.DOG).breed("Caniche").age(7).weight(6.9).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Melocotón").species(Species.CAT).breed("Maine Coon").age(6).weight(6.1).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Mandarina").species(Species.CAT).breed("Europeo Común").age(11).weight(4.8).disease("None").isActive(false).photoUrl("https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Caramelo").species(Species.DOG).breed("Labrador Retriever").age(4).weight(15.2).disease("Artritis").isActive(true).photoUrl("https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Turrón").species(Species.DOG).breed("Chihuahua").age(2).weight(2.8).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Cereza").species(Species.CAT).breed("Siamés").age(5).weight(3.6).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Garbancito").species(Species.CAT).breed("Europeo Común").age(2).weight(2.7).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Neptuno").species(Species.DOG).breed("San Bernardo").age(8).weight(45.0).disease("Moquillo canino").active(true).photoUrl("https://placedog.net/500/400?id=29").build());
+        savePet(Pet.builder().name("Sancho").species(Species.DOG).breed("Podenco Andaluz").age(6).weight(20.0).active(true).photoUrl("https://placedog.net/500/400?id=30").build());
+        savePet(Pet.builder().name("Kiara").species(Species.CAT).breed("Maine Coon").age(5).weight(6.0).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=29").build());
+        savePet(Pet.builder().name("Dakota").species(Species.CAT).breed("Europeo Común").age(9).weight(4.9).disease("Conjuntivitis").active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=30").build());
+        savePet(Pet.builder().name("Mordisco").species(Species.DOG).breed("Bulldog Francés").age(4).weight(12.0).disease("Obesidad").active(true).photoUrl("https://placedog.net/500/400?id=31").build());
+        savePet(Pet.builder().name("Colmillo").species(Species.DOG).breed("Pastor Belga").age(5).weight(28.5).disease("Hipotiroidismo").active(true).photoUrl("https://placedog.net/500/400?id=32").build());
+        savePet(Pet.builder().name("Mamba").species(Species.CAT).breed("Esfinge").age(3).weight(4.8).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=31").build());
+        savePet(Pet.builder().name("Rumba").species(Species.CAT).breed("Munchkin").age(2).weight(3.1).disease("Obesidad").active(false).photoUrl("https://loremflickr.com/500/400/kitten?lock=32").build());
+        savePet(Pet.builder().name("Garra").species(Species.DOG).breed("Dóberman").age(5).weight(34.0).active(true).photoUrl("https://placedog.net/500/400?id=33").build());
+        savePet(Pet.builder().name("Tigre").species(Species.DOG).breed("Mestizo").age(7).weight(22.0).disease("Otitis externa").active(true).photoUrl("https://placedog.net/500/400?id=34").build());
+        savePet(Pet.builder().name("Ronda").species(Species.CAT).breed("Europeo Común").age(14).weight(5.2).active(false).photoUrl("https://loremflickr.com/500/400/kitten?lock=33").build());
+        savePet(Pet.builder().name("Neo").species(Species.CAT).breed("Persa").age(11).weight(4.6).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=34").build());
+        savePet(Pet.builder().name("Osito").species(Species.DOG).breed("Chihuahua").age(3).weight(2.6).active(true).photoUrl("https://placedog.net/500/400?id=35").build());
+        savePet(Pet.builder().name("Oso").species(Species.DOG).breed("San Bernardo").age(9).weight(52.0).disease("Displasia de cadera").active(true).photoUrl("https://placedog.net/500/400?id=36").build());
+        savePet(Pet.builder().name("Eros").species(Species.CAT).breed("Angora Turco").age(8).weight(4.0).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=35").build());
+        savePet(Pet.builder().name("Noa").species(Species.CAT).breed("Europeo Común").age(6).weight(4.4).disease("Alergia alimentaria").active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=36").build());
+        savePet(Pet.builder().name("Lupa").species(Species.DOG).breed("Braco Alemán").age(5).weight(27.0).disease("Artritis").active(false).photoUrl("https://placedog.net/500/400?id=37").build());
+        savePet(Pet.builder().name("Loba").species(Species.DOG).breed("Mestizo").age(9).weight(30.4).active(true).photoUrl("https://placedog.net/500/400?id=38").build());
+        savePet(Pet.builder().name("Lua").species(Species.CAT).breed("Maine Coon").age(10).weight(6.4).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=37").build());
+        savePet(Pet.builder().name("Lila").species(Species.CAT).breed("Persa").age(13).weight(4.1).disease("Cataratas").active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=38").build());
+        savePet(Pet.builder().name("Quijote").species(Species.DOG).breed("Pointer").age(6).weight(28.0).disease("Tos de las perreras").active(true).photoUrl("https://placedog.net/500/400?id=39").build());
+        savePet(Pet.builder().name("Rocinante").species(Species.DOG).breed("Setter Irlandés").age(4).weight(26.5).active(true).photoUrl("https://placedog.net/500/400?id=40").build());
+        savePet(Pet.builder().name("Bigotes").species(Species.CAT).breed("Siamés").age(9).weight(3.6).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=39").build());
+        savePet(Pet.builder().name("Botas").species(Species.CAT).breed("Europeo Común").age(15).weight(4.7).active(false).photoUrl("https://loremflickr.com/500/400/kitten?lock=40").build());
+        savePet(Pet.builder().name("Chaplin").species(Species.DOG).breed("Bulldog Francés").age(8).weight(13.5).disease("Leishmaniasis").active(true).photoUrl("https://placedog.net/500/400?id=41").build());
+        savePet(Pet.builder().name("Mordelón").species(Species.DOG).breed("Mestizo").age(5).weight(18.0).disease("Intoxicación alimentaria").active(true).photoUrl("https://placedog.net/500/400?id=42").build());
+        savePet(Pet.builder().name("Calcetines").species(Species.CAT).breed("Persa").age(10).weight(4.5).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=41").build());
+        savePet(Pet.builder().name("Toño").species(Species.CAT).breed("Abisinio").age(6).weight(3.4).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=42").build());
+        savePet(Pet.builder().name("Duke").species(Species.DOG).breed("Golden Retriever").age(10).weight(30.0).active(false).photoUrl("https://placedog.net/500/400?id=43").build());
+        savePet(Pet.builder().name("Nico").species(Species.DOG).breed("Mestizo").age(3).weight(10.5).active(true).photoUrl("https://placedog.net/500/400?id=44").build());
+        savePet(Pet.builder().name("Pepe").species(Species.CAT).breed("Europeo Común").age(8).weight(4.0).disease("Infección del tracto urinario").active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=43").build());
+        savePet(Pet.builder().name("Chata").species(Species.CAT).breed("Angora Turco").age(12).weight(4.7).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=44").build());
+        savePet(Pet.builder().name("Atila").species(Species.DOG).breed("Dogo Argentino").age(6).weight(40.0).disease("Moquillo canino").active(true).photoUrl("https://placedog.net/500/400?id=45").build());
+        savePet(Pet.builder().name("Sultán").species(Species.DOG).breed("Malamute de Alaska").age(5).weight(36.5).disease("Displasia de cadera").active(true).photoUrl("https://placedog.net/500/400?id=46").build());
+        savePet(Pet.builder().name("Rosita").species(Species.CAT).breed("Persa").age(4).weight(3.8).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=45").build());
+        savePet(Pet.builder().name("Manchas").species(Species.CAT).breed("Abisinio").age(2).weight(3.1).active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=46").build());
+        savePet(Pet.builder().name("Pirata").species(Species.DOG).breed("Mestizo").age(10).weight(21.5).active(true).photoUrl("https://placedog.net/500/400?id=47").build());
+        savePet(Pet.builder().name("Guapo").species(Species.DOG).breed("Chihuahua").age(6).weight(3.5).disease("Hipotiroidismo").active(true).photoUrl("https://placedog.net/500/400?id=48").build());
+        savePet(Pet.builder().name("Mota").species(Species.CAT).breed("Bengalí").age(3).weight(4.3).disease("Conjuntivitis").active(true).photoUrl("https://loremflickr.com/500/400/kitten?lock=47").build());
+        savePet(Pet.builder().name("Copo").species(Species.CAT).breed("Europeo Común").age(7).weight(5.2).active(false).photoUrl("https://loremflickr.com/500/400/kitten?lock=48").build());
+        savePet(Pet.builder().name("Churro").species(Species.DOG).breed("Bulldog Francés").age(5).weight(11.8).active(true).photoUrl("https://images.unsplash.com/photo-1552053831-71594a27632d?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Bombón").species(Species.DOG).breed("Caniche").age(7).weight(6.9).active(true).photoUrl("https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Melocotón").species(Species.CAT).breed("Maine Coon").age(6).weight(6.1).active(true).photoUrl("https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Mandarina").species(Species.CAT).breed("Europeo Común").age(11).weight(4.8).active(false).photoUrl("https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Caramelo").species(Species.DOG).breed("Labrador Retriever").age(4).weight(15.2).disease("Artritis").active(true).photoUrl("https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Turrón").species(Species.DOG).breed("Chihuahua").age(2).weight(2.8).active(true).photoUrl("https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Cereza").species(Species.CAT).breed("Siamés").age(5).weight(3.6).active(true).photoUrl("https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Garbancito").species(Species.CAT).breed("Europeo Común").age(2).weight(2.7).active(true).photoUrl("https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=800&q=60&auto=format&fit=crop").build());
 
-        petRepository.save(Pet.builder().name("Galleta").species(Species.DOG).breed("Beagle").age(9).weight(12.0).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1561037404-61cd46aa615b?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Migas").species(Species.DOG).breed("Mestizo").age(14).weight(17.3).disease("Artritis").isActive(false).photoUrl("https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Nuez").species(Species.CAT).breed("Ragdoll").age(3).weight(4.6).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1519052537078-e6302a4968d4?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Aitana").species(Species.CAT).breed("Persa").age(6).weight(4.4).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1495360010541-f48722b34f7d?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Fideo").species(Species.DOG).breed("Teckel").age(7).weight(7.4).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1537151625747-768eb6cf92b2?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Bolita").species(Species.DOG).breed("Carlino").age(8).weight(8.9).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1477884213360-7e9d7dcc1e48?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Felina").species(Species.CAT).breed("Europeo Común").age(16).weight(4.0).disease("Insuficiencia renal crónica").isActive(false).photoUrl("https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Mostaza").species(Species.CAT).breed("Bengalí").age(4).weight(4.5).disease("None").isActive(true).photoUrl("https://eu-central-1.graphassets.com/AnwjgMYRvQfWK3bRPjoq3z/resize=height:778,width:1080/output=format:webp/GftmE5Qtm0AtcNcRWRA1").build());
+        savePet(Pet.builder().name("Galleta").species(Species.DOG).breed("Beagle").age(9).weight(12.0).active(true).photoUrl("https://images.unsplash.com/photo-1561037404-61cd46aa615b?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Migas").species(Species.DOG).breed("Mestizo").age(14).weight(17.3).disease("Artritis").active(false).photoUrl("https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Nuez").species(Species.CAT).breed("Ragdoll").age(3).weight(4.6).active(true).photoUrl("https://images.unsplash.com/photo-1519052537078-e6302a4968d4?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Aitana").species(Species.CAT).breed("Persa").age(6).weight(4.4).active(true).photoUrl("https://images.unsplash.com/photo-1495360010541-f48722b34f7d?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Fideo").species(Species.DOG).breed("Teckel").age(7).weight(7.4).active(true).photoUrl("https://images.unsplash.com/photo-1537151625747-768eb6cf92b2?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Bolita").species(Species.DOG).breed("Carlino").age(8).weight(8.9).active(true).photoUrl("https://images.unsplash.com/photo-1477884213360-7e9d7dcc1e48?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Felina").species(Species.CAT).breed("Europeo Común").age(16).weight(4.0).disease("Insuficiencia renal crónica").active(false).photoUrl("https://images.unsplash.com/photo-1592194996308-7b43878e84a6?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Mostaza").species(Species.CAT).breed("Bengalí").age(4).weight(4.5).active(true).photoUrl("https://eu-central-1.graphassets.com/AnwjgMYRvQfWK3bRPjoq3z/resize=height:778,width:1080/output=format:webp/GftmE5Qtm0AtcNcRWRA1").build());
 
-        petRepository.save(Pet.builder().name("Rex").species(Species.DOG).breed("Pastor Alemán").age(8).weight(35.5).disease("Leishmaniasis").isActive(true).photoUrl("https://images.unsplash.com/photo-1561037404-61cd46aa615b?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Keko").species(Species.DOG).breed("Golden Retriever").age(5).weight(17.0).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Pimienta").species(Species.CAT).breed("Esfinge").age(3).weight(5.0).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1519052537078-e6302a4968d4?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Rubia").species(Species.CAT).breed("Europeo Común").age(5).weight(4.2).disease("Leucemia felina").isActive(true).photoUrl("https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Ringo").species(Species.DOG).breed("Border Collie").age(6).weight(19.0).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1537151625747-768eb6cf92b2?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Turbo").species(Species.DOG).breed("Husky Siberiano").age(3).weight(21.5).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1477884213360-7e9d7dcc1e48?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Lucero").species(Species.CAT).breed("Persa").age(9).weight(4.1).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Capitana").species(Species.CAT).breed("Europeo Común").age(6).weight(4.5).disease("Obesidad").isActive(true).photoUrl("https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Yako").species(Species.DOG).breed("Boxer").age(9).weight(30.0).disease("Tos de las perreras").isActive(true).photoUrl("https://images.unsplash.com/photo-1552053831-71594a27632d?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Chiquitín").species(Species.DOG).breed("Chihuahua").age(4).weight(3.2).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Pereza").species(Species.CAT).breed("Angora Turco").age(7).weight(4.6).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Tinieblas").species(Species.CAT).breed("Europeo Común").age(8).weight(4.3).disease("Dermatofitosis (tiña)").isActive(true).photoUrl("https://images.unsplash.com/photo-1519052537078-e6302a4968d4?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Milú").species(Species.DOG).breed("Caniche").age(6).weight(5.6).disease("None").isActive(false).photoUrl("https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Barrabás").species(Species.DOG).breed("Dóberman").age(7).weight(38.0).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Orejas").species(Species.CAT).breed("Abisinio").age(4).weight(3.6).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Coliflor").species(Species.CAT).breed("Persa").age(4).weight(4.7).disease("None").isActive(false).photoUrl("https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Trasto").species(Species.DOG).breed("Mestizo").age(11).weight(20.5).disease("Moquillo canino").isActive(true).photoUrl("https://images.unsplash.com/photo-1552053831-71594a27632d?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Pacha").species(Species.DOG).breed("Shiba Inu").age(3).weight(9.5).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Albahaca").species(Species.CAT).breed("Europeo Común").age(2).weight(2.6).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1519052537078-e6302a4968d4?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Romero").species(Species.CAT).breed("Bengalí").age(5).weight(4.7).disease("Conjuntivitis").isActive(true).photoUrl("https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Karma").species(Species.DOG).breed("Shar Pei").age(4).weight(20.0).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1537151625747-768eb6cf92b2?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Grumo").species(Species.DOG).breed("Podenco Andaluz").age(8).weight(22.5).disease("Displasia de cadera").isActive(false).photoUrl("https://images.unsplash.com/photo-1477884213360-7e9d7dcc1e48?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Salvia").species(Species.CAT).breed("Angora Turco").age(10).weight(4.3).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Ámbar").species(Species.CAT).breed("Europeo Común").age(3).weight(3.8).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Trozo").species(Species.DOG).breed("Mestizo").age(12).weight(24.0).disease("Otitis externa").isActive(true).photoUrl("https://images.unsplash.com/photo-1560807707-8cc77767d783?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Brownie").species(Species.DOG).breed("Labrador Retriever").age(6).weight(28.0).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1591160690555-5debfba289f0?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Topacio").species(Species.CAT).breed("Europeo Común").age(3).weight(3.8).disease("None").isActive(true).photoUrl("https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=800&q=60&auto=format&fit=crop").build());
-        petRepository.save(Pet.builder().name("Esmeralda").species(Species.CAT).breed("Siamés").age(7).weight(3.9).disease("Infección del tracto urinario").isActive(true).photoUrl("https://eu-central-1.graphassets.com/AnwjgMYRvQfWK3bRPjoq3z/resize=height:778,width:1080/output=format:webp/GftmE5Qtm0AtcNcRWRA1").build());
-        petRepository.save(Pet.builder().name("Oreo").species(Species.DOG).breed("Bichón Frisé").age(5).weight(6.2).disease("None").isActive(true).photoUrl("https://ask.woodgreen.org.uk/media/pages/images/5979b7d0bc-1727379943/german-shepherd-900x900-crop-52-5-28-8.jpg").build());
-        petRepository.save(Pet.builder().name("Canelo").species(Species.DOG).breed("Galgo Español").age(10).weight(29.0).disease("Artritis").isActive(false).photoUrl("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRWp3zpN9nyTOC-i1UVNYwutRtjTHDpc40wIIE1BSUTn0kMqAk6ztLwffh&s=10").build());
-        petRepository.save(Pet.builder().name("Zafiro").species(Species.CAT).breed("Europeo Común").age(9).weight(4.6).disease("None").isActive(true).photoUrl("https://assets.elanco.com/8e0bf1c2-1ae4-001f-9257-f2be3c683fb1/fca42f04-2474-4302-a238-990c8aebfe8c/Siamese_cat_1110x740.jpg").build());
-        petRepository.save(Pet.builder().name("Jade").species(Species.CAT).breed("Persa").age(12).weight(4.4).disease("None").isActive(false).photoUrl("https://images.unsplash.com/photo-1495360010541-f48722b34f7d?w=800&q=60&auto=format&fit=crop").build());
-
-
-        // ===========================================
-        // ==== Asignar mascotas a dueños al azar ====
-        // ===========================================
-        int ownerCount = (int) ownerRepository.count();
-        for (Pet pet : petRepository.findAll()) {
-            Owner owner = ownerRepository.findById((long) (random.nextInt(ownerCount) + 1)).orElseThrow();
-            pet.setOwner(owner);
-            petRepository.save(pet);
-        }
+        savePet(Pet.builder().name("Rex").species(Species.DOG).breed("Pastor Alemán").age(8).weight(35.5).disease("Leishmaniasis").active(true).photoUrl("https://images.unsplash.com/photo-1561037404-61cd46aa615b?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Keko").species(Species.DOG).breed("Golden Retriever").age(5).weight(17.0).active(true).photoUrl("https://images.unsplash.com/photo-1548199973-03cce0bbc87b?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Pimienta").species(Species.CAT).breed("Esfinge").age(3).weight(5.0).active(true).photoUrl("https://images.unsplash.com/photo-1519052537078-e6302a4968d4?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Rubia").species(Species.CAT).breed("Europeo Común").age(5).weight(4.2).disease("Leucemia felina").active(true).photoUrl("https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Ringo").species(Species.DOG).breed("Border Collie").age(6).weight(19.0).active(true).photoUrl("https://images.unsplash.com/photo-1537151625747-768eb6cf92b2?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Turbo").species(Species.DOG).breed("Husky Siberiano").age(3).weight(21.5).active(true).photoUrl("https://images.unsplash.com/photo-1477884213360-7e9d7dcc1e48?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Lucero").species(Species.CAT).breed("Persa").age(9).weight(4.1).active(true).photoUrl("https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Capitana").species(Species.CAT).breed("Europeo Común").age(6).weight(4.5).disease("Obesidad").active(true).photoUrl("https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Yako").species(Species.DOG).breed("Boxer").age(9).weight(30.0).disease("Tos de las perreras").active(true).photoUrl("https://images.unsplash.com/photo-1552053831-71594a27632d?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Chiquitín").species(Species.DOG).breed("Chihuahua").age(4).weight(3.2).active(true).photoUrl("https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Pereza").species(Species.CAT).breed("Angora Turco").age(7).weight(4.6).active(true).photoUrl("https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Tinieblas").species(Species.CAT).breed("Europeo Común").age(8).weight(4.3).disease("Dermatofitosis (tiña)").active(true).photoUrl("https://images.unsplash.com/photo-1519052537078-e6302a4968d4?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Milú").species(Species.DOG).breed("Caniche").age(6).weight(5.6).active(false).photoUrl("https://images.unsplash.com/photo-1583511655857-d19b40a7a54e?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Barrabás").species(Species.DOG).breed("Dóberman").age(7).weight(38.0).active(true).photoUrl("https://images.unsplash.com/photo-1518717758536-85ae29035b6d?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Orejas").species(Species.CAT).breed("Abisinio").age(4).weight(3.6).active(true).photoUrl("https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Coliflor").species(Species.CAT).breed("Persa").age(4).weight(4.7).active(false).photoUrl("https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Trasto").species(Species.DOG).breed("Mestizo").age(11).weight(20.5).disease("Moquillo canino").active(true).photoUrl("https://images.unsplash.com/photo-1552053831-71594a27632d?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Pacha").species(Species.DOG).breed("Shiba Inu").age(3).weight(9.5).active(true).photoUrl("https://images.unsplash.com/photo-1587300003388-59208cc962cb?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Albahaca").species(Species.CAT).breed("Europeo Común").age(2).weight(2.6).active(true).photoUrl("https://images.unsplash.com/photo-1519052537078-e6302a4968d4?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Romero").species(Species.CAT).breed("Bengalí").age(5).weight(4.7).disease("Conjuntivitis").active(true).photoUrl("https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Karma").species(Species.DOG).breed("Shar Pei").age(4).weight(20.0).active(true).photoUrl("https://images.unsplash.com/photo-1537151625747-768eb6cf92b2?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Grumo").species(Species.DOG).breed("Podenco Andaluz").age(8).weight(22.5).disease("Displasia de cadera").active(false).photoUrl("https://images.unsplash.com/photo-1477884213360-7e9d7dcc1e48?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Salvia").species(Species.CAT).breed("Angora Turco").age(10).weight(4.3).active(true).photoUrl("https://images.unsplash.com/photo-1573865526739-10659fec78a5?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Ámbar").species(Species.CAT).breed("Europeo Común").age(3).weight(3.8).active(true).photoUrl("https://images.unsplash.com/photo-1543852786-1cf6624b9987?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Trozo").species(Species.DOG).breed("Mestizo").age(12).weight(24.0).disease("Otitis externa").active(true).photoUrl("https://images.unsplash.com/photo-1560807707-8cc77767d783?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Brownie").species(Species.DOG).breed("Labrador Retriever").age(6).weight(28.0).active(true).photoUrl("https://images.unsplash.com/photo-1591160690555-5debfba289f0?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Topacio").species(Species.CAT).breed("Europeo Común").age(3).weight(3.8).active(true).photoUrl("https://images.unsplash.com/photo-1518791841217-8f162f1e1131?w=800&q=60&auto=format&fit=crop").build());
+        savePet(Pet.builder().name("Esmeralda").species(Species.CAT).breed("Siamés").age(7).weight(3.9).disease("Infección del tracto urinario").active(true).photoUrl("https://eu-central-1.graphassets.com/AnwjgMYRvQfWK3bRPjoq3z/resize=height:778,width:1080/output=format:webp/GftmE5Qtm0AtcNcRWRA1").build());
+        savePet(Pet.builder().name("Oreo").species(Species.DOG).breed("Bichón Frisé").age(5).weight(6.2).active(true).photoUrl("https://ask.woodgreen.org.uk/media/pages/images/5979b7d0bc-1727379943/german-shepherd-900x900-crop-52-5-28-8.jpg").build());
+        savePet(Pet.builder().name("Canelo").species(Species.DOG).breed("Galgo Español").age(10).weight(29.0).disease("Artritis").active(false).photoUrl("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRWp3zpN9nyTOC-i1UVNYwutRtjTHDpc40wIIE1BSUTn0kMqAk6ztLwffh&s=10").build());
+        savePet(Pet.builder().name("Zafiro").species(Species.CAT).breed("Europeo Común").age(9).weight(4.6).active(true).photoUrl("https://assets.elanco.com/8e0bf1c2-1ae4-001f-9257-f2be3c683fb1/fca42f04-2474-4302-a238-990c8aebfe8c/Siamese_cat_1110x740.jpg").build());
+        savePet(Pet.builder().name("Jade").species(Species.CAT).breed("Persa").age(12).weight(4.4).active(false).photoUrl("https://images.unsplash.com/photo-1495360010541-f48722b34f7d?w=800&q=60&auto=format&fit=crop").build());
     }
-
 }
 

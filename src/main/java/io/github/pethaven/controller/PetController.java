@@ -12,6 +12,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.beans.propertyeditors.StringTrimmerEditor;
+import org.springframework.web.bind.WebDataBinder;
+import org.springframework.web.bind.annotation.InitBinder;
 
 @Controller
 @RequestMapping("/pets")
@@ -64,9 +67,15 @@ public class PetController {
 
     @PostMapping("/toggle/{id}")
     public String switchPetActive(@PathVariable Long id,
-                                  @RequestParam(required = false, defaultValue = "false") boolean isActive,
+                                  @RequestParam(required = false, defaultValue = "false") boolean active,
                                   @RequestParam(defaultValue = "false") boolean redirectToDetails) {
-        petService.switchPetActiveStatus(id, isActive);
+        petService.switchPetActiveStatus(id, active);
         return redirectToDetails ? "redirect:/pets/" + id : "redirect:/pets";
+    }
+
+    /** Convierte los campos de texto vacíos en null al recibir formularios. */
+    @InitBinder
+    public void initBinder(WebDataBinder binder) {
+        binder.registerCustomEditor(String.class, new StringTrimmerEditor(true));
     }
 }

@@ -26,6 +26,7 @@ public class PetServiceImpl implements PetService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Pet> getAllPets() {
         return petRepository.findAll();
     }
@@ -39,13 +40,15 @@ public class PetServiceImpl implements PetService {
     }
 
     @Override
-    public void switchPetActiveStatus(Long id, boolean isActive) {
+    @Transactional
+    public void switchPetActiveStatus(Long id, boolean active) {
         Pet pet = getPetById(id);
-        pet.setActive(isActive);
+        pet.setActive(active);
         petRepository.save(pet);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<Pet> getPetsByOwnerId(Long ownerId) {
         return petRepository.findByOwnerId(ownerId);
     }

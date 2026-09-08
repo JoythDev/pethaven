@@ -8,6 +8,7 @@ import lombok.*;
 @AllArgsConstructor
 @NoArgsConstructor
 @Builder
+@Table(name = "pets")
 @Entity
 public class Pet {
 
@@ -18,12 +19,12 @@ public class Pet {
     @Column(name = "name", length = 60, nullable = false)
     private String name;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "owner_id", nullable = false)
     private Owner owner;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "species", nullable = false)
+    @Column(name = "species", nullable = false, length = 10)
     private Species species;
 
     @Column(name = "breed", length = 60, nullable = false)
@@ -32,7 +33,7 @@ public class Pet {
     @Column(name = "age", nullable = false)
     private Integer age;
 
-    @Column(name = "weight", nullable = true)
+    @Column(name = "weight", nullable = false)
     private Double weight;
 
     @Column(name = "disease", length = 120, nullable = true)
@@ -43,6 +44,6 @@ public class Pet {
 
     @Builder.Default
     @Column(name = "is_active", nullable = false)
-    private boolean isActive = true;
+    private boolean active = true;
 
 }
