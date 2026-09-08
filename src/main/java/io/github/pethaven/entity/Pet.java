@@ -18,8 +18,9 @@ public class Pet {
     @Column(name = "name", length = 60, nullable = false)
     private String name;
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "owner_id")
+    // Muchas mascotas pueden pertenecer a un dueño, pero cada mascota tiene un solo dueño.
+    @ManyToOne(fetch = FetchType.LAZY) // FetchType.LAZY para evitar cargar el owner cuando no es necesario
+    @JoinColumn(name = "owner_id") // Nombre explícito de la columna de la clave foránea
     private Owner owner;
 
     @Enumerated(EnumType.STRING)
@@ -41,7 +42,7 @@ public class Pet {
     @Column(name = "photo_url", length = 500, nullable = true)
     private String photoUrl;
 
-    @Builder.Default
+    @Builder.Default // Builder tiene en cuenta el inicializador del campo
     @Column(name = "is_active", nullable = false)
     private boolean isActive = true;
 

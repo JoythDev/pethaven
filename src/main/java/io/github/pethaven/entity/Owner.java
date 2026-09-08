@@ -2,6 +2,8 @@ package io.github.pethaven.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -34,8 +36,10 @@ public class Owner {
     @Column(name = "phone", length = 20, nullable = false)
     private String phone;
 
-    @Builder.Default
-    @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true)
+    @Builder.Default // Builder tiene en cuenta el inicializador de la lista
+    // @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true) // JPA - Introduce bug al actualizar un Owner (elimina sus mascotas)
+    @OneToMany(mappedBy = "owner")
+    @OnDelete(action = OnDeleteAction.CASCADE) // Hibernate
     private List<Pet> pets = new ArrayList<>();
 
 }
