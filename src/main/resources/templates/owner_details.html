@@ -103,8 +103,7 @@
         </h2>
 
         <div class="flex flex-col gap-5">
-          <!-- Iteración de Thymeleaf: Crea una card por cada mascota del dueño
-                     (la relación Owner-Pets aún no existe, este es el ejemplo base) -->
+          <!-- Iteración de Thymeleaf: Crea una card por cada mascota del dueño -->
           <div
             th:each="pet : ${pets}"
             class="bg-white rounded-[2rem] p-6 shadow-sm flex flex-col sm:flex-row sm:items-center gap-6"
@@ -144,14 +143,14 @@
 
               <!-- Estado -->
               <span
-                th:if="${pet.disease == 'None'}"
+                th:if="${pet.active}"
                 class="inline-flex items-center bg-primary text-background px-4 py-1.5 rounded-full text-sm font-bold mt-3"
               >
                 Activa
               </span>
 
               <span
-                th:unless="${pet.disease == 'None'}"
+                th:unless="${pet.active}"
                 class="inline-flex items-center bg-text/30 text-white px-4 py-1.5 rounded-full text-sm font-bold mt-3"
               >
                 Inactiva

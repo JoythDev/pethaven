@@ -22,8 +22,8 @@
         </div>
 
 
-        <!-- Tarjeta principal de la mascota -->
-        <section class="bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm">
+        <!-- Tarjeta principal de la mascota (atenuada si la mascota está inactiva) -->
+        <section th:classappend="${!pet.active} ? 'opacity-40'" class="bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm">
 
             <div class="grid grid-cols-1 lg:grid-cols-[280px_1fr] gap-8">
 
@@ -84,12 +84,12 @@
 
 
                         <!-- Estado -->
-                        <span th:if="${pet.disease == 'None'}"
+                        <span th:if="${#strings.isEmpty(pet.disease)}"
                             class="inline-flex items-center w-fit bg-primary/20 text-tertiary px-4 py-2 rounded-full text-sm font-bold">
                             Estable
                         </span>
 
-                        <span th:unless="${pet.disease == 'None'}"
+                        <span th:unless="${#strings.isEmpty(pet.disease)}"
                             class="inline-flex items-center w-fit bg-secondary/50 text-tertiary px-4 py-2 rounded-full text-sm font-bold">
                             En tratamiento
                         </span>
@@ -101,25 +101,36 @@
                     <div class="border-t border-text/10 my-6"></div>
 
 
-                    <!-- Diagnóstico -->
-                    <div>
+                    <!-- Diagnóstico (izquierda) + Toggle de estado activo (derecha) -->
+                    <div class="flex items-start justify-between gap-6">
 
-                        <h2 class="font-bold text-base mb-2">
-                            Diagnóstico
-                        </h2>
+                        <div>
 
-                        <p
-                            th:if="${pet.disease != 'None'}"
-                            th:text="${pet.disease}"
-                            class="text-text/70 leading-relaxed">
-                            Feline Leukemia
-                        </p>
+                            <h2 class="font-bold text-base mb-2">
+                                Diagnóstico
+                            </h2>
 
-                        <p
-                            th:if="${pet.disease == 'None'}"
-                            class="text-text/70 leading-relaxed">
-                            No presenta enfermedades registradas.
-                        </p>
+                            <p
+                                th:if="${!#strings.isEmpty(pet.disease)}"
+                                th:text="${#strings.isEmpty(pet.disease)}"
+                                class="text-text/70 leading-relaxed">
+                                Feline Leukemia
+                            </p>
+
+                            <p
+                                th:if="${pet.disease == 'None'}"
+                                class="text-text/70 leading-relaxed">
+                                No presenta enfermedades registradas.
+                            </p>
+
+                        </div>
+
+
+                        <!-- Toggle de estado activo -->
+                        <form th:action="@{/pets/toggle/{id}(id=${pet.id})}" method="post">
+                            <input type="hidden" name="redirectToDetails" value="true" />
+                            <div th:replace="~{fragments :: active-toggle(${pet}, true)}"></div>
+                        </form>
 
                     </div>
 
@@ -138,7 +149,7 @@
             </h2>
 
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-5">
 
                 <!-- Especie -->
                 <div class="bg-white rounded-2xl p-6 shadow-sm">
@@ -204,6 +215,20 @@
 
                     </p>
                 </div>
+
+
+                <!-- Dueño -->
+                <a th:href="@{/owners/{id}(id=${pet.owner?.id})}" class="bg-white rounded-2xl p-6 shadow-sm">
+
+                    <p class="text-sm text-text/50 mb-2">
+                        Dueño
+                    </p>
+
+                    <p th:text="${pet.owner?.name ?: 'Sin asignar'}" class="font-bold text-lg">
+                        John Doe
+                    </p>
+
+                </a>
             </div>
         </section>
 
@@ -218,12 +243,12 @@
                 </h2>
 
                 <p
-                    th:if="${pet.disease != 'None'}" th:text="${pet.disease}"
+                    th:if="${!#strings.isEmpty(pet.disease)}" th:text="${pet.disease}"
                     class="text-text/70">
                     Feline Leukemia
                 </p>
 
-                <p th:if="${pet.disease == 'None'}" class="text-text/70">
+                <p th:if="${#strings.isEmpty(pet.disease)}" class="text-text/70">
                     Esta mascota no tiene enfermedades registradas actualmente.
                 </p>
 

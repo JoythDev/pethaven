@@ -25,7 +25,6 @@ public class LoginController {
                          @RequestParam String password,
                          Model model) {
 
-        // Delegamos toda la validación al Service
         try {
             Owner owner = ownerService.authenticate(email, password);
             return "redirect:/owners/" + owner.getId();

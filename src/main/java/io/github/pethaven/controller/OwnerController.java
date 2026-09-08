@@ -37,7 +37,7 @@ public class OwnerController {
 
     @GetMapping("/add")
     public String showAddOwnerForm(Model model) {
-        model.addAttribute("owner", new Owner(null, "", "", "", "", ""));
+        model.addAttribute("owner", Owner.builder().name("").document("").phone("").email("").password("").build());
         return "owner_form";
     }
 

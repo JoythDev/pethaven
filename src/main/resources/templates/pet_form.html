@@ -36,10 +36,13 @@
           <!-- Dueño -->
           <div class="flex flex-col gap-1">
             <label for="owner" class="text-sm font-bold">Dueño</label>
-            <select id="owner" th:field="*{ownerId}" required
+            <select id="owner" name="ownerId" required
                     class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm">
-              <option value="" disabled>Selecciona un dueño</option>
-              <option th:each="owner : ${owners}" th:value="${owner.id}" th:text="${owner.name}"></option>
+              <option value="" disabled th:selected="${pet.owner == null}">Selecciona un dueño</option>
+              <option th:each="owner : ${owners}"
+                      th:value="${owner.id}"
+                      th:text="${owner.name}"
+                      th:selected="${pet.owner != null and pet.owner.id == owner.id}"></option>
             </select>
           </div>
 
@@ -78,7 +81,7 @@
           <!-- Diagnóstico -->
           <div class="flex flex-col gap-1">
             <label for="disease" class="text-sm font-bold">Diagnóstico</label>
-            <input type="text" id="disease" th:field="*{disease}" placeholder="Escribe 'None' si no tiene ninguno"
+            <input type="text" id="disease" th:field="*{disease}" placeholder="Déjalo vacío si aún no hay diagnóstico"
                    class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm">
           </div>
 
@@ -87,6 +90,12 @@
             <label for="photoUrl" class="text-sm font-bold">URL de la foto</label>
             <input type="url" id="photoUrl" th:field="*{photoUrl}" placeholder="https://..." required
                    class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm">
+          </div>
+
+          <!-- Mascota activa -->
+          <div class="flex flex-col gap-1">
+            <label class="text-sm font-bold">Mascota activa</label>
+            <div th:replace="~{fragments :: active-toggle(${pet}, false)}"></div>
           </div>
 
           <!-- Botones -->

@@ -38,3 +38,8 @@ yarn-error.log*
 
 # Maven build files
 /target/
+
+# H2 database files
+*.mv.db
+*.trace.db
+*.lock.db
