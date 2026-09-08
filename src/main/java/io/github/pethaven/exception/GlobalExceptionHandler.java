@@ -13,7 +13,7 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.NOT_FOUND)
     public String handleResourceNotFoundException(ResourceNotFoundException ex, Model model) {
         model.addAttribute("errorMessage", ex.getMessage());
-        return "error";
+        return "404";
     }
 
 }

@@ -30,7 +30,6 @@ public class DataLoader implements CommandLineRunner {
         // ==================================
         // ==== Cargar dueños de ejemplo ====
         // ==================================
-
         ownerRepository.save(Owner.builder().name("John Doe").document("123456789").phone("1234567890").email("john.doe@example.com").password("password123").build());
         ownerRepository.save(Owner.builder().name("Jane Doe").document("987654321").phone("0987654321").email("jane.doe@example.com").password("password123").build());
         ownerRepository.save(Owner.builder().name("Alice Smith").document("456789123").phone("4567891230").email("alice.smith@example.com").password("password123").build());
@@ -141,6 +140,7 @@ public class DataLoader implements CommandLineRunner {
         ownerRepository.save(Owner.builder().name("Berta Anaya").document("962794701").phone("630456789").email("berta.anaya@example.com").password("mascota123").build());
         ownerRepository.save(Owner.builder().name("Guillermo Fuster").document("173815723").phone("640567891").email("guillermo.fuster@example.com").password("pass1234").build());
         ownerRepository.save(Owner.builder().name("Rodrigo Alcántara").document("284926834").phone("650567892").email("rodrigo.alcantara@example.com").password("ejemplo123").build());
+
 
         // ====================================
         // ==== Cargar mascotas de ejemplo ====
@@ -300,10 +300,10 @@ public class DataLoader implements CommandLineRunner {
         petRepository.save(Pet.builder().name("Zafiro").species(Species.CAT).breed("Europeo Común").age(9).weight(4.6).disease("None").isActive(true).photoUrl("https://assets.elanco.com/8e0bf1c2-1ae4-001f-9257-f2be3c683fb1/fca42f04-2474-4302-a238-990c8aebfe8c/Siamese_cat_1110x740.jpg").build());
         petRepository.save(Pet.builder().name("Jade").species(Species.CAT).breed("Persa").age(12).weight(4.4).disease("None").isActive(false).photoUrl("https://images.unsplash.com/photo-1495360010541-f48722b34f7d?w=800&q=60&auto=format&fit=crop").build());
 
+
         // ===========================================
         // ==== Asignar mascotas a dueños al azar ====
         // ===========================================
-
         int ownerCount = (int) ownerRepository.count();
         for (Pet pet : petRepository.findAll()) {
             Owner owner = ownerRepository.findById((long) (random.nextInt(ownerCount) + 1)).orElseThrow();

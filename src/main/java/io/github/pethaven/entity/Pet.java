@@ -15,7 +15,7 @@ public class Pet {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @Column(name = "name", length = 50, nullable = false)
+    @Column(name = "name", length = 60, nullable = false)
     private String name;
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -23,22 +23,22 @@ public class Pet {
     private Owner owner;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "species", length = 20, nullable = false)
+    @Column(name = "species", nullable = false)
     private Species species;
 
-    @Column(name = "breed", length = 50, nullable = true)
+    @Column(name = "breed", length = 60, nullable = false)
     private String breed;
 
-    @Column(name = "age", nullable = true)
+    @Column(name = "age", nullable = false)
     private Integer age;
 
     @Column(name = "weight", nullable = true)
     private Double weight;
 
-    @Column(name = "disease", length = 100, nullable = true)
+    @Column(name = "disease", length = 120, nullable = true)
     private String disease;
 
-    @Column(name = "photo_url", length = 255, nullable = true)
+    @Column(name = "photo_url", length = 500, nullable = true)
     private String photoUrl;
 
     @Builder.Default

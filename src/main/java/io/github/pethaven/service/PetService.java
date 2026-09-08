@@ -7,13 +7,9 @@ import java.util.List;
 public interface PetService {
 
     public Pet getPetById(Long id);
-
     public List<Pet> getAllPets();
-
     public void createPet(Pet pet, Long ownerId);
-
     public void switchPetActiveStatus(Long id, boolean isActive);
-
     public List<Pet> getPetsByOwnerId(Long ownerId);
 
 }
