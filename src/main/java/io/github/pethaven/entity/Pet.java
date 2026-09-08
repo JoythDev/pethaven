@@ -42,7 +42,7 @@ public class Pet {
     @Column(name = "photo_url", length = 500, nullable = true)
     private String photoUrl;
 
-    @Builder.Default
+    @Builder.Default // Builder tiene en cuenta el inicializador del campo
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 
