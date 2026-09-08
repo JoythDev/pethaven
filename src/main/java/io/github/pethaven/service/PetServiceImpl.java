@@ -1,10 +1,12 @@
 package io.github.pethaven.service;
 
+import io.github.pethaven.entity.Owner;
 import io.github.pethaven.entity.Pet;
 import io.github.pethaven.exception.ResourceNotFoundException;
 import io.github.pethaven.repository.PetRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
@@ -13,6 +15,9 @@ public class PetServiceImpl implements PetService {
 
     @Autowired
     private PetRepository petRepository;
+
+    @Autowired
+    private OwnerService ownerService;
 
     @Override
     public Pet getPetById(Long id) {
@@ -26,7 +31,10 @@ public class PetServiceImpl implements PetService {
     }
 
     @Override
-    public void createPet(Pet pet) {
+    @Transactional
+    public void createPet(Pet pet, Long ownerId) {
+        Owner owner = ownerService.getOwnerById(ownerId);
+        pet.setOwner(owner);
         petRepository.save(pet);
     }
 

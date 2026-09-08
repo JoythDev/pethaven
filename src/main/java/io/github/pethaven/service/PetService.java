@@ -10,7 +10,7 @@ public interface PetService {
 
     public List<Pet> getAllPets();
 
-    public void createPet(Pet pet);
+    public void createPet(Pet pet, Long ownerId);
 
     public void switchPetActiveStatus(Long id, boolean isActive);
 

@@ -44,8 +44,7 @@ public class PetController {
 
     @PostMapping("/add")
     public String addPet(Pet pet, @RequestParam("ownerId") Long ownerId) {
-        pet.setOwner(ownerService.getOwnerById(ownerId));
-        petService.createPet(pet);
+        petService.createPet(pet, ownerId);
         return "redirect:/pets";
     }
 
@@ -59,8 +58,7 @@ public class PetController {
     @PostMapping("/update/{id}")
     public String saveUpdatedPet(@PathVariable Long id, Pet pet, @RequestParam("ownerId") Long ownerId) {
         pet.setId(id);
-        pet.setOwner(ownerService.getOwnerById(ownerId));
-        petService.createPet(pet);
+        petService.createPet(pet, ownerId);
         return "redirect:/pets/" + id;
     }
 
