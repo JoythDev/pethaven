@@ -39,6 +39,9 @@ public class PetServiceImpl implements PetService {
         petRepository.save(pet);
     }
 
+    // NOTE: Una mascota no se puede eliminar directamente, solo se puede desactivar.
+    // Para eliminar una mascota, se debe eliminar su dueño (eliminación en cascada)
+
     @Override
     @Transactional
     public void switchPetActiveStatus(Long id, boolean active) {
