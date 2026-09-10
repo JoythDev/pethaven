@@ -27,7 +27,7 @@ public class LoginController {
 
         try {
             Owner owner = ownerService.authenticate(email, password);
-            return "redirect:/owners/" + owner.getId();
+            return "redirect:/owners/" + owner.getId() + "/profile";
         } catch (Exception ex){
             model.addAttribute("error", "Correo o contraseña incorrectos.");
             return "login";

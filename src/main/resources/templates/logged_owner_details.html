@@ -8,15 +8,6 @@
 
     <div class="flex-1 flex w-full">
       <main class="flex-1 max-w-7xl mx-auto px-5 lg:px-12 py-10 lg:py-12">
-      <!-- Volver / Navegación -->
-      <div class="mb-8">
-        <a
-          th:href="@{/owners}"
-          class="text-sm font-semibold text-primary hover:text-tertiary transition-colors">
-          ← Volver a Dueños
-        </a>
-      </div>
-
       <!-- Tarjeta principal del dueño -->
       <section class="bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm">
         <!-- Etiqueta + Nombre + Acciones -->
@@ -27,7 +18,7 @@
             <p
               class="text-xs font-bold tracking-[0.2em] uppercase text-text/50"
             >
-              Ficha del dueño
+              Mi Perfil
             </p>
 
             <h1
@@ -36,21 +27,6 @@
             >
               María García
             </h1>
-          </div>
-
-          <!-- Acciones -->
-          <div class="flex items-center gap-4 shrink-0">
-            <!-- Enlace para editar -->
-            <a th:href="@{/owners/update/{id}(id=${owner.id})}"
-              class="bg-background text-primary border-2 border-primary hover:bg-primary hover:text-background px-6 py-2.5 rounded-full text-sm font-bold shadow-sm transition-colors">
-              Editar
-            </a>
-
-            <!-- Enlace para eliminar -->
-            <a th:href="@{/owners/delete/{id}(id=${owner.id})}"
-              class="bg-background text-tertiary border-2 border-tertiary hover:bg-tertiary hover:text-background px-6 py-2.5 rounded-full text-sm font-bold shadow-sm transition-colors">
-              Eliminar dueño
-            </a>
           </div>
         </div>
 
@@ -100,7 +76,7 @@
       <!-- Mascotas del dueño -->
       <section class="mt-10">
         <h2 class="font-display text-3xl font-bold mb-6">
-          Mascotas de este dueño
+          Mis Mascotas
         </h2>
 
         <div class="flex flex-col gap-5">

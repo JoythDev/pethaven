@@ -35,6 +35,13 @@ public class OwnerController {
         return "owner_details";
     }
 
+    @GetMapping("/{id}/profile")
+    public String getOwnerProfile(@PathVariable Long id, Model model) {
+        model.addAttribute("owner", ownerService.getOwnerById(id));
+        model.addAttribute("pets", petService.getPetsByOwnerId(id));
+        return "logged_owner_details";
+    }
+
     @GetMapping("/add")
     public String showAddOwnerForm(Model model) {
         model.addAttribute("owner", Owner.builder().name("").document("").phone("").email("").password("").build());

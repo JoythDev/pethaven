@@ -4,7 +4,8 @@
   <body class="bg-background text-text font-body min-h-screen flex flex-col">
     <div th:replace="~{fragments :: header}"></div>
 
-    <main class="flex-1 max-w-2xl mx-auto px-5 lg:px-12 py-10 lg:py-16 w-full">
+    <div class="flex-1 flex w-full">
+      <main class="flex-1 max-w-2xl mx-auto px-5 lg:px-12 py-10 lg:py-16">
       <div class="mb-8">
         <a
           th:href="@{/owners}"
@@ -106,6 +107,7 @@
         </form>
       </div>
     </main>
+    </div>
 
     <div th:replace="~{fragments :: footer}"></div>
   </body>
