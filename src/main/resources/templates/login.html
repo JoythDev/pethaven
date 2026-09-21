@@ -147,6 +147,12 @@
     #mobile-menu a:hover {
       opacity: 0.75;
     }
+
+    /* En esta página no tiene sentido mostrar el botón "Iniciar Sesión"
+       del header, ya que el usuario ya está aquí */
+    header a[href="/login"] {
+      display: none;
+    }
   </style>
 </head>
 <body>
