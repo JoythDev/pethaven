@@ -5,64 +5,162 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>PetHaven | Iniciar Sesión</title>
 
-  <!-- Bootstrap CSS -->
+  <!-- Mismas fuentes que el resto de PetHaven -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Nunito+Sans:wght@400;600;700&display=swap" rel="stylesheet">
+
+  <!-- Esta página usa Bootstrap para el formulario -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
 
-  <!-- Mismas fuentes del sitio, para no perder identidad visual -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Fraunces:wght@600;700&family=Nunito+Sans:wght@400;600&display=swap" rel="stylesheet">
+  <link rel="icon" type="image/svg+xml" th:href="@{/images/favicon.png}">
 
   <style>
+    :root {
+      --color-primary: #a09c6d;
+      --color-secondary: #eacecb;
+      --color-tertiary: #7a502a;
+      --color-text: #261a10;
+      --color-background: #f2ece0;
+      --color-honey: #e8b04b;
+    }
     body {
       font-family: "Nunito Sans", sans-serif;
-      background-color: #f2ece0;
-      min-height: 100vh;
+      background-color: var(--color-background);
+      color: var(--color-text);
+    }
+    h1, h2 { font-family: "Fraunces", serif; }
+
+    .login-wrapper {
+      min-height: calc(100vh - 90px);
       display: flex;
       align-items: center;
       justify-content: center;
+      padding: 3rem 1rem;
+      position: relative;
+      overflow: hidden;
     }
-    h1 {
-      font-family: "Fraunces", serif;
-      color: #261a10;
+
+    /* Manchas decorativas de fondo, con los colores de marca */
+    .blob {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(50px);
+      z-index: 0;
     }
+    .blob-1 { width: 320px; height: 320px; background: var(--color-secondary); opacity: 0.6; top: -60px; left: -60px; }
+    .blob-2 { width: 280px; height: 280px; background: var(--color-honey); opacity: 0.25; bottom: -70px; right: -70px; }
+
+    .login-card {
+      position: relative;
+      z-index: 1;
+      max-width: 900px;
+      width: 100%;
+      background: #fff;
+      border-radius: 2rem;
+      overflow: hidden;
+      box-shadow: 0 25px 60px rgba(38, 26, 16, 0.15);
+      display: flex;
+    }
+
+    .login-visual {
+      display: none;
+      flex: 1 1 45%;
+      background-size: cover;
+      background-position: center;
+      position: relative;
+    }
+    .login-visual::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(38,26,16,0.7), rgba(38,26,16,0.05));
+    }
+    .login-visual-text {
+      position: absolute;
+      bottom: 2rem;
+      left: 2rem;
+      right: 2rem;
+      color: #fff;
+      z-index: 1;
+    }
+    @media (min-width: 768px) {
+      .login-visual { display: block; }
+    }
+
+    .login-form-side {
+      flex: 1 1 55%;
+      padding: 3rem 2.5rem;
+    }
+
+    .form-control-lg:focus {
+      border-color: var(--color-primary);
+      box-shadow: 0 0 0 0.2rem rgba(160, 156, 109, 0.25);
+    }
+
     .btn-pethaven {
-      background-color: #a09c6d;
-      border-color: #a09c6d;
-      color: #f2ece0;
+      background-color: var(--color-primary);
+      border-color: var(--color-primary);
+      color: var(--color-background);
       font-weight: 700;
     }
     .btn-pethaven:hover {
-      background-color: #8a8760;
-      border-color: #8a8760;
-      color: #f2ece0;
+      background-color: var(--color-tertiary);
+      border-color: var(--color-tertiary);
+      color: var(--color-background);
     }
   </style>
 </head>
 <body>
 
-  <div class="card shadow-sm border-0 rounded-4 p-4" style="max-width: 400px; width: 100%;">
-    <div class="card-body">
+  <!-- Mismo header/menú que el resto del sitio -->
+  <div th:replace="~{fragments :: header}"></div>
 
-      <h1 class="h3 mb-1 text-center">PetHaven</h1>
-      <p class="text-center text-muted mb-4">Inicia sesión para ver a tus mascotas</p>
+  <main class="login-wrapper">
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
 
-      <!-- Mensaje de error si el login falla -->
-      <div th:if="${error}" class="alert alert-danger py-2" th:text="${error}"></div>
+    <div class="login-card">
 
-      <form th:action="@{/login}" method="POST">
-        <div class="mb-3">
-          <label for="email" class="form-label">Correo electrónico</label>
-          <input type="email" class="form-control" id="email" name="email" required>
+      <!-- Panel visual, solo visible desde tablet en adelante -->
+      <div class="login-visual" th:style="'background-image: url(' + @{/images/instalacion_recepcion.jpg} + ')'">
+        <div class="login-visual-text">
+          <p class="fw-bold fs-4 mb-1">Bienvenido de nuevo</p>
+          <p class="mb-0 opacity-75">Consulta el estado de tus mascotas y mantente al día con su cuidado.</p>
         </div>
-        <div class="mb-4">
-          <label for="password" class="form-label">Contraseña</label>
-          <input type="password" class="form-control" id="password" name="password" required>
-        </div>
-        <button type="submit" class="btn btn-pethaven w-100 py-2 rounded-pill">Iniciar sesión</button>
-      </form>
+      </div>
+
+      <!-- Formulario -->
+      <div class="login-form-side">
+        <img th:src="@{/images/icons/paw-print-icon.svg}" alt="" style="height: 32px;" class="mb-3">
+        <h1 class="h3 mb-1">Iniciar sesión</h1>
+        <p class="text-muted mb-4">Ingresa con tu correo y contraseña para ver a tus mascotas.</p>
+
+        <!-- Mensaje de error si el login falla -->
+        <div th:if="${error}" class="alert alert-danger py-2" th:text="${error}"></div>
+
+        <form th:action="@{/login}" method="POST">
+          <div class="mb-3">
+            <label for="email" class="form-label fw-semibold">Correo electrónico</label>
+            <input type="email" class="form-control form-control-lg" id="email" name="email" placeholder="tucorreo@ejemplo.com" required>
+          </div>
+          <div class="mb-4">
+            <label for="password" class="form-label fw-semibold">Contraseña</label>
+            <input type="password" class="form-control form-control-lg" id="password" name="password" placeholder="••••••••" required>
+          </div>
+          <button type="submit" class="btn btn-pethaven btn-lg w-100 rounded-pill">Iniciar sesión</button>
+        </form>
+
+        <p class="text-center text-muted mt-4 mb-0 small">
+          ¿Aún no tienes una cuenta?
+          <a th:href="@{/owners/add}" class="fw-bold text-decoration-none" style="color: var(--color-tertiary);">Regístrate aquí</a>
+        </p>
+      </div>
 
     </div>
-  </div>
+  </main>
+
+  <div th:replace="~{fragments :: footer}"></div>
 
 </body>
 </html>
