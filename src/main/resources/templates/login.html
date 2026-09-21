@@ -132,6 +132,21 @@
       border-color: var(--login-tertiary);
       color: var(--login-background);
     }
+
+    /* Bootstrap le pone azul+subrayado a los <a> por defecto; esto
+       restaura el estilo normal (heredado) en el header y footer,
+       que son compartidos con el resto del sitio (Tailwind) */
+    header a,
+    footer a,
+    #mobile-menu a {
+      color: inherit;
+      text-decoration: none;
+    }
+    header a:hover,
+    footer a:hover,
+    #mobile-menu a:hover {
+      opacity: 0.75;
+    }
   </style>
 </head>
 <body>
