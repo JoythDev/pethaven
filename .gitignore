@@ -48,3 +48,5 @@ yarn-error.log*
 # Workflow
 .atl
 /planning/
+/nul
+/odd/
