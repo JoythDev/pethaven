@@ -2,6 +2,11 @@ package io.github.pethaven.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
+
+import java.util.ArrayList;
+import java.util.List;
 
 @Getter
 @Setter
@@ -23,6 +28,15 @@ public class Pet {
     @JoinColumn(name = "owner_id", nullable = false)
     private Owner owner;
 
+    // NOTE: Esta cascada solo se dispara vía Owner -> Pet, y OwnerService.deleteOwnerById ya
+    // garantiza que una mascota con tratamientos nunca llega a borrarse (ver Owner.pets).
+
+    @Builder.Default
+    // @OneToMany(mappedBy = "pet", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OneToMany(mappedBy = "pet")
+    @OnDelete(action = OnDeleteAction.CASCADE)
+    private List<Treatment> treatments = new ArrayList<>();
+
     @Enumerated(EnumType.STRING)
     @Column(name = "species", nullable = false, length = 10)
     private Species species;
@@ -42,7 +56,7 @@ public class Pet {
     @Column(name = "photo_url", length = 500, nullable = true)
     private String photoUrl;
 
-    @Builder.Default // Builder tiene en cuenta el inicializador del campo
+    @Builder.Default
     @Column(name = "is_active", nullable = false)
     private boolean active = true;
 

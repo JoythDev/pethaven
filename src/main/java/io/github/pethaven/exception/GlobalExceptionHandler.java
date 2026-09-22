@@ -16,4 +16,12 @@ public class GlobalExceptionHandler {
         return "404";
     }
 
+    @ExceptionHandler(IllegalOperationException.class)
+    @ResponseStatus(HttpStatus.CONFLICT)
+    public String handleIllegalOperationException(IllegalOperationException ex, Model model) {
+        model.addAttribute("status", HttpStatus.CONFLICT.value());
+        model.addAttribute("message", ex.getMessage());
+        return "error";
+    }
+
 }

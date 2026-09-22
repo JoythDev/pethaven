@@ -1,14 +1,26 @@
 package io.github.pethaven;
 
+import io.github.pethaven.entity.Drug;
 import io.github.pethaven.entity.Owner;
 import io.github.pethaven.entity.Pet;
 import io.github.pethaven.entity.Species;
+import io.github.pethaven.entity.Treatment;
+import io.github.pethaven.entity.TreatmentDrug;
+import io.github.pethaven.entity.Veterinarian;
+import io.github.pethaven.repository.DrugRepository;
 import io.github.pethaven.repository.OwnerRepository;
 import io.github.pethaven.repository.PetRepository;
+import io.github.pethaven.repository.TreatmentDrugRepository;
+import io.github.pethaven.repository.TreatmentRepository;
+import io.github.pethaven.repository.VeterinarianRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import java.math.BigDecimal;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
@@ -22,6 +34,18 @@ public class DataLoader implements CommandLineRunner {
     @Autowired
     private PetRepository petRepository;
 
+    @Autowired
+    private VeterinarianRepository veterinarianRepository;
+
+    @Autowired
+    private DrugRepository drugRepository;
+
+    @Autowired
+    private TreatmentRepository treatmentRepository;
+
+    @Autowired
+    private TreatmentDrugRepository treatmentDrugRepository;
+
     private final Random random = new Random(42);
 
     private List<Owner> ownerPool;
@@ -29,6 +53,36 @@ public class DataLoader implements CommandLineRunner {
     private void savePet(Pet pet) {
         pet.setOwner(ownerPool.get(random.nextInt(ownerPool.size())));
         petRepository.save(pet);
+    }
+
+    private Treatment saveTreatment(Pet pet, Veterinarian veterinarian, LocalDateTime date) {
+        Treatment treatment = Treatment.builder().pet(pet).veterinarian(veterinarian).date(date).build();
+        treatmentRepository.save(treatment);
+
+        veterinarian.setAttentions(veterinarian.getAttentions() + 1);
+        veterinarianRepository.save(veterinarian);
+
+        return treatment;
+    }
+
+    /** Descuenta el inventario de la droga y registra el renglón, igual que TreatmentDrugServiceImpl. */
+    private void administerDrug(Treatment treatment, Drug drug, int units) {
+        int unitsToAdminister = Math.min(units, drug.getUnitsAvailable());
+        if (unitsToAdminister <= 0) {
+            return;
+        }
+
+        drug.setUnitsAvailable(drug.getUnitsAvailable() - unitsToAdminister);
+        drug.setUnitsSold(drug.getUnitsSold() + unitsToAdminister);
+        drugRepository.save(drug);
+
+        treatmentDrugRepository.save(TreatmentDrug.builder()
+                .treatment(treatment)
+                .drug(drug)
+                .units(unitsToAdminister)
+                .unitPurchasePrice(drug.getPurchasePrice())
+                .unitSalePrice(drug.getSalePrice())
+                .build());
     }
 
     @Override
@@ -307,6 +361,63 @@ public class DataLoader implements CommandLineRunner {
         savePet(Pet.builder().name("Canelo").species(Species.DOG).breed("Galgo Español").age(10).weight(29.0).disease("Artritis").active(false).photoUrl("https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRWp3zpN9nyTOC-i1UVNYwutRtjTHDpc40wIIE1BSUTn0kMqAk6ztLwffh&s=10").build());
         savePet(Pet.builder().name("Zafiro").species(Species.CAT).breed("Europeo Común").age(9).weight(4.6).active(true).photoUrl("https://assets.elanco.com/8e0bf1c2-1ae4-001f-9257-f2be3c683fb1/fca42f04-2474-4302-a238-990c8aebfe8c/Siamese_cat_1110x740.jpg").build());
         savePet(Pet.builder().name("Jade").species(Species.CAT).breed("Persa").age(12).weight(4.4).active(false).photoUrl("https://images.unsplash.com/photo-1495360010541-f48722b34f7d?w=800&q=60&auto=format&fit=crop").build());
+
+        // ========================================
+        // ==== Cargar veterinarios de ejemplo ====
+        // ========================================
+        // Los primeros tres son los mismos veterinarios que aparecen en la landing page
+        // (sección "Especialistas al Cuidado" de index.html), para que la app quede coherente.
+        veterinarianRepository.save(Veterinarian.builder().name("Dra. Valentina Soler").document("V-1001").email("valentina.soler@pethaven.com").password("vet12345").specialty("Cuidados Críticos").photoUrl("/images/valentina_soler.png").build());
+        veterinarianRepository.save(Veterinarian.builder().name("Dr. Esteban Ruiz").document("V-1002").email("esteban.ruiz@pethaven.com").password("vet12345").specialty("Cirujano General").photoUrl("/images/esteban_ruiz.png").build());
+        veterinarianRepository.save(Veterinarian.builder().name("Dra. Amalia Carter").document("V-1003").email("amalia.carter@pethaven.com").password("vet12345").specialty("Anestesiología").photoUrl("/images/amalia_carter.png").build());
+        veterinarianRepository.save(Veterinarian.builder().name("Dr. Miguel Ángel Torres").document("V-1004").email("miguel.torres@pethaven.com").password("vet12345").specialty("Medicina Interna").build());
+        veterinarianRepository.save(Veterinarian.builder().name("Dra. Sofía Herrera").document("V-1005").email("sofia.herrera@pethaven.com").password("vet12345").specialty("Dermatología").build());
+        veterinarianRepository.save(Veterinarian.builder().name("Dr. Julián Restrepo").document("V-1006").email("julian.restrepo@pethaven.com").password("vet12345").specialty("Odontología Veterinaria").active(false).build());
+
+        // ==================================
+        // ==== Cargar drogas de ejemplo ====
+        // ==================================
+        drugRepository.save(Drug.builder().name("Amoxicilina 250mg").purchasePrice(new BigDecimal("8000")).salePrice(new BigDecimal("15000")).unitsAvailable(200).unitsSold(0).build());
+        drugRepository.save(Drug.builder().name("Meloxicam 5mg").purchasePrice(new BigDecimal("12000")).salePrice(new BigDecimal("22000")).unitsAvailable(150).unitsSold(0).build());
+        drugRepository.save(Drug.builder().name("Ivermectina").purchasePrice(new BigDecimal("6000")).salePrice(new BigDecimal("11000")).unitsAvailable(300).unitsSold(0).build());
+        drugRepository.save(Drug.builder().name("Suero Fisiológico 500ml").purchasePrice(new BigDecimal("4000")).salePrice(new BigDecimal("9000")).unitsAvailable(100).unitsSold(0).build());
+        drugRepository.save(Drug.builder().name("Omeprazol 20mg").purchasePrice(new BigDecimal("5000")).salePrice(new BigDecimal("10000")).unitsAvailable(180).unitsSold(0).build());
+        drugRepository.save(Drug.builder().name("Dexametasona").purchasePrice(new BigDecimal("7000")).salePrice(new BigDecimal("13000")).unitsAvailable(120).unitsSold(0).build());
+        drugRepository.save(Drug.builder().name("Tramadol 50mg").purchasePrice(new BigDecimal("9000")).salePrice(new BigDecimal("17000")).unitsAvailable(90).unitsSold(0).build());
+
+        // =======================================
+        // ==== Cargar tratamientos de ejemplo ====
+        // =======================================
+        // Se generan sobre mascotas y veterinarios activos ya cargados arriba, descontando
+        // inventario y sumando atenciones tal como lo hacen TreatmentService/TreatmentDrugService.
+        List<Pet> petPool = petRepository.findAll();
+        // La mayoría de los tratamientos deben caer sobre mascotas con una enfermedad diagnosticada
+        // (para que la demo tenga sentido); el resto son controles/vacunas sobre cualquier mascota.
+        List<Pet> petsWithDisease = petPool.stream().filter(pet -> pet.getDisease() != null).toList();
+        List<Veterinarian> activeVeterinarianPool = veterinarianRepository.findAll().stream()
+                .filter(Veterinarian::isActive)
+                .toList();
+        List<Drug> drugPool = drugRepository.findAll();
+        LocalDateTime firstTreatmentDate = LocalDateTime.of(2026, 8, 1, 9, 0);
+
+        for (int i = 0; i < 15; i++) {
+            boolean forDiagnosedDisease = random.nextInt(10) < 8; // 80% de las veces
+            Pet pet = forDiagnosedDisease
+                    ? petsWithDisease.get(random.nextInt(petsWithDisease.size()))
+                    : petPool.get(random.nextInt(petPool.size()));
+            Veterinarian veterinarian = activeVeterinarianPool.get(random.nextInt(activeVeterinarianPool.size()));
+            LocalDateTime date = firstTreatmentDate.plusDays(i * 2L).plusHours(random.nextInt(9));
+
+            Treatment treatment = saveTreatment(pet, veterinarian, date);
+
+            // Drogas distintas entre sí (treatment_id + drug_id es único en treatment_drugs).
+            List<Drug> shuffledDrugs = new ArrayList<>(drugPool);
+            Collections.shuffle(shuffledDrugs, random);
+            int drugLines = 1 + random.nextInt(2); // 1 o 2 drogas administradas por tratamiento
+            for (int j = 0; j < drugLines; j++) {
+                administerDrug(treatment, shuffledDrugs.get(j), 1 + random.nextInt(5));
+            }
+        }
     }
 }
 
