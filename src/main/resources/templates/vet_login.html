@@ -148,10 +148,17 @@
       opacity: 0.75;
     }
 
-    /* En esta página no tiene sentido mostrar el botón "Iniciar Sesión"
-       del header: ya estamos en una pantalla de inicio de sesión */
-    header a[href="/login"] {
+    /* En esta página el menú principal no aplica (los links son anclas
+       de la página de inicio) y tampoco tiene sentido "Registrarse" ni
+       el botón "Iniciar Sesión": dejamos solo el logo, centrado */
+    header nav,
+    header a[href="#"],
+    header a[href="/login"],
+    header button#menu-btn {
       display: none;
+    }
+    header > div {
+      justify-content: center;
     }
   </style>
 </head>
