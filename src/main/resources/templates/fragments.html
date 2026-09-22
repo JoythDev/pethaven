@@ -122,7 +122,30 @@
         <div class="flex flex-col w-full lg:w-1/4 gap-4">
           <img th:src="@{/images/logo-footer.png}" alt="PetHaven" class="w-3/5" />
           <p>La clínica de hospitalización y cuidado crítico de confianza para las familias modernas.</p>
+
+          <!-- Fragmento de redes sociales-->
+          <div class="flex flex-col gap-3">
+            <h4 class="font-display text-xl font-bold">Síguenos</h4>
+
+            <div class="flex items-center gap-4">
+              <!-- Instagram -->
+              <a href="#" aria-label="Instagram" class="hover:opacity-70 transition-opacity">
+                <img th:src="@{/images/icons/instagram.png}" alt="Instagram" class="w-7 h-7 brightness-0 invert"/>
+              </a>
+
+              <!-- Facebook -->
+              <a href="#" aria-label="Facebook" class="hover:opacity-70 transition-opacity">
+                <img th:src="@{/images/icons/facebook.png}" alt="Facebook" class="w-7 h-7 brightness-0 invert"/>
+              </a>
+
+              <!-- TikTok -->
+              <a href="#" aria-label="TikTok" class="hover:opacity-70 transition-opacity">
+                <img th:src="@{/images/icons/tik-tok.png}" alt="TikTok" class="w-7 h-7 brightness-0 invert"/>
+              </a>
+            </div>
+          </div>
         </div>
+
         <div class="flex flex-col gap-2">
           <h4 class="font-display text-xl font-bold pb-2">Navegación</h4>
           <a href="#services" class="hover:opacity-75 transition-opacity">Servicios</a>
