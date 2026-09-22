@@ -12,4 +12,6 @@ public interface VeterinarianService {
     public void createVeterinarian(Veterinarian veterinarian);
     public void switchVeterinarianActiveStatus(Long id, boolean active);
 
+    public Veterinarian authenticate(String email, String password);
+
 }

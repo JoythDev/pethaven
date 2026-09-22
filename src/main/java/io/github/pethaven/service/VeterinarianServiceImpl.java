@@ -55,4 +55,17 @@ public class VeterinarianServiceImpl implements VeterinarianService {
         veterinarianRepository.save(veterinarian);
     }
 
+    @Override
+    public Veterinarian authenticate(String email, String password) {
+        Veterinarian veterinarian = veterinarianRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("Veterinarian", "email", email));
+        if (!veterinarian.isActive()) {
+            throw new RuntimeException("Esta cuenta de veterinario está desactivada.");
+        }
+        if (veterinarian.getPassword().equals(password)) {
+            return veterinarian;
+        }
+        throw new RuntimeException("Correo o contraseña incorrectos.");
+    }
+
 }
