@@ -1,13 +1,90 @@
 <!doctype html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
   <head th:replace="~{fragments :: head}"></head>
-
   <body class="bg-background text-text font-body min-h-screen flex flex-col">
     <div th:replace="~{fragments :: header}"></div>
 
-    <main class="flex-1 flex items-center justify-center px-5 py-10 lg:py-16">
-      <div th:replace="~{fragments :: wip-page('Veterinarios', 'El registro y la edición de veterinarios estarán disponibles muy pronto.')}"></div>
-    </main>
+    <div class="flex-1 flex w-full">
+      <main class="flex-1 max-w-2xl mx-auto px-5 lg:px-12 py-10 lg:py-16">
+        <div class="mb-8">
+          <a th:href="@{/veterinarians}" class="text-sm font-semibold text-primary hover:text-tertiary transition-colors">
+            ← Volver a Veterinarios
+          </a>
+        </div>
+
+        <h1 class="font-display text-3xl font-bold mb-8"
+            th:text="${veterinarian.id == null} ? 'Registrar Nuevo Veterinario' : 'Editar Veterinario'">
+          Registrar Nuevo Veterinario
+        </h1>
+
+        <div class="bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm">
+          <form method="POST"
+                th:action="${veterinarian.id == null} ? @{/veterinarians/add} : @{/veterinarians/update/{id}(id=${veterinarian.id})}"
+                th:object="${veterinarian}"
+                class="flex flex-col gap-5">
+
+            <!-- Nombre -->
+            <div class="flex flex-col gap-1">
+              <label for="name" class="text-sm font-bold">Nombre</label>
+              <input type="text" id="name" th:field="*{name}" required
+                     class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm">
+            </div>
+
+            <!-- Documento -->
+            <div class="flex flex-col gap-1">
+              <label for="document" class="text-sm font-bold">Documento</label>
+              <input type="text" id="document" th:field="*{document}" required
+                     class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm">
+            </div>
+
+            <!-- Especialidad -->
+            <div class="flex flex-col gap-1">
+              <label for="specialty" class="text-sm font-bold">Especialidad</label>
+              <input type="text" id="specialty" th:field="*{specialty}" required
+                     class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm">
+            </div>
+
+            <!-- Correo -->
+            <div class="flex flex-col gap-1">
+              <label for="email" class="text-sm font-bold">Correo</label>
+              <input type="email" id="email" th:field="*{email}" required
+                     class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm">
+            </div>
+
+            <!-- Contraseña -->
+            <div class="flex flex-col gap-1">
+              <label for="password" class="text-sm font-bold">Contraseña</label>
+              <input type="password" id="password" th:field="*{password}" required
+                     class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm">
+            </div>
+
+            <!-- URL de la foto -->
+            <div class="flex flex-col gap-1">
+              <label for="photoUrl" class="text-sm font-bold">URL de la foto (opcional)</label>
+              <input type="url" id="photoUrl" th:field="*{photoUrl}" placeholder="https://..."
+                     class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm">
+            </div>
+
+            <!-- Activo (solo tiene efecto al editar; un veterinario nuevo siempre empieza activo) -->
+            <div th:if="${veterinarian.id != null}" class="flex flex-col gap-1">
+              <label class="text-sm font-bold">Veterinario activo</label>
+              <div th:replace="~{fragments :: active-toggle(${veterinarian}, false)}"></div>
+            </div>
+
+            <!-- Botones -->
+            <div class="flex items-center gap-4 mt-4">
+              <button type="submit"
+                      class="bg-primary text-background px-6 py-2.5 rounded-full text-sm font-bold shadow-sm hover:opacity-90 transition-opacity cursor-pointer">
+                Guardar
+              </button>
+              <a th:href="@{/veterinarians}" class="text-sm font-bold text-text/60 hover:text-tertiary transition-colors">
+                Cancelar
+              </a>
+            </div>
+          </form>
+        </div>
+      </main>
+    </div>
 
     <div th:replace="~{fragments :: footer}"></div>
   </body>

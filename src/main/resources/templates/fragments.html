@@ -101,6 +101,27 @@
         <img th:src="@{/images/icons/user-icon.svg}" alt="" class="h-5 w-5" />
         <span class="text-sm">Dueños</span>
       </a>
+
+      <a th:href="@{/veterinarians}"
+         th:class="${active == 'veterinarians'} ? 'bg-secondary/40 text-text font-bold' : 'text-text/70 hover:bg-secondary/20 hover:text-text'"
+         class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors">
+        <img th:src="@{/images/icons/stethoscope-icon.svg}" alt="" class="h-5 w-5" />
+        <span class="text-sm">Veterinarios</span>
+      </a>
+
+      <a th:href="@{/drugs}"
+         th:class="${active == 'drugs'} ? 'bg-secondary/40 text-text font-bold' : 'text-text/70 hover:bg-secondary/20 hover:text-text'"
+         class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors">
+        <img th:src="@{/images/icons/pulse-icon.svg}" alt="" class="h-5 w-5" />
+        <span class="text-sm">Drogas</span>
+      </a>
+
+      <a th:href="@{/treatments}"
+         th:class="${active == 'treatments'} ? 'bg-secondary/40 text-text font-bold' : 'text-text/70 hover:bg-secondary/20 hover:text-text'"
+         class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors">
+        <img th:src="@{/images/icons/hospital-bed-icon.svg}" alt="" class="h-5 w-5" />
+        <span class="text-sm">Tratamientos</span>
+      </a>
     </aside>
 
     <!-- Fragmento: toggle de estado activo de la mascota

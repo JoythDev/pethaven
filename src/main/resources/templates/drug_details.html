@@ -5,9 +5,62 @@
   <body class="bg-background text-text font-body min-h-screen flex flex-col">
     <div th:replace="~{fragments :: header}"></div>
 
-    <main class="flex-1 flex items-center justify-center px-5 py-10 lg:py-16">
-      <div th:replace="~{fragments :: wip-page('Medicamentos', 'El detalle del medicamento estará disponible muy pronto.')}"></div>
-    </main>
+    <div class="flex-1 flex w-full">
+      <main class="flex-1 max-w-7xl mx-auto px-5 lg:px-12 py-10 lg:py-12">
+
+        <div class="mb-8">
+          <a th:href="@{/drugs}" class="text-sm font-semibold text-primary hover:text-tertiary transition-colors">
+            ← Volver a Drogas
+          </a>
+        </div>
+
+        <section class="bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+            <div>
+              <p class="text-xs font-bold tracking-[0.2em] uppercase text-text/50">Ficha de la droga</p>
+              <h1 th:text="${drug.name}" class="font-display text-4xl lg:text-5xl font-bold mt-2">
+                Amoxicilina 250mg
+              </h1>
+            </div>
+
+            <!-- El borrado está bloqueado por el servidor si la droga ya fue administrada
+                 en algún tratamiento (responde 409 con un mensaje claro en vez de romper). -->
+            <div class="flex items-center gap-4 shrink-0">
+              <a th:href="@{/drugs/update/{id}(id=${drug.id})}"
+                 class="bg-background text-primary border-2 border-primary hover:bg-primary hover:text-background px-6 py-2.5 rounded-full text-sm font-bold shadow-sm transition-colors">
+                Editar
+              </a>
+              <a th:href="@{/drugs/delete/{id}(id=${drug.id})}"
+                 class="bg-background text-tertiary border-2 border-tertiary hover:bg-tertiary hover:text-background px-6 py-2.5 rounded-full text-sm font-bold shadow-sm transition-colors">
+                Eliminar
+              </a>
+            </div>
+          </div>
+
+          <div class="border-t border-text/10 my-6"></div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div>
+              <p class="text-xs font-bold tracking-[0.15em] uppercase text-text/50 mb-1">Precio de compra</p>
+              <p th:text="'$' + ${drug.purchasePrice}" class="font-bold text-lg">$8.000</p>
+            </div>
+            <div>
+              <p class="text-xs font-bold tracking-[0.15em] uppercase text-text/50 mb-1">Precio de venta</p>
+              <p th:text="'$' + ${drug.salePrice}" class="font-bold text-lg">$15.000</p>
+            </div>
+            <div>
+              <p class="text-xs font-bold tracking-[0.15em] uppercase text-text/50 mb-1">Unidades disponibles</p>
+              <p th:text="${drug.unitsAvailable}" class="font-bold text-lg">200</p>
+            </div>
+            <div>
+              <p class="text-xs font-bold tracking-[0.15em] uppercase text-text/50 mb-1">Unidades vendidas</p>
+              <p th:text="${drug.unitsSold}" class="font-bold text-lg">0</p>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
 
     <div th:replace="~{fragments :: footer}"></div>
   </body>

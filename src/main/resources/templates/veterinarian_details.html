@@ -5,9 +5,112 @@
   <body class="bg-background text-text font-body min-h-screen flex flex-col">
     <div th:replace="~{fragments :: header}"></div>
 
-    <main class="flex-1 flex items-center justify-center px-5 py-10 lg:py-16">
-      <div th:replace="~{fragments :: wip-page('Veterinarios', 'El detalle del veterinario estará disponible muy pronto.')}"></div>
-    </main>
+    <div class="flex-1 flex w-full">
+      <main class="flex-1 max-w-7xl mx-auto px-5 lg:px-12 py-10 lg:py-12">
+
+        <div class="mb-8">
+          <a th:href="@{/veterinarians}" class="text-sm font-semibold text-primary hover:text-tertiary transition-colors">
+            ← Volver a Veterinarios
+          </a>
+        </div>
+
+        <!-- Tarjeta principal (atenuada si el veterinario está inactivo) -->
+        <section th:classappend="${!veterinarian.active} ? 'opacity-40'" class="bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm">
+          <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
+            <div class="flex items-center gap-5">
+              <img th:if="${veterinarian.photoUrl}" th:src="${veterinarian.photoUrl}" th:alt="${veterinarian.name}"
+                   class="w-20 h-20 rounded-full object-cover bg-secondary/50 shrink-0" />
+              <div th:unless="${veterinarian.photoUrl}"
+                   class="w-20 h-20 rounded-full bg-secondary/50 shrink-0 flex items-center justify-center">
+                <img th:src="@{/images/icons/stethoscope-icon.svg}" alt="" class="h-8 w-8" />
+              </div>
+
+              <div>
+                <p class="text-xs font-bold tracking-[0.2em] uppercase text-text/50">Ficha del veterinario</p>
+                <h1 th:text="${veterinarian.name}" class="font-display text-3xl lg:text-4xl font-bold mt-1">
+                  Dra. Valentina Soler
+                </h1>
+                <p th:text="${veterinarian.specialty}" class="text-text/60 mt-1">Cuidados Críticos</p>
+              </div>
+            </div>
+
+            <!-- Acciones: nunca hay botón de eliminar, solo editar y el toggle de activo/inactivo -->
+            <div class="flex items-center gap-4 shrink-0">
+              <a th:href="@{/veterinarians/update/{id}(id=${veterinarian.id})}"
+                 class="bg-background text-primary border-2 border-primary hover:bg-primary hover:text-background px-6 py-2.5 rounded-full text-sm font-bold shadow-sm transition-colors">
+                Editar
+              </a>
+
+              <form th:action="@{/veterinarians/toggle/{id}(id=${veterinarian.id})}" method="post">
+                <input type="hidden" name="redirectToDetails" value="true" />
+                <div th:replace="~{fragments :: active-toggle(${veterinarian}, true)}"></div>
+              </form>
+            </div>
+          </div>
+
+          <div class="border-t border-text/10 my-6"></div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-3 gap-6">
+            <div>
+              <p class="text-xs font-bold tracking-[0.15em] uppercase text-text/50 mb-1">Documento</p>
+              <p th:text="${veterinarian.document}" class="font-bold text-lg">V-1001</p>
+            </div>
+            <div>
+              <p class="text-xs font-bold tracking-[0.15em] uppercase text-text/50 mb-1">Correo</p>
+              <p th:text="${veterinarian.email}" class="font-bold text-lg">valentina.soler@pethaven.com</p>
+            </div>
+            <div>
+              <p class="text-xs font-bold tracking-[0.15em] uppercase text-text/50 mb-1">Atenciones dadas</p>
+              <p th:text="${veterinarian.attentions}" class="font-bold text-lg">0</p>
+            </div>
+          </div>
+        </section>
+
+        <!-- Tratamientos que ha administrado -->
+        <section class="mt-10">
+          <h2 class="font-display text-3xl font-bold mb-6">Tratamientos realizados</h2>
+
+          <div th:if="${#lists.isEmpty(treatments)}" class="bg-white rounded-2xl p-6 shadow-sm text-text/60">
+            Este veterinario todavía no ha registrado ningún tratamiento.
+          </div>
+
+          <div th:unless="${#lists.isEmpty(treatments)}" class="bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm overflow-hidden">
+            <div class="overflow-x-auto">
+              <table class="w-full text-left whitespace-nowrap">
+                <thead>
+                  <tr class="text-text/50 text-sm font-body border-b border-text/10">
+                    <th class="pb-4 px-4 font-normal">Mascota</th>
+                    <th class="pb-4 px-4 font-normal">Fecha</th>
+                    <th class="pb-4 px-4 font-normal">Drogas administradas</th>
+                    <th class="pb-4 px-4 font-normal">Acciones</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-text/10">
+                  <tr th:each="treatment : ${treatments}" class="border-b border-text/5 hover:bg-background/50 transition-colors">
+                    <td class="py-4 px-4">
+                      <a th:href="@{/pets/{id}(id=${treatment.pet.id})}" class="font-bold text-sm text-text hover:text-tertiary transition-colors"
+                         th:text="${treatment.pet.name}">Buddy</a>
+                    </td>
+                    <td class="py-4 px-4">
+                      <span class="text-sm" th:text="${#temporals.format(treatment.date, 'dd MMM yyyy, HH:mm')}">21 sep 2026, 10:00</span>
+                    </td>
+                    <td class="py-4 px-4">
+                      <span class="text-sm" th:text="${#lists.size(treatment.treatmentDrugs)}">2</span>
+                    </td>
+                    <td class="py-4 px-4">
+                      <a th:href="@{/treatments/{id}(id=${treatment.id})}" class="text-sm font-bold text-primary hover:text-tertiary transition-colors">
+                        Ver Ficha
+                      </a>
+                    </td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+      </main>
+    </div>
 
     <div th:replace="~{fragments :: footer}"></div>
   </body>
