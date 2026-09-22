@@ -113,13 +113,13 @@
 
                             <p
                                 th:if="${!#strings.isEmpty(pet.disease)}"
-                                th:text="${#strings.isEmpty(pet.disease)}"
+                                th:text="${pet.disease}"
                                 class="text-text/70 leading-relaxed">
                                 Feline Leukemia
                             </p>
 
                             <p
-                                th:if="${pet.disease == 'None'}"
+                                th:if="${#strings.isEmpty(pet.disease)}"
                                 class="text-text/70 leading-relaxed">
                                 No presenta enfermedades registradas.
                             </p>
