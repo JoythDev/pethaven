@@ -10,6 +10,7 @@ public interface VeterinarianService {
     public Veterinarian getVeterinarianByDocument(String document);
     public Veterinarian getVeterinarianByEmail(String email);
     public void createVeterinarian(Veterinarian veterinarian);
+    public void updateVeterinarian(Long id, Veterinarian formData);
     public void switchVeterinarianActiveStatus(Long id, boolean active);
 
 }
