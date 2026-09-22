@@ -37,7 +37,7 @@ public class Owner {
     @Column(name = "phone", length = 20, nullable = false)
     private String phone;
 
-    // NOTE: OwnerService.deleteOwnerById bloquea el borrado si alguna mascota ya tiene
+    // NOTA: OwnerService.deleteOwnerById bloquea el borrado si alguna mascota ya tiene
     // tratamientos (para no perder ese historial). Si ninguna los tiene, esta cascada física
     // a nivel de base de datos es segura porque no hay nada debajo de esas mascotas que perder.
 

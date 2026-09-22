@@ -14,7 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 
-// NOTE: Un TreatmentDrug nunca se actualiza ni se elimina de forma independiente: solo se crea
+// NOTA: Un TreatmentDrug nunca se actualiza ni se elimina de forma independiente: solo se crea
 // (al administrar una droga) y solo desaparece en cascada si su Treatment padre se elimina, cosa
 // que tampoco ocurre nunca (ver TreatmentService). Es un renglón del historial médico permanente.
 @Service
@@ -67,6 +67,11 @@ public class TreatmentDrugServiceImpl implements TreatmentDrugService {
                 .orElseThrow(() -> new ResourceNotFoundException("Treatment", "id", treatmentId));
         Drug drug = drugRepository.findById(drugId)
                 .orElseThrow(() -> new ResourceNotFoundException("Drug", "id", drugId));
+
+        if (treatmentDrugRepository.existsByTreatmentIdAndDrugId(treatmentId, drugId)) {
+            throw new IllegalOperationException(
+                    "La droga '" + drug.getName() + "' ya fue administrada en este tratamiento.");
+        }
 
         if (drug.getUnitsAvailable() < units) {
             throw new IllegalOperationException(

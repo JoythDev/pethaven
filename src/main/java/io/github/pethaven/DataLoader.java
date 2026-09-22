@@ -391,6 +391,9 @@ public class DataLoader implements CommandLineRunner {
         // Se generan sobre mascotas y veterinarios activos ya cargados arriba, descontando
         // inventario y sumando atenciones tal como lo hacen TreatmentService/TreatmentDrugService.
         List<Pet> petPool = petRepository.findAll();
+        // La mayoría de los tratamientos deben caer sobre mascotas con una enfermedad diagnosticada
+        // (para que la demo tenga sentido); el resto son controles/vacunas sobre cualquier mascota.
+        List<Pet> petsWithDisease = petPool.stream().filter(pet -> pet.getDisease() != null).toList();
         List<Veterinarian> activeVeterinarianPool = veterinarianRepository.findAll().stream()
                 .filter(Veterinarian::isActive)
                 .toList();
@@ -398,7 +401,10 @@ public class DataLoader implements CommandLineRunner {
         LocalDateTime firstTreatmentDate = LocalDateTime.of(2026, 8, 1, 9, 0);
 
         for (int i = 0; i < 15; i++) {
-            Pet pet = petPool.get(random.nextInt(petPool.size()));
+            boolean forDiagnosedDisease = random.nextInt(10) < 8; // 80% de las veces
+            Pet pet = forDiagnosedDisease
+                    ? petsWithDisease.get(random.nextInt(petsWithDisease.size()))
+                    : petPool.get(random.nextInt(petPool.size()));
             Veterinarian veterinarian = activeVeterinarianPool.get(random.nextInt(activeVeterinarianPool.size()));
             LocalDateTime date = firstTreatmentDate.plusDays(i * 2L).plusHours(random.nextInt(9));
 

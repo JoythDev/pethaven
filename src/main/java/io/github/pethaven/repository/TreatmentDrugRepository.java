@@ -10,4 +10,5 @@ import java.util.List;
 public interface TreatmentDrugRepository extends JpaRepository<TreatmentDrug, Long> {
     List<TreatmentDrug> findByTreatmentId(Long treatmentId);
     List<TreatmentDrug> findByDrugId(Long drugId);
+    boolean existsByTreatmentIdAndDrugId(Long treatmentId, Long drugId);
 }

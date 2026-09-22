@@ -51,7 +51,7 @@ public class TreatmentServiceImpl implements TreatmentService {
         return treatmentRepository.findByVeterinarianId(veterinarianId);
     }
 
-    // NOTE: Un tratamiento nunca se actualiza ni se elimina, solo se crea y se consulta:
+    // NOTA: Un tratamiento nunca se actualiza ni se elimina, solo se crea y se consulta:
     // es un registro médico que debe permanecer intacto aunque la mascota deje de existir.
     @Override
     @Transactional
