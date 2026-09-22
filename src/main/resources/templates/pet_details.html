@@ -257,6 +257,88 @@
 
         </section>
 
+
+        <!-- Tratamientos -->
+        <section class="mt-10">
+
+            <div class="flex items-center justify-between mb-6">
+                <h2 class="font-display text-3xl font-bold">
+                    Tratamientos
+                </h2>
+
+                <a th:href="@{/treatments/add(petId=${pet.id})}"
+                    class="bg-primary text-background px-5 py-2.5 rounded-full text-sm font-bold shadow-sm hover:opacity-90 transition-opacity flex items-center gap-2">
+                    <span>+</span> Nuevo tratamiento
+                </a>
+            </div>
+
+            <!-- Estado vacío: la mascota no tiene tratamientos registrados -->
+            <div th:if="${#lists.isEmpty(treatments)}" class="bg-white rounded-2xl p-6 shadow-sm text-text/60">
+                Esta mascota no tiene tratamientos registrados todavía.
+            </div>
+
+            <!-- Una tarjeta por cada tratamiento, con sus drogas administradas -->
+            <div th:unless="${#lists.isEmpty(treatments)}" class="flex flex-col gap-5">
+                <div th:each="treatment : ${treatments}"
+                     class="bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm">
+
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+                        <div>
+                            <p class="text-xs font-bold tracking-[0.15em] uppercase text-text/50 mb-1">
+                                Fecha del tratamiento
+                            </p>
+                            <p class="font-display text-xl font-bold"
+                               th:text="${#temporals.format(treatment.date, 'dd MMM yyyy, HH:mm')}">
+                                21 sep 2026, 10:00
+                            </p>
+                        </div>
+
+                        <a th:href="@{/veterinarians/{id}(id=${treatment.veterinarian.id})}"
+                           class="bg-background rounded-2xl px-5 py-3 hover:bg-secondary/30 transition-colors shrink-0">
+                            <p class="text-xs text-text/50 mb-1">Veterinario a cargo</p>
+                            <p class="font-bold text-sm" th:text="${treatment.veterinarian.name}">Dra. Valentina Soler</p>
+                        </a>
+                    </div>
+
+                    <div class="border-t border-text/10 my-5"></div>
+
+                    <p class="text-sm font-bold text-text/70 mb-3">Drogas administradas</p>
+
+                    <p th:if="${#lists.isEmpty(treatment.treatmentDrugs)}" class="text-sm text-text/50">
+                        No se administró ninguna droga en este tratamiento.
+                    </p>
+
+                    <div th:unless="${#lists.isEmpty(treatment.treatmentDrugs)}" class="overflow-x-auto">
+                        <table class="w-full text-left text-sm">
+                            <thead>
+                                <tr class="text-text/50 border-b border-text/10">
+                                    <th class="py-2 pr-4 font-normal">Droga</th>
+                                    <th class="py-2 pr-4 font-normal">Unidades</th>
+                                    <th class="py-2 pr-4 font-normal">Precio unitario</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-text/5">
+                                <tr th:each="td : ${treatment.treatmentDrugs}">
+                                    <td class="py-2 pr-4 font-bold" th:text="${td.drug.name}">Amoxicilina 250mg</td>
+                                    <td class="py-2 pr-4" th:text="${td.units}">3</td>
+                                    <td class="py-2 pr-4" th:text="'$' + ${td.unitSalePrice}">$15.000</td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-5">
+                        <a th:href="@{/treatments/{id}(id=${treatment.id})}"
+                           class="text-sm font-bold text-primary underline underline-offset-4 hover:text-tertiary transition-colors">
+                            Ver ficha del tratamiento
+                        </a>
+                    </div>
+
+                </div>
+            </div>
+
+        </section>
+
     </main>
     </div>
 

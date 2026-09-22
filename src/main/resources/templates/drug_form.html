@@ -1,13 +1,77 @@
 <!doctype html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
   <head th:replace="~{fragments :: head}"></head>
-
   <body class="bg-background text-text font-body min-h-screen flex flex-col">
     <div th:replace="~{fragments :: header}"></div>
 
-    <main class="flex-1 flex items-center justify-center px-5 py-10 lg:py-16">
-      <div th:replace="~{fragments :: wip-page('Medicamentos', 'El registro y la edición de medicamentos estarán disponibles muy pronto.')}"></div>
-    </main>
+    <div class="flex-1 flex w-full">
+      <main class="flex-1 max-w-2xl mx-auto px-5 lg:px-12 py-10 lg:py-16">
+        <div class="mb-8">
+          <a th:href="@{/drugs}" class="text-sm font-semibold text-primary hover:text-tertiary transition-colors">
+            ← Volver a Drogas
+          </a>
+        </div>
+
+        <h1 class="font-display text-3xl font-bold mb-8"
+            th:text="${drug.id == null} ? 'Registrar Nueva Droga' : 'Editar Droga'">
+          Registrar Nueva Droga
+        </h1>
+
+        <div class="bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm">
+          <form method="POST"
+                th:action="${drug.id == null} ? @{/drugs/add} : @{/drugs/update/{id}(id=${drug.id})}"
+                th:object="${drug}"
+                class="flex flex-col gap-5">
+
+            <!-- Nombre -->
+            <div class="flex flex-col gap-1">
+              <label for="name" class="text-sm font-bold">Nombre</label>
+              <input type="text" id="name" th:field="*{name}" required
+                     class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm">
+            </div>
+
+            <!-- Precios en la misma fila -->
+            <div class="grid grid-cols-2 gap-5">
+              <div class="flex flex-col gap-1">
+                <label for="purchasePrice" class="text-sm font-bold">Precio de compra</label>
+                <input type="number" id="purchasePrice" th:field="*{purchasePrice}" min="0" step="0.01" required
+                       class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm">
+              </div>
+              <div class="flex flex-col gap-1">
+                <label for="salePrice" class="text-sm font-bold">Precio de venta</label>
+                <input type="number" id="salePrice" th:field="*{salePrice}" min="0" step="0.01" required
+                       class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm">
+              </div>
+            </div>
+
+            <!-- Unidades en la misma fila -->
+            <div class="grid grid-cols-2 gap-5">
+              <div class="flex flex-col gap-1">
+                <label for="unitsAvailable" class="text-sm font-bold">Unidades disponibles</label>
+                <input type="number" id="unitsAvailable" th:field="*{unitsAvailable}" min="0" required
+                       class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm">
+              </div>
+              <div class="flex flex-col gap-1">
+                <label for="unitsSold" class="text-sm font-bold">Unidades vendidas</label>
+                <input type="number" id="unitsSold" th:field="*{unitsSold}" min="0" required
+                       class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm">
+              </div>
+            </div>
+
+            <!-- Botones -->
+            <div class="flex items-center gap-4 mt-4">
+              <button type="submit"
+                      class="bg-primary text-background px-6 py-2.5 rounded-full text-sm font-bold shadow-sm hover:opacity-90 transition-opacity cursor-pointer">
+                Guardar
+              </button>
+              <a th:href="@{/drugs}" class="text-sm font-bold text-text/60 hover:text-tertiary transition-colors">
+                Cancelar
+              </a>
+            </div>
+          </form>
+        </div>
+      </main>
+    </div>
 
     <div th:replace="~{fragments :: footer}"></div>
   </body>

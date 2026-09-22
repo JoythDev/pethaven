@@ -54,10 +54,11 @@ public class TreatmentController {
     }
 
     @GetMapping("/add")
-    public String showAddTreatmentForm(Model model) {
+    public String showAddTreatmentForm(@RequestParam(required = false) Long petId, Model model) {
         model.addAttribute("treatment", Treatment.builder().date(LocalDateTime.now()).build());
         model.addAttribute("pets", petService.getAllPets());
         model.addAttribute("veterinarians", veterinarianService.getAllVeterinarians());
+        model.addAttribute("preselectedPetId", petId);
         return "treatment_form";
     }
 

@@ -2,12 +2,116 @@
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
   <head th:replace="~{fragments :: head}"></head>
 
+  <!-- NOTE: un tratamiento nunca se edita ni se elimina (registro médico permanente),
+       por eso esta página no tiene botones de "Editar"/"Eliminar". -->
   <body class="bg-background text-text font-body min-h-screen flex flex-col">
     <div th:replace="~{fragments :: header}"></div>
 
-    <main class="flex-1 flex items-center justify-center px-5 py-10 lg:py-16">
-      <div th:replace="~{fragments :: wip-page('Tratamientos', 'El detalle del tratamiento estará disponible muy pronto.')}"></div>
-    </main>
+    <div class="flex-1 flex w-full">
+      <main class="flex-1 max-w-7xl mx-auto px-5 lg:px-12 py-10 lg:py-12">
+
+        <div class="mb-8">
+          <a th:href="@{/treatments}" class="text-sm font-semibold text-primary hover:text-tertiary transition-colors">
+            ← Volver a Tratamientos
+          </a>
+        </div>
+
+        <section class="bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm">
+          <p class="text-xs font-bold tracking-[0.2em] uppercase text-text/50">Ficha del tratamiento</p>
+          <h1 class="font-display text-3xl lg:text-4xl font-bold mt-2"
+              th:text="${#temporals.format(treatment.date, 'dd MMM yyyy, HH:mm')}">
+            21 sep 2026, 10:00
+          </h1>
+
+          <div class="border-t border-text/10 my-6"></div>
+
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
+            <a th:href="@{/pets/{id}(id=${treatment.pet.id})}" class="bg-background rounded-2xl p-6 hover:bg-secondary/30 transition-colors">
+              <p class="text-xs text-text/50 mb-1">Mascota</p>
+              <p th:text="${treatment.pet.name}" class="font-bold text-lg">Buddy</p>
+            </a>
+            <a th:href="@{/veterinarians/{id}(id=${treatment.veterinarian.id})}" class="bg-background rounded-2xl p-6 hover:bg-secondary/30 transition-colors">
+              <p class="text-xs text-text/50 mb-1">Veterinario a cargo</p>
+              <p th:text="${treatment.veterinarian.name}" class="font-bold text-lg">Dra. Valentina Soler</p>
+            </a>
+          </div>
+        </section>
+
+        <!-- Drogas administradas -->
+        <section class="mt-10">
+          <h2 class="font-display text-3xl font-bold mb-6">Drogas administradas</h2>
+
+          <div class="bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm overflow-hidden">
+            <div th:if="${#lists.isEmpty(treatmentDrugs)}" class="text-text/60">
+              Todavía no se le ha administrado ninguna droga a este tratamiento.
+            </div>
+
+            <div th:unless="${#lists.isEmpty(treatmentDrugs)}" class="overflow-x-auto">
+              <table class="w-full text-left whitespace-nowrap">
+                <thead>
+                  <tr class="text-text/50 text-sm font-body border-b border-text/10">
+                    <th class="pb-4 px-4 font-normal">Droga</th>
+                    <th class="pb-4 px-4 font-normal">Unidades</th>
+                    <th class="pb-4 px-4 font-normal">Precio compra (u.)</th>
+                    <th class="pb-4 px-4 font-normal">Precio venta (u.)</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-text/10">
+                  <tr th:each="td : ${treatmentDrugs}" class="border-b border-text/5">
+                    <td class="py-4 px-4">
+                      <a th:href="@{/drugs/{id}(id=${td.drug.id})}" class="font-bold text-sm hover:text-tertiary transition-colors" th:text="${td.drug.name}">Amoxicilina</a>
+                    </td>
+                    <td class="py-4 px-4"><span class="text-sm" th:text="${td.units}">3</span></td>
+                    <td class="py-4 px-4"><span class="text-sm" th:text="'$' + ${td.unitPurchasePrice}">$8.000</span></td>
+                    <td class="py-4 px-4"><span class="text-sm" th:text="'$' + ${td.unitSalePrice}">$15.000</span></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+        </section>
+
+        <!-- Administrar una nueva droga a este tratamiento -->
+        <section class="mt-10">
+          <h2 class="font-display text-3xl font-bold mb-6">Administrar una droga</h2>
+
+          <div class="bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm">
+            <!--
+              Reglas que aplica el servidor al enviar este formulario (TreatmentDrugServiceImpl):
+              - unidades <= 0                          -> 409 "Las unidades administradas deben ser mayores a cero."
+              - unidades > stock disponible de la droga -> 409 "No hay suficientes unidades disponibles..."
+              - esa droga ya fue administrada en este mismo tratamiento -> 409 "ya fue administrada en este tratamiento"
+              Si algo de esto pasa, se ve la pantalla de error con el mensaje correspondiente.
+            -->
+            <form th:action="@{/treatment-drugs/add}" method="POST" class="flex flex-col sm:flex-row items-end gap-4">
+              <input type="hidden" name="treatmentId" th:value="${treatment.id}" />
+
+              <div class="flex flex-col gap-1 w-full sm:flex-1">
+                <label for="drugId" class="text-sm font-bold">Droga</label>
+                <select id="drugId" name="drugId" required
+                        class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm">
+                  <option value="" disabled selected>Selecciona una droga</option>
+                  <option th:each="drug : ${drugs}" th:value="${drug.id}"
+                          th:text="${drug.name} + ' (disponibles: ' + ${drug.unitsAvailable} + ')'"></option>
+                </select>
+              </div>
+
+              <div class="flex flex-col gap-1 w-full sm:w-40">
+                <label for="units" class="text-sm font-bold">Unidades</label>
+                <input type="number" id="units" name="units" min="1" required
+                       class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm">
+              </div>
+
+              <button type="submit"
+                      class="bg-primary text-background px-6 py-2.5 rounded-full text-sm font-bold shadow-sm hover:opacity-90 transition-opacity cursor-pointer whitespace-nowrap">
+                Administrar
+              </button>
+            </form>
+          </div>
+        </section>
+
+      </main>
+    </div>
 
     <div th:replace="~{fragments :: footer}"></div>
   </body>

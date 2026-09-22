@@ -1,14 +1,95 @@
 <!doctype html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
+
   <head th:replace="~{fragments :: head}"></head>
 
   <body class="bg-background text-text font-body min-h-screen flex flex-col">
+
     <div th:replace="~{fragments :: header}"></div>
 
-    <main class="flex-1 flex items-center justify-center px-5 py-10 lg:py-16">
-      <div th:replace="~{fragments :: wip-page('Veterinarios', 'El listado de veterinarios estará disponible muy pronto.')}"></div>
-    </main>
+    <div class="flex-1 flex w-full">
+      <div th:replace="~{fragments :: sidebar('veterinarians')}"></div>
 
+      <main class="flex-1 max-w-7xl mx-auto px-5 lg:px-12 py-10 lg:py-16">
+
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+          <h1 class="font-display text-3xl font-bold">Veterinarios</h1>
+
+          <a th:href="@{/veterinarians/add}" class="bg-primary text-background px-5 py-2.5 rounded-full text-sm font-bold shadow-sm hover:opacity-90 transition-opacity flex items-center gap-2">
+            <span>+</span> Nuevo
+          </a>
+        </div>
+
+        <!-- Contenedor de la tabla -->
+        <div class="bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left whitespace-nowrap">
+
+              <thead>
+                <tr class="text-text/50 text-sm font-body border-b border-text/10">
+                  <th class="pb-4 px-4 font-normal">Veterinario</th>
+                  <th class="pb-4 px-4 font-normal">Especialidad</th>
+                  <th class="pb-4 px-4 font-normal">Atenciones</th>
+                  <th class="pb-4 px-4 font-normal">Activo</th>
+                  <th class="pb-4 px-4 font-normal">Acciones</th>
+                </tr>
+              </thead>
+
+              <tbody class="divide-y divide-text/10">
+                <!-- Los inactivos se muestran atenuados: ya no reciben nuevos tratamientos -->
+                <tr th:each="veterinarian : ${veterinarians}"
+                    th:classappend="${!veterinarian.active} ? 'opacity-40'"
+                    class="border-b border-text/5 hover:bg-background/50 transition-colors">
+
+                  <td class="py-4 px-4">
+                    <a th:href="@{/veterinarians/{id}(id=${veterinarian.id})}" class="flex items-center gap-4">
+                      <img th:if="${veterinarian.photoUrl}" th:src="${veterinarian.photoUrl}" th:alt="${veterinarian.name}"
+                           class="w-11 h-11 rounded-full object-cover bg-secondary/50 shrink-0" />
+                      <div th:unless="${veterinarian.photoUrl}"
+                           class="w-11 h-11 rounded-full bg-secondary/50 shrink-0 flex items-center justify-center">
+                        <img th:src="@{/images/icons/stethoscope-icon.svg}" alt="" class="h-5 w-5" />
+                      </div>
+                      <div class="flex flex-col">
+                        <span class="font-bold text-base text-text" th:text="${veterinarian.name}">Nombre</span>
+                        <span class="text-xs text-text/60" th:text="${veterinarian.document}">Documento</span>
+                      </div>
+                    </a>
+                  </td>
+
+                  <td class="py-4 px-4">
+                    <span class="font-bold text-sm text-text" th:text="${veterinarian.specialty}">Especialidad</span>
+                  </td>
+
+                  <td class="py-4 px-4">
+                    <span class="inline-flex items-center bg-primary/20 text-tertiary px-3 py-1 rounded-md text-xs font-bold"
+                          th:text="${veterinarian.attentions}">0</span>
+                  </td>
+
+                  <td class="py-4 px-4">
+                    <form th:action="@{/veterinarians/toggle/{id}(id=${veterinarian.id})}" method="post">
+                      <div th:replace="~{fragments :: active-toggle(${veterinarian}, true)}"></div>
+                    </form>
+                  </td>
+
+                  <td class="py-4 px-4">
+                    <div class="flex items-center gap-3">
+                      <a th:href="@{/veterinarians/{id}(id=${veterinarian.id})}" class="text-sm font-bold text-primary hover:text-tertiary transition-colors">
+                        Ver Ficha
+                      </a>
+                      <span class="text-text/20">|</span>
+                      <a th:href="@{/veterinarians/update/{id}(id=${veterinarian.id})}" class="text-sm font-bold text-text/60 hover:text-tertiary transition-colors">
+                        Editar
+                      </a>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
     <div th:replace="~{fragments :: footer}"></div>
   </body>
 </html>

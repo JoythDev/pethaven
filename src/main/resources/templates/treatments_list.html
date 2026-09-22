@@ -1,14 +1,72 @@
 <!doctype html>
 <html lang="es" xmlns:th="http://www.thymeleaf.org">
+
   <head th:replace="~{fragments :: head}"></head>
 
+  <!-- NOTE: un tratamiento nunca se edita ni se elimina (es un registro médico permanente),
+       así que esta tabla solo ofrece "Ver Ficha" -->
   <body class="bg-background text-text font-body min-h-screen flex flex-col">
+
     <div th:replace="~{fragments :: header}"></div>
 
-    <main class="flex-1 flex items-center justify-center px-5 py-10 lg:py-16">
-      <div th:replace="~{fragments :: wip-page('Tratamientos', 'El listado de tratamientos estará disponible muy pronto.')}"></div>
-    </main>
+    <div class="flex-1 flex w-full">
+      <div th:replace="~{fragments :: sidebar('treatments')}"></div>
 
+      <main class="flex-1 max-w-7xl mx-auto px-5 lg:px-12 py-10 lg:py-16">
+
+        <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4">
+          <h1 class="font-display text-3xl font-bold">Tratamientos</h1>
+
+          <a th:href="@{/treatments/add}" class="bg-primary text-background px-5 py-2.5 rounded-full text-sm font-bold shadow-sm hover:opacity-90 transition-opacity flex items-center gap-2">
+            <span>+</span> Nuevo
+          </a>
+        </div>
+
+        <div class="bg-white rounded-[2rem] p-6 lg:p-8 shadow-sm overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-left whitespace-nowrap">
+
+              <thead>
+                <tr class="text-text/50 text-sm font-body border-b border-text/10">
+                  <th class="pb-4 px-4 font-normal">Mascota</th>
+                  <th class="pb-4 px-4 font-normal">Veterinario</th>
+                  <th class="pb-4 px-4 font-normal">Fecha</th>
+                  <th class="pb-4 px-4 font-normal">Drogas administradas</th>
+                  <th class="pb-4 px-4 font-normal">Acciones</th>
+                </tr>
+              </thead>
+
+              <tbody class="divide-y divide-text/10">
+                <tr th:each="treatment : ${treatments}" class="border-b border-text/5 hover:bg-background/50 transition-colors">
+
+                  <td class="py-4 px-4">
+                    <a th:href="@{/pets/{id}(id=${treatment.pet.id})}" class="font-bold text-sm text-text hover:text-tertiary transition-colors"
+                       th:text="${treatment.pet.name}">Buddy</a>
+                  </td>
+                  <td class="py-4 px-4">
+                    <a th:href="@{/veterinarians/{id}(id=${treatment.veterinarian.id})}" class="text-sm hover:text-tertiary transition-colors"
+                       th:text="${treatment.veterinarian.name}">Dra. Valentina Soler</a>
+                  </td>
+                  <td class="py-4 px-4">
+                    <span class="text-sm" th:text="${#temporals.format(treatment.date, 'dd MMM yyyy, HH:mm')}">21 sep 2026, 10:00</span>
+                  </td>
+                  <td class="py-4 px-4">
+                    <span class="inline-flex items-center bg-primary/20 text-tertiary px-3 py-1 rounded-md text-xs font-bold"
+                          th:text="${#lists.size(treatment.treatmentDrugs)}">2</span>
+                  </td>
+                  <td class="py-4 px-4">
+                    <a th:href="@{/treatments/{id}(id=${treatment.id})}" class="text-sm font-bold text-primary hover:text-tertiary transition-colors">
+                      Ver Ficha
+                    </a>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </main>
+    </div>
     <div th:replace="~{fragments :: footer}"></div>
   </body>
 </html>

@@ -3,6 +3,7 @@ package io.github.pethaven.controller;
 import io.github.pethaven.entity.Pet;
 import io.github.pethaven.service.OwnerService;
 import io.github.pethaven.service.PetService;
+import io.github.pethaven.service.TreatmentService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -26,6 +27,9 @@ public class PetController {
     @Autowired
     private OwnerService ownerService;
 
+    @Autowired
+    private TreatmentService treatmentService;
+
     @GetMapping()
     public String listPets(Model model) {
         model.addAttribute("pets", petService.getAllPets());
@@ -35,6 +39,7 @@ public class PetController {
     @GetMapping("/{id}")
     public String getPet(@PathVariable Long id, Model model) {
         model.addAttribute("pet", petService.getPetById(id));
+        model.addAttribute("treatments", treatmentService.getTreatmentsByPetId(id));
         return "pet_details";
     }
 
