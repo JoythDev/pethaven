@@ -37,8 +37,9 @@ public class Owner {
     @Column(name = "phone", length = 20, nullable = false)
     private String phone;
 
-    // TODO: Revisar el cascade y orphanRemoval (hacer borrado explícito en OwnerService)
-    // TODO: En OwnerService.deleteOwnerById borrar treatments, luego pets, luego owner.
+    // NOTE: OwnerService.deleteOwnerById bloquea el borrado si alguna mascota ya tiene
+    // tratamientos (para no perder ese historial). Si ninguna los tiene, esta cascada física
+    // a nivel de base de datos es segura porque no hay nada debajo de esas mascotas que perder.
 
     @Builder.Default // Builder tiene en cuenta el inicializador de la lista
     // @OneToMany(mappedBy = "owner", cascade = CascadeType.ALL, orphanRemoval = true) // JPA - Introduce bug al actualizar un Owner (elimina sus mascotas)

@@ -11,6 +11,6 @@ import java.util.List;
 public interface TreatmentRepository extends JpaRepository<Treatment, Long> {
     List<Treatment> findByPetId(Long petId);
     List<Treatment> findByVeterinarianId(Long veterinarianId);
-    void deleteByPetId(Long petId);
+    boolean existsByPetOwnerId(Long ownerId);
     List<Treatment> findByDateBetween(LocalDateTime startDate, LocalDateTime endDate);
 }

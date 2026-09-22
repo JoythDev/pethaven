@@ -28,8 +28,8 @@ public class Pet {
     @JoinColumn(name = "owner_id", nullable = false)
     private Owner owner;
 
-    // TODO: Revisar el cascade y orphanRemoval (hacer borrado explícito en OwnerService)
-    // TODO: En OwnerService.deleteOwnerById borrar treatments, luego pets, luego owner.
+    // NOTE: Esta cascada solo se dispara vía Owner -> Pet, y OwnerService.deleteOwnerById ya
+    // garantiza que una mascota con tratamientos nunca llega a borrarse (ver Owner.pets).
 
     @Builder.Default
     // @OneToMany(mappedBy = "pet", cascade = CascadeType.ALL, orphanRemoval = true)
