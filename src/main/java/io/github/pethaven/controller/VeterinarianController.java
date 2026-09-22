@@ -59,8 +59,7 @@ public class VeterinarianController {
 
     @PostMapping("/update/{id}")
     public String saveUpdatedVeterinarian(@PathVariable Long id, Veterinarian veterinarian) {
-        veterinarian.setId(id);
-        veterinarianService.createVeterinarian(veterinarian);
+        veterinarianService.updateVeterinarian(id, veterinarian);
         return "redirect:/veterinarians/" + id;
     }
 

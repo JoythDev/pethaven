@@ -171,5 +171,18 @@
         <p class="hidden md:block">Hecho con ♥ por las mascotas</p>
       </div>
     </footer>
+
+    <!-- Fragmento: página WIP reutilizable para secciones fuera del alcance actual -->
+    <div th:fragment="wip-page(section, description)"
+         class="w-full max-w-md rounded-3xl border border-primary/25 bg-background p-8 text-center shadow-xl">
+      <h2 class="font-display text-4xl font-bold">WIP</h2>
+      <p class="mt-4 text-base">
+        <span class="font-bold" th:text="${section}">Sección</span>
+        <span th:text="${description}">Esta sección estará disponible muy pronto.</span>
+      </p>
+      <a th:href="@{/}" class="mt-6 inline-block bg-primary text-background px-6 py-2.5 text-sm font-bold rounded-full shadow-sm hover:opacity-90 transition-opacity">
+        Volver al inicio
+      </a>
+    </div>
   </body>
 </html>
