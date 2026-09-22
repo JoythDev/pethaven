@@ -62,8 +62,7 @@ public class OwnerController {
 
     @PostMapping("/update/{id}")
     public String saveUpdatedOwner(@PathVariable Long id, Owner owner) {
-        owner.setId(id);
-        ownerService.createOwner(owner);
+        ownerService.updateOwner(id, owner);
         return "redirect:/owners/" + id;
     }
 

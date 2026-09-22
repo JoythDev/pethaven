@@ -10,6 +10,7 @@ public interface OwnerService {
     public Owner getOwnerByDocument(String document);
     public Owner getOwnerByEmail(String email);
     public void createOwner(Owner owner);
+    public void updateOwner(Long id, Owner formData);
     public void deleteOwnerById(Long id);
 
     public Owner authenticate(String email, String password);

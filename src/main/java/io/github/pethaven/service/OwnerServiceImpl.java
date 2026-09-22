@@ -48,6 +48,21 @@ public class OwnerServiceImpl implements OwnerService {
         ownerRepository.save(owner);
     }
 
+    // La actualización copia únicamente los campos editables del formulario sobre la
+    // entidad ya persistida. Las mascotas existentes se conservan intactas: el formulario
+    // no las envía, así que la colección llega vacía y un merge de JPA las perdería.
+    @Override
+    @Transactional
+    public void updateOwner(Long id, Owner formData) {
+        Owner existing = getOwnerById(id);
+        existing.setName(formData.getName());
+        existing.setDocument(formData.getDocument());
+        existing.setPhone(formData.getPhone());
+        existing.setEmail(formData.getEmail());
+        existing.setPassword(formData.getPassword());
+        ownerRepository.save(existing);
+    }
+
     // Un dueño con mascotas que ya tienen tratamientos registrados no se puede eliminar:
     // se perdería ese historial médico. Si ninguna mascota tiene tratamientos, la cascada
     // física normal (Owner -> Pet a nivel de base de datos) es segura porque no hay nada
