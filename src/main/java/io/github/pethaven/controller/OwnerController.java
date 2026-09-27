@@ -35,9 +35,16 @@ public class OwnerController {
         return "owner_details";
     }
 
+    @GetMapping("/{id}/profile")
+    public String getOwnerProfile(@PathVariable Long id, Model model) {
+        model.addAttribute("owner", ownerService.getOwnerById(id));
+        model.addAttribute("pets", petService.getPetsByOwnerId(id));
+        return "logged_owner_details";
+    }
+
     @GetMapping("/add")
     public String showAddOwnerForm(Model model) {
-        model.addAttribute("owner", new Owner(null, "", "", "", "", ""));
+        model.addAttribute("owner", Owner.builder().name("").document("").phone("").email("").password("").build());
         return "owner_form";
     }
 
@@ -55,8 +62,7 @@ public class OwnerController {
 
     @PostMapping("/update/{id}")
     public String saveUpdatedOwner(@PathVariable Long id, Owner owner) {
-        owner.setId(id);
-        ownerService.createOwner(owner);
+        ownerService.updateOwner(id, owner);
         return "redirect:/owners/" + id;
     }
 

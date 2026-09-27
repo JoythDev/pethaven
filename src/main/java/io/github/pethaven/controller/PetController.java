@@ -3,6 +3,7 @@ package io.github.pethaven.controller;
 import io.github.pethaven.entity.Pet;
 import io.github.pethaven.service.OwnerService;
 import io.github.pethaven.service.PetService;
+import io.github.pethaven.service.TreatmentService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
@@ -12,6 +13,9 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.beans.propertyeditors.StringTrimmerEditor;
+import org.springframework.web.bind.WebDataBinder;
+import org.springframework.web.bind.annotation.InitBinder;
 
 @Controller
 @RequestMapping("/pets")
@@ -23,32 +27,32 @@ public class PetController {
     @Autowired
     private OwnerService ownerService;
 
+    @Autowired
+    private TreatmentService treatmentService;
+
     @GetMapping()
-    public String listPets(@RequestParam(required = false) String search,
-                           @RequestParam(required = false) String status,
-                           Model model) {
-        model.addAttribute("pets", petService.getAllPets(search, status));
-        model.addAttribute("search", search);
-        model.addAttribute("status", status);
+    public String listPets(Model model) {
+        model.addAttribute("pets", petService.getAllPets());
         return "pets_list";
     }
 
     @GetMapping("/{id}")
     public String getPet(@PathVariable Long id, Model model) {
         model.addAttribute("pet", petService.getPetById(id));
+        model.addAttribute("treatments", treatmentService.getTreatmentsByPetId(id));
         return "pet_details";
     }
 
     @GetMapping("/add")
     public String showAddPetForm(Model model) {
-        model.addAttribute("pet", new Pet(null, "", null, "", 0, 0.0, "", "", null));
+        model.addAttribute("pet", Pet.builder().name("").owner(null).species(null).breed("").age(0).weight(0.0).disease("").photoUrl("").build());
         model.addAttribute("owners", ownerService.getAllOwners());
         return "pet_form";
     }
 
     @PostMapping("/add")
-    public String addPet(Pet pet) {
-        petService.createPet(pet);
+    public String addPet(Pet pet, @RequestParam("ownerId") Long ownerId) {
+        petService.createPet(pet, ownerId);
         return "redirect:/pets";
     }
 
@@ -60,15 +64,23 @@ public class PetController {
     }
 
     @PostMapping("/update/{id}")
-    public String saveUpdatedPet(@PathVariable Long id, Pet pet) {
+    public String saveUpdatedPet(@PathVariable Long id, Pet pet, @RequestParam("ownerId") Long ownerId) {
         pet.setId(id);
-        petService.createPet(pet);
+        petService.createPet(pet, ownerId);
         return "redirect:/pets/" + id;
     }
 
-    @GetMapping("/delete/{id}")
-    public String deletePet(@PathVariable Long id) {
-        petService.deletePetById(id);
-        return "redirect:/pets";
+    @PostMapping("/toggle/{id}")
+    public String switchPetActive(@PathVariable Long id,
+                                  @RequestParam(required = false, defaultValue = "false") boolean active,
+                                  @RequestParam(defaultValue = "false") boolean redirectToDetails) {
+        petService.switchPetActiveStatus(id, active);
+        return redirectToDetails ? "redirect:/pets/" + id : "redirect:/pets";
+    }
+
+    /** Convierte los campos de texto vacíos en null al recibir formularios. */
+    @InitBinder
+    public void initBinder(WebDataBinder binder) {
+        binder.registerCustomEditor(String.class, new StringTrimmerEditor(true));
     }
 }

@@ -84,13 +84,89 @@
       </div>
     </header>
 
+    <!-- Fragmento: Sidebar tipo dashboard -->
+    <aside th:fragment="sidebar(active)" class="hidden lg:flex flex-col w-60 shrink-0 bg-white border-r border-primary/15 py-8 px-4 gap-2">
+      <p class="text-xs font-bold uppercase tracking-[0.2em] text-text/50 px-3 mb-4">Panel</p>
+
+      <a th:href="@{/pets}"
+         th:class="${active == 'pets'} ? 'bg-secondary/40 text-text font-bold' : 'text-text/70 hover:bg-secondary/20 hover:text-text'"
+         class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors">
+        <img th:src="@{/images/icons/paw-print-icon.svg}" alt="" class="h-5 w-5" />
+        <span class="text-sm">Mascotas</span>
+      </a>
+
+      <a th:href="@{/owners}"
+         th:class="${active == 'owners'} ? 'bg-secondary/40 text-text font-bold' : 'text-text/70 hover:bg-secondary/20 hover:text-text'"
+         class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors">
+        <img th:src="@{/images/icons/user-icon.svg}" alt="" class="h-5 w-5" />
+        <span class="text-sm">Dueños</span>
+      </a>
+
+      <a th:href="@{/veterinarians}"
+         th:class="${active == 'veterinarians'} ? 'bg-secondary/40 text-text font-bold' : 'text-text/70 hover:bg-secondary/20 hover:text-text'"
+         class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors">
+        <img th:src="@{/images/icons/stethoscope-icon.svg}" alt="" class="h-5 w-5" />
+        <span class="text-sm">Veterinarios</span>
+      </a>
+
+      <a th:href="@{/drugs}"
+         th:class="${active == 'drugs'} ? 'bg-secondary/40 text-text font-bold' : 'text-text/70 hover:bg-secondary/20 hover:text-text'"
+         class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors">
+        <img th:src="@{/images/icons/pulse-icon.svg}" alt="" class="h-5 w-5" />
+        <span class="text-sm">Drogas</span>
+      </a>
+
+      <a th:href="@{/treatments}"
+         th:class="${active == 'treatments'} ? 'bg-secondary/40 text-text font-bold' : 'text-text/70 hover:bg-secondary/20 hover:text-text'"
+         class="flex items-center gap-3 rounded-xl px-3 py-2.5 transition-colors">
+        <img th:src="@{/images/icons/hospital-bed-icon.svg}" alt="" class="h-5 w-5" />
+        <span class="text-sm">Tratamientos</span>
+      </a>
+    </aside>
+
+    <!-- Fragmento: toggle de estado activo de la mascota
+         autoSubmit=true  -> envía el formulario contenedor al cambiar (listado / detalles)
+         autoSubmit=false -> forma parte de un formulario mayor (form de alta/edición) -->
+    <label th:fragment="active-toggle(pet, autoSubmit)"
+           class="relative inline-flex w-11 h-6 cursor-pointer items-center">
+      <input type="hidden" name="_active" value="on" />
+      <input type="checkbox" th:id="'active-' + ${pet.id}" name="active" value="true" th:checked="${pet.active}"
+             th:onchange="${autoSubmit} ? 'this.form.submit()'" class="sr-only peer"
+             th:aria-label="${#strings.isEmpty(pet.name)} ? 'Cambiar estado activo' : 'Cambiar estado activo de ' + ${pet.name}" />
+      <div class="w-11 h-6 rounded-full bg-text/20 transition-colors peer-checked:bg-primary"></div>
+      <div class="absolute left-0.5 top-0.5 h-5 w-5 rounded-full bg-white shadow transition-transform peer-checked:translate-x-5"></div>
+    </label>
+
     <!-- Fragmento del Footer con rutas corregidas -->
     <footer th:fragment="footer" id="footer" class="bg-tertiary text-background text-center pb-8 pt-20 px-15">
       <div class="flex flex-col lg:flex-row lg:justify-between gap-4 text-left text-sm pb-15">
         <div class="flex flex-col w-full lg:w-1/4 gap-4">
           <img th:src="@{/images/logo-footer.png}" alt="PetHaven" class="w-3/5" />
           <p>La clínica de hospitalización y cuidado crítico de confianza para las familias modernas.</p>
+
+          <!-- Fragmento de redes sociales-->
+          <div class="flex flex-col gap-3">
+            <h4 class="font-display text-xl font-bold">Síguenos</h4>
+
+            <div class="flex items-center gap-4">
+              <!-- Instagram -->
+              <a href="https://www.instagram.com/pethaven_puj/" aria-label="Instagram" class="hover:opacity-70 transition-opacity" target="_blank">
+                <img th:src="@{/images/icons/instagram.png}" alt="Instagram" class="w-7 h-7 brightness-0 invert"/>
+              </a>
+
+              <!-- Facebook -->
+              <a href="#" aria-label="Facebook" class="hover:opacity-70 transition-opacity">
+                <img th:src="@{/images/icons/facebook.png}" alt="Facebook" class="w-7 h-7 brightness-0 invert"/>
+              </a>
+
+              <!-- TikTok -->
+              <a href="#" aria-label="TikTok" class="hover:opacity-70 transition-opacity">
+                <img th:src="@{/images/icons/tik-tok.png}" alt="TikTok" class="w-7 h-7 brightness-0 invert"/>
+              </a>
+            </div>
+          </div>
         </div>
+
         <div class="flex flex-col gap-2">
           <h4 class="font-display text-xl font-bold pb-2">Navegación</h4>
           <a href="#services" class="hover:opacity-75 transition-opacity">Servicios</a>
@@ -100,9 +176,9 @@
         </div>
         <div class="flex flex-col gap-2">
           <h4 class="font-display text-xl font-bold pb-2">Portales</h4>
-          <a href="#" class="hover:opacity-75 transition-opacity">Portal Cliente</a>
-          <a href="#" class="hover:opacity-75 transition-opacity">Portal Veterinario</a>
-          <a href="#" class="hover:opacity-75 transition-opacity">Portal Administrador</a>
+          <a th:href="@{/login}" class="hover:opacity-75 transition-opacity">Portal Cliente</a>
+          <a th:href="@{/vet/login}" class="hover:opacity-75 transition-opacity">Portal Veterinario</a>
+          <a th:href="@{/login}" class="hover:opacity-75 transition-opacity">Portal Administrador</a>
         </div>
         <div class="flex flex-col gap-2">
           <h4 class="font-display text-xl font-bold pb-2">Contacto</h4>
@@ -116,5 +192,18 @@
         <p class="hidden md:block">Hecho con ♥ por las mascotas</p>
       </div>
     </footer>
+
+    <!-- Fragmento: página WIP reutilizable para secciones fuera del alcance actual -->
+    <div th:fragment="wip-page(section, description)"
+         class="w-full max-w-md rounded-3xl border border-primary/25 bg-background p-8 text-center shadow-xl">
+      <h2 class="font-display text-4xl font-bold">WIP</h2>
+      <p class="mt-4 text-base">
+        <span class="font-bold" th:text="${section}">Sección</span>
+        <span th:text="${description}">Esta sección estará disponible muy pronto.</span>
+      </p>
+      <a th:href="@{/}" class="mt-6 inline-block bg-primary text-background px-6 py-2.5 text-sm font-bold rounded-full shadow-sm hover:opacity-90 transition-opacity">
+        Volver al inicio
+      </a>
+    </div>
   </body>
 </html>

@@ -1,0 +1,113 @@
+<!doctype html>
+
+<html lang="es" xmlns:th="http://www.thymeleaf.org">
+
+<head th:replace="~{fragments :: head}"></head>
+
+<body class="bg-background text-text font-body min-h-screen flex flex-col">
+
+    <!-- Header -->
+    <div th:replace="~{fragments :: header}"></div>
+
+
+    <!-- Contenido -->
+    <main class="flex-1 flex items-center justify-center px-5 py-16">
+
+        <section class="w-full max-w-2xl text-center">
+
+            <!-- Icono -->
+            <div class="flex justify-center mb-8">
+
+                <div class="w-28 h-28 rounded-full bg-secondary/40 flex items-center justify-center">
+
+                    <span class="text-6xl">🐾</span>
+
+                </div>
+
+            </div>
+
+
+            <!-- Código -->
+            <p
+                th:if="${status != null}"
+                th:text="${status}"
+                class="font-display text-7xl lg:text-8xl font-bold text-primary mb-3"
+            >
+                404
+            </p>
+
+
+            <!-- Título -->
+            <h1 class="font-display text-4xl lg:text-5xl font-bold mb-5">
+                ¡Ups! Algo salió mal
+            </h1>
+
+
+            <!-- Mensaje -->
+            <p class="text-text/60 text-lg leading-relaxed max-w-xl mx-auto mb-6">
+
+                Lo sentimos, no pudimos completar tu solicitud.
+                Es posible que la página que buscas no exista
+                o que haya ocurrido un problema inesperado.
+
+            </p>
+
+
+            <!-- Mensaje técnico -->
+            <div
+                th:if="${message != null and !message.isEmpty()}"
+                class="bg-white border border-text/10 rounded-2xl px-5 py-4 mb-8 text-sm text-text/60"
+            >
+
+                <p th:text="${message}">
+                    Ocurrió un error.
+                </p>
+
+            </div>
+
+
+            <!-- Código del error -->
+            <p
+                th:if="${status != null}"
+                class="text-sm text-text/50 mb-8"
+            >
+                Código de error:
+                <strong
+                    th:text="${status}"
+                    class="text-text"
+                >
+                    404
+                </strong>
+            </p>
+
+
+            <!-- Botones -->
+            <div class="flex flex-col sm:flex-row justify-center gap-3">
+
+                <a
+                    th:href="@{/}"
+                    class="bg-primary text-background px-6 py-3 rounded-full font-bold hover:opacity-90 transition-opacity shadow-sm"
+                >
+                    Volver al inicio
+                </a>
+
+                <a
+                    th:href="@{/pets}"
+                    class="bg-white border border-text/10 text-text px-6 py-3 rounded-full font-bold hover:bg-secondary/20 transition-colors shadow-sm"
+                >
+                    Ver mis mascotas
+                </a>
+
+            </div>
+
+        </section>
+
+    </main>
+
+
+    <!-- Footer -->
+    <div th:replace="~{fragments :: footer}"></div>
+
+</body>
+
+</html>

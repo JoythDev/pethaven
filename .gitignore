@@ -29,6 +29,7 @@ yarn-error.log*
 
 # IDE specific files
 /.idea/
+/pethaven.iml
 
 # VS Code specific files
 .vscode/
@@ -38,3 +39,14 @@ yarn-error.log*
 
 # Maven build files
 /target/
+
+# H2 database files
+*.mv.db
+*.trace.db
+*.lock.db
+
+# Workflow
+.atl
+/planning/
+/nul
+/odd/
