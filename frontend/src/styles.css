@@ -1,1 +1,47 @@
 @import "tailwindcss";
+
+@theme {
+  --color-primary: #a09c6d;
+  --color-secondary: #eacecb;
+  --color-tertiary: #7a502a;
+  --color-text: #261a10;
+  --color-background: #f2ece0;
+  --color-honey: #e8b04b;
+  --color-terracotta: #c96f4a;
+  --color-sage: #9db38a;
+  --font-display: "Fraunces", serif;
+  --font-body: "Nunito Sans", sans-serif;
+  --font-script: "Caveat", cursive;
+
+  --animate-float: float 6s ease-in-out infinite alternate;
+  --animate-drift: drift 10s ease-in-out infinite alternate;
+  --animate-bounce-soft: bounce-soft 2s ease-in-out infinite;
+}
+
+@keyframes float {
+  from {
+    transform: translateY(0);
+  }
+  to {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes drift {
+  from {
+    transform: translate(0, 0) scale(1);
+  }
+  to {
+    transform: translate(6px, -10px) scale(1.04);
+  }
+}
+
+@keyframes bounce-soft {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(6px);
+  }
+}
