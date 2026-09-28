@@ -32,7 +32,7 @@ yarn-error.log*
 /pethaven.iml
 
 # VS Code specific files
-.vscode/
+/.vscode/
 
 # MacOS specific files
 .DS_Store
@@ -48,5 +48,4 @@ yarn-error.log*
 # Workflow
 .atl
 /planning/
-/nul
 /odd/
