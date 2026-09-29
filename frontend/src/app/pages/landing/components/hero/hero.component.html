@@ -1,0 +1,147 @@
+      <!-- section: hero -->
+      <section class="relative py-12 lg:py-24">
+        <div
+          class="max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-12 px-5 lg:px-8"
+        >
+          <!-- Columna izquierda: texto y CTAs -->
+          <div class="relative z-10 w-full lg:w-1/2 text-left reveal">
+            <p
+              class="font-bold uppercase text-xs lg:text-sm tracking-[0.25em] text-primary mb-4"
+            >
+              Clínica veterinaria · Monitoreo 24/7
+            </p>
+            <h1
+              class="font-display font-bold text-4xl sm:text-5xl lg:text-7xl leading-[0.95] tracking-[-0.01em] mb-4"
+            >
+              Hospitalización canina y felina con amor de hogar
+            </h1>
+            <p class="font-script text-3xl lg:text-4xl text-terracotta mb-5">
+              porque son familia
+            </p>
+            <p class="text-lg lg:text-xl opacity-80 mb-8 max-w-xl">
+              Entendemos que dejar a tu mejor amigo hospitalizado es difícil. En
+              PetHaven combinamos el monitoreo médico especializado 24/7 con un
+              ambiente cálido y de bajo estrés para su pronta recuperación.
+            </p>
+            <!-- Botones CTA -->
+            <div class="flex flex-col gap-4 sm:flex-row">
+              <a
+                href="#services"
+                class="bg-primary text-background px-6 py-2.5 lg:px-8 text-sm lg:text-base rounded-full font-bold hover:opacity-90 transition-opacity shadow-sm whitespace-nowrap"
+              >
+                Comienza ahora
+              </a>
+              <a
+                href="#how-it-works"
+                class="bg-background text-terracotta border-2 border-terracotta hover:bg-terracotta hover:text-background px-6 py-2.5 lg:px-8 text-sm lg:text-base rounded-full font-bold transition-colors shadow-sm whitespace-nowrap inline-flex items-center justify-center gap-2"
+              >
+                Conoce más
+                <img
+                  src="/images/icons/arrow-down-bold-icon.svg"
+                  alt=""
+                  class="h-4 w-4 rotate-[-90deg]"
+                />
+              </a>
+            </div>
+          </div>
+
+          <!-- Columna derecha: video en silueta blob con blobs acompañantes -->
+          <div class="w-full lg:w-1/2 flex justify-center">
+            <div class="hero-media">
+              <!-- Siluetas blob normalizadas -->
+              <svg
+                width="0"
+                height="0"
+                class="absolute h-0 w-0"
+                aria-hidden="true"
+                focusable="false"
+              >
+                <defs>
+                  <clipPath
+                    id="hero-clip-mobile"
+                    clipPathUnits="objectBoundingBox"
+                  >
+                    <path
+                      d="M0.55,0.03C0.7,-0.01,0.88,0.08,0.94,0.24C0.99,0.38,0.92,0.5,0.97,0.63C1.01,0.76,0.93,0.9,0.78,0.96C0.64,1.01,0.5,0.96,0.36,1C0.22,1.03,0.08,0.94,0.04,0.8C0,0.67,0.06,0.55,0.02,0.42C-0.02,0.29,0.03,0.13,0.18,0.06C0.3,0,0.44,0.05,0.55,0.03Z"
+                    />
+                  </clipPath>
+                  <clipPath
+                    id="hero-clip-desktop"
+                    clipPathUnits="objectBoundingBox"
+                  >
+                    <path
+                      d="M0.28,0.03C0.4,0.14,0.52,0.1,0.64,0.06C0.76,0.02,0.88,0.1,1,0.24C1.06,0.36,0.94,0.44,0.98,0.56C1.04,0.68,1.02,0.8,0.9,0.9C0.8,0.98,0.64,0.96,0.52,1C0.4,1.03,0.26,1,0.16,0.92C0.06,0.84,0.02,0.7,0.05,0.58C0.1,0.44,-0.02,0.32,0.06,0.19C0.11,0.08,0.19,0.06,0.28,0.03Z"
+                    />
+                  </clipPath>
+                </defs>
+              </svg>
+              <!-- Blob verde a la izquierda -->
+              <div class="hero-blob hero-blob-sage" aria-hidden="true">
+                <div class="blob aspect-square w-full bg-sage"></div>
+              </div>
+              <!-- Blob miel detrás del video y arriba -->
+              <div
+                class="hero-blob hero-blob-honey"
+                data-parallax="0.2"
+                aria-hidden="true"
+              >
+                <div class="blob blob-alt aspect-square w-full bg-honey"></div>
+              </div>
+              <!-- Blob rosa detrás del video y abajo -->
+              <div
+                class="hero-blob hero-blob-pink"
+                data-parallax="0.12"
+                aria-hidden="true"
+              >
+                <div class="blob aspect-square w-full bg-secondary"></div>
+              </div>
+              <!-- Video en silueta blob -->
+              <div class="hero-video-pos" aria-hidden="true">
+                <div class="hero-video-clip">
+                  <figure class="m-0 h-full w-full">
+                    <video
+                      autoplay
+                      loop
+                      muted
+                      playsinline
+                      preload="metadata"
+                      poster="/images/hero-image.avif"
+                      class="block h-full w-full object-cover"
+                    >
+                      <source src="/videos/hero.mp4" type="video/mp4" />
+                      <img
+                        src="/images/hero-image.avif"
+                        alt=""
+                        class="block h-full w-full object-cover"
+                      />
+                    </video>
+                  </figure>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Indicador de scroll -->
+        <div class="mt-12 lg:mt-16 flex justify-center reveal">
+          <a
+            href="#services"
+            class="flex h-12 w-12 items-center justify-center rounded-full border-[1.5px] border-primary text-primary animate-bounce-soft hover:bg-secondary/40 transition-colors"
+            aria-label="Ir a la sección de servicios"
+          >
+            <svg
+              viewBox="0 0 24 24"
+              class="h-5 w-5"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1.5"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              aria-hidden="true"
+            >
+              <path d="m6 9 6 6 6-6" />
+            </svg>
+          </a>
+        </div>
+      </section>
+
