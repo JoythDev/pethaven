@@ -1,0 +1,66 @@
+<main class="max-w-2xl mx-auto px-5 lg:px-12 py-12">
+
+  <a routerLink="/pets" class="text-sm font-semibold text-primary hover:text-tertiary transition-colors">
+    ← Volver a Mascotas
+  </a>
+
+  <h1 class="font-display text-3xl font-bold text-text mt-4 mb-8">
+    {{ editandoId === null ? 'Registrar Nueva Mascota' : 'Editar Mascota' }}
+  </h1>
+
+  <form #petForm="ngForm" (ngSubmit)="guardar(petForm)" class="bg-white rounded-3xl p-8 shadow-sm flex flex-col gap-5">
+
+    <div class="flex flex-col gap-1">
+      <label for="name" class="text-sm font-bold text-text">Nombre</label>
+      <input type="text" id="name" name="name" [(ngModel)]="pet.name" required
+             class="border border-text/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label for="species" class="text-sm font-bold text-text">Especie</label>
+      <select id="species" name="species" [(ngModel)]="pet.species" required
+              class="border border-text/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
+        <option [value]="Species.DOG">Perro</option>
+        <option [value]="Species.CAT">Gato</option>
+      </select>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label for="breed" class="text-sm font-bold text-text">Raza</label>
+      <input type="text" id="breed" name="breed" [(ngModel)]="pet.breed" required
+             class="border border-text/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
+    </div>
+
+    <div class="grid grid-cols-2 gap-5">
+      <div class="flex flex-col gap-1">
+        <label for="age" class="text-sm font-bold text-text">Edad (años)</label>
+        <input type="number" id="age" name="age" [(ngModel)]="pet.age" min="0" required
+               class="border border-text/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
+      </div>
+      <div class="flex flex-col gap-1">
+        <label for="weight" class="text-sm font-bold text-text">Peso (kg)</label>
+        <input type="number" id="weight" name="weight" [(ngModel)]="pet.weight" min="0" step="0.1" required
+               class="border border-text/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label for="disease" class="text-sm font-bold text-text">Diagnóstico (opcional)</label>
+      <input type="text" id="disease" name="disease" [(ngModel)]="pet.disease" placeholder="Déjalo vacío si no tiene ninguno"
+             class="border border-text/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label for="photoUrl" class="text-sm font-bold text-text">URL de la foto</label>
+      <input type="url" id="photoUrl" name="photoUrl" [(ngModel)]="pet.photoUrl" placeholder="https://..." required
+             class="border border-text/10 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:border-primary">
+    </div>
+
+    <button type="submit"
+            class="mt-4 bg-primary text-background px-6 py-2.5 rounded-full font-bold hover:opacity-90 transition-opacity shadow-sm cursor-pointer">
+      Guardar
+    </button>
+
+  </form>
+
+</main>
