@@ -19,7 +19,7 @@
           <dd class="font-semibold text-text">{{ pet.weight }} kg</dd>
 
           <dt class="text-text/50">Diagnóstico</dt>
-          <dd class="font-semibold text-text">{{ pet.disease || 'Ninguno' }}</dd>
+          <dd class="font-semibold text-text">{{ pet.disease ?? 'Ninguno' }}</dd>
         </dl>
 
         <a [routerLink]="['/pets/update', pet.id]"
