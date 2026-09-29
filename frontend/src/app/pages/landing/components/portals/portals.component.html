@@ -1,0 +1,128 @@
+      <!-- section: portales -->
+      <section
+        class="relative z-20 bg-tertiary text-background text-center py-20 lg:py-28 px-5 lg:px-15"
+      >
+        <!-- Blobs decorativos -->
+        <div
+          aria-hidden="true"
+          data-parallax="0.08"
+          class="absolute -left-32 lg:-left-44 -top-12 lg:-top-20 w-80 lg:w-[34rem]"
+        >
+          <div class="blob aspect-square w-full bg-secondary opacity-20"></div>
+        </div>
+        <div
+          aria-hidden="true"
+          data-parallax="0.1"
+          class="absolute -right-32 lg:-right-44 -bottom-16 lg:-bottom-32 w-80 lg:w-[36rem]"
+        >
+          <div
+            class="blob blob-alt aspect-square w-full bg-honey opacity-20"
+          ></div>
+        </div>
+
+        <div class="relative max-w-7xl mx-auto flex flex-col gap-15">
+          <div class="flex flex-col gap-3 reveal">
+            <p
+              class="font-bold uppercase text-xs lg:text-sm tracking-[0.25em] text-background/70 mb-1"
+            >
+              Plataformas PetHaven
+            </p>
+            <h3 class="text-3xl lg:text-5xl font-display font-bold">
+              Portales de Acceso Integrados
+            </h3>
+            <p class="text-sm lg:text-lg">
+              Simplificamos el flujo de comunicación operativa entre familias,
+              médicos y administración.
+            </p>
+          </div>
+          <!-- Cards de portales -->
+          <div data-reveal-stagger class="flex flex-col gap-5 lg:flex-row">
+            <!-- Portal Cliente -->
+            <article
+              class="reveal flex w-full flex-col gap-3 rounded-3xl bg-background p-5 lg:p-10 text-left lg:flex-1"
+            >
+              <div
+                class="flex h-12 w-12 shrink-0 items-center justify-center self-start rounded-xl bg-secondary"
+              >
+                <img src="/images/icons/user-icon.svg" alt="" class="h-6 w-6" />
+              </div>
+              <p class="font-display text-2xl font-bold text-text">
+                Portal Cliente
+              </p>
+              <p class="text-sm lg:text-lg text-text">
+                Revisa el estado de tus mascotas en cualquier momento. Historial
+                de tratamientos.
+              </p>
+              <a
+                routerLink="/login"
+                class="bg-primary text-background px-4 py-2 lg:px-6 lg:py-2.5 text-sm text-center lg:text-base rounded-full font-bold hover:opacity-90 transition-opacity shadow-sm whitespace-nowrap"
+                >Ingresar</a
+              >
+            </article>
+            <!-- Portal Veterinario -->
+            <article
+              class="reveal flex w-full flex-col gap-3 rounded-3xl bg-background p-5 lg:p-10 text-left lg:flex-1"
+            >
+              <div
+                class="flex h-12 w-12 shrink-0 items-center justify-center self-start rounded-xl bg-secondary"
+              >
+                <img
+                  src="/images/icons/clipboard-icon.svg"
+                  alt=""
+                  class="h-6 w-6"
+                />
+              </div>
+              <p class="font-display text-2xl font-bold text-text">
+                Portal Veterinario
+              </p>
+              <p class="text-sm lg:text-lg text-text">
+                Herramientas clínicas completas, historial integrado y carga de
+                reportes de tratamiento en tiempo real.
+              </p>
+              <a
+                routerLink="/vet/login"
+                class="bg-primary text-background px-4 py-2 lg:px-6 lg:py-2.5 text-sm text-center lg:text-base rounded-full font-bold hover:opacity-90 transition-opacity shadow-sm whitespace-nowrap"
+                >Ingresar</a
+              >
+            </article>
+            <!-- Portal Administrador -->
+            <article
+              class="reveal flex w-full flex-col gap-3 rounded-3xl bg-background p-5 lg:p-10 text-left lg:flex-1"
+            >
+              <div
+                class="flex h-12 w-12 shrink-0 items-center justify-center self-start rounded-xl bg-secondary"
+              >
+                <img src="/images/icons/gear-icon.svg" alt="" class="h-6 w-6" />
+              </div>
+              <p class="font-display text-2xl font-bold text-text">
+                Portal Administrador
+              </p>
+              <p class="text-sm lg:text-lg text-text">
+                Dashboard completo de la información del negocio. Gestión global
+                de personal e insumos clínicos.
+              </p>
+              <a
+                routerLink="/login"
+                class="bg-primary text-background px-4 py-2 lg:px-6 lg:py-2.5 text-sm text-center lg:text-base rounded-full font-bold hover:opacity-90 transition-opacity shadow-sm whitespace-nowrap"
+                >Ingresar</a
+              >
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- Divisor ondulado -->
+      <div class="relative z-10 overflow-hidden bg-tertiary" aria-hidden="true">
+        <svg
+          class="divider-wave block h-16 w-[110%] max-w-none -ml-[5%] lg:h-32 text-background"
+          viewBox="-80 0 1600 100"
+          preserveAspectRatio="none"
+        >
+          <path
+            class="wave-alt"
+            fill="currentColor"
+            d="M-80 42C200 90 470 16 750 54C1030 92 1310 84 1520 34L1520 100L-80 100Z"
+          />
+        </svg>
+      </div>
+
