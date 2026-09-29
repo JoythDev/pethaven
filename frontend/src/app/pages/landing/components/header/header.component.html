@@ -1,0 +1,36 @@
+    <header class="relative z-30 py-2 border-b border-primary/25 bg-background">
+      <div class="max-w-7xl mx-auto px-5 lg:px-12 flex items-center justify-between">
+        <a routerLink="/" class="shrink-0 flex items-center">
+          <img src="/images/logo-header.png" alt="PetHaven" class="h-12 lg:h-20 w-auto" />
+        </a>
+
+        <nav class="hidden lg:flex items-center gap-6 xl:gap-8">
+            <a href="#services" class="hover:opacity-75 transition-opacity">Servicios</a>
+            <a href="#how-it-works" class="hover:opacity-75 transition-opacity">Cómo funciona</a>
+            <a href="#us" class="hover:opacity-75 transition-opacity">Nosotros</a>
+            <a href="#faq" class="hover:opacity-75 transition-opacity">FAQ</a>
+            <a href="#footer" class="hover:opacity-75 transition-opacity">Contacto</a>
+        </nav>
+
+        <div class="flex items-center gap-3 lg:gap-6 shrink-0">
+          <a routerLink="/login" class="bg-primary text-background px-4 py-2 lg:px-6 lg:py-2.5 text-sm lg:text-base rounded-full font-bold hover:opacity-90 cursor-pointer transition-opacity shadow-sm whitespace-nowrap">
+            Iniciar Sesión
+          </a>
+
+          <button #menuBtn id="menu-btn" type="button" class="lg:hidden text-text focus:outline-none hover:opacity-75 cursor-pointer p-1" aria-controls="mobile-menu" [attr.aria-expanded]="menuOpen()" [attr.aria-label]="menuOpen() ? 'Cerrar menú de navegación' : 'Abrir menú de navegación'" (click)="toggleMenu()">
+            <img src="/images/icons/menu-rounded-icon.svg" alt="" class="h-7 w-7" />
+          </button>
+        </div>
+      </div>
+
+      <!-- Menú móvil -->
+      <div id="mobile-menu" class="lg:hidden absolute top-full left-0 w-full bg-background border-b border-primary/25 shadow-lg z-50" [class.hidden]="!menuOpen()" [attr.aria-hidden]="!menuOpen()">
+        <nav class="flex flex-col px-6 py-4 space-y-4" (click)="closeMenu()">
+          <a href="#services" class="text-lg hover:opacity-75 transition-opacity">Servicios</a>
+          <a href="#how-it-works" class="text-lg hover:opacity-75 transition-opacity">Cómo funciona</a>
+          <a href="#us" class="text-lg hover:opacity-75 transition-opacity">Nosotros</a>
+          <a href="#faq" class="text-lg hover:opacity-75 transition-opacity">FAQ</a>
+          <a href="#footer" class="text-lg hover:opacity-75 transition-opacity">Contacto</a>
+        </nav>
+      </div>
+    </header>
