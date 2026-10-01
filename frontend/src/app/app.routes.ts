@@ -17,5 +17,33 @@ export const routes: Routes = [
   { path: 'pets/update/:id', component: PetFormComponent },
   { path: 'pets/:id', component: PetDetailComponent },
 
+  // Panel post-login (dashboard): layout propio e independiente de la landing.
+  {
+    path: 'dashboard',
+    loadComponent: () =>
+      import('./pages/dashboard/dashboard-layout/dashboard-layout.component').then(
+        (m) => m.DashboardLayoutComponent
+      ),
+    children: [
+      {
+        path: '',
+        loadComponent: () =>
+          import('./pages/dashboard/home/home.component').then((m) => m.DashboardHomeComponent),
+      },
+      {
+        path: 'pets',
+        loadComponent: () =>
+          import('./pages/dashboard/coming-soon/coming-soon.component').then(
+            (m) => m.ComingSoonComponent
+          ),
+        data: {
+          title: 'Mascotas',
+          description:
+            'Estamos construyendo el módulo de gestión de mascotas. ¡Muy pronto estará disponible!',
+        },
+      },
+    ],
+  },
+
   { path: '**', redirectTo: '' }
 ];
