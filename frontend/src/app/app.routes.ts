@@ -32,15 +32,36 @@ export const routes: Routes = [
       },
       {
         path: 'pets',
-        loadComponent: () =>
-          import('./pages/dashboard/coming-soon/coming-soon.component').then(
-            (m) => m.ComingSoonComponent
-          ),
-        data: {
-          title: 'Mascotas',
-          description:
-            'Estamos construyendo el módulo de gestión de mascotas. ¡Muy pronto estará disponible!',
-        },
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./pages/dashboard/pets/pets-list/pets-list.component').then(
+                (m) => m.PetsListComponent
+              ),
+          },
+          {
+            path: 'add',
+            loadComponent: () =>
+              import('./pages/dashboard/pets/pet-form/pet-form.component').then(
+                (m) => m.PetsFormComponent
+              ),
+          },
+          {
+            path: 'update/:id',
+            loadComponent: () =>
+              import('./pages/dashboard/pets/pet-form/pet-form.component').then(
+                (m) => m.PetsFormComponent
+              ),
+          },
+          {
+            path: ':id',
+            loadComponent: () =>
+              import('./pages/dashboard/pets/pet-detail/pet-detail.component').then(
+                (m) => m.PetsDetailComponent
+              ),
+          },
+        ],
       },
     ],
   },

@@ -38,13 +38,31 @@ export class DashboardTopbarComponent {
   }
 
   private updateBreadcrumb(url: string): void {
-    const segment = url.split('?')[0].split('/').filter(Boolean)[1];
+    const parts = url.split('?')[0].split('/').filter(Boolean);
     const items: MenuItem[] = [];
-    if (segment) {
-      items.push({ label: this.pageLabels[segment] ?? segment });
-    } else {
+    const segment = parts[1];
+    if (!segment) {
       items.push({ label: 'Inicio' });
+    } else {
+      items.push({ label: this.pageLabels[segment] ?? segment });
+      const sub = parts[2];
+      if (sub) {
+        items.push({ label: this.subPageLabel(sub) });
+      }
     }
     this.breadcrumbItems.set(items);
+  }
+
+  private subPageLabel(segment: string): string {
+    if (segment === 'add') {
+      return 'Nueva mascota';
+    }
+    if (segment === 'update') {
+      return 'Editar mascota';
+    }
+    if (/^\d+$/.test(segment)) {
+      return 'Detalle';
+    }
+    return this.pageLabels[segment] ?? segment;
   }
 }

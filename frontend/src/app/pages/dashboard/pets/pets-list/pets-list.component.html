@@ -1,0 +1,144 @@
+<div class="mx-auto max-w-7xl p-5 lg:p-8">
+  <header class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <h1 class="font-display text-3xl font-bold text-text">Mascotas</h1>
+      <p class="mt-1 text-text/70">Gestiona los pacientes de la clínica.</p>
+    </div>
+    <p-button label="Nueva mascota" icon="pi pi-plus" (onClick)="nueva()" />
+  </header>
+
+  <section class="overflow-hidden rounded-3xl border border-olive/15 bg-white shadow-sm">
+    <div class="flex flex-col gap-3 border-b border-olive/15 p-4 lg:flex-row lg:items-center">
+      <p-iconfield class="w-full lg:max-w-xs">
+        <p-inputicon class="pi pi-search" />
+        <input
+          pInputText
+          placeholder="Buscar por nombre o raza"
+          class="w-full"
+          [value]="searchTerm()"
+          (input)="onSearch($any($event.target).value, dt)"
+        />
+      </p-iconfield>
+
+      <p-select
+        [options]="speciesOptions"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Especie"
+        [showClear]="true"
+        [ngModel]="speciesFilter()"
+        (ngModelChange)="onSpeciesChange($event, dt)"
+        styleClass="w-full lg:w-48"
+      />
+    </div>
+
+    <p-table
+      #dt
+      [value]="filteredPets()"
+      dataKey="id"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[10, 20, 50]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} mascotas"
+      [sortField]="'name'"
+      [sortOrder]="1"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="name">Paciente <p-sortIcon field="name" /></th>
+          <th pSortableColumn="species">Especie <p-sortIcon field="species" /></th>
+          <th pSortableColumn="age">Edad <p-sortIcon field="age" /></th>
+          <th pSortableColumn="weight">Peso <p-sortIcon field="weight" /></th>
+          <th pSortableColumn="disease">Estado <p-sortIcon field="disease" /></th>
+          <th pSortableColumn="active">Activa <p-sortIcon field="active" /></th>
+          <th>Acciones</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-pet>
+        <tr [class.opacity-60]="!pet.active">
+          <td>
+            <div class="flex items-center gap-3">
+              <img
+                [src]="pet.photoUrl"
+                [alt]="pet.name"
+                class="h-10 w-10 shrink-0 rounded-full bg-secondary/50 object-cover"
+                (error)="onPhotoError($event)"
+              />
+              <div class="flex flex-col leading-tight">
+                <span class="font-bold text-text">{{ pet.name }}</span>
+                <span class="text-xs text-text/60">{{ pet.breed }}</span>
+              </div>
+            </div>
+          </td>
+          <td>
+            <span class="inline-flex items-center gap-2">
+              <img
+                [src]="pet.species === 'DOG' ? '/images/icons/dog-icon.svg' : '/images/icons/cat-icon.svg'"
+                alt=""
+                class="h-5 w-5"
+              />
+              <span class="text-sm">{{ pet.species === 'DOG' ? 'Perro' : 'Gato' }}</span>
+            </span>
+          </td>
+          <td class="text-sm">{{ pet.age }} años</td>
+          <td class="text-sm">{{ pet.weight }} kg</td>
+          <td><app-pet-status-tag [pet]="pet" /></td>
+          <td>
+            <p-tag
+              [value]="pet.active ? 'Activa' : 'Inactiva'"
+              [severity]="pet.active ? 'success' : 'secondary'"
+            />
+          </td>
+          <td>
+            <div class="flex items-center gap-1">
+              <p-button
+                icon="pi pi-eye"
+                severity="secondary"
+                [text]="true"
+                [rounded]="true"
+                ariaLabel="Ver ficha"
+                pTooltip="Ver ficha"
+                tooltipPosition="top"
+                (onClick)="ver(pet)"
+              />
+              <p-button
+                icon="pi pi-pencil"
+                severity="secondary"
+                [text]="true"
+                [rounded]="true"
+                ariaLabel="Editar"
+                pTooltip="Editar"
+                tooltipPosition="top"
+                (onClick)="editar(pet)"
+              />
+              <p-button
+                icon="pi pi-trash"
+                severity="danger"
+                [text]="true"
+                [rounded]="true"
+                ariaLabel="Eliminar"
+                pTooltip="Eliminar"
+                tooltipPosition="top"
+                (onClick)="eliminar(pet)"
+              />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="7">
+            <div class="flex flex-col items-center gap-3 py-10 text-center">
+              <i class="pi pi-search text-2xl text-text/30" aria-hidden="true"></i>
+              <p class="text-text/60">No se encontraron mascotas.</p>
+              <p-button label="Nueva mascota" icon="pi pi-plus" [outlined]="true" (onClick)="nueva()" />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </section>
+</div>
