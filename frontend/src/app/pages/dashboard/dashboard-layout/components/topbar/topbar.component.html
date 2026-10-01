@@ -1,0 +1,32 @@
+<header
+  class="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-olive/15 bg-white px-4 lg:px-6"
+>
+  <p-button
+    icon="pi pi-bars"
+    severity="secondary"
+    [text]="true"
+    ariaLabel="Abrir menú"
+    styleClass="lg:hidden"
+    (onClick)="menuToggle.emit()"
+  />
+
+  <p-breadcrumb
+    [model]="breadcrumbItems()"
+    [home]="homeItem"
+    styleClass="border-none bg-transparent"
+  />
+
+  <div class="ml-auto flex items-center gap-3">
+    <span class="hidden sm:block text-sm font-semibold text-text">Admin</span>
+    <button
+      type="button"
+      (click)="userMenu.toggle($event)"
+      class="rounded-full focus:outline-none"
+      aria-haspopup="true"
+      aria-label="Menú de usuario"
+    >
+      <p-avatar label="A" shape="circle" styleClass="cursor-pointer" />
+    </button>
+    <p-menu #userMenu [model]="userMenuItems" [popup]="true" appendTo="body" />
+  </div>
+</header>

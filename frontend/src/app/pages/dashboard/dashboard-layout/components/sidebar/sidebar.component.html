@@ -1,0 +1,40 @@
+<div class="flex flex-col h-full p-4">
+  <a routerLink="/dashboard" class="flex items-center px-3 pt-2 pb-4" (click)="itemClicked.emit()">
+    <img src="/images/logo-header.png" alt="PetHaven" class="h-10 w-auto" />
+  </a>
+
+  <p class="text-xs font-bold uppercase tracking-[0.2em] text-text/50 px-3 mb-2">Panel</p>
+
+  <nav class="flex flex-col gap-1" aria-label="Módulos del panel">
+    @for (item of items; track item.label) {
+      @if (item.disabled) {
+        <a
+          class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-text/40 cursor-not-allowed select-none"
+          tabindex="-1"
+          aria-disabled="true"
+          pTooltip="Próximamente"
+          tooltipPosition="right"
+        >
+          <img [src]="item.icon" alt="" class="h-5 w-5 opacity-50" />
+          <span>{{ item.label }}</span>
+        </a>
+      } @else {
+        <a
+          [routerLink]="item.link"
+          routerLinkActive
+          #rla="routerLinkActive"
+          class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors"
+          [ngClass]="
+            rla.isActive
+              ? 'bg-secondary/50 text-text font-bold'
+              : 'text-text/70 hover:bg-secondary/20 hover:text-text'
+          "
+          (click)="itemClicked.emit()"
+        >
+          <img [src]="item.icon" alt="" class="h-5 w-5" />
+          <span>{{ item.label }}</span>
+        </a>
+      }
+    }
+  </nav>
+</div>
