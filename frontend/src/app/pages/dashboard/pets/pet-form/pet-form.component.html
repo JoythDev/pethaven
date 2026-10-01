@@ -1,0 +1,118 @@
+<div class="mx-auto max-w-2xl p-5 lg:p-8">
+  <a routerLink="/dashboard/pets" class="text-sm font-semibold text-olive transition-colors hover:text-tertiary">
+    ← Volver a Mascotas
+  </a>
+
+  <h1 class="font-display mt-4 mb-8 text-3xl font-bold text-text">
+    {{ editandoId === null ? 'Registrar Nueva Mascota' : 'Editar Mascota' }}
+  </h1>
+
+  <form
+    [formGroup]="form"
+    (ngSubmit)="guardar()"
+    class="flex flex-col gap-5 rounded-3xl border border-olive/15 bg-white p-6 shadow-sm lg:p-8"
+  >
+    <div class="flex flex-col gap-1">
+      <label for="name" class="text-sm font-bold text-text">Nombre</label>
+      <input pInputText id="name" formControlName="name" class="w-full" />
+      @if (form.controls.name.invalid && form.controls.name.touched) {
+        <p-message severity="error" variant="simple" size="small">El nombre es obligatorio.</p-message>
+      }
+    </div>
+
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+      <div class="flex flex-col gap-1">
+        <label for="species" class="text-sm font-bold text-text">Especie</label>
+        <p-select
+          inputId="species"
+          formControlName="species"
+          [options]="speciesOptions"
+          optionLabel="label"
+          optionValue="value"
+          [fluid]="true"
+        />
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label for="breed" class="text-sm font-bold text-text">Raza</label>
+        <input pInputText id="breed" formControlName="breed" class="w-full" />
+        @if (form.controls.breed.invalid && form.controls.breed.touched) {
+          <p-message severity="error" variant="simple" size="small">La raza es obligatoria.</p-message>
+        }
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+      <div class="flex flex-col gap-1">
+        <label for="age" class="text-sm font-bold text-text">Edad (años)</label>
+        <p-inputnumber inputId="age" formControlName="age" [min]="0" [fluid]="true" />
+        @if (form.controls.age.invalid && form.controls.age.touched) {
+          <p-message severity="error" variant="simple" size="small">
+            Ingresa una edad válida (0 o más).
+          </p-message>
+        }
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label for="weight" class="text-sm font-bold text-text">Peso (kg)</label>
+        <p-inputnumber
+          inputId="weight"
+          formControlName="weight"
+          [min]="0"
+          [step]="0.1"
+          [maxFractionDigits]="1"
+          [fluid]="true"
+        />
+        @if (form.controls.weight.invalid && form.controls.weight.touched) {
+          <p-message severity="error" variant="simple" size="small">
+            Ingresa un peso válido (0 o más).
+          </p-message>
+        }
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label for="disease" class="text-sm font-bold text-text">Diagnóstico (opcional)</label>
+      <input
+        pInputText
+        id="disease"
+        formControlName="disease"
+        placeholder="Déjalo vacío si no tiene ninguno"
+        class="w-full"
+      />
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label for="photoUrl" class="text-sm font-bold text-text">URL de la foto</label>
+      <input pInputText id="photoUrl" formControlName="photoUrl" placeholder="https://..." class="w-full" />
+      @if (form.controls.photoUrl.invalid && form.controls.photoUrl.touched) {
+        <p-message severity="error" variant="simple" size="small">
+          Ingresa una URL válida que empiece con http:// o https://
+        </p-message>
+      }
+      @if (form.controls.photoUrl.value) {
+        <img
+          [src]="form.controls.photoUrl.value"
+          alt="Vista previa de la foto"
+          class="mt-2 h-20 w-20 rounded-2xl border border-olive/15 object-cover"
+        />
+      }
+    </div>
+
+    <div class="flex items-center gap-3">
+      <p-toggleswitch inputId="active" formControlName="active" />
+      <label for="active" class="text-sm font-bold text-text">Mascota activa</label>
+    </div>
+
+    <div class="mt-2 flex items-center gap-4">
+      <p-button type="submit" label="Guardar" [disabled]="form.invalid" />
+      <p-button
+        type="button"
+        label="Cancelar"
+        severity="secondary"
+        [text]="true"
+        (onClick)="cancelar()"
+      />
+    </div>
+  </form>
+</div>
