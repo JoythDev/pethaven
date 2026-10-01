@@ -18,6 +18,11 @@
   --animate-bounce-soft: bounce-soft 2s ease-in-out infinite;
 }
 
+/* Fuente base de la UI */
+body {
+  font-family: var(--font-body);
+}
+
 /* Keyframes referenciados por los tokens --animate-* del @theme */
 @keyframes float {
   from {
