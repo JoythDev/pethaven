@@ -15,7 +15,8 @@ export const appConfig: ApplicationConfig = {
       theme: {
         preset: PetHavenPreset,
         options: {
-          cssLayer: { name: 'primeng', order: 'theme, base, primeng, utilities' }
+          cssLayer: { name: 'primeng', order: 'theme, base, primeng, utilities' },
+          darkModeSelector: '.app-dark'
         }
       }
     })

@@ -1,7 +1,8 @@
 @import "tailwindcss";
+@import "tailwindcss-primeui";
 
 @theme {
-  --color-primary: #a09c6d;
+  --color-olive: #a09c6d;
   --color-secondary: #eacecb;
   --color-tertiary: #7a502a;
   --color-text: #261a10;

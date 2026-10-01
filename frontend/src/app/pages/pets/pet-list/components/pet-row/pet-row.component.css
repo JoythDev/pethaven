@@ -2,7 +2,7 @@
    a otras tablas de la app ni viceversa (ViewEncapsulation por componente). */
 :host {
   display: table-row;
-  border-bottom: 1px solid color-mix(in srgb, var(--color-primary) 10%, transparent);
+  border-bottom: 1px solid color-mix(in srgb, var(--color-olive) 10%, transparent);
   transition: background-color 0.15s ease;
 }
 
@@ -11,5 +11,5 @@
 }
 
 :host:hover {
-  background-color: color-mix(in srgb, var(--color-primary) 6%, transparent);
+  background-color: color-mix(in srgb, var(--color-olive) 6%, transparent);
 }
