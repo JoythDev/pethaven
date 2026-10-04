@@ -8,7 +8,10 @@
 
 [![Java](https://img.shields.io/badge/Java-21-3E2C23?logo=openjdk&logoColor=white)](https://openjdk.org)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![Thymeleaf](https://img.shields.io/badge/Thymeleaf-Plantillas-005F0F?logo=thymeleaf&logoColor=white)](https://www.thymeleaf.org)
+[![Angular](https://img.shields.io/badge/Angular-19-DD0031?logo=angular&logoColor=white)](https://angular.dev)
+[![PrimeNG](https://img.shields.io/badge/PrimeNG-19-06B6D4?logo=primeng&logoColor=white)](https://primeng.org)
+[![RxJS](https://img.shields.io/badge/RxJS-7.8-B7178C?logo=reactivex&logoColor=white)](https://rxjs.dev)
+[![Thymeleaf](https://img.shields.io/badge/Thymeleaf-legacy_en_retiro-005F0F?logo=thymeleaf&logoColor=white)](https://www.thymeleaf.org)
 [![Database](https://img.shields.io/badge/Base_de_datos-H2-2563EB)](https://www.h2database.com)
 [![Maven](https://img.shields.io/badge/Maven-Wrapper-C71A36?logo=apachemaven&logoColor=white)](https://maven.apache.org)
 [![License](https://img.shields.io/badge/Licencia-MIT-8A9A5B)](LICENSE)
@@ -38,6 +41,36 @@ Hasta ahora, buena parte de la operación vivía en papel y en hojas de Excel: e
 3. La mascota queda hospitalizada mientras recibe tratamientos.
 4. Al recuperarse y ser recogida, la mascota pasa a estado **inactivo** — su historial nunca se borra.
 
+**En migración:** el proyecto avanza hacia un **monorepo** con el backend Spring Boot como API REST y un frontend **Angular + PrimeNG + RxJS** que reemplazará a las vistas Thymeleaf. El detalle está en [Estado de la migración](#estado-de-la-migración).
+
+---
+
+## Estado de la migración
+
+El objetivo es dejar atrás el renderizado en el servidor: un solo frontend Angular (SPA) consumiendo una API REST del backend.
+
+| Pieza | Hoy | Objetivo |
+|---|---|---|
+| Backend (`src/`) | Spring MVC + vistas Thymeleaf | API REST consumida por la SPA |
+| Frontend (`frontend/`) | Demo funcional con datos en memoria | Único frontend de la aplicación |
+
+**Fases:**
+
+- [x] **Demo funcional** — landing portada a Angular y dashboard con el módulo de mascotas (listado, detalle, registro, edición y activar/desactivar) sobre datos de prueba en memoria.
+- [ ] **API REST** — exponer los recursos del backend y conectarlos desde Angular con `HttpClient` + RxJS.
+- [ ] **Módulos restantes** — dueños, veterinarios, medicamentos, tratamientos y KPIs en el dashboard.
+- [ ] **Retiro de Thymeleaf** — cuando la SPA cubra toda la operación, las vistas de servidor salen del repositorio.
+
+<div align="center">
+  <img src="docs/screenshots/dashboard-pets.png" alt="Módulo de mascotas del dashboard Angular" width="100%"/>
+  <br/>
+  <sub>Módulo de mascotas — listado con búsqueda, filtro por especie y paginación (Angular + PrimeNG)</sub>
+  <br/><br/>
+  <img src="docs/screenshots/dashboard-pet-form.png" alt="Formulario de registro de mascota" width="100%"/>
+  <br/>
+  <sub>Registro de una mascota — formulario del demo</sub>
+</div>
+
 ---
 
 ## Funcionalidades
@@ -51,6 +84,17 @@ Hasta ahora, buena parte de la operación vivía en papel y en hojas de Excel: e
 - [x] **Feature 05 — Portal cliente**: inicio de sesión y consulta de mascotas en tarjetas con su detalle
 - [x] **Feature 06 — CRUD de dueños**: crear, consultar, actualizar y eliminar (con eliminación en cascada de sus mascotas)
 - [x] **Feature 07 — CRUD de mascotas**: crear, consultar, actualizar y activar/desactivar
+
+### Frontend Angular (demo en desarrollo)
+
+- [x] Landing page portada a Angular, fiel a la versión Thymeleaf (secciones + directivas de animación)
+- [x] Dashboard con layout propio (sidebar y topbar) e inicio
+- [x] Módulo de mascotas: listado con búsqueda, filtro por especie y paginación (PrimeNG Table)
+- [x] Detalle, registro y edición de mascotas, con activar/desactivar
+- [ ] Conexión con el backend vía API REST (`HttpClient` + RxJS)
+- [ ] Módulos restantes: dueños, veterinarios, medicamentos, tratamientos y KPIs
+
+> El demo funciona con datos de prueba en memoria; no requiere el backend encendido. Ver [Estado de la migración](#estado-de-la-migración).
 
 ### Roadmap
 
@@ -69,7 +113,7 @@ Hasta ahora, buena parte de la operación vivía en papel y en hojas de Excel: e
 | Carga de medicamentos | Importar el inventario de drogas desde un archivo al iniciar el programa (Feature 09) |
 | Tratamientos | Administrar una droga a una mascota y descontar el inventario disponible (Feature 10) |
 | Historial médico | Consultar la lista de tratamientos dados a cada mascota (Feature 11) |
-| SPA en Angular | Migración del frontend a una aplicación de una sola página |
+| SPA en Angular | En progreso — demo funcional (landing + mascotas); pendiente integración con la API REST y módulos restantes |
 
 **Entrega 3**
 
@@ -83,14 +127,28 @@ Hasta ahora, buena parte de la operación vivía en papel y en hojas de Excel: e
 
 ## Stack tecnológico
 
+### Backend
+
 | Capa | Tecnología |
 |---|---|
 | Lenguaje | Java 21 |
-| Backend | Spring Boot 4.1 — Web MVC, Data JPA, DevTools |
-| Vistas | Thymeleaf + HTML, CSS y JavaScript |
+| Framework | Spring Boot 4.1 — Web MVC, Data JPA, DevTools |
+| Objetivo | API REST para el frontend Angular |
 | Base de datos | H2 en modo archivo, con consola de administración web |
 | Utilidades | Lombok |
 | Build | Maven Wrapper |
+
+### Frontend (`frontend/`)
+
+| Capa | Tecnología |
+|---|---|
+| Framework | Angular 19 — componentes standalone y lazy loading |
+| UI | PrimeNG 19 con tema propio de PetHaven + Tailwind CSS 4 |
+| Reactividad | RxJS 7.8 + signals |
+| Lenguaje | TypeScript 5.7 |
+| Tooling | Angular CLI + npm — requiere Node `^18.19.1 \|\| ^20.11.1 \|\| >=22` |
+
+Thymeleaf queda como **legacy, en retiro**: se mantiene solo mientras la SPA termina de cubrir la operación.
 
 ---
 
@@ -99,23 +157,39 @@ Hasta ahora, buena parte de la operación vivía en papel y en hojas de Excel: e
 ```
 pethaven/
 ├── docs/
-│   ├── architecture/              # Diagrama entidad-relación
+│   ├── architecture/              # Diagramas de dominio y entidad-relación
 │   ├── design/                    # Logo e identidad de marca
 │   ├── screenshots/               # Capturas para este README
 │   └── Enunciado_Veterinaria.pdf  # Definición del negocio y requerimientos
 │
-├── src/main/java/io/github/pethaven/
+├── frontend/                      # Frontend Angular 19
+│   ├── public/                    # Imágenes, íconos y videos
+│   └── src/
+│       ├── app/
+│       │   ├── models/            # Interfaces de dominio (mascota, dueño, droga…)
+│       │   ├── pages/
+│       │   │   ├── landing/       # Landing page (secciones + directivas de animación)
+│       │   │   ├── dashboard/     # Panel: layout, inicio y módulo de mascotas
+│       │   │   └── portal-placeholder/  # Placeholders de /login y /vet/login
+│       │   ├── services/          # Servicios (PetService sobre datos en memoria)
+│       │   ├── theme/             # Preset PrimeNG de la marca
+│       │   ├── app.config.ts      # Providers, locale es-CO y tema
+│       │   └── app.routes.ts      # Rutas de la SPA
+│       ├── styles.css             # Tailwind CSS y estilos globales
+│       └── main.ts                # Punto de entrada
+│
+├── src/main/java/io/github/pethaven/   # Backend Spring Boot
 │   ├── controller/                # Controladores MVC (rutas web)
 │   ├── service/                   # Lógica de negocio
 │   ├── repository/                # Repositorios Spring Data JPA
-│   ├── entity/                    # Entidades JPA: Owner, Pet, Species
+│   ├── entity/                    # Entidades JPA: Owner, Pet, Species, Treatment, TreatmentDrug, Drug, Veterinarian
 │   ├── exception/                 # Manejo global de errores
 │   ├── DataLoader.java            # Datos de prueba cargados al arrancar
 │   └── PethavenBackendApplication.java
 │
 ├── src/main/resources/
-│   ├── templates/                 # Vistas Thymeleaf (landing, login, CRUDs)
-│   ├── static/                    # CSS, JS, imágenes y videos
+│   ├── templates/                 # Vistas Thymeleaf (legacy, en retiro)
+│   ├── static/                    # CSS, JS, imágenes y videos (legacy)
 │   └── application.properties     # Configuración (datasource, JPA, H2)
 │
 └── pom.xml
@@ -127,11 +201,12 @@ pethaven/
 
 ### Requisitos previos
 
-- **JDK 21** o superior
+- **JDK 21** o superior — backend
+- **Node.js** `^18.19.1 || ^20.11.1 || >=22` — frontend
 - **Git** (para clonar el repositorio)
 - No necesitas Maven instalado: el proyecto incluye el *Maven Wrapper*
 
-### Ejecución
+### Backend
 
 ```bash
 # 1. Clona el repositorio
@@ -142,7 +217,17 @@ cd pethaven
 ./mvnw spring-boot:run        # en Windows: .\mvnw.cmd spring-boot:run
 ```
 
-La base de datos H2 se crea y puebla automáticamente con datos de prueba al primer arranque. Abre **<http://localhost:8080>** en tu navegador.
+La base de datos H2 se crea y puebla automáticamente con datos de prueba al primer arranque. La aplicación Thymeleaf (legacy) queda en **<http://localhost:8080>**.
+
+### Frontend (demo)
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+La SPA queda en **<http://localhost:4200>**. Por ahora usa datos de prueba en memoria: no necesita el backend encendido (la integración con la API REST está en camino — ver [Estado de la migración](#estado-de-la-migración)).
 
 ### Credenciales de prueba
 
@@ -167,6 +252,8 @@ La base de datos expone una consola web para explorar tablas y datos:
 
 ## Rutas disponibles
 
+### Backend — Thymeleaf (legacy, `http://localhost:8080`)
+
 | Método | Ruta | Descripción |
 |---|---|---|
 | `GET` | `/` | Landing page de la clínica |
@@ -183,6 +270,19 @@ La base de datos expone una consola web para explorar tablas y datos:
 | `GET` / `POST` | `/owners/update/{id}` | Actualizar los datos de un dueño |
 | `GET` | `/owners/delete/{id}` | Eliminar un dueño (y sus mascotas, en cascada) |
 | `GET` | `/h2` | Consola de administración de H2 |
+
+### Frontend — SPA Angular (`http://localhost:4200`)
+
+| Ruta | Descripción |
+|---|---|
+| `/` | Landing page |
+| `/login` | Acceso de clientes (placeholder) |
+| `/vet/login` | Acceso de veterinarios (placeholder) |
+| `/dashboard` | Inicio del panel |
+| `/dashboard/pets` | Listado de mascotas |
+| `/dashboard/pets/add` | Registrar una mascota |
+| `/dashboard/pets/update/:id` | Editar una mascota |
+| `/dashboard/pets/:id` | Detalle de una mascota |
 
 ---
 
