@@ -26,6 +26,7 @@ export class DashboardHomeComponent {
       label: 'Dueños',
       description: 'Administra los datos de contacto de las familias.',
       icon: '/images/icons/user-icon.svg',
+      link: '/dashboard/owners',
     },
     {
       label: 'Veterinarios',

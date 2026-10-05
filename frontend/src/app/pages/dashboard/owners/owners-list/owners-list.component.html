@@ -1,0 +1,102 @@
+<div class="mx-auto max-w-7xl p-5 lg:p-8">
+  <header class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <h1 class="font-display text-3xl font-bold text-text">Dueños</h1>
+      <p class="mt-1 text-text/70">Gestiona las familias y sus datos de contacto.</p>
+    </div>
+    <p-button label="Nuevo dueño" icon="pi pi-plus" (onClick)="nuevo()" />
+  </header>
+
+  <section class="overflow-hidden rounded-3xl border border-olive/15 bg-white shadow-sm">
+    <div class="flex flex-col gap-3 border-b border-olive/15 p-4 lg:flex-row lg:items-center">
+      <p-iconfield class="w-full lg:max-w-xs">
+        <p-inputicon class="pi pi-search" />
+        <input
+          pInputText
+          placeholder="Buscar por nombre o documento"
+          class="w-full"
+          [value]="searchTerm()"
+          (input)="onSearch($any($event.target).value, dt)"
+        />
+      </p-iconfield>
+    </div>
+
+    <p-table
+      #dt
+      [value]="filteredOwners()"
+      dataKey="id"
+      [paginator]="true"
+      [rows]="10"
+      [rowsPerPageOptions]="[10, 20, 50]"
+      [showCurrentPageReport]="true"
+      currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} dueños"
+      [sortField]="'name'"
+      [sortOrder]="1"
+    >
+      <ng-template pTemplate="header">
+        <tr>
+          <th pSortableColumn="name">Dueño <p-sortIcon field="name" /></th>
+          <th pSortableColumn="document">Documento <p-sortIcon field="document" /></th>
+          <th pSortableColumn="email">Correo <p-sortIcon field="email" /></th>
+          <th pSortableColumn="phone">Teléfono <p-sortIcon field="phone" /></th>
+          <th>Acciones</th>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="body" let-owner>
+        <tr>
+          <td class="font-bold text-text">{{ owner.name }}</td>
+          <td class="text-sm">{{ owner.document }}</td>
+          <td class="text-sm">{{ owner.email }}</td>
+          <td class="text-sm">{{ owner.phone }}</td>
+          <td>
+            <div class="flex items-center gap-1">
+              <p-button
+                icon="pi pi-eye"
+                severity="secondary"
+                [text]="true"
+                [rounded]="true"
+                ariaLabel="Ver ficha"
+                pTooltip="Ver ficha"
+                tooltipPosition="top"
+                (onClick)="ver(owner)"
+              />
+              <p-button
+                icon="pi pi-pencil"
+                severity="secondary"
+                [text]="true"
+                [rounded]="true"
+                ariaLabel="Editar"
+                pTooltip="Editar"
+                tooltipPosition="top"
+                (onClick)="editar(owner)"
+              />
+              <p-button
+                icon="pi pi-trash"
+                severity="danger"
+                [text]="true"
+                [rounded]="true"
+                ariaLabel="Eliminar"
+                pTooltip="Eliminar"
+                tooltipPosition="top"
+                (onClick)="eliminar(owner)"
+              />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+
+      <ng-template pTemplate="emptymessage">
+        <tr>
+          <td colspan="5">
+            <div class="flex flex-col items-center gap-3 py-10 text-center">
+              <i class="pi pi-search text-2xl text-text/30" aria-hidden="true"></i>
+              <p class="text-text/60">No se encontraron dueños.</p>
+              <p-button label="Nuevo dueño" icon="pi pi-plus" [outlined]="true" (onClick)="nuevo()" />
+            </div>
+          </td>
+        </tr>
+      </ng-template>
+    </p-table>
+  </section>
+</div>

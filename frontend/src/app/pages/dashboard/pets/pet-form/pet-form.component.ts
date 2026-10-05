@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, OnInit, computed, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { MessageService } from 'primeng/api';
@@ -9,6 +9,7 @@ import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
 import { ToggleSwitchModule } from 'primeng/toggleswitch';
 import { Pet, Species } from '../../../../models/pet.model';
+import { OwnerService } from '../../../../services/owner.service';
 import { PetService } from '../../../../services/pet.service';
 
 interface SpeciesOption {
@@ -34,6 +35,7 @@ export class PetsFormComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly petService = inject(PetService);
+  private readonly ownerService = inject(OwnerService);
   private readonly formBuilder = inject(FormBuilder);
   private readonly messageService = inject(MessageService);
 
@@ -41,6 +43,13 @@ export class PetsFormComponent implements OnInit {
     { label: 'Perro', value: Species.DOG },
     { label: 'Gato', value: Species.CAT },
   ];
+
+  readonly ownerOptions = computed(() =>
+    this.ownerService.ownersList().map((owner) => ({
+      label: `${owner.name} · ${owner.document}`,
+      value: owner.id,
+    }))
+  );
 
   // Si tiene valor, estamos editando esa mascota; si es null, creamos una nueva.
   editandoId: number | null = null;
@@ -53,7 +62,7 @@ export class PetsFormComponent implements OnInit {
     weight: [0, [Validators.required, Validators.min(0)]],
     disease: null as string | null,
     photoUrl: ['', [Validators.required, Validators.pattern(/^https?:\/\/.+/)]],
-    ownerId: [1, Validators.required],
+    ownerId: [null as number | null, Validators.required],
     active: [true],
   });
 

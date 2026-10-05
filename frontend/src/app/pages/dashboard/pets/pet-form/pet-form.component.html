@@ -72,6 +72,24 @@
     </div>
 
     <div class="flex flex-col gap-1">
+      <label for="owner" class="text-sm font-bold text-text">Dueño</label>
+      <p-select
+        inputId="owner"
+        formControlName="ownerId"
+        [options]="ownerOptions()"
+        optionLabel="label"
+        optionValue="value"
+        placeholder="Selecciona un dueño"
+        [filter]="true"
+        filterBy="label"
+        [fluid]="true"
+      />
+      @if (form.controls.ownerId.invalid && form.controls.ownerId.touched) {
+        <p-message severity="error" variant="simple" size="small">Selecciona un dueño.</p-message>
+      }
+    </div>
+
+    <div class="flex flex-col gap-1">
       <label for="disease" class="text-sm font-bold text-text">Diagnóstico (opcional)</label>
       <input
         pInputText
