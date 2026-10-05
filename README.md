@@ -52,13 +52,13 @@ El objetivo es dejar atrás el renderizado en el servidor: un solo frontend Angu
 | Pieza | Hoy | Objetivo |
 |---|---|---|
 | Backend (`src/`) | Spring MVC + vistas Thymeleaf | API REST consumida por la SPA |
-| Frontend (`frontend/`) | Demo funcional con datos en memoria | Único frontend de la aplicación |
+| Frontend (`frontend/`) | Demo funcional (mascotas y dueños) con datos en memoria | Único frontend de la aplicación |
 
 **Fases:**
 
-- [x] **Demo funcional** — landing portada a Angular y dashboard con el módulo de mascotas (listado, detalle, registro, edición y activar/desactivar) sobre datos de prueba en memoria.
+- [x] **Demo funcional** — landing portada a Angular y dashboard con los módulos de mascotas y dueños (listado, detalle, registro y edición) sobre datos de prueba en memoria; incluye activar/desactivar mascotas, eliminación de dueños en cascada y vínculos entre fichas.
 - [ ] **API REST** — exponer los recursos del backend y conectarlos desde Angular con `HttpClient` + RxJS.
-- [ ] **Módulos restantes** — dueños, veterinarios, medicamentos, tratamientos y KPIs en el dashboard.
+- [ ] **Módulos restantes** — veterinarios, medicamentos, tratamientos y KPIs en el dashboard.
 - [ ] **Retiro de Thymeleaf** — cuando la SPA cubra toda la operación, las vistas de servidor salen del repositorio.
 
 <div align="center">
@@ -91,8 +91,10 @@ El objetivo es dejar atrás el renderizado en el servidor: un solo frontend Angu
 - [x] Dashboard con layout propio (sidebar y topbar) e inicio
 - [x] Módulo de mascotas: listado con búsqueda, filtro por especie y paginación (PrimeNG Table)
 - [x] Detalle, registro y edición de mascotas, con activar/desactivar
+- [x] Módulo de dueños: listado con búsqueda por nombre o documento y paginación; ficha con sus mascotas; registro, edición y eliminación en cascada
+- [x] Vínculo mascota ↔ dueño: selector de dueño en el formulario de mascota, columna «Dueño» en el listado y navegación entre fichas
 - [ ] Conexión con el backend vía API REST (`HttpClient` + RxJS)
-- [ ] Módulos restantes: dueños, veterinarios, medicamentos, tratamientos y KPIs
+- [ ] Módulos restantes: veterinarios, medicamentos, tratamientos y KPIs
 
 > El demo funciona con datos de prueba en memoria; no requiere el backend encendido. Ver [Estado de la migración](#estado-de-la-migración).
 
@@ -113,7 +115,7 @@ El objetivo es dejar atrás el renderizado en el servidor: un solo frontend Angu
 | Carga de medicamentos | Importar el inventario de drogas desde un archivo al iniciar el programa (Feature 09) |
 | Tratamientos | Administrar una droga a una mascota y descontar el inventario disponible (Feature 10) |
 | Historial médico | Consultar la lista de tratamientos dados a cada mascota (Feature 11) |
-| SPA en Angular | En progreso — demo funcional (landing + mascotas); pendiente integración con la API REST y módulos restantes |
+| SPA en Angular | En progreso — demo funcional (landing + mascotas + dueños); pendiente integración con la API REST y módulos restantes |
 
 **Entrega 3**
 
@@ -169,9 +171,9 @@ pethaven/
 │       │   ├── models/            # Interfaces de dominio (mascota, dueño, droga…)
 │       │   ├── pages/
 │       │   │   ├── landing/       # Landing page (secciones + directivas de animación)
-│       │   │   ├── dashboard/     # Panel: layout, inicio y módulo de mascotas
+│       │   │   ├── dashboard/     # Panel: layout, inicio y módulos de mascotas y dueños
 │       │   │   └── portal-placeholder/  # Placeholders de /login y /vet/login
-│       │   ├── services/          # Servicios (PetService sobre datos en memoria)
+│       │   ├── services/          # Servicios (mascotas y dueños sobre datos en memoria)
 │       │   ├── theme/             # Preset PrimeNG de la marca
 │       │   ├── app.config.ts      # Providers, locale es-CO y tema
 │       │   └── app.routes.ts      # Rutas de la SPA
@@ -283,6 +285,10 @@ La base de datos expone una consola web para explorar tablas y datos:
 | `/dashboard/pets/add` | Registrar una mascota |
 | `/dashboard/pets/update/:id` | Editar una mascota |
 | `/dashboard/pets/:id` | Detalle de una mascota |
+| `/dashboard/owners` | Listado de dueños |
+| `/dashboard/owners/add` | Registrar un dueño |
+| `/dashboard/owners/update/:id` | Editar un dueño |
+| `/dashboard/owners/:id` | Detalle de un dueño y sus mascotas |
 
 ---
 
