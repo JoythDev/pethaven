@@ -1,0 +1,76 @@
+<div class="mx-auto max-w-2xl p-5 lg:p-8">
+  <a routerLink="/dashboard/owners" class="text-sm font-semibold text-olive transition-colors hover:text-tertiary">
+    ← Volver a Dueños
+  </a>
+
+  <h1 class="font-display mt-4 mb-8 text-3xl font-bold text-text">
+    {{ editandoId === null ? 'Registrar Nuevo Dueño' : 'Editar Dueño' }}
+  </h1>
+
+  <form
+    [formGroup]="form"
+    (ngSubmit)="guardar()"
+    class="flex flex-col gap-5 rounded-3xl border border-olive/15 bg-white p-6 shadow-sm lg:p-8"
+  >
+    <div class="flex flex-col gap-1">
+      <label for="name" class="text-sm font-bold text-text">Nombre</label>
+      <input pInputText id="name" formControlName="name" class="w-full" />
+      @if (form.controls.name.invalid && form.controls.name.touched) {
+        <p-message severity="error" variant="simple" size="small">El nombre es obligatorio.</p-message>
+      }
+    </div>
+
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+      <div class="flex flex-col gap-1">
+        <label for="document" class="text-sm font-bold text-text">Documento</label>
+        <input pInputText id="document" formControlName="document" class="w-full" />
+        @if (form.controls.document.invalid && form.controls.document.touched) {
+          <p-message severity="error" variant="simple" size="small">
+            El documento es obligatorio.
+          </p-message>
+        }
+      </div>
+
+      <div class="flex flex-col gap-1">
+        <label for="phone" class="text-sm font-bold text-text">Teléfono</label>
+        <input pInputText id="phone" formControlName="phone" class="w-full" />
+        @if (form.controls.phone.invalid && form.controls.phone.touched) {
+          <p-message severity="error" variant="simple" size="small">
+            El teléfono es obligatorio.
+          </p-message>
+        }
+      </div>
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label for="email" class="text-sm font-bold text-text">Correo</label>
+      <input pInputText id="email" type="email" formControlName="email" class="w-full" />
+      @if (form.controls.email.invalid && form.controls.email.touched) {
+        <p-message severity="error" variant="simple" size="small">
+          Ingresa un correo válido.
+        </p-message>
+      }
+    </div>
+
+    <div class="flex flex-col gap-1">
+      <label for="password" class="text-sm font-bold text-text">Contraseña</label>
+      <input pInputText id="password" type="password" formControlName="password" class="w-full" />
+      @if (form.controls.password.invalid && form.controls.password.touched) {
+        <p-message severity="error" variant="simple" size="small">
+          La contraseña es obligatoria.
+        </p-message>
+      }
+    </div>
+
+    <div class="mt-2 flex items-center gap-4">
+      <p-button type="submit" label="Guardar" [disabled]="form.invalid" />
+      <p-button
+        type="button"
+        label="Cancelar"
+        severity="secondary"
+        [text]="true"
+        (onClick)="cancelar()"
+      />
+    </div>
+  </form>
+</div>

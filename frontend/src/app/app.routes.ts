@@ -53,6 +53,39 @@ export const routes: Routes = [
           },
         ],
       },
+      {
+        path: 'owners',
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./pages/dashboard/owners/owners-list/owners-list.component').then(
+                (m) => m.OwnersListComponent
+              ),
+          },
+          {
+            path: 'add',
+            loadComponent: () =>
+              import('./pages/dashboard/owners/owner-form/owner-form.component').then(
+                (m) => m.OwnersFormComponent
+              ),
+          },
+          {
+            path: 'update/:id',
+            loadComponent: () =>
+              import('./pages/dashboard/owners/owner-form/owner-form.component').then(
+                (m) => m.OwnersFormComponent
+              ),
+          },
+          {
+            path: ':id',
+            loadComponent: () =>
+              import('./pages/dashboard/owners/owner-detail/owner-detail.component').then(
+                (m) => m.OwnersDetailComponent
+              ),
+          },
+        ],
+      },
     ],
   },
 

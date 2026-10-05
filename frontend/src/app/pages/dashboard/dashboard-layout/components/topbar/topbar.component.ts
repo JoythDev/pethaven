@@ -28,6 +28,12 @@ export class DashboardTopbarComponent {
 
   private readonly pageLabels: Record<string, string> = {
     pets: 'Mascotas',
+    owners: 'Dueños',
+  };
+
+  private readonly subPageLabels: Record<string, Record<string, string>> = {
+    pets: { add: 'Nueva mascota', update: 'Editar mascota' },
+    owners: { add: 'Nuevo dueño', update: 'Editar dueño' },
   };
 
   constructor() {
@@ -47,18 +53,16 @@ export class DashboardTopbarComponent {
       items.push({ label: this.pageLabels[segment] ?? segment });
       const sub = parts[2];
       if (sub) {
-        items.push({ label: this.subPageLabel(sub) });
+        items.push({ label: this.subPageLabel(segment, sub) });
       }
     }
     this.breadcrumbItems.set(items);
   }
 
-  private subPageLabel(segment: string): string {
-    if (segment === 'add') {
-      return 'Nueva mascota';
-    }
-    if (segment === 'update') {
-      return 'Editar mascota';
+  private subPageLabel(parent: string, segment: string): string {
+    const label = this.subPageLabels[parent]?.[segment];
+    if (label) {
+      return label;
     }
     if (/^\d+$/.test(segment)) {
       return 'Detalle';

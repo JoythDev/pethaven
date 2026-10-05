@@ -27,6 +27,17 @@
             <dd class="font-semibold text-text">{{ p.weight }} kg</dd>
           </div>
           <div class="sm:col-span-2">
+            <dt class="text-text/50">Dueño</dt>
+            <dd class="font-semibold">
+              <a
+                [routerLink]="['/dashboard/owners', p.ownerId]"
+                class="text-olive transition-colors hover:text-tertiary"
+              >
+                {{ ownerName() }}
+              </a>
+            </dd>
+          </div>
+          <div class="sm:col-span-2">
             <dt class="text-text/50">Diagnóstico</dt>
             <dd class="font-semibold text-text">{{ p.disease ?? 'Ninguno' }}</dd>
           </div>

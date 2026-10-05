@@ -1,6 +1,6 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { Router, RouterLink } from '@angular/router';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { IconFieldModule } from 'primeng/iconfield';
@@ -11,6 +11,7 @@ import { Table, TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
 import { Pet, Species } from '../../../../models/pet.model';
+import { OwnerService } from '../../../../services/owner.service';
 import { PetService } from '../../../../services/pet.service';
 import { PetStatusTagComponent } from '../components/pet-status-tag/pet-status-tag.component';
 
@@ -23,6 +24,7 @@ interface SpeciesOption {
   selector: 'app-pets-list',
   imports: [
     FormsModule,
+    RouterLink,
     TableModule,
     ButtonModule,
     TagModule,
@@ -37,6 +39,7 @@ interface SpeciesOption {
 })
 export class PetsListComponent {
   private readonly petService = inject(PetService);
+  private readonly ownerService = inject(OwnerService);
   private readonly router = inject(Router);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly messageService = inject(MessageService);
@@ -62,6 +65,14 @@ export class PetsListComponent {
       return this.normalize(pet.name).includes(term) || this.normalize(pet.breed).includes(term);
     });
   });
+
+  private readonly ownersById = computed(
+    () => new Map(this.ownerService.ownersList().map((owner) => [owner.id, owner]))
+  );
+
+  ownerName(ownerId: number): string {
+    return this.ownersById().get(ownerId)?.name ?? 'Sin asignar';
+  }
 
   onSearch(value: string, table: Table): void {
     this.searchTerm.set(value);

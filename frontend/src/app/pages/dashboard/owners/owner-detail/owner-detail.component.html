@@ -1,0 +1,86 @@
+<div class="mx-auto max-w-7xl p-5 lg:p-8">
+  <a routerLink="/dashboard/owners" class="text-sm font-semibold text-olive transition-colors hover:text-tertiary">
+    ← Volver a Dueños
+  </a>
+
+  @if (owner(); as o) {
+    <section class="mt-6 rounded-3xl border border-olive/15 bg-white p-6 shadow-sm lg:p-8">
+      <div class="flex flex-col gap-6 sm:flex-row sm:items-center sm:justify-between">
+        <div>
+          <p class="text-xs font-bold uppercase tracking-[0.2em] text-text/50">Ficha del dueño</p>
+          <h1 class="font-display mt-2 text-3xl font-bold text-text lg:text-4xl">{{ o.name }}</h1>
+        </div>
+
+        <div class="flex shrink-0 flex-wrap items-center gap-4">
+          <p-button label="Editar" icon="pi pi-pencil" (onClick)="editar()" />
+          <p-button
+            label="Eliminar dueño"
+            icon="pi pi-trash"
+            severity="danger"
+            [outlined]="true"
+            (onClick)="eliminar()"
+          />
+        </div>
+      </div>
+
+      <div class="mt-8 grid grid-cols-1 gap-6 sm:grid-cols-3">
+        <div>
+          <p class="mb-1 text-xs font-bold uppercase tracking-[0.15em] text-text/50">Cédula</p>
+          <p class="text-lg font-bold text-text">{{ o.document }}</p>
+        </div>
+        <div>
+          <p class="mb-1 text-xs font-bold uppercase tracking-[0.15em] text-text/50">Correo</p>
+          <p class="text-lg font-bold text-text">{{ o.email }}</p>
+        </div>
+        <div>
+          <p class="mb-1 text-xs font-bold uppercase tracking-[0.15em] text-text/50">Celular</p>
+          <p class="text-lg font-bold text-text">{{ o.phone }}</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="mt-10">
+      <h2 class="font-display mb-6 text-2xl font-bold text-text lg:text-3xl">Mascotas de este dueño</h2>
+
+      @if (pets().length > 0) {
+        <div class="flex flex-col gap-5">
+          @for (pet of pets(); track pet.id) {
+            <div
+              class="flex flex-col gap-6 rounded-3xl border border-olive/15 bg-white p-6 shadow-sm sm:flex-row sm:items-center"
+            >
+              <img
+                [src]="pet.photoUrl"
+                [alt]="pet.name"
+                class="h-40 w-full shrink-0 rounded-2xl bg-secondary/50 object-cover sm:h-32 sm:w-40"
+                (error)="onPhotoError($event)"
+              />
+              <div class="flex-1">
+                <h3 class="font-display text-2xl font-bold text-text">{{ pet.name }}</h3>
+                <p class="mt-1 text-text/60">
+                  {{ pet.species === 'DOG' ? 'Perro' : 'Gato' }} · {{ pet.breed }} · {{ pet.age }} años
+                </p>
+                <p-tag
+                  class="mt-3"
+                  [value]="pet.active ? 'Activa' : 'Inactiva'"
+                  [severity]="pet.active ? 'success' : 'secondary'"
+                />
+              </div>
+              <p-button label="Ver ficha" [text]="true" (onClick)="verPet(pet.id)" />
+            </div>
+          }
+        </div>
+      } @else {
+        <div class="rounded-3xl border border-olive/15 bg-white p-10 text-center shadow-sm">
+          <i class="pi pi-heart text-2xl text-text/30" aria-hidden="true"></i>
+          <p class="mt-3 text-text/60">Este dueño todavía no tiene mascotas registradas.</p>
+        </div>
+      }
+    </section>
+  } @else {
+    <div class="mt-6 rounded-3xl border border-olive/15 bg-white p-10 text-center shadow-sm">
+      <i class="pi pi-search text-2xl text-text/30" aria-hidden="true"></i>
+      <p class="mt-3 text-text/60">No se encontró ningún dueño con ese id.</p>
+      <p-button class="mt-4" label="Volver a Dueños" [outlined]="true" (onClick)="volver()" />
+    </div>
+  }
+</div>

@@ -50,6 +50,7 @@
           <th pSortableColumn="species">Especie <p-sortIcon field="species" /></th>
           <th pSortableColumn="age">Edad <p-sortIcon field="age" /></th>
           <th pSortableColumn="weight">Peso <p-sortIcon field="weight" /></th>
+          <th>Dueño</th>
           <th pSortableColumn="disease">Estado <p-sortIcon field="disease" /></th>
           <th pSortableColumn="active">Activa <p-sortIcon field="active" /></th>
           <th>Acciones</th>
@@ -84,6 +85,14 @@
           </td>
           <td class="text-sm">{{ pet.age }} años</td>
           <td class="text-sm">{{ pet.weight }} kg</td>
+          <td>
+            <a
+              [routerLink]="['/dashboard/owners', pet.ownerId]"
+              class="text-sm text-olive transition-colors hover:text-tertiary"
+            >
+              {{ ownerName(pet.ownerId) }}
+            </a>
+          </td>
           <td><app-pet-status-tag [pet]="pet" /></td>
           <td>
             <p-tag
@@ -130,7 +139,7 @@
 
       <ng-template pTemplate="emptymessage">
         <tr>
-          <td colspan="7">
+          <td colspan="8">
             <div class="flex flex-col items-center gap-3 py-10 text-center">
               <i class="pi pi-search text-2xl text-text/30" aria-hidden="true"></i>
               <p class="text-text/60">No se encontraron mascotas.</p>
