@@ -33,10 +33,10 @@ public class PetServiceImpl implements PetService {
 
     @Override
     @Transactional
-    public void createPet(Pet pet, Long ownerId) {
+    public Pet createPet(Pet pet, Long ownerId) {
         Owner owner = ownerService.getOwnerById(ownerId);
         pet.setOwner(owner);
-        petRepository.save(pet);
+        return petRepository.save(pet);
     }
 
     // NOTE: Una mascota no se puede eliminar directamente, solo se puede desactivar.
