@@ -1,11 +1,16 @@
 package io.github.pethaven.controller;
 
+import io.github.pethaven.entity.Pet;
 import io.github.pethaven.service.OwnerService;
 import io.github.pethaven.service.PetService;
 import io.github.pethaven.service.TreatmentService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.util.List;
 
 @RestController
 @RequestMapping("/api/pets")
@@ -24,5 +29,15 @@ public class PetRestController {
         this.petService = petService;
         this.ownerService = ownerService;
         this.treatmentService = treatmentService;
+    }
+
+    @GetMapping
+    public List<Pet> getAllPets() {
+        return petService.getAllPets();
+    }
+
+    @GetMapping("/{id}")
+    public Pet getPetById(@PathVariable Long id) {
+        return petService.getPetById(id);
     }
 }
