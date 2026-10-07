@@ -42,4 +42,15 @@ public class PetRestController {
     public Pet createPet(@RequestBody Pet pet, @RequestParam("ownerId") Long ownerId) {
         return petService.createPet(pet, ownerId);
     }
+
+    @PutMapping("/{id}")
+    public Pet updatePet(@PathVariable Long id, @RequestBody Pet updatedPet) {
+        return petService.updatePet(id, updatedPet);
+    }
+
+    @PutMapping("/{id}/active")
+    public void switchPetActiveStatus(@PathVariable Long id, @RequestParam("active") boolean active) {
+        petService.switchPetActiveStatus(id, active);
+    }
+
 }

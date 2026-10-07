@@ -39,6 +39,20 @@ public class PetServiceImpl implements PetService {
         return petRepository.save(pet);
     }
 
+    @Override
+    @Transactional
+    public Pet updatePet(Long id, Pet updatedPet) {
+        Pet existingPet = getPetById(id);
+        existingPet.setName(updatedPet.getName());
+        existingPet.setSpecies(updatedPet.getSpecies());
+        existingPet.setBreed(updatedPet.getBreed());
+        existingPet.setAge(updatedPet.getAge());
+        existingPet.setWeight(updatedPet.getWeight());
+        existingPet.setDisease(updatedPet.getDisease());
+        existingPet.setPhotoUrl(updatedPet.getPhotoUrl());
+        return petRepository.save(existingPet);
+    }
+
     // NOTE: Una mascota no se puede eliminar directamente, solo se puede desactivar.
     // Para eliminar una mascota, se debe eliminar su dueño (eliminación en cascada)
 
