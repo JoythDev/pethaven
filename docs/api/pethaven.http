@@ -1,0 +1,112 @@
+### PetHaven — Colección de verificación de peticiones HTTP
+
+@baseUrl = http://localhost:8080
+@ownerId = 1
+
+### ═══════════════════════════════════════════
+### REST · /api/owners
+### ═══════════════════════════════════════════
+
+### Listar dueños → 200 [OwnerResponse]
+GET {{baseUrl}}/api/owners
+Accept: application/json
+
+### Detalle de dueño → 200 OwnerResponse
+GET {{baseUrl}}/api/owners/{{ownerId}}
+Accept: application/json
+
+### Detalle inexistente → 404 ApiErrorResponse
+GET {{baseUrl}}/api/owners/99999
+Accept: application/json
+
+### Crear dueño → 201 + cabecera Location
+POST {{baseUrl}}/api/owners
+Content-Type: application/json
+Accept: application/json
+
+{
+  "document": "990000001",
+  "name": "Dueño de Prueba",
+  "email": "dueno.prueba@example.com",
+  "password": "password123",
+  "phone": "3000000000"
+}
+
+### Crear duplicado (mismo documento) → 409
+POST {{baseUrl}}/api/owners
+Content-Type: application/json
+Accept: application/json
+
+{
+  "document": "990000001",
+  "name": "Otro Dueño",
+  "email": "otro.prueba@example.com",
+  "password": "password123",
+  "phone": "3000000001"
+}
+
+### Crear inválido (campos vacíos, correo malo, password corta) → 400 + errors{}
+POST {{baseUrl}}/api/owners
+Content-Type: application/json
+Accept: application/json
+
+{
+  "document": "",
+  "name": "",
+  "email": "no-es-un-correo",
+  "password": "123",
+  "phone": ""
+}
+
+### Actualizar sin password (se conserva) → 200
+PUT {{baseUrl}}/api/owners/{{ownerId}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "document": "123456789",
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "phone": "3001234567"
+}
+
+### Actualizar con password corta → 400
+PUT {{baseUrl}}/api/owners/{{ownerId}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "document": "123456789",
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "password": "123",
+  "phone": "3001234567"
+}
+
+### Eliminar dueño → 204 (o 409 si alguna mascota tiene tratamientos)
+DELETE {{baseUrl}}/api/owners/{{ownerId}}
+
+### ═══════════════════════════════════════════
+### MVC Thymeleaf (convivencia con la API)
+### ═══════════════════════════════════════════
+
+### Landing → 200
+GET {{baseUrl}}/
+
+### Lista de dueños (render de DTOs) → 200
+GET {{baseUrl}}/owners
+
+### Detalle de dueño → 200
+GET {{baseUrl}}/owners/{{ownerId}}
+
+### Formulario de edición (password en blanco = conservar) → 200
+GET {{baseUrl}}/owners/update/{{ownerId}}
+
+### Formulario de mascota (dropdown de dueños) → 200
+GET {{baseUrl}}/pets/add
+
+### Login de dueño (form) → 302
+POST {{baseUrl}}/login
+Content-Type: application/x-www-form-urlencoded
+
+email=john.doe@example.com&password=password123
