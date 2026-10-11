@@ -84,7 +84,8 @@
               type="password"
               id="password"
               th:field="*{password}"
-              required
+              th:required="${owner.id == null}"
+              th:placeholder="${owner.id == null} ? 'Contraseña' : 'Dejar en blanco para conservar la contraseña'"
               class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm"
             />
           </div>

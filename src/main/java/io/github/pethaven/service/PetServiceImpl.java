@@ -34,7 +34,7 @@ public class PetServiceImpl implements PetService {
     @Override
     @Transactional
     public Pet createPet(Pet pet, Long ownerId) {
-        Owner owner = ownerService.getOwnerById(ownerId);
+        Owner owner = ownerService.getOwnerEntity(ownerId);
         pet.setOwner(owner);
         return petRepository.save(pet);
     }

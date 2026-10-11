@@ -1,16 +1,22 @@
 package io.github.pethaven.controller;
 
+import io.github.pethaven.dto.request.OwnerRequest;
+import io.github.pethaven.dto.request.OwnerUpdateRequest;
 import io.github.pethaven.entity.Owner;
+import io.github.pethaven.mapper.OwnerMapper;
 import io.github.pethaven.service.OwnerService;
 import io.github.pethaven.service.PetService;
 
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
+import org.springframework.web.bind.WebDataBinder;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.InitBinder;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.beans.propertyeditors.StringTrimmerEditor;
 
 @Controller
 @RequestMapping("/owners")
@@ -21,6 +27,9 @@ public class OwnerController {
 
     @Autowired
     private PetService petService;
+
+    @Autowired
+    private OwnerMapper ownerMapper;
 
     @GetMapping()
     public String listOwners(Model model) {
@@ -50,19 +59,23 @@ public class OwnerController {
 
     @PostMapping("/add")
     public String addOwner(Owner owner) {
-        ownerService.createOwner(owner);
+        ownerService.createOwner(new OwnerRequest(
+                owner.getDocument(), owner.getName(), owner.getEmail(),
+                owner.getPassword(), owner.getPhone()));
         return "redirect:/owners";
     }
 
     @GetMapping("/update/{id}")
     public String updateOwner(@PathVariable Long id, Model model) {
-        model.addAttribute("owner", ownerService.getOwnerById(id));
+        model.addAttribute("owner", ownerMapper.toEntity(ownerService.getOwnerById(id)));
         return "owner_form";
     }
 
     @PostMapping("/update/{id}")
     public String saveUpdatedOwner(@PathVariable Long id, Owner owner) {
-        ownerService.updateOwner(id, owner);
+        ownerService.updateOwner(id, new OwnerUpdateRequest(
+                owner.getDocument(), owner.getName(), owner.getEmail(),
+                owner.getPassword(), owner.getPhone()));
         return "redirect:/owners/" + id;
     }
 
@@ -70,5 +83,11 @@ public class OwnerController {
     public String deleteOwner(@PathVariable Long id) {
         ownerService.deleteOwnerById(id);
         return "redirect:/owners";
+    }
+
+    /** Convierte los campos de texto vacíos en null al recibir formularios. */
+    @InitBinder
+    public void initBinder(WebDataBinder binder) {
+        binder.registerCustomEditor(String.class, new StringTrimmerEditor(true));
     }
 }

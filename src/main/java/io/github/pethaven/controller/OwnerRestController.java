@@ -6,10 +6,11 @@ import io.github.pethaven.dto.response.OwnerResponse;
 import io.github.pethaven.service.OwnerService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.net.URI;
 import java.util.List;
 
 @RestController
@@ -36,7 +37,11 @@ public class OwnerRestController {
     @PostMapping
     public ResponseEntity<OwnerResponse> createOwner(@Valid @RequestBody OwnerRequest request) {
         OwnerResponse newOwner = ownerService.createOwner(request);
-        return ResponseEntity.status(HttpStatus.CREATED).body(newOwner);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(newOwner.id())
+                .toUri();
+        return ResponseEntity.created(location).body(newOwner);
     }
 
     @PutMapping("/{id}")
@@ -49,5 +54,7 @@ public class OwnerRestController {
         ownerService.deleteOwnerById(id);
         return ResponseEntity.noContent().build();
     }
+
+    // TODO (Fase 2): habilitar GET /{id}/pets → [PetResponse] al cerrar la Fase 2.
 
 }

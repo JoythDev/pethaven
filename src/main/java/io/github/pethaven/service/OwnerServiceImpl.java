@@ -36,9 +36,13 @@ public class OwnerServiceImpl implements OwnerService {
 
     @Override
     public OwnerResponse getOwnerById(Long id) {
-        Owner owner = ownerRepository.findById(id)
+        return ownerMapper.toResponse(getOwnerEntity(id));
+    }
+
+    @Override
+    public Owner getOwnerEntity(Long id) {
+        return ownerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Owner", "id", id));
-        return ownerMapper.toResponse(owner);
     }
 
     @Override
@@ -64,26 +68,38 @@ public class OwnerServiceImpl implements OwnerService {
 
     @Override
     public OwnerResponse createOwner(OwnerRequest request) {
+        ensureUnique(request.document(), request.email(), null);
         Owner owner = ownerMapper.toEntity(request);
         owner = ownerRepository.save(owner);
         return ownerMapper.toResponse(owner);
     }
 
-    // La actualización copia únicamente los campos editables del formulario sobre la
-    // entidad ya persistida. Las mascotas existentes se conservan intactas: el formulario
-    // no las envía, así que la colección llega vacía y un merge de JPA las perdería.
+    // La actualización aplica únicamente los campos editables sobre la entidad ya
+    // persistida. Las mascotas existentes se conservan intactas: el formulario no las
+    // envía, así que la colección llega vacía y un merge de JPA las perdería.
     @Override
     @Transactional
     public OwnerResponse updateOwner(Long id, OwnerUpdateRequest updateRequest) {
-        Owner existing = ownerRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Owner", "id", id));
-        existing.setName(updateRequest.name());
-        existing.setDocument(updateRequest.document());
-        existing.setPhone(updateRequest.phone());
-        existing.setEmail(updateRequest.email());
-        existing.setPassword(updateRequest.password());
+        Owner existing = getOwnerEntity(id);
+        ensureUnique(updateRequest.document(), updateRequest.email(), id);
+        ownerMapper.applyUpdate(updateRequest, existing);
         Owner savedOwner = ownerRepository.save(existing);
         return ownerMapper.toResponse(savedOwner);
+    }
+
+    private void ensureUnique(String document, String email, Long selfId) {
+        boolean documentTaken = selfId == null
+                ? ownerRepository.existsByDocument(document)
+                : ownerRepository.existsByDocumentAndIdNot(document, selfId);
+        if (documentTaken) {
+            throw new IllegalOperationException("Ya existe un dueño con el documento '" + document + "'.");
+        }
+        boolean emailTaken = selfId == null
+                ? ownerRepository.existsByEmail(email)
+                : ownerRepository.existsByEmailAndIdNot(email, selfId);
+        if (emailTaken) {
+            throw new IllegalOperationException("Ya existe un dueño con el correo '" + email + "'.");
+        }
     }
 
     // Un dueño con mascotas que ya tienen tratamientos registrados no se puede eliminar:
@@ -93,8 +109,7 @@ public class OwnerServiceImpl implements OwnerService {
     @Override
     @Transactional
     public void deleteOwnerById(Long id) {
-        Owner owner = ownerRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Owner", "id", id));
+        Owner owner = getOwnerEntity(id);
 
         if (treatmentRepository.existsByPetOwnerId(id)) {
             throw new IllegalOperationException(
@@ -104,6 +119,8 @@ public class OwnerServiceImpl implements OwnerService {
 
         ownerRepository.deleteById(id);
     }
+
+    // TODO: Implementar getPetsByOwnerId(Long ownerId)
 
     @Override
     public Owner authenticate(String email, String password) {
