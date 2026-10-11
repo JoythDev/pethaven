@@ -35,11 +35,6 @@ public class OwnerServiceImpl implements OwnerService {
     }
 
     @Override
-    public OwnerResponse getOwnerById(Long id) {
-        return ownerMapper.toResponse(getOwnerEntity(id));
-    }
-
-    @Override
     public Owner getOwnerEntity(Long id) {
         return ownerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Owner", "id", id));
@@ -50,6 +45,11 @@ public class OwnerServiceImpl implements OwnerService {
         return ownerRepository.findAll().stream()
                 .map(ownerMapper::toResponse)
                 .collect(Collectors.toList());
+    }
+
+    @Override
+    public OwnerResponse getOwnerById(Long id) {
+        return ownerMapper.toResponse(getOwnerEntity(id));
     }
 
     @Override

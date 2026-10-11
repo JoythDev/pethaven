@@ -184,5 +184,6 @@ Controller: `AuthRestController` → `@RequestMapping("/api/auth")`
 | Validaciones | Jakarta Validation en los DTOs: obligatoriedad (`@NotBlank`), formato (`@Email`) y topes de longitud alineados a las columnas de la BD. Mensajes inline en español. |
 | Unicidad | No se valida en el DTO: pre-chequeo en el service (`409`) + constraint única en BD como garantía; el handler de `DataIntegrityViolation` queda como red de seguridad. |
 | Mappers | Una clase `@Component` por agregado (`mapper/`): `toResponse`, `toEntity(request)`, `applyUpdate` y `toEntity(response)` (este último solo para formularios MVC). |
-| Services | Métodos que devuelven DTO = proyección para la API REST; métodos que devuelven entidad (`getOwnerEntity`) = dominio / composición interna y MVC legado. |
+| Services | Métodos que devuelven DTO = proyección para la API REST; métodos que devuelven entidad (`getOwnerEntity`, patrón `getXxxEntity`) = accesor de dominio para uso interno entre services. Las entidades nunca se exponen desde controllers REST. |
 | Contraseñas | Nunca en respuestas. En actualización: omitir el campo o enviarlo en blanco = conservar la actual. |
+| Documentación | Swagger UI (springdoc) en `/swagger-ui.html`; por ahora documenta solo `/api/owners/**` y se amplía por fase. `docs/api/API.md` sigue siendo el contrato fuente. |

@@ -9,15 +9,14 @@ import java.util.List;
 
 public interface OwnerService {
 
-    OwnerResponse getOwnerById(Long id);
+    Owner getOwnerEntity(Long id);
     List<OwnerResponse> getAllOwners();
+    OwnerResponse getOwnerById(Long id);
     OwnerResponse getOwnerByDocument(String document);
     OwnerResponse getOwnerByEmail(String email);
     OwnerResponse createOwner(OwnerRequest request);
     OwnerResponse updateOwner(Long id, OwnerUpdateRequest request);
     void deleteOwnerById(Long id);
-
-    Owner getOwnerEntity(Long id);
 
     Owner authenticate(String email, String password);
 }
