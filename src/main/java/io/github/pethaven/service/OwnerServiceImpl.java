@@ -1,8 +1,13 @@
 package io.github.pethaven.service;
 
+import io.github.pethaven.dto.request.OwnerRequest;
+import io.github.pethaven.dto.request.OwnerUpdateRequest;
+import io.github.pethaven.dto.response.OwnerResponse;
 import io.github.pethaven.entity.Owner;
 import io.github.pethaven.exception.IllegalOperationException;
+import io.github.pethaven.exception.InvalidCredentialsException;
 import io.github.pethaven.exception.ResourceNotFoundException;
+import io.github.pethaven.mapper.OwnerMapper;
 import io.github.pethaven.repository.OwnerRepository;
 import io.github.pethaven.repository.TreatmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,42 +15,58 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class OwnerServiceImpl implements OwnerService {
 
-    @Autowired
-    private OwnerRepository ownerRepository;
+    private final OwnerRepository ownerRepository;
+    private final TreatmentRepository treatmentRepository;
+    private final OwnerMapper ownerMapper;
 
     @Autowired
-    private TreatmentRepository treatmentRepository;
+    public OwnerServiceImpl(
+            OwnerRepository ownerRepository,
+            TreatmentRepository treatmentRepository,
+            OwnerMapper ownerMapper) {
+        this.ownerRepository = ownerRepository;
+        this.treatmentRepository = treatmentRepository;
+        this.ownerMapper = ownerMapper;
+    }
 
     @Override
-    public Owner getOwnerById(Long id) {
-        return ownerRepository.findById(id)
+    public OwnerResponse getOwnerById(Long id) {
+        Owner owner = ownerRepository.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Owner", "id", id));
+        return ownerMapper.toResponse(owner);
     }
 
     @Override
-    public List<Owner> getAllOwners() {
-        return ownerRepository.findAll();
+    public List<OwnerResponse> getAllOwners() {
+        return ownerRepository.findAll().stream()
+                .map(ownerMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     @Override
-    public Owner getOwnerByDocument(String document) {
-        return ownerRepository.findByDocument(document)
+    public OwnerResponse getOwnerByDocument(String document) {
+        Owner owner = ownerRepository.findByDocument(document)
                 .orElseThrow(() -> new ResourceNotFoundException("Owner", "document", document));
+        return ownerMapper.toResponse(owner);
     }
 
     @Override
-    public Owner getOwnerByEmail(String email) {
-        return ownerRepository.findByEmail(email)
+    public OwnerResponse getOwnerByEmail(String email) {
+        Owner owner = ownerRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Owner", "email", email));
+        return ownerMapper.toResponse(owner);
     }
 
     @Override
-    public void createOwner(Owner owner) {
-        ownerRepository.save(owner);
+    public OwnerResponse createOwner(OwnerRequest request) {
+        Owner owner = ownerMapper.toEntity(request);
+        owner = ownerRepository.save(owner);
+        return ownerMapper.toResponse(owner);
     }
 
     // La actualización copia únicamente los campos editables del formulario sobre la
@@ -53,14 +74,16 @@ public class OwnerServiceImpl implements OwnerService {
     // no las envía, así que la colección llega vacía y un merge de JPA las perdería.
     @Override
     @Transactional
-    public void updateOwner(Long id, Owner formData) {
-        Owner existing = getOwnerById(id);
-        existing.setName(formData.getName());
-        existing.setDocument(formData.getDocument());
-        existing.setPhone(formData.getPhone());
-        existing.setEmail(formData.getEmail());
-        existing.setPassword(formData.getPassword());
-        ownerRepository.save(existing);
+    public OwnerResponse updateOwner(Long id, OwnerUpdateRequest updateRequest) {
+        Owner existing = ownerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Owner", "id", id));
+        existing.setName(updateRequest.name());
+        existing.setDocument(updateRequest.document());
+        existing.setPhone(updateRequest.phone());
+        existing.setEmail(updateRequest.email());
+        existing.setPassword(updateRequest.password());
+        Owner savedOwner = ownerRepository.save(existing);
+        return ownerMapper.toResponse(savedOwner);
     }
 
     // Un dueño con mascotas que ya tienen tratamientos registrados no se puede eliminar:
@@ -70,7 +93,8 @@ public class OwnerServiceImpl implements OwnerService {
     @Override
     @Transactional
     public void deleteOwnerById(Long id) {
-        Owner owner = getOwnerById(id);
+        Owner owner = ownerRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Owner", "id", id));
 
         if (treatmentRepository.existsByPetOwnerId(id)) {
             throw new IllegalOperationException(
@@ -88,6 +112,6 @@ public class OwnerServiceImpl implements OwnerService {
         if (owner.getPassword().equals(password)) {
             return owner;
         }
-        throw new RuntimeException("Correo o contraseña incorrectos.");
+        throw new InvalidCredentialsException();
     }
 }

@@ -27,9 +27,9 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-@Order(Ordered.HIGHEST_PRECEDENCE)
-@RestControllerAdvice(annotations = RestController.class)
-public class RestExceptionHandler {
+@Order(Ordered.HIGHEST_PRECEDENCE) // TODO: Eliminar cuando Thymeleaf se elimine
+@RestControllerAdvice(annotations = RestController.class) // TODO: Eliminar `annotations` cuando Thymeleaf se elimine
+public class RestExceptionHandler { // TODO: Renombrar a `GlobalExceptionHandler` cuando Thymeleaf se elimine
 
     private static final Logger log = LoggerFactory.getLogger(RestExceptionHandler.class);
 
