@@ -134,7 +134,7 @@ El objetivo es dejar atrás el renderizado en el servidor: un solo frontend Angu
 | Capa | Tecnología |
 |---|---|
 | Lenguaje | Java 21 |
-| Framework | Spring Boot 4.1 — Web MVC, Data JPA, DevTools |
+| Framework | Spring Boot 4.1 — Web MVC, Data JPA, Validation, DevTools |
 | Objetivo | API REST para el frontend Angular |
 | Base de datos | H2 en modo archivo, con consola de administración web |
 | Utilidades | Lombok |
