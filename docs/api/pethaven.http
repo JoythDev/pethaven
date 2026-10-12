@@ -87,6 +87,102 @@ Accept: application/json
 DELETE {{baseUrl}}/api/owners/{{ownerId}}
 
 ### ═══════════════════════════════════════════
+### REST · /api/pets
+### ═══════════════════════════════════════════
+
+### Listar mascotas → 200 [PetResponse]
+GET {{baseUrl}}/api/pets
+Accept: application/json
+
+### Buscar por nombre (substring, sin distinguir mayúsculas) → 200 [PetResponse]
+GET {{baseUrl}}/api/pets?search=bud
+Accept: application/json
+
+### Detalle de mascota → 200 PetResponse
+GET {{baseUrl}}/api/pets/1
+Accept: application/json
+
+### Crear mascota → 201 + Location
+POST {{baseUrl}}/api/pets
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Firulais de Prueba",
+  "ownerId": 1,
+  "species": "DOG",
+  "breed": "Mestizo",
+  "age": 2,
+  "weight": 8.5,
+  "disease": null,
+  "photoUrl": null
+}
+
+### Crear con dueño inexistente → 404
+POST {{baseUrl}}/api/pets
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Sin Dueno",
+  "ownerId": 99999,
+  "species": "CAT",
+  "breed": "Mestizo",
+  "age": 1,
+  "weight": 3.0
+}
+
+### Crear inválido (validación) → 400 + errors{}
+POST {{baseUrl}}/api/pets
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "",
+  "ownerId": null,
+  "species": "DOG",
+  "breed": "",
+  "age": -1,
+  "weight": -2.0
+}
+
+### Especie inválida → 400 (cuerpo mal formado)
+POST {{baseUrl}}/api/pets
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Ave",
+  "ownerId": 1,
+  "species": "BIRD",
+  "breed": "Mestizo",
+  "age": 1,
+  "weight": 1.0
+}
+
+### Actualizar (reasignar dueño) → 200
+PUT {{baseUrl}}/api/pets/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Buddy",
+  "ownerId": 2,
+  "species": "DOG",
+  "breed": "Golden Retriever",
+  "age": 3,
+  "weight": 15.0
+}
+
+### Activar/desactivar → 200
+PUT {{baseUrl}}/api/pets/1/active?active=false
+Accept: application/json
+
+### Mascotas de un dueño → 200 (404 si el dueño no existe)
+GET {{baseUrl}}/api/owners/1/pets
+Accept: application/json
+
+### ═══════════════════════════════════════════
 ### MVC Thymeleaf (convivencia con la API)
 ### ═══════════════════════════════════════════
 
@@ -104,6 +200,15 @@ GET {{baseUrl}}/owners/update/{{ownerId}}
 
 ### Formulario de mascota (dropdown de dueños) → 200
 GET {{baseUrl}}/pets/add
+
+### Lista de mascotas → 200
+GET {{baseUrl}}/pets
+
+### Detalle de mascota → 200
+GET {{baseUrl}}/pets/1
+
+### Formulario de edición de mascota → 200
+GET {{baseUrl}}/pets/update/1
 
 ### Login de dueño (form) → 302
 POST {{baseUrl}}/login

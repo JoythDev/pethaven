@@ -21,17 +21,18 @@ import java.util.stream.Collectors;
 public class OwnerServiceImpl implements OwnerService {
 
     private final OwnerRepository ownerRepository;
-    private final TreatmentRepository treatmentRepository;
     private final OwnerMapper ownerMapper;
+    private final TreatmentRepository treatmentRepository;
 
     @Autowired
     public OwnerServiceImpl(
             OwnerRepository ownerRepository,
-            TreatmentRepository treatmentRepository,
-            OwnerMapper ownerMapper) {
+            OwnerMapper ownerMapper,
+            TreatmentRepository treatmentRepository
+    ) {
         this.ownerRepository = ownerRepository;
-        this.treatmentRepository = treatmentRepository;
         this.ownerMapper = ownerMapper;
+        this.treatmentRepository = treatmentRepository;
     }
 
     @Override
@@ -70,8 +71,8 @@ public class OwnerServiceImpl implements OwnerService {
     public OwnerResponse createOwner(OwnerRequest request) {
         ensureUnique(request.document(), request.email(), null);
         Owner owner = ownerMapper.toEntity(request);
-        owner = ownerRepository.save(owner);
-        return ownerMapper.toResponse(owner);
+        Owner saved = ownerRepository.save(owner);
+        return ownerMapper.toResponse(saved);
     }
 
     // La actualización aplica únicamente los campos editables sobre la entidad ya
@@ -83,8 +84,8 @@ public class OwnerServiceImpl implements OwnerService {
         Owner existing = getOwnerEntity(id);
         ensureUnique(updateRequest.document(), updateRequest.email(), id);
         ownerMapper.applyUpdate(updateRequest, existing);
-        Owner savedOwner = ownerRepository.save(existing);
-        return ownerMapper.toResponse(savedOwner);
+        Owner updated = ownerRepository.save(existing);
+        return ownerMapper.toResponse(updated);
     }
 
     private void ensureUnique(String document, String email, Long selfId) {
@@ -119,8 +120,6 @@ public class OwnerServiceImpl implements OwnerService {
 
         ownerRepository.deleteById(id);
     }
-
-    // TODO: Implementar getPetsByOwnerId(Long ownerId)
 
     @Override
     public Owner authenticate(String email, String password) {

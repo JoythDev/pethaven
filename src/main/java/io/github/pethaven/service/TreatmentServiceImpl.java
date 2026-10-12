@@ -56,7 +56,7 @@ public class TreatmentServiceImpl implements TreatmentService {
     @Override
     @Transactional
     public void createTreatment(Treatment treatment, Long petId, Long veterinarianId) {
-        Pet pet = petService.getPetById(petId);
+        Pet pet = petService.getPetEntity(petId);
         Veterinarian veterinarian = veterinarianService.getVeterinarianById(veterinarianId);
 
         treatment.setPet(pet);

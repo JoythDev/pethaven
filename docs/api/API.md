@@ -63,7 +63,7 @@ Controller: `OwnerRestController` → `@RequestMapping("/api/owners")`
 |---|---|---|
 | `GET` | `/api/owners` | `200` `[OwnerResponse]` |
 | `GET` | `/api/owners/{id}` | `200` `OwnerResponse` |
-| `GET` | `/api/owners/{id}/pets` | `200` `[PetResponse]` (disponible al cerrar Fase 2) |
+| `GET` | `/api/owners/{id}/pets` | `200` `[PetResponse]`; `404` si el dueño no existe |
 | `POST` | `/api/owners` | `201` `OwnerResponse` + `Location` |
 | `PUT` | `/api/owners/{id}` | `200` `OwnerResponse` |
 | `DELETE` | `/api/owners/{id}` | `204`; `409` si alguna mascota tiene tratamientos |
@@ -74,7 +74,7 @@ Controller: `PetRestController` (se reescribe) → `@RequestMapping("/api/pets")
 
 | DTO | Campos |
 |---|---|
-| `PetRequest` | `name`, `ownerId`, `species`, `breed`, `age`, `weight`, `disease`, `photoUrl`, `active` |
+| `PetRequest` | `name`, `ownerId`, `species`, `breed`, `age`, `weight`, `disease`, `photoUrl` (`active` no se envía: nace en `true` y se cambia con `PUT /{id}/active`) |
 | `PetResponse` | `id`, `name`, `species`, `breed`, `age`, `weight`, `disease`, `photoUrl`, `active`, `ownerId`, `ownerName` |
 
 ```json
@@ -95,15 +95,12 @@ Controller: `PetRestController` (se reescribe) → `@RequestMapping("/api/pets")
 
 | Método | Ruta | Respuesta |
 |---|---|---|
-| `GET` | `/api/pets` | `200` `[PetResponse]` |
+| `GET` | `/api/pets` | `200` `[PetResponse]` (acepta `?search=`: filtra por nombre, substring sin distinguir mayúsculas) |
 | `GET` | `/api/pets/{id}` | `200` `PetResponse` |
 | `POST` | `/api/pets` | `201` `PetResponse` + `Location` |
 | `PUT` | `/api/pets/{id}` | `200` `PetResponse` (puede reasignar dueño) |
 | `PUT` | `/api/pets/{id}/active?active=true\|false` | `200` `PetResponse` |
 | — | *(sin DELETE)* | la mascota solo se desactiva; se elimina en cascada con su dueño |
-
-> `GET /api/pets` actual devuelve entidades y está roto por el ciclo de serialización
-> `Pet ↔ Owner`; no consumir hasta que cierre la Fase 2.
 
 ## Fase 3 — Veterinarios
 
@@ -186,4 +183,4 @@ Controller: `AuthRestController` → `@RequestMapping("/api/auth")`
 | Mappers | Una clase `@Component` por agregado (`mapper/`): `toResponse`, `toEntity(request)`, `applyUpdate` y `toEntity(response)` (este último solo para formularios MVC). |
 | Services | Métodos que devuelven DTO = proyección para la API REST; métodos que devuelven entidad (`getOwnerEntity`, patrón `getXxxEntity`) = accesor de dominio para uso interno entre services. Las entidades nunca se exponen desde controllers REST. |
 | Contraseñas | Nunca en respuestas. En actualización: omitir el campo o enviarlo en blanco = conservar la actual. |
-| Documentación | Swagger UI (springdoc) en `/swagger-ui.html`; por ahora documenta solo `/api/owners/**` y se amplía por fase. `docs/api/API.md` sigue siendo el contrato fuente. |
+| Documentación | Swagger UI (springdoc) en `/swagger-ui.html`; documenta los módulos migrados (`/api/owners/**`, `/api/pets/**`) y se amplía por fase. `docs/api/API.md` sigue siendo el contrato fuente. |

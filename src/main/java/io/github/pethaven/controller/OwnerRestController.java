@@ -4,7 +4,9 @@ import io.github.pethaven.dto.common.ApiErrorResponse;
 import io.github.pethaven.dto.request.OwnerRequest;
 import io.github.pethaven.dto.request.OwnerUpdateRequest;
 import io.github.pethaven.dto.response.OwnerResponse;
+import io.github.pethaven.dto.response.PetResponse;
 import io.github.pethaven.service.OwnerService;
+import io.github.pethaven.service.PetService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -30,10 +32,12 @@ import java.util.List;
 public class OwnerRestController {
 
     private final OwnerService ownerService;
+    private final PetService petService;
 
     @Autowired
-    public OwnerRestController(OwnerService ownerService) {
+    public OwnerRestController(OwnerService ownerService, PetService petService) {
         this.ownerService = ownerService;
+        this.petService = petService;
     }
 
     /**
@@ -135,6 +139,24 @@ public class OwnerRestController {
         return ResponseEntity.noContent().build();
     }
 
-    // TODO (Fase 2): habilitar GET /{id}/pets → [PetResponse] al cerrar la Fase 2.
+    /**
+     * Lista las mascotas de un dueño.
+     *
+     * @param id id del dueño
+     * @return lista de mascotas del dueño
+     */
+    @Operation(summary = "Listar mascotas de un dueño",
+            description = "Devuelve todas las mascotas registradas a nombre del dueño. Falla con 404 si el dueño no existe.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista de mascotas del dueño"),
+            @ApiResponse(responseCode = "404", description = "No existe un dueño con ese id",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @GetMapping("/{id}/pets")
+    public List<PetResponse> getPetsByOwnerId(
+            @Parameter(description = "Id del dueño", example = "1") @PathVariable Long id) {
+        ownerService.getOwnerById(id);
+        return petService.getPetsByOwnerId(id);
+    }
 
 }
