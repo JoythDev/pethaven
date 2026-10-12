@@ -133,6 +133,8 @@ Controller: `DrugRestController` → `@RequestMapping("/api/drugs")`
 | `DrugRequest` | `name`, `purchasePrice`, `salePrice`, `unitsAvailable` (`unitsSold` lo maneja el servidor) |
 | `DrugResponse` | `id`, `name`, `purchasePrice`, `salePrice`, `unitsAvailable`, `unitsSold` |
 
+> `unitsSold` es de solo lectura: lo calcula el sistema y se ignora si se envía en el request.
+
 | Método | Ruta | Respuesta |
 |---|---|---|
 | `GET` | `/api/drugs` | `200` `[DrugResponse]` |
@@ -185,4 +187,4 @@ Controller: `AuthRestController` → `@RequestMapping("/api/auth")`
 | Mappers | Una clase `@Component` por agregado (`mapper/`): `toResponse`, `toEntity(request)`, `applyUpdate` y `toEntity(response)` (este último solo para formularios MVC). |
 | Services | Métodos que devuelven DTO = proyección para la API REST; métodos que devuelven entidad (`getOwnerEntity`, patrón `getXxxEntity`) = accesor de dominio para uso interno entre services. Las entidades nunca se exponen desde controllers REST. |
 | Contraseñas | Nunca en respuestas. En actualización: omitir el campo o enviarlo en blanco = conservar la actual. |
-| Documentación | Swagger UI (springdoc) en `/swagger-ui.html`; documenta los módulos migrados (`/api/owners/**`, `/api/pets/**`, `/api/veterinarians/**`) y se amplía por fase. `docs/api/API.md` sigue siendo el contrato fuente. |
+| Documentación | Swagger UI (springdoc) en `/swagger-ui.html`; documenta los módulos migrados (`/api/owners/**`, `/api/pets/**`, `/api/veterinarians/**`, `/api/drugs/**`) y se amplía por fase. `docs/api/API.md` sigue siendo el contrato fuente. |

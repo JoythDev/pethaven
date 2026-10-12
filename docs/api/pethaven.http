@@ -259,6 +259,74 @@ Accept: application/json
 DELETE {{baseUrl}}/api/veterinarians/1
 
 ### ═══════════════════════════════════════════
+### REST · /api/drugs
+### ═══════════════════════════════════════════
+
+### Listar medicamentos → 200 [DrugResponse]
+GET {{baseUrl}}/api/drugs
+Accept: application/json
+
+### Detalle de medicamento → 200
+GET {{baseUrl}}/api/drugs/1
+Accept: application/json
+
+### Detalle inexistente → 404
+GET {{baseUrl}}/api/drugs/99999
+Accept: application/json
+
+### Crear medicamento → 201 + Location
+POST {{baseUrl}}/api/drugs
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Vitamina B12 Inyectable",
+  "purchasePrice": 5000.00,
+  "salePrice": 9500.00,
+  "unitsAvailable": 50
+}
+
+### Crear duplicado (mismo nombre) → 409
+POST {{baseUrl}}/api/drugs
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Vitamina B12 Inyectable",
+  "purchasePrice": 5000.00,
+  "salePrice": 9500.00,
+  "unitsAvailable": 10
+}
+
+### Crear inválido → 400 + errors{}
+POST {{baseUrl}}/api/drugs
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "",
+  "purchasePrice": -1,
+  "salePrice": null,
+  "unitsAvailable": -5
+}
+
+### Actualizar (unitsSold en el body se ignora) → 200
+PUT {{baseUrl}}/api/drugs/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Amoxicilina 250mg",
+  "purchasePrice": 8500.00,
+  "salePrice": 16000.00,
+  "unitsAvailable": 190,
+  "unitsSold": 999
+}
+
+### Eliminar medicamento → 204 (o 409 si está asociado a tratamientos)
+DELETE {{baseUrl}}/api/drugs/1
+
+### ═══════════════════════════════════════════
 ### MVC Thymeleaf (convivencia con la API)
 ### ═══════════════════════════════════════════
 
@@ -294,6 +362,15 @@ GET {{baseUrl}}/veterinarians/1
 
 ### Formulario de edición de veterinario → 200
 GET {{baseUrl}}/veterinarians/update/1
+
+### Lista de medicamentos → 200
+GET {{baseUrl}}/drugs
+
+### Detalle de medicamento → 200
+GET {{baseUrl}}/drugs/1
+
+### Formulario de edición de medicamento → 200
+GET {{baseUrl}}/drugs/update/1
 
 ### Login de dueño (form) → 302
 POST {{baseUrl}}/login

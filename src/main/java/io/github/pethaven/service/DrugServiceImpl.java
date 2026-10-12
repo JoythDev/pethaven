@@ -53,6 +53,7 @@ public class DrugServiceImpl implements DrugService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public DrugResponse getDrugByName(String name) {
         Drug drug = drugRepository.findByName(name)
                 .orElseThrow(() -> new ResourceNotFoundException("Drug", "name", name));
@@ -94,7 +95,7 @@ public class DrugServiceImpl implements DrugService {
     public void deleteDrugById(Long id) {
         Drug drug = getDrugEntity(id);
 
-        if (!treatmentDrugRepository.findByDrugId(id).isEmpty()) {
+        if (treatmentDrugRepository.existsByDrugId(id)) {
             throw new IllegalOperationException(
                     "No se puede eliminar el medicamento '" + drug.getName()
                             + "' porque está asociado a uno o más tratamientos existentes.");
