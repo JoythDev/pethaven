@@ -1,13 +1,14 @@
 package io.github.pethaven.service;
 
+import io.github.pethaven.dto.request.TreatmentDrugRequest;
+import io.github.pethaven.dto.response.TreatmentDrugResponse;
 import io.github.pethaven.entity.Drug;
 import io.github.pethaven.entity.Treatment;
 import io.github.pethaven.entity.TreatmentDrug;
 import io.github.pethaven.exception.IllegalOperationException;
-import io.github.pethaven.exception.ResourceNotFoundException;
+import io.github.pethaven.mapper.TreatmentDrugMapper;
 import io.github.pethaven.repository.DrugRepository;
 import io.github.pethaven.repository.TreatmentDrugRepository;
-import io.github.pethaven.repository.TreatmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -17,47 +18,38 @@ import java.util.List;
 // NOTA: Un TreatmentDrug nunca se actualiza ni se elimina de forma independiente: solo se crea
 // (al administrar un medicamento) y solo desaparece en cascada si su Treatment padre se elimina, cosa
 // que tampoco ocurre nunca (ver TreatmentService). Es un renglón del historial médico permanente.
+
+// Propuesta: Un TreatmentDrug solo se gestiona a través de su Treatment padre, y no de forma independiente.
 @Service
 public class TreatmentDrugServiceImpl implements TreatmentDrugService {
 
     private final TreatmentDrugRepository treatmentDrugRepository;
-    private final TreatmentRepository treatmentRepository;
+    private final TreatmentDrugMapper treatmentDrugMapper;
+    private final TreatmentService treatmentService;
+    private final DrugService drugService;
     private final DrugRepository drugRepository;
 
     @Autowired
     public TreatmentDrugServiceImpl(
             TreatmentDrugRepository treatmentDrugRepository,
-            TreatmentRepository treatmentRepository,
+            TreatmentDrugMapper treatmentDrugMapper,
+            TreatmentService treatmentService,
+            DrugService drugService,
             DrugRepository drugRepository
     ) {
         this.treatmentDrugRepository = treatmentDrugRepository;
-        this.treatmentRepository = treatmentRepository;
+        this.treatmentDrugMapper = treatmentDrugMapper;
+        this.treatmentService = treatmentService;
+        this.drugService = drugService;
         this.drugRepository = drugRepository;
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<TreatmentDrug> getAllTreatmentDrugs() {
-        return treatmentDrugRepository.findAll();
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public TreatmentDrug getTreatmentDrugById(Long id) {
-        return treatmentDrugRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("TreatmentDrug", "id", id));
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<TreatmentDrug> getTreatmentDrugsByTreatmentId(Long treatmentId) {
-        return treatmentDrugRepository.findByTreatmentId(treatmentId);
-    }
-
-    @Override
-    @Transactional(readOnly = true)
-    public List<TreatmentDrug> getTreatmentDrugsByDrugId(Long drugId) {
-        return treatmentDrugRepository.findByDrugId(drugId);
+    public List<TreatmentDrugResponse> getTreatmentDrugsByTreatmentId(Long treatmentId) {
+        return treatmentDrugRepository.findByTreatmentId(treatmentId).stream()
+                .map(treatmentDrugMapper::toResponse)
+                .toList();
     }
 
     // Al agregar un medicamento a un tratamiento se descuenta su inventario disponible y se
@@ -65,41 +57,49 @@ public class TreatmentDrugServiceImpl implements TreatmentDrugService {
     // el historial ya registrado).
     @Override
     @Transactional
-    public void createTreatmentDrug(Long treatmentId, Long drugId, Integer units) {
-        if (units == null || units <= 0) {
+    public TreatmentDrugResponse createTreatmentDrug(Long treatmentId, TreatmentDrugRequest request) {
+        // TODO: Necesario validar esto al usar TreatmentDrugRequest?
+        if (request.units() == null || request.units() <= 0) {
             throw new IllegalOperationException("Las unidades administradas deben ser mayores a cero.");
         }
 
-        Treatment treatment = treatmentRepository.findById(treatmentId)
-                .orElseThrow(() -> new ResourceNotFoundException("Treatment", "id", treatmentId));
-        Drug drug = drugRepository.findById(drugId)
-                .orElseThrow(() -> new ResourceNotFoundException("Drug", "id", drugId));
+        Treatment treatment = treatmentService.getTreatmentEntity(treatmentId);
+        Drug drug = drugService.getDrugEntity(request.drugId());
 
-        if (treatmentDrugRepository.existsByTreatmentIdAndDrugId(treatmentId, drugId)) {
+        if (treatmentDrugRepository.existsByTreatmentIdAndDrugId(treatmentId, request.drugId())) {
             throw new IllegalOperationException(
                     "La droga '" + drug.getName() + "' ya fue administrada en este tratamiento.");
         }
 
-        if (drug.getUnitsAvailable() < units) {
+        if (drug.getUnitsAvailable() < request.units()) {
             throw new IllegalOperationException(
                     "No hay suficientes unidades disponibles de '" + drug.getName() + "'. Disponibles: "
-                            + drug.getUnitsAvailable() + ", solicitadas: " + units + ".");
+                            + drug.getUnitsAvailable() + ", solicitadas: " + request.units() + ".");
         }
 
-        drug.setUnitsAvailable(drug.getUnitsAvailable() - units);
-        drug.setUnitsSold(drug.getUnitsSold() + units);
+        drug.setUnitsAvailable(drug.getUnitsAvailable() - request.units());
+        drug.setUnitsSold(drug.getUnitsSold() + request.units());
         drugRepository.save(drug);
 
         TreatmentDrug treatmentDrug = TreatmentDrug.builder()
                 .treatment(treatment)
                 .drug(drug)
-                .units(units)
+                .units(request.units())
                 .unitPurchasePrice(drug.getPurchasePrice())
                 .unitSalePrice(drug.getSalePrice())
                 .build();
 
         treatmentDrugRepository.save(treatmentDrug);
         treatment.getTreatmentDrugs().add(treatmentDrug);
+        return treatmentDrugMapper.toResponse(treatmentDrug);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TreatmentDrugResponse> getTreatmentDrugsByDrugId(Long drugId) {
+        return treatmentDrugRepository.findByDrugId(drugId).stream()
+                .map(treatmentDrugMapper::toResponse)
+                .toList();
     }
 
 }
