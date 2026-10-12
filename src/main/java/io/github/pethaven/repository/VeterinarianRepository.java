@@ -10,4 +10,9 @@ import java.util.Optional;
 public interface VeterinarianRepository extends JpaRepository<Veterinarian, Long> {
     Optional<Veterinarian> findByDocument(String document);
     Optional<Veterinarian> findByEmail(String email);
+
+    boolean existsByDocument(String document);
+    boolean existsByEmail(String email);
+    boolean existsByDocumentAndIdNot(String document, Long id);
+    boolean existsByEmailAndIdNot(String email, Long id);
 }
