@@ -5,10 +5,10 @@ import java.util.List;
 
 public interface TreatmentService {
 
-    public Treatment getTreatmentById(Long id);
-    public List<Treatment> getAllTreatments();
-    public List<Treatment> getTreatmentsByPetId(Long petId);
-    public List<Treatment> getTreatmentsByVeterinarianId(Long veterinarianId);
-    public void createTreatment(Treatment treatment, Long petId, Long veterinarianId);
+    Treatment getTreatmentById(Long id);
+    List<Treatment> getAllTreatments();
+    List<Treatment> getTreatmentsByPetId(Long petId);
+    List<Treatment> getTreatmentsByVeterinarianId(Long veterinarianId);
+    void createTreatment(Treatment treatment, Long petId, Long veterinarianId);
 
 }

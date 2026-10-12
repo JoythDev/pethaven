@@ -20,14 +20,20 @@ import java.util.List;
 @Service
 public class TreatmentDrugServiceImpl implements TreatmentDrugService {
 
-    @Autowired
-    private TreatmentDrugRepository treatmentDrugRepository;
+    private final TreatmentDrugRepository treatmentDrugRepository;
+    private final TreatmentRepository treatmentRepository;
+    private final DrugRepository drugRepository;
 
     @Autowired
-    private TreatmentRepository treatmentRepository;
-
-    @Autowired
-    private DrugRepository drugRepository;
+    public TreatmentDrugServiceImpl(
+            TreatmentDrugRepository treatmentDrugRepository,
+            TreatmentRepository treatmentRepository,
+            DrugRepository drugRepository
+    ) {
+        this.treatmentDrugRepository = treatmentDrugRepository;
+        this.treatmentRepository = treatmentRepository;
+        this.drugRepository = drugRepository;
+    }
 
     @Override
     public TreatmentDrug getTreatmentDrugById(Long id) {

@@ -15,17 +15,23 @@ import java.util.List;
 @Service
 public class TreatmentServiceImpl implements TreatmentService {
 
-    @Autowired
-    private TreatmentRepository treatmentRepository;
+    private final TreatmentRepository treatmentRepository;
+    private final VeterinarianRepository veterinarianRepository;
+    private final PetService petService;
+    private final VeterinarianService veterinarianService;
 
     @Autowired
-    private VeterinarianRepository veterinarianRepository;
-
-    @Autowired
-    private PetService petService;
-
-    @Autowired
-    private VeterinarianService veterinarianService;
+    public TreatmentServiceImpl(
+            TreatmentRepository treatmentRepository,
+            VeterinarianRepository veterinarianRepository,
+            PetService petService,
+            VeterinarianService veterinarianService
+    ) {
+        this.treatmentRepository = treatmentRepository;
+        this.veterinarianRepository = veterinarianRepository;
+        this.petService = petService;
+        this.veterinarianService = veterinarianService;
+    }
 
     @Override
     public Treatment getTreatmentById(Long id) {
