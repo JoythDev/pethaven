@@ -183,6 +183,82 @@ GET {{baseUrl}}/api/owners/1/pets
 Accept: application/json
 
 ### ═══════════════════════════════════════════
+### REST · /api/veterinarians
+### ═══════════════════════════════════════════
+
+### Listar veterinarios → 200 [VeterinarianResponse]
+GET {{baseUrl}}/api/veterinarians
+Accept: application/json
+
+### Detalle de veterinario → 200
+GET {{baseUrl}}/api/veterinarians/1
+Accept: application/json
+
+### Detalle inexistente → 404
+GET {{baseUrl}}/api/veterinarians/99999
+Accept: application/json
+
+### Crear veterinario → 201 + Location
+POST {{baseUrl}}/api/veterinarians
+Content-Type: application/json
+Accept: application/json
+
+{
+  "document": "102345284",
+  "name": "Dra. Laura Gómez",
+  "email": "laura.gomez@pethaven.com",
+  "password": "vet12345",
+  "specialty": "Cuidados Críticos",
+  "photoUrl": "https://randomuser.me/api/portraits/women/44.jpg"
+}
+
+### Crear duplicado (documento o correo) → 409
+POST {{baseUrl}}/api/veterinarians
+Content-Type: application/json
+Accept: application/json
+
+{
+  "document": "102345284",
+  "name": "Otro Veterinario",
+  "email": "otro.vet@pethaven.com",
+  "password": "vet12345",
+  "specialty": "Cirugía"
+}
+
+### Crear inválido → 400 + errors{}
+POST {{baseUrl}}/api/veterinarians
+Content-Type: application/json
+Accept: application/json
+
+{
+  "document": "",
+  "name": "",
+  "email": "no-es-un-correo",
+  "password": "123",
+  "specialty": ""
+}
+
+### Actualizar sin password (se conserva) → 200
+PUT {{baseUrl}}/api/veterinarians/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "document": "328146627",
+  "name": "Dra. Valentina Soler",
+  "email": "valentina.soler@pethaven.com",
+  "specialty": "Cuidados Críticos",
+  "photoUrl": "https://randomuser.me/api/portraits/women/44.jpg"
+}
+
+### Activar/desactivar → 200
+PUT {{baseUrl}}/api/veterinarians/1/active?active=false
+Accept: application/json
+
+### DELETE no existe en la API → 405
+DELETE {{baseUrl}}/api/veterinarians/1
+
+### ═══════════════════════════════════════════
 ### MVC Thymeleaf (convivencia con la API)
 ### ═══════════════════════════════════════════
 
@@ -209,6 +285,15 @@ GET {{baseUrl}}/pets/1
 
 ### Formulario de edición de mascota → 200
 GET {{baseUrl}}/pets/update/1
+
+### Lista de veterinarios → 200
+GET {{baseUrl}}/veterinarians
+
+### Detalle de veterinario → 200
+GET {{baseUrl}}/veterinarians/1
+
+### Formulario de edición de veterinario → 200
+GET {{baseUrl}}/veterinarians/update/1
 
 ### Login de dueño (form) → 302
 POST {{baseUrl}}/login

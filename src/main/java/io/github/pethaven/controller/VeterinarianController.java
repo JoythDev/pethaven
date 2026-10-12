@@ -1,6 +1,9 @@
 package io.github.pethaven.controller;
 
+import io.github.pethaven.dto.request.VeterinarianRequest;
+import io.github.pethaven.dto.request.VeterinarianUpdateRequest;
 import io.github.pethaven.entity.Veterinarian;
+import io.github.pethaven.mapper.VeterinarianMapper;
 import io.github.pethaven.service.TreatmentService;
 import io.github.pethaven.service.VeterinarianService;
 
@@ -26,6 +29,9 @@ public class VeterinarianController {
     @Autowired
     private TreatmentService treatmentService;
 
+    @Autowired
+    private VeterinarianMapper veterinarianMapper;
+
     @GetMapping()
     public String listVeterinarians(Model model) {
         model.addAttribute("veterinarians", veterinarianService.getAllVeterinarians());
@@ -47,19 +53,23 @@ public class VeterinarianController {
 
     @PostMapping("/add")
     public String addVeterinarian(Veterinarian veterinarian) {
-        veterinarianService.createVeterinarian(veterinarian);
+        veterinarianService.createVeterinarian(new VeterinarianRequest(
+                veterinarian.getDocument(), veterinarian.getName(), veterinarian.getEmail(),
+                veterinarian.getPassword(), veterinarian.getSpecialty(), veterinarian.getPhotoUrl()));
         return "redirect:/veterinarians";
     }
 
     @GetMapping("/update/{id}")
     public String updateVeterinarian(@PathVariable Long id, Model model) {
-        model.addAttribute("veterinarian", veterinarianService.getVeterinarianById(id));
+        model.addAttribute("veterinarian", veterinarianMapper.toEntity(veterinarianService.getVeterinarianById(id)));
         return "veterinarian_form";
     }
 
     @PostMapping("/update/{id}")
     public String saveUpdatedVeterinarian(@PathVariable Long id, Veterinarian veterinarian) {
-        veterinarianService.updateVeterinarian(id, veterinarian);
+        veterinarianService.updateVeterinarian(id, new VeterinarianUpdateRequest(
+                veterinarian.getDocument(), veterinarian.getName(), veterinarian.getEmail(),
+                veterinarian.getPassword(), veterinarian.getSpecialty(), veterinarian.getPhotoUrl()));
         return "redirect:/veterinarians/" + id;
     }
 

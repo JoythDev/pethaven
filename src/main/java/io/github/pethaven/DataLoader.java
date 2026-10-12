@@ -367,12 +367,12 @@ public class DataLoader implements CommandLineRunner {
         // ========================================
         // Los primeros tres son los mismos veterinarios que aparecen en la landing page
         // (sección "Especialistas al Cuidado" de index.html), para que la app quede coherente.
-        veterinarianRepository.save(Veterinarian.builder().name("Dra. Valentina Soler").document("V-1001").email("valentina.soler@pethaven.com").password("vet12345").specialty("Cuidados Críticos").photoUrl("/images/valentina_soler.png").build());
-        veterinarianRepository.save(Veterinarian.builder().name("Dr. Esteban Ruiz").document("V-1002").email("esteban.ruiz@pethaven.com").password("vet12345").specialty("Cirujano General").photoUrl("/images/esteban_ruiz.png").build());
-        veterinarianRepository.save(Veterinarian.builder().name("Dra. Amalia Carter").document("V-1003").email("amalia.carter@pethaven.com").password("vet12345").specialty("Anestesiología").photoUrl("/images/amalia_carter.png").build());
-        veterinarianRepository.save(Veterinarian.builder().name("Dr. Miguel Ángel Torres").document("V-1004").email("miguel.torres@pethaven.com").password("vet12345").specialty("Medicina Interna").build());
-        veterinarianRepository.save(Veterinarian.builder().name("Dra. Sofía Herrera").document("V-1005").email("sofia.herrera@pethaven.com").password("vet12345").specialty("Dermatología").build());
-        veterinarianRepository.save(Veterinarian.builder().name("Dr. Julián Restrepo").document("V-1006").email("julian.restrepo@pethaven.com").password("vet12345").specialty("Odontología Veterinaria").active(false).build());
+        veterinarianRepository.save(Veterinarian.builder().name("Dra. Valentina Soler").document("328146627").email("valentina.soler@pethaven.com").password("vet12345").specialty("Cuidados Críticos").photoUrl("https://randomuser.me/api/portraits/women/44.jpg").build());
+        veterinarianRepository.save(Veterinarian.builder().name("Dr. Esteban Ruiz").document("241882914").email("esteban.ruiz@pethaven.com").password("vet12345").specialty("Cirujano General").photoUrl("https://randomuser.me/api/portraits/men/32.jpg").build());
+        veterinarianRepository.save(Veterinarian.builder().name("Dra. Amalia Carter").document("581736412").email("amalia.carter@pethaven.com").password("vet12345").specialty("Anestesiología").photoUrl("https://randomuser.me/api/portraits/women/68.jpg").build());
+        veterinarianRepository.save(Veterinarian.builder().name("Dr. Miguel Ángel Torres").document("522124823").email("miguel.torres@pethaven.com").password("vet12345").specialty("Medicina Interna").build());
+        veterinarianRepository.save(Veterinarian.builder().name("Dra. Sofía Herrera").document("192049284").email("sofia.herrera@pethaven.com").password("vet12345").specialty("Dermatología").build());
+        veterinarianRepository.save(Veterinarian.builder().name("Dr. Julián Restrepo").document("102938471").email("julian.restrepo@pethaven.com").password("vet12345").specialty("Odontología Veterinaria").active(false).build());
 
         // ==================================
         // ==== Cargar drogas de ejemplo ====

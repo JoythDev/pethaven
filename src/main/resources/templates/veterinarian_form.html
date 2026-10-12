@@ -54,7 +54,7 @@
             <!-- Contraseña -->
             <div class="flex flex-col gap-1">
               <label for="password" class="text-sm font-bold">Contraseña</label>
-              <input type="password" id="password" th:field="*{password}" required
+              <input type="password" id="password" th:field="*{password}" th:required="${veterinarian.id == null}" th:placeholder="${veterinarian.id == null} ? 'Contraseña' : 'Dejar en blanco para conservar la contraseña'"
                      class="bg-white border border-text/10 text-text px-4 py-2.5 rounded-xl text-sm focus:outline-none focus:border-primary shadow-sm">
             </div>
 
