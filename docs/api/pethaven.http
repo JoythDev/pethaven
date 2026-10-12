@@ -204,7 +204,7 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "document": "V-9001",
+  "document": "102345284",
   "name": "Dra. Laura Gómez",
   "email": "laura.gomez@pethaven.com",
   "password": "vet12345",
@@ -218,7 +218,7 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "document": "V-9001",
+  "document": "102345284",
   "name": "Otro Veterinario",
   "email": "otro.vet@pethaven.com",
   "password": "vet12345",
@@ -244,7 +244,7 @@ Content-Type: application/json
 Accept: application/json
 
 {
-  "document": "V-1001",
+  "document": "328146627",
   "name": "Dra. Valentina Soler",
   "email": "valentina.soler@pethaven.com",
   "specialty": "Cuidados Críticos",
