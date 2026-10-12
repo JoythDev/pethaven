@@ -1,5 +1,6 @@
 package io.github.pethaven.controller;
 
+import io.github.pethaven.dto.request.PetRequest;
 import io.github.pethaven.entity.Pet;
 import io.github.pethaven.service.OwnerService;
 import io.github.pethaven.service.PetService;
@@ -38,7 +39,7 @@ public class PetController {
 
     @GetMapping("/{id}")
     public String getPet(@PathVariable Long id, Model model) {
-        model.addAttribute("pet", petService.getPetById(id));
+        model.addAttribute("pet", petService.getPetEntity(id));
         model.addAttribute("treatments", treatmentService.getTreatmentsByPetId(id));
         return "pet_details";
     }
@@ -52,21 +53,24 @@ public class PetController {
 
     @PostMapping("/add")
     public String addPet(Pet pet, @RequestParam("ownerId") Long ownerId) {
-        petService.createPet(pet, ownerId);
+        petService.createPet(new PetRequest(
+                pet.getName(), ownerId, pet.getSpecies(), pet.getBreed(),
+                pet.getAge(), pet.getWeight(), pet.getDisease(), pet.getPhotoUrl()));
         return "redirect:/pets";
     }
 
     @GetMapping("/update/{id}")
     public String updatePet(@PathVariable Long id, Model model) {
-        model.addAttribute("pet", petService.getPetById(id));
+        model.addAttribute("pet", petService.getPetEntity(id));
         model.addAttribute("owners", ownerService.getAllOwners());
         return "pet_form";
     }
 
     @PostMapping("/update/{id}")
     public String saveUpdatedPet(@PathVariable Long id, Pet pet, @RequestParam("ownerId") Long ownerId) {
-        pet.setId(id);
-        petService.createPet(pet, ownerId);
+        petService.updatePet(id, new PetRequest(
+                pet.getName(), ownerId, pet.getSpecies(), pet.getBreed(),
+                pet.getAge(), pet.getWeight(), pet.getDisease(), pet.getPhotoUrl()));
         return "redirect:/pets/" + id;
     }
 

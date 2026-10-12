@@ -15,7 +15,7 @@ public interface OwnerService {
     OwnerResponse getOwnerByDocument(String document);
     OwnerResponse getOwnerByEmail(String email);
     OwnerResponse createOwner(OwnerRequest request);
-    OwnerResponse updateOwner(Long id, OwnerUpdateRequest request);
+    OwnerResponse updateOwner(Long id, OwnerUpdateRequest updateRequest);
     void deleteOwnerById(Long id);
 
     Owner authenticate(String email, String password);
