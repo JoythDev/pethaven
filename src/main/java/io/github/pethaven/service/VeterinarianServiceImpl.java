@@ -2,6 +2,7 @@ package io.github.pethaven.service;
 
 import io.github.pethaven.entity.Veterinarian;
 import io.github.pethaven.exception.ResourceNotFoundException;
+import io.github.pethaven.mapper.VeterinarianMapper;
 import io.github.pethaven.repository.VeterinarianRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -12,8 +13,17 @@ import java.util.List;
 @Service
 public class VeterinarianServiceImpl implements VeterinarianService {
 
+    private final VeterinarianRepository veterinarianRepository;
+    private final VeterinarianMapper veterinarianMapper;
+
     @Autowired
-    private VeterinarianRepository veterinarianRepository;
+    public VeterinarianServiceImpl(
+            VeterinarianRepository veterinarianRepository,
+            VeterinarianMapper veterinarianMapper
+    ) {
+        this.veterinarianRepository = veterinarianRepository;
+        this.veterinarianMapper = veterinarianMapper;
+    }
 
     @Override
     public Veterinarian getVeterinarianById(Long id) {
