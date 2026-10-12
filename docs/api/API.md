@@ -112,6 +112,8 @@ Controller: `VeterinarianRestController` → `@RequestMapping("/api/veterinarian
 | `VeterinarianUpdateRequest` | igual, con `password` opcional |
 | `VeterinarianResponse` | `id`, `document`, `name`, `email`, `specialty`, `photoUrl`, `attentions`, `active` |
 
+> En actualización, `password` es opcional: si se omite o va en blanco, se conserva la actual.
+
 | Método | Ruta | Respuesta |
 |---|---|---|
 | `GET` | `/api/veterinarians` | `200` `[VeterinarianResponse]` |
@@ -183,4 +185,4 @@ Controller: `AuthRestController` → `@RequestMapping("/api/auth")`
 | Mappers | Una clase `@Component` por agregado (`mapper/`): `toResponse`, `toEntity(request)`, `applyUpdate` y `toEntity(response)` (este último solo para formularios MVC). |
 | Services | Métodos que devuelven DTO = proyección para la API REST; métodos que devuelven entidad (`getOwnerEntity`, patrón `getXxxEntity`) = accesor de dominio para uso interno entre services. Las entidades nunca se exponen desde controllers REST. |
 | Contraseñas | Nunca en respuestas. En actualización: omitir el campo o enviarlo en blanco = conservar la actual. |
-| Documentación | Swagger UI (springdoc) en `/swagger-ui.html`; documenta los módulos migrados (`/api/owners/**`, `/api/pets/**`) y se amplía por fase. `docs/api/API.md` sigue siendo el contrato fuente. |
+| Documentación | Swagger UI (springdoc) en `/swagger-ui.html`; documenta los módulos migrados (`/api/owners/**`, `/api/pets/**`, `/api/veterinarians/**`) y se amplía por fase. `docs/api/API.md` sigue siendo el contrato fuente. |

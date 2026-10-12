@@ -31,10 +31,26 @@ public class VeterinarianMapper {
             .document(request.document())
             .name(request.name())
             .email(request.email())
+            .password(request.password())
             .specialty(request.specialty())
             .photoUrl(request.photoUrl())
             .attentions(0)
             .active(true)
+            .build();
+    }
+
+    /** Adaptador de solo lectura para formularios/vistas MVC (necesitan un objeto mutable). */
+    public Veterinarian toEntity(VeterinarianResponse response) {
+        if (response == null) return null;
+        return Veterinarian.builder()
+            .id(response.id())
+            .document(response.document())
+            .name(response.name())
+            .email(response.email())
+            .specialty(response.specialty())
+            .photoUrl(response.photoUrl())
+            .attentions(response.attentions())
+            .active(response.active())
             .build();
     }
 

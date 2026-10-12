@@ -52,6 +52,7 @@ public class VeterinarianServiceImpl implements VeterinarianService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public VeterinarianResponse getVeterinarianByDocument(String document) {
         Veterinarian veterinarian = veterinarianRepository.findByDocument(document)
                 .orElseThrow(() -> new ResourceNotFoundException("Veterinarian", "document", document));
@@ -59,6 +60,7 @@ public class VeterinarianServiceImpl implements VeterinarianService {
     }
 
     @Override
+    @Transactional(readOnly = true)
     public VeterinarianResponse getVeterinarianByEmail(String email) {
         Veterinarian veterinarian = veterinarianRepository.findByEmail(email)
                 .orElseThrow(() -> new ResourceNotFoundException("Veterinarian", "email", email));
@@ -66,6 +68,7 @@ public class VeterinarianServiceImpl implements VeterinarianService {
     }
 
     @Override
+    @Transactional
     public VeterinarianResponse createVeterinarian(VeterinarianRequest request) {
         ensureUnique(request.document(), request.email(), null);
         Veterinarian veterinarian = veterinarianMapper.toEntity(request);
@@ -73,9 +76,9 @@ public class VeterinarianServiceImpl implements VeterinarianService {
         return veterinarianMapper.toResponse(saved);
     }
 
-    // La actualización copia únicamente los campos editables del formulario sobre la
-    // entidad ya persistida. Los tratamientos, el estado activo y el contador de
-    // atenciones se conservan: el formulario no los envía y un merge de JPA los reiniciaría.
+    // La actualización aplica únicamente los campos editables sobre la entidad ya
+    // persistida. Los tratamientos, el estado activo y el contador de atenciones se
+    // conservan: no forman parte del request y un merge de JPA los reiniciaría.
     @Override
     @Transactional
     public VeterinarianResponse updateVeterinarian(Long id, VeterinarianUpdateRequest updateRequest) {

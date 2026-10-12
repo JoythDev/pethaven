@@ -57,7 +57,7 @@ public class TreatmentServiceImpl implements TreatmentService {
     @Transactional
     public void createTreatment(Treatment treatment, Long petId, Long veterinarianId) {
         Pet pet = petService.getPetEntity(petId);
-        Veterinarian veterinarian = veterinarianService.getVeterinarianById(veterinarianId);
+        Veterinarian veterinarian = veterinarianService.getVeterinarianEntity(veterinarianId);
 
         treatment.setPet(pet);
         treatment.setVeterinarian(veterinarian);
