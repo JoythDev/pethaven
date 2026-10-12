@@ -3,7 +3,9 @@ package io.github.pethaven.controller;
 import io.github.pethaven.dto.common.ApiErrorResponse;
 import io.github.pethaven.dto.request.VeterinarianRequest;
 import io.github.pethaven.dto.request.VeterinarianUpdateRequest;
+import io.github.pethaven.dto.response.TreatmentResponse;
 import io.github.pethaven.dto.response.VeterinarianResponse;
+import io.github.pethaven.service.TreatmentService;
 import io.github.pethaven.service.VeterinarianService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -30,10 +32,15 @@ import java.util.List;
 public class VeterinarianRestController {
 
     private final VeterinarianService veterinarianService;
+    private final TreatmentService treatmentService;
 
     @Autowired
-    public VeterinarianRestController(VeterinarianService veterinarianService) {
+    public VeterinarianRestController(
+            VeterinarianService veterinarianService,
+            TreatmentService treatmentService
+    ) {
         this.veterinarianService = veterinarianService;
+        this.treatmentService = treatmentService;
     }
 
     /**
@@ -137,5 +144,8 @@ public class VeterinarianRestController {
         return veterinarianService.switchVeterinarianActiveStatus(id, active);
     }
 
-    // TODO (Fase 5): habilitar GET /{id}/treatments → [TreatmentResponse] al cerrar la Fase 5.
+    @GetMapping("/{id}/treatments")
+    public List<TreatmentResponse> getTreatmentsByVeterinarianId(@PathVariable Long id) {
+        return treatmentService.getTreatmentsByVeterinarianId(id);
+    }
 }

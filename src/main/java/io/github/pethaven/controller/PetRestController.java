@@ -3,7 +3,9 @@ package io.github.pethaven.controller;
 import io.github.pethaven.dto.common.ApiErrorResponse;
 import io.github.pethaven.dto.request.PetRequest;
 import io.github.pethaven.dto.response.PetResponse;
+import io.github.pethaven.dto.response.TreatmentResponse;
 import io.github.pethaven.service.PetService;
+import io.github.pethaven.service.TreatmentService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -29,10 +31,15 @@ import java.util.List;
 public class PetRestController {
 
     private final PetService petService;
+    private final TreatmentService treatmentService;
 
     @Autowired
-    public PetRestController(PetService petService) {
+    public PetRestController(
+            PetService petService,
+            TreatmentService treatmentService
+    ) {
         this.petService = petService;
+        this.treatmentService = treatmentService;
     }
 
     /**
@@ -139,5 +146,10 @@ public class PetRestController {
             @Parameter(description = "Id de la mascota", example = "1") @PathVariable Long id,
             @Parameter(description = "Nuevo estado", example = "true") @RequestParam("active") boolean active) {
         return petService.switchPetActiveStatus(id, active);
+    }
+
+    @GetMapping("/{id}/treatments")
+    public List<TreatmentResponse> getTreatmentsByPetId(@PathVariable Long id) {
+        return treatmentService.getTreatmentsByPetId(id);
     }
 }

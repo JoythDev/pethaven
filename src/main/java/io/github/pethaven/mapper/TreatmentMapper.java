@@ -40,9 +40,4 @@ public class TreatmentMapper {
             .date(request.date())
             .build();
     }
-
-    /** Copia el único campo editable sobre la entidad; la mascota y el veterinario se gestionan en el service. */
-    public void applyUpdate(TreatmentRequest request, Treatment treatment) {
-        treatment.setDate(request.date());
-    }
 }

@@ -15,7 +15,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 
 // NOTA: Un TreatmentDrug nunca se actualiza ni se elimina de forma independiente: solo se crea
-// (al administrar una droga) y solo desaparece en cascada si su Treatment padre se elimina, cosa
+// (al administrar un medicamento) y solo desaparece en cascada si su Treatment padre se elimina, cosa
 // que tampoco ocurre nunca (ver TreatmentService). Es un renglón del historial médico permanente.
 @Service
 public class TreatmentDrugServiceImpl implements TreatmentDrugService {
@@ -36,15 +36,16 @@ public class TreatmentDrugServiceImpl implements TreatmentDrugService {
     }
 
     @Override
-    public TreatmentDrug getTreatmentDrugById(Long id) {
-        return treatmentDrugRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("TreatmentDrug", "id", id));
+    @Transactional(readOnly = true)
+    public List<TreatmentDrug> getAllTreatmentDrugs() {
+        return treatmentDrugRepository.findAll();
     }
 
     @Override
     @Transactional(readOnly = true)
-    public List<TreatmentDrug> getAllTreatmentDrugs() {
-        return treatmentDrugRepository.findAll();
+    public TreatmentDrug getTreatmentDrugById(Long id) {
+        return treatmentDrugRepository.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("TreatmentDrug", "id", id));
     }
 
     @Override
@@ -59,8 +60,8 @@ public class TreatmentDrugServiceImpl implements TreatmentDrugService {
         return treatmentDrugRepository.findByDrugId(drugId);
     }
 
-    // Al agregar una droga a un tratamiento se descuenta su inventario disponible y se
-    // copian sus precios actuales (el precio de la droga puede cambiar después sin afectar
+    // Al agregar un medicamento a un tratamiento se descuenta su inventario disponible y se
+    // copian sus precios actuales (el precio del medicamento puede cambiar después sin afectar
     // el historial ya registrado).
     @Override
     @Transactional
