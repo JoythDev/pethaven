@@ -1,5 +1,6 @@
 package io.github.pethaven.controller;
 
+import io.github.pethaven.dto.request.DrugRequest;
 import io.github.pethaven.entity.Drug;
 import io.github.pethaven.service.DrugService;
 
@@ -49,20 +50,21 @@ public class DrugController {
 
     @PostMapping("/add")
     public String addDrug(Drug drug) {
-        drugService.createDrug(drug);
+        drugService.createDrug(new DrugRequest(
+                drug.getName(), drug.getPurchasePrice(), drug.getSalePrice(), drug.getUnitsAvailable()));
         return "redirect:/drugs";
     }
 
     @GetMapping("/update/{id}")
     public String updateDrug(@PathVariable Long id, Model model) {
-        model.addAttribute("drug", drugService.getDrugById(id));
+        model.addAttribute("drug", drugService.getDrugEntity(id));
         return "drug_form";
     }
 
     @PostMapping("/update/{id}")
     public String saveUpdatedDrug(@PathVariable Long id, Drug drug) {
-        drug.setId(id);
-        drugService.createDrug(drug);
+        drugService.updateDrug(id, new DrugRequest(
+                drug.getName(), drug.getPurchasePrice(), drug.getSalePrice(), drug.getUnitsAvailable()));
         return "redirect:/drugs/" + id;
     }
 
