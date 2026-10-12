@@ -14,11 +14,17 @@ import java.util.List;
 @Service
 public class DrugServiceImpl implements DrugService {
 
-    @Autowired
-    private DrugRepository drugRepository;
+    private final DrugRepository drugRepository;
+    private final TreatmentDrugRepository treatmentDrugRepository;
 
     @Autowired
-    private TreatmentDrugRepository treatmentDrugRepository;
+    public DrugServiceImpl(
+            DrugRepository drugRepository,
+            TreatmentDrugRepository treatmentDrugRepository
+    ) {
+        this.drugRepository = drugRepository;
+        this.treatmentDrugRepository = treatmentDrugRepository;
+    }
 
     @Override
     public Drug getDrugById(Long id) {

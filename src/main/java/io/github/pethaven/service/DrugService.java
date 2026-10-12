@@ -5,10 +5,10 @@ import java.util.List;
 
 public interface DrugService {
 
-    public Drug getDrugById(Long id);
-    public List<Drug> getAllDrugs();
-    public Drug getDrugByName(String name);
-    public void createDrug(Drug drug);
-    public void deleteDrugById(Long id);
+    Drug getDrugById(Long id);
+    List<Drug> getAllDrugs();
+    Drug getDrugByName(String name);
+    void createDrug(Drug drug);
+    void deleteDrugById(Long id);
 
 }
