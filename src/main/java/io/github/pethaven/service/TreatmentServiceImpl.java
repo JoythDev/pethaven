@@ -5,6 +5,7 @@ import io.github.pethaven.dto.response.TreatmentResponse;
 import io.github.pethaven.entity.Pet;
 import io.github.pethaven.entity.Treatment;
 import io.github.pethaven.entity.Veterinarian;
+import io.github.pethaven.exception.IllegalOperationException;
 import io.github.pethaven.exception.ResourceNotFoundException;
 import io.github.pethaven.mapper.TreatmentMapper;
 import io.github.pethaven.repository.TreatmentRepository;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 @Service
@@ -68,7 +70,19 @@ public class TreatmentServiceImpl implements TreatmentService {
         Pet pet = petService.getPetEntity(request.petId());
         Veterinarian veterinarian = veterinarianService.getVeterinarianEntity(request.veterinarianId());
 
+        if (!pet.isActive()) {
+            throw new IllegalOperationException(
+                    "La mascota '" + pet.getName() + "' no está activa: no se le pueden registrar tratamientos.");
+        }
+        if (!veterinarian.isActive()) {
+            throw new IllegalOperationException(
+                    "El veterinario '" + veterinarian.getName() + "' no está activo: no puede registrar atenciones.");
+        }
+
         Treatment treatment = treatmentMapper.toEntity(request);
+        if (treatment.getDate() == null) {
+            treatment.setDate(LocalDateTime.now());
+        }
         treatment.setPet(pet);
         treatment.setVeterinarian(veterinarian);
 

@@ -148,8 +148,23 @@ public class PetRestController {
         return petService.switchPetActiveStatus(id, active);
     }
 
+    /**
+     * Lista los tratamientos (historial médico) de una mascota.
+     *
+     * @param id id de la mascota
+     * @return lista de tratamientos de la mascota
+     */
+    @Operation(summary = "Listar tratamientos de una mascota",
+            description = "Devuelve el historial de tratamientos de la mascota. Falla con 404 si la mascota no existe.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Historial de tratamientos"),
+            @ApiResponse(responseCode = "404", description = "No existe una mascota con ese id",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
     @GetMapping("/{id}/treatments")
-    public List<TreatmentResponse> getTreatmentsByPetId(@PathVariable Long id) {
+    public List<TreatmentResponse> getTreatmentsByPetId(
+            @Parameter(description = "Id de la mascota", example = "1") @PathVariable Long id) {
+        petService.getPetById(id);
         return treatmentService.getTreatmentsByPetId(id);
     }
 }

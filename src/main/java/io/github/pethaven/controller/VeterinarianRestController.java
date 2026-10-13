@@ -144,8 +144,23 @@ public class VeterinarianRestController {
         return veterinarianService.switchVeterinarianActiveStatus(id, active);
     }
 
+    /**
+     * Lista los tratamientos (mascotas atendidas) de un veterinario.
+     *
+     * @param id id del veterinario
+     * @return lista de tratamientos del veterinario
+     */
+    @Operation(summary = "Listar tratamientos de un veterinario",
+            description = "Devuelve las mascotas atendidas por el veterinario. Falla con 404 si el veterinario no existe.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista de tratamientos del veterinario"),
+            @ApiResponse(responseCode = "404", description = "No existe un veterinario con ese id",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
     @GetMapping("/{id}/treatments")
-    public List<TreatmentResponse> getTreatmentsByVeterinarianId(@PathVariable Long id) {
+    public List<TreatmentResponse> getTreatmentsByVeterinarianId(
+            @Parameter(description = "Id del veterinario", example = "1") @PathVariable Long id) {
+        veterinarianService.getVeterinarianById(id);
         return treatmentService.getTreatmentsByVeterinarianId(id);
     }
 }

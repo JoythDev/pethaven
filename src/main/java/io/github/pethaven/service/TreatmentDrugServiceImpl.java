@@ -18,8 +18,7 @@ import java.util.List;
 // NOTA: Un TreatmentDrug nunca se actualiza ni se elimina de forma independiente: solo se crea
 // (al administrar un medicamento) y solo desaparece en cascada si su Treatment padre se elimina, cosa
 // que tampoco ocurre nunca (ver TreatmentService). Es un renglón del historial médico permanente.
-
-// Propuesta: Un TreatmentDrug solo se gestiona a través de su Treatment padre, y no de forma independiente.
+// Un TreatmentDrug solo se gestiona a través de su Treatment padre, y no de forma independiente.
 @Service
 public class TreatmentDrugServiceImpl implements TreatmentDrugService {
 
@@ -58,12 +57,30 @@ public class TreatmentDrugServiceImpl implements TreatmentDrugService {
     @Override
     @Transactional
     public TreatmentDrugResponse createTreatmentDrug(Long treatmentId, TreatmentDrugRequest request) {
-        // TODO: Necesario validar esto al usar TreatmentDrugRequest?
         if (request.units() == null || request.units() <= 0) {
             throw new IllegalOperationException("Las unidades administradas deben ser mayores a cero.");
         }
 
         Treatment treatment = treatmentService.getTreatmentEntity(treatmentId);
+        ensurePetIsActive(treatment);
+        Drug drug = loadAvailableDrugFor(treatmentId, request);
+
+        registerStockMovement(drug, request.units());
+
+        TreatmentDrug treatmentDrug = saveTreatmentDrug(treatment, drug, request.units());
+        treatment.getTreatmentDrugs().add(treatmentDrug);
+        return treatmentDrugMapper.toResponse(treatmentDrug);
+    }
+
+    private void ensurePetIsActive(Treatment treatment) {
+        if (!treatment.getPet().isActive()) {
+            throw new IllegalOperationException(
+                    "La mascota '" + treatment.getPet().getName()
+                            + "' no está activa: no se le pueden administrar medicamentos.");
+        }
+    }
+
+    private Drug loadAvailableDrugFor(Long treatmentId, TreatmentDrugRequest request) {
         Drug drug = drugService.getDrugEntity(request.drugId());
 
         if (treatmentDrugRepository.existsByTreatmentIdAndDrugId(treatmentId, request.drugId())) {
@@ -77,29 +94,23 @@ public class TreatmentDrugServiceImpl implements TreatmentDrugService {
                             + drug.getUnitsAvailable() + ", solicitadas: " + request.units() + ".");
         }
 
-        drug.setUnitsAvailable(drug.getUnitsAvailable() - request.units());
-        drug.setUnitsSold(drug.getUnitsSold() + request.units());
-        drugRepository.save(drug);
-
-        TreatmentDrug treatmentDrug = TreatmentDrug.builder()
-                .treatment(treatment)
-                .drug(drug)
-                .units(request.units())
-                .unitPurchasePrice(drug.getPurchasePrice())
-                .unitSalePrice(drug.getSalePrice())
-                .build();
-
-        treatmentDrugRepository.save(treatmentDrug);
-        treatment.getTreatmentDrugs().add(treatmentDrug);
-        return treatmentDrugMapper.toResponse(treatmentDrug);
+        return drug;
     }
 
-    @Override
-    @Transactional(readOnly = true)
-    public List<TreatmentDrugResponse> getTreatmentDrugsByDrugId(Long drugId) {
-        return treatmentDrugRepository.findByDrugId(drugId).stream()
-                .map(treatmentDrugMapper::toResponse)
-                .toList();
+    private void registerStockMovement(Drug drug, int units) {
+        drug.setUnitsAvailable(drug.getUnitsAvailable() - units);
+        drug.setUnitsSold(drug.getUnitsSold() + units);
+        drugRepository.save(drug);
+    }
+
+    private TreatmentDrug saveTreatmentDrug(Treatment treatment, Drug drug, int units) {
+        return treatmentDrugRepository.save(TreatmentDrug.builder()
+                .treatment(treatment)
+                .drug(drug)
+                .units(units)
+                .unitPurchasePrice(drug.getPurchasePrice())
+                .unitSalePrice(drug.getSalePrice())
+                .build());
     }
 
 }

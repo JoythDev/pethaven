@@ -6,8 +6,6 @@ import io.github.pethaven.entity.Treatment;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDateTime;
-
 @Component
 @RequiredArgsConstructor
 public class TreatmentMapper {
@@ -31,11 +29,6 @@ public class TreatmentMapper {
 
     public Treatment toEntity(TreatmentRequest request) {
         if (request == null) return null;
-        if (request.date() == null) {
-            return Treatment.builder()
-                .date(LocalDateTime.now())
-                .build();
-        }
         return Treatment.builder()
             .date(request.date())
             .build();

@@ -26,13 +26,13 @@
           <div class="border-t border-text/10 my-6"></div>
 
           <div class="grid grid-cols-1 sm:grid-cols-2 gap-6">
-            <a th:href="@{/pets/{id}(id=${treatment.pet.id})}" class="bg-background rounded-2xl p-6 hover:bg-secondary/30 transition-colors">
+            <a th:href="@{/pets/{id}(id=${treatment.petId})}" class="bg-background rounded-2xl p-6 hover:bg-secondary/30 transition-colors">
               <p class="text-xs text-text/50 mb-1">Mascota</p>
-              <p th:text="${treatment.pet.name}" class="font-bold text-lg">Buddy</p>
+              <p th:text="${treatment.petName}" class="font-bold text-lg">Buddy</p>
             </a>
-            <a th:href="@{/veterinarians/{id}(id=${treatment.veterinarian.id})}" class="bg-background rounded-2xl p-6 hover:bg-secondary/30 transition-colors">
+            <a th:href="@{/veterinarians/{id}(id=${treatment.veterinarianId})}" class="bg-background rounded-2xl p-6 hover:bg-secondary/30 transition-colors">
               <p class="text-xs text-text/50 mb-1">Veterinario a cargo</p>
-              <p th:text="${treatment.veterinarian.name}" class="font-bold text-lg">Dra. Valentina Soler</p>
+              <p th:text="${treatment.veterinarianName}" class="font-bold text-lg">Dra. Valentina Soler</p>
             </a>
           </div>
         </section>
@@ -59,7 +59,7 @@
                 <tbody class="divide-y divide-text/10">
                   <tr th:each="td : ${treatmentDrugs}" class="border-b border-text/5">
                     <td class="py-4 px-4">
-                      <a th:href="@{/drugs/{id}(id=${td.drug.id})}" class="font-bold text-sm hover:text-tertiary transition-colors" th:text="${td.drug.name}">Amoxicilina</a>
+                      <a th:href="@{/drugs/{id}(id=${td.drugId})}" class="font-bold text-sm hover:text-tertiary transition-colors" th:text="${td.drugName}">Amoxicilina</a>
                     </td>
                     <td class="py-4 px-4"><span class="text-sm" th:text="${td.units}">3</span></td>
                     <td class="py-4 px-4"><span class="text-sm" th:text="'$' + ${td.unitPurchasePrice}">$8.000</span></td>

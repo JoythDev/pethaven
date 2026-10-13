@@ -9,6 +9,4 @@ public interface TreatmentDrugService {
     List<TreatmentDrugResponse> getTreatmentDrugsByTreatmentId(Long treatmentId);
     TreatmentDrugResponse createTreatmentDrug(Long treatmentId, TreatmentDrugRequest request);
 
-    List<TreatmentDrugResponse> getTreatmentDrugsByDrugId(Long drugId);
-
 }
