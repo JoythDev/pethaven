@@ -1,5 +1,6 @@
-import { Component, computed, inject, signal } from '@angular/core';
-import { FormsModule } from '@angular/forms';
+import { Component, OnInit, inject, signal, viewChild } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
+import { FormControl, ReactiveFormsModule } from '@angular/forms';
 import { Router, RouterLink } from '@angular/router';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -10,9 +11,25 @@ import { SelectModule } from 'primeng/select';
 import { Table, TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
 import { TooltipModule } from 'primeng/tooltip';
+import {
+  EMPTY,
+  Subject,
+  catchError,
+  combineLatest,
+  concatMap,
+  debounceTime,
+  distinctUntilChanged,
+  finalize,
+  map,
+  merge,
+  of,
+  startWith,
+  switchMap,
+  tap,
+} from 'rxjs';
 import { Pet, Species } from '../../../../models/pet.model';
-import { OwnerService } from '../../../../services/owner.service';
 import { PetService } from '../../../../services/pet.service';
+import { getErrorMessage } from '../../../../utils/http-error.util';
 import { PetStatusTagComponent } from '../components/pet-status-tag/pet-status-tag.component';
 
 interface SpeciesOption {
@@ -23,7 +40,7 @@ interface SpeciesOption {
 @Component({
   selector: 'app-pets-list',
   imports: [
-    FormsModule,
+    ReactiveFormsModule,
     RouterLink,
     TableModule,
     ButtonModule,
@@ -37,51 +54,98 @@ interface SpeciesOption {
   ],
   templateUrl: './pets-list.component.html',
 })
-export class PetsListComponent {
+export class PetsListComponent implements OnInit {
   private readonly petService = inject(PetService);
-  private readonly ownerService = inject(OwnerService);
   private readonly router = inject(Router);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly messageService = inject(MessageService);
 
-  readonly searchTerm = signal('');
-  readonly speciesFilter = signal<Species | null>(null);
+  private readonly table = viewChild<Table>('dt');
+
+  readonly searchControl = new FormControl('', { nonNullable: true });
+  readonly speciesControl = new FormControl<Species | null>(null);
+  readonly loading = signal(false);
 
   readonly speciesOptions: SpeciesOption[] = [
     { label: 'Perro', value: Species.DOG },
     { label: 'Gato', value: Species.CAT },
   ];
 
-  readonly filteredPets = computed(() => {
-    const term = this.normalize(this.searchTerm());
-    const species = this.speciesFilter();
-    return this.petService.petsList().filter((pet) => {
-      if (species && pet.species !== species) {
-        return false;
-      }
-      if (!term) {
-        return true;
-      }
-      return this.normalize(pet.name).includes(term) || this.normalize(pet.breed).includes(term);
-    });
-  });
+  // Cada emisión pide al API la lista de mascotas otra vez (carga inicial y recargas).
+  private readonly reload$ = new Subject<void>();
 
-  private readonly ownersById = computed(
-    () => new Map(this.ownerService.ownersList().map((owner) => [owner.id, owner]))
+  // Cada emisión es una mascota a la que se le debe invertir su estado activo.
+  private readonly toggleActive$ = new Subject<Pet>();
+
+  // Llama a PetService.getAll cada vez que reload$ emite. Si llega otra recarga mientras
+  // la anterior sigue en curso, switchMap cancela la petición vieja. Ante un error avisa
+  // al usuario y emite una lista vacía para que el flujo siga vivo.
+  private readonly pets$ = this.reload$.pipe(
+    switchMap(() => {
+      this.loading.set(true);
+      return this.petService.getAll().pipe(
+        catchError((error: unknown) => {
+          this.notifyError('No se pudieron cargar las mascotas', error);
+          return of<Pet[]>([]);
+        }),
+        finalize(() => this.loading.set(false)),
+      );
+    }),
   );
 
-  ownerName(ownerId: number): string {
-    return this.ownersById().get(ownerId)?.name ?? 'Sin asignar';
+  // Espera 250 ms sin teclear, normaliza el texto y descarta repeticiones antes de filtrar.
+  private readonly searchTerm$ = this.searchControl.valueChanges.pipe(
+    debounceTime(250),
+    map((term) => this.normalize(term)),
+    distinctUntilChanged(),
+  );
+
+  private readonly species$ = this.speciesControl.valueChanges;
+
+  // Combina la última lista del API con el último texto y la última especie elegidos,
+  // y expone el resultado filtrado como signal para la tabla.
+  readonly filteredPets = toSignal(
+    combineLatest([
+      this.pets$,
+      this.searchTerm$.pipe(startWith('')),
+      this.species$.pipe(startWith(null)),
+    ]).pipe(map(([pets, term, species]) => pets.filter((pet) => this.matches(pet, term, species)))),
+    { initialValue: [] as Pet[] },
+  );
+
+  constructor() {
+    // Llama a goToFirstPage cuando cambia la búsqueda o la especie para volver a la página 1.
+    merge(this.searchTerm$, this.species$)
+      .pipe(takeUntilDestroyed())
+      .subscribe(() => this.goToFirstPage());
+
+    // concatMap atiende los cambios de estado de uno en uno y en el orden en que se pidieron.
+    // Cuando termina con éxito recarga la lista; si falla avisa y sigue escuchando.
+    this.toggleActive$
+      .pipe(
+        concatMap((pet) =>
+          this.petService.setActive(pet.id, !pet.active).pipe(
+            tap((updated) =>
+              this.messageService.add({
+                severity: 'success',
+                summary: updated.active ? 'Mascota activada' : 'Mascota desactivada',
+                detail: `${updated.name} ahora está ${updated.active ? 'activa' : 'inactiva'}.`,
+              }),
+            ),
+            catchError((error: unknown) => {
+              this.notifyError('No se pudo cambiar el estado de la mascota', error);
+              return EMPTY;
+            }),
+          ),
+        ),
+        takeUntilDestroyed(),
+      )
+      .subscribe(() => this.reload$.next());
   }
 
-  onSearch(value: string, table: Table): void {
-    this.searchTerm.set(value);
-    table.first = 0;
-  }
-
-  onSpeciesChange(value: Species | null, table: Table): void {
-    this.speciesFilter.set(value);
-    table.first = 0;
+  ngOnInit(): void {
+    // Dispara la carga inicial: reload$ emite y pets$ llama al API.
+    this.reload$.next();
   }
 
   nueva(): void {
@@ -96,23 +160,21 @@ export class PetsListComponent {
     this.router.navigate(['/dashboard/pets/update', pet.id]);
   }
 
-  eliminar(pet: Pet): void {
+  // Pide confirmación y, si el usuario acepta, envía la mascota a toggleActive$.
+  // El API no permite borrar mascotas: solo se activan o desactivan y conservan su historial.
+  cambiarEstado(pet: Pet): void {
+    const desactivar = pet.active;
     this.confirmationService.confirm({
-      header: 'Eliminar mascota',
-      message: `¿Seguro que quieres eliminar a ${pet.name}? Esta acción no se puede deshacer.`,
+      header: desactivar ? 'Desactivar mascota' : 'Activar mascota',
+      message: desactivar
+        ? `¿Seguro que quieres desactivar a ${pet.name}? Las mascotas no se eliminan: quedan inactivas y conservan su historial.`
+        : `¿Seguro que quieres activar de nuevo a ${pet.name}?`,
       icon: 'pi pi-exclamation-triangle',
-      acceptLabel: 'Eliminar',
+      acceptLabel: desactivar ? 'Desactivar' : 'Activar',
       rejectLabel: 'Cancelar',
-      acceptButtonStyleClass: 'p-button-danger',
+      acceptButtonStyleClass: desactivar ? 'p-button-danger' : undefined,
       rejectButtonStyleClass: 'p-button-text',
-      accept: () => {
-        this.petService.delete(pet.id);
-        this.messageService.add({
-          severity: 'success',
-          summary: 'Mascota eliminada',
-          detail: `${pet.name} se eliminó correctamente.`,
-        });
-      },
+      accept: () => this.toggleActive$.next(pet),
     });
   }
 
@@ -123,10 +185,34 @@ export class PetsListComponent {
     }
   }
 
+  // Indica si la mascota cumple el filtro de especie y contiene el texto en su nombre o raza.
+  private matches(pet: Pet, term: string, species: Species | null): boolean {
+    if (species && pet.species !== species) {
+      return false;
+    }
+    if (!term) {
+      return true;
+    }
+    return this.normalize(pet.name).includes(term) || this.normalize(pet.breed).includes(term);
+  }
+
+  // Lleva la tabla de PrimeNG a la primera página.
+  private goToFirstPage(): void {
+    const table = this.table();
+    if (table) {
+      table.first = 0;
+    }
+  }
+
+  private notifyError(summary: string, error: unknown): void {
+    this.messageService.add({ severity: 'error', summary, detail: getErrorMessage(error) });
+  }
+
+  // Pasa a minúsculas y quita tildes para que la búsqueda no distinga acentos.
   private normalize(value: string): string {
     return value
       .toLowerCase()
       .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '');
+      .replace(/[̀-ͯ]/g, '');
   }
 }

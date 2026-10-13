@@ -16,7 +16,9 @@
       <label for="name" class="text-sm font-bold text-text">Nombre</label>
       <input pInputText id="name" formControlName="name" class="w-full" />
       @if (form.controls.name.invalid && form.controls.name.touched) {
-        <p-message severity="error" variant="simple" size="small">El nombre es obligatorio.</p-message>
+        <p-message severity="error" variant="simple" size="small">
+          El nombre es obligatorio (máximo 100 caracteres).
+        </p-message>
       }
     </div>
 
@@ -26,7 +28,7 @@
         <input pInputText id="document" formControlName="document" class="w-full" />
         @if (form.controls.document.invalid && form.controls.document.touched) {
           <p-message severity="error" variant="simple" size="small">
-            El documento es obligatorio.
+            El documento es obligatorio (máximo 20 caracteres).
           </p-message>
         }
       </div>
@@ -36,7 +38,7 @@
         <input pInputText id="phone" formControlName="phone" class="w-full" />
         @if (form.controls.phone.invalid && form.controls.phone.touched) {
           <p-message severity="error" variant="simple" size="small">
-            El teléfono es obligatorio.
+            El teléfono es obligatorio (máximo 20 caracteres).
           </p-message>
         }
       </div>
@@ -47,7 +49,7 @@
       <input pInputText id="email" type="email" formControlName="email" class="w-full" />
       @if (form.controls.email.invalid && form.controls.email.touched) {
         <p-message severity="error" variant="simple" size="small">
-          Ingresa un correo válido.
+          Ingresa un correo válido (máximo 120 caracteres).
         </p-message>
       }
     </div>
@@ -55,15 +57,22 @@
     <div class="flex flex-col gap-1">
       <label for="password" class="text-sm font-bold text-text">Contraseña</label>
       <input pInputText id="password" type="password" formControlName="password" class="w-full" />
+      @if (editandoId !== null) {
+        <small class="text-text/60">Déjala vacía para conservar la contraseña actual.</small>
+      }
       @if (form.controls.password.invalid && form.controls.password.touched) {
         <p-message severity="error" variant="simple" size="small">
-          La contraseña es obligatoria.
+          {{
+            editandoId === null
+              ? 'La contraseña es obligatoria (mínimo 8 caracteres).'
+              : 'La contraseña debe tener al menos 8 caracteres.'
+          }}
         </p-message>
       }
     </div>
 
     <div class="mt-2 flex items-center gap-4">
-      <p-button type="submit" label="Guardar" [disabled]="form.invalid" />
+      <p-button type="submit" label="Guardar" [disabled]="form.invalid" [loading]="saving()" />
       <p-button
         type="button"
         label="Cancelar"

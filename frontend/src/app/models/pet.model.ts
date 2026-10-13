@@ -4,10 +4,8 @@ export enum Species {
   CAT = 'CAT'
 }
 
-// Este es el modelo de una mascota, con los mismos campos que tenía
-// la entidad Pet.java en Spring Boot. Lo único que cambia es que en
-// vez de guardar el Owner completo, solo guardamos su id (ownerId) —
-// por ahora no nos toca manejar la asignación de dueño desde aquí.
+// Mascota tal como la devuelve el API (PetResponse): trae el id y el
+// nombre de su dueño para poder mostrarlo sin pedir al dueño por aparte.
 export interface Pet {
   id: number;
   name: string;
@@ -16,7 +14,21 @@ export interface Pet {
   age: number;
   weight: number;
   disease: string | null; // null si la mascota está sana
-  photoUrl: string;
-  ownerId: number;
+  photoUrl: string | null;
   active: boolean;
+  ownerId: number;
+  ownerName: string;
+}
+
+// Cuerpo que recibe el API para crear o actualizar una mascota (PetRequest).
+// El estado "active" no va aquí: el API lo cambia con un endpoint aparte.
+export interface PetRequest {
+  name: string;
+  ownerId: number;
+  species: Species;
+  breed: string;
+  age: number;
+  weight: number;
+  disease: string | null;
+  photoUrl: string | null;
 }

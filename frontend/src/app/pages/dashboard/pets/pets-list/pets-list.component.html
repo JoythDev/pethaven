@@ -15,8 +15,7 @@
           pInputText
           placeholder="Buscar por nombre o raza"
           class="w-full"
-          [value]="searchTerm()"
-          (input)="onSearch($any($event.target).value, dt)"
+          [formControl]="searchControl"
         />
       </p-iconfield>
 
@@ -26,8 +25,7 @@
         optionValue="value"
         placeholder="Especie"
         [showClear]="true"
-        [ngModel]="speciesFilter()"
-        (ngModelChange)="onSpeciesChange($event, dt)"
+        [formControl]="speciesControl"
         styleClass="w-full lg:w-48"
       />
     </div>
@@ -35,6 +33,7 @@
     <p-table
       #dt
       [value]="filteredPets()"
+      [loading]="loading()"
       dataKey="id"
       [paginator]="true"
       [rows]="10"
@@ -90,7 +89,7 @@
               [routerLink]="['/dashboard/owners', pet.ownerId]"
               class="text-sm text-olive transition-colors hover:text-tertiary"
             >
-              {{ ownerName(pet.ownerId) }}
+              {{ pet.ownerName }}
             </a>
           </td>
           <td><app-pet-status-tag [pet]="pet" /></td>
@@ -123,14 +122,14 @@
                 (onClick)="editar(pet)"
               />
               <p-button
-                icon="pi pi-trash"
-                severity="danger"
+                [icon]="pet.active ? 'pi pi-ban' : 'pi pi-check-circle'"
+                [severity]="pet.active ? 'danger' : 'success'"
                 [text]="true"
                 [rounded]="true"
-                ariaLabel="Eliminar"
-                pTooltip="Eliminar"
+                [ariaLabel]="pet.active ? 'Desactivar' : 'Activar'"
+                [pTooltip]="pet.active ? 'Desactivar' : 'Activar'"
                 tooltipPosition="top"
-                (onClick)="eliminar(pet)"
+                (onClick)="cambiarEstado(pet)"
               />
             </div>
           </td>

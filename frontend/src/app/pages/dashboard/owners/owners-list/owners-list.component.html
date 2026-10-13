@@ -15,8 +15,7 @@
           pInputText
           placeholder="Buscar por nombre o documento"
           class="w-full"
-          [value]="searchTerm()"
-          (input)="onSearch($any($event.target).value, dt)"
+          [formControl]="searchControl"
         />
       </p-iconfield>
     </div>
@@ -24,6 +23,7 @@
     <p-table
       #dt
       [value]="filteredOwners()"
+      [loading]="loading()"
       dataKey="id"
       [paginator]="true"
       [rows]="10"
