@@ -8,7 +8,6 @@ For further reference, please consider the following sections:
 * [Spring Boot Maven Plugin Reference Guide](https://docs.spring.io/spring-boot/4.1.0/maven-plugin)
 * [Create an OCI image](https://docs.spring.io/spring-boot/4.1.0/maven-plugin/build-image.html)
 * [Spring Boot DevTools](https://docs.spring.io/spring-boot/4.1.0/reference/using/devtools.html)
-* [Thymeleaf](https://docs.spring.io/spring-boot/4.1.0/reference/web/servlet.html#web.servlet.spring-mvc.template-engines)
 * [Spring Web](https://docs.spring.io/spring-boot/4.1.0/reference/web/servlet.html)
 
 ### Guides

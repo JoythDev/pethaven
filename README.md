@@ -11,7 +11,6 @@
 [![Angular](https://img.shields.io/badge/Angular-19-DD0031?logo=angular&logoColor=white)](https://angular.dev)
 [![PrimeNG](https://img.shields.io/badge/PrimeNG-19-06B6D4?logo=primeng&logoColor=white)](https://primeng.org)
 [![RxJS](https://img.shields.io/badge/RxJS-7.8-B7178C?logo=reactivex&logoColor=white)](https://rxjs.dev)
-[![Thymeleaf](https://img.shields.io/badge/Thymeleaf-legacy_en_retiro-005F0F?logo=thymeleaf&logoColor=white)](https://www.thymeleaf.org)
 [![Database](https://img.shields.io/badge/Base_de_datos-H2-2563EB)](https://www.h2database.com)
 [![Maven](https://img.shields.io/badge/Maven-Wrapper-C71A36?logo=apachemaven&logoColor=white)](https://maven.apache.org)
 [![License](https://img.shields.io/badge/Licencia-MIT-8A9A5B)](LICENSE)
@@ -41,7 +40,7 @@ Hasta ahora, buena parte de la operación vivía en papel y en hojas de Excel: e
 3. La mascota queda hospitalizada mientras recibe tratamientos.
 4. Al recuperarse y ser recogida, la mascota pasa a estado **inactivo** — su historial nunca se borra.
 
-**En migración:** el proyecto avanza hacia un **monorepo** con el backend Spring Boot como API REST y un frontend **Angular + PrimeNG + RxJS** que reemplazará a las vistas Thymeleaf. El detalle está en [Estado de la migración](#estado-de-la-migración).
+**En migración:** el backend Spring Boot ya expone toda la operación como **API REST** y el frontend **Angular + PrimeNG + RxJS** reemplaza a las antiguas vistas Thymeleaf (ya retiradas). El detalle está en [Estado de la migración](#estado-de-la-migración).
 
 ---
 
@@ -49,17 +48,18 @@ Hasta ahora, buena parte de la operación vivía en papel y en hojas de Excel: e
 
 El objetivo es dejar atrás el renderizado en el servidor: un solo frontend Angular (SPA) consumiendo una API REST del backend.
 
-| Pieza | Hoy | Objetivo |
-|---|---|---|
-| Backend (`src/`) | Spring MVC + vistas Thymeleaf | API REST consumida por la SPA |
-| Frontend (`frontend/`) | Demo funcional (mascotas y dueños) con datos en memoria | Único frontend de la aplicación |
+| Pieza | Estado |
+|---|---|
+| Backend (`src/`) | **API REST completa** — Thymeleaf y el MVC legacy fueron retirados |
+| Frontend (`frontend/`) | Demo funcional (mascotas y dueños) con datos en memoria; pendiente conectarlo a la API |
 
 **Fases:**
 
 - [x] **Demo funcional** — landing portada a Angular y dashboard con los módulos de mascotas y dueños (listado, detalle, registro y edición) sobre datos de prueba en memoria; incluye activar/desactivar mascotas, eliminación de dueños en cascada y vínculos entre fichas.
-- [ ] **API REST** — exponer los recursos del backend y conectarlos desde Angular con `HttpClient` + RxJS.
+- [x] **API REST** — todos los recursos del backend expuestos como API REST bajo `/api/**`, documentados con Swagger.
+- [ ] **Integración SPA** — conectar el frontend Angular con la API (`HttpClient` + RxJS).
 - [ ] **Módulos restantes** — veterinarios, medicamentos, tratamientos y KPIs en el dashboard.
-- [ ] **Retiro de Thymeleaf** — cuando la SPA cubra toda la operación, las vistas de servidor salen del repositorio.
+- [x] **Retiro de Thymeleaf** — vistas de servidor y MVC legacy eliminados del repositorio.
 
 <div align="center">
   <img src="docs/screenshots/dashboard-pets.png" alt="Módulo de mascotas del dashboard Angular" width="100%"/>
@@ -134,7 +134,7 @@ El objetivo es dejar atrás el renderizado en el servidor: un solo frontend Angu
 | Capa | Tecnología |
 |---|---|
 | Lenguaje | Java 21 |
-| Framework | Spring Boot 4.1 — Web MVC, Data JPA, DevTools |
+| Framework | Spring Boot 4.1 — API REST, Data JPA, DevTools |
 | Objetivo | API REST para el frontend Angular |
 | Base de datos | H2 en modo archivo, con consola de administración web |
 | Utilidades | Lombok |
@@ -149,8 +149,6 @@ El objetivo es dejar atrás el renderizado en el servidor: un solo frontend Angu
 | Reactividad | RxJS 7.8 + signals |
 | Lenguaje | TypeScript 5.7 |
 | Tooling | Angular CLI + npm — requiere Node `^18.19.1 \|\| ^20.11.1 \|\| >=22` |
-
-Thymeleaf queda como **legacy, en retiro**: se mantiene solo mientras la SPA termina de cubrir la operación.
 
 ---
 
@@ -181,7 +179,7 @@ pethaven/
 │       └── main.ts                # Punto de entrada
 │
 ├── src/main/java/io/github/pethaven/   # Backend Spring Boot
-│   ├── controller/                # Controladores MVC (rutas web)
+│   ├── controller/                # Controladores REST (/api/**)
 │   ├── service/                   # Lógica de negocio
 │   ├── repository/                # Repositorios Spring Data JPA
 │   ├── entity/                    # Entidades JPA: Owner, Pet, Species, Treatment, TreatmentDrug, Drug, Veterinarian
@@ -190,8 +188,6 @@ pethaven/
 │   └── PethavenBackendApplication.java
 │
 ├── src/main/resources/
-│   ├── templates/                 # Vistas Thymeleaf (legacy, en retiro)
-│   ├── static/                    # CSS, JS, imágenes y videos (legacy)
 │   └── application.properties     # Configuración (datasource, JPA, H2)
 │
 └── pom.xml
@@ -219,7 +215,7 @@ cd pethaven
 ./mvnw spring-boot:run        # en Windows: .\mvnw.cmd spring-boot:run
 ```
 
-La base de datos H2 se crea y puebla automáticamente con datos de prueba al primer arranque. La aplicación Thymeleaf (legacy) queda en **<http://localhost:8080>**.
+La base de datos H2 se crea y puebla automáticamente con datos de prueba al primer arranque. La API queda en **<http://localhost:8080/api>**, con documentación interactiva en **<http://localhost:8080/swagger-ui.html>**.
 
 ### Frontend (demo)
 
@@ -254,24 +250,9 @@ La base de datos expone una consola web para explorar tablas y datos:
 
 ## Rutas disponibles
 
-### Backend — Thymeleaf (legacy, `http://localhost:8080`)
+### Backend — API REST (`http://localhost:8080`)
 
-| Método | Ruta | Descripción |
-|---|---|---|
-| `GET` | `/` | Landing page de la clínica |
-| `GET` | `/login` | Formulario de acceso del cliente |
-| `POST` | `/login` | Autenticación del cliente |
-| `GET` | `/pets` | Listado de todas las mascotas |
-| `GET` | `/pets/{id}` | Detalle de una mascota |
-| `GET` / `POST` | `/pets/add` | Registrar una nueva mascota |
-| `GET` / `POST` | `/pets/update/{id}` | Actualizar los datos de una mascota |
-| `POST` | `/pets/toggle/{id}` | Activar / desactivar una mascota |
-| `GET` | `/owners` | Listado de dueños |
-| `GET` | `/owners/{id}` | Detalle de un dueño y sus mascotas |
-| `GET` / `POST` | `/owners/add` | Registrar un nuevo dueño |
-| `GET` / `POST` | `/owners/update/{id}` | Actualizar los datos de un dueño |
-| `GET` | `/owners/delete/{id}` | Eliminar un dueño (y sus mascotas, en cascada) |
-| `GET` | `/h2` | Consola de administración de H2 |
+Los recursos viven bajo `/api/**`; el contrato está en [docs/api/API.md](docs/api/API.md) y la documentación interactiva en `http://localhost:8080/swagger-ui.html`.
 
 ### Frontend — SPA Angular (`http://localhost:4200`)
 

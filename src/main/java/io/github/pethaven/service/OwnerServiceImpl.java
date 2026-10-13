@@ -76,8 +76,8 @@ public class OwnerServiceImpl implements OwnerService {
     }
 
     // La actualización aplica únicamente los campos editables sobre la entidad ya
-    // persistida. Las mascotas existentes se conservan intactas: el formulario no las
-    // envía, así que la colección llega vacía y un merge de JPA las perdería.
+    // persistida. Las mascotas existentes se conservan intactas: no forman parte del
+    // request, así que un merge de JPA las perdería.
     @Override
     @Transactional
     public OwnerResponse updateOwner(Long id, OwnerUpdateRequest updateRequest) {

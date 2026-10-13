@@ -1,89 +1,166 @@
 package io.github.pethaven.controller;
 
+import io.github.pethaven.dto.common.ApiErrorResponse;
 import io.github.pethaven.dto.request.VeterinarianRequest;
 import io.github.pethaven.dto.request.VeterinarianUpdateRequest;
-import io.github.pethaven.entity.Veterinarian;
-import io.github.pethaven.mapper.VeterinarianMapper;
+import io.github.pethaven.dto.response.TreatmentResponse;
+import io.github.pethaven.dto.response.VeterinarianResponse;
 import io.github.pethaven.service.TreatmentService;
 import io.github.pethaven.service.VeterinarianService;
-
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.beans.propertyeditors.StringTrimmerEditor;
-import org.springframework.web.bind.WebDataBinder;
-import org.springframework.web.bind.annotation.InitBinder;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-@Controller
-@RequestMapping("/veterinarians")
+import java.net.URI;
+import java.util.List;
+
+/**
+ * Controlador REST del módulo de veterinarios.
+ */
+@Tag(name = "Veterinarians", description = "Gestión de veterinarios")
+@RestController
+@RequestMapping("/api/veterinarians")
 public class VeterinarianController {
 
-    @Autowired
-    private VeterinarianService veterinarianService;
+    private final VeterinarianService veterinarianService;
+    private final TreatmentService treatmentService;
 
     @Autowired
-    private TreatmentService treatmentService;
-
-    @Autowired
-    private VeterinarianMapper veterinarianMapper;
-
-    @GetMapping()
-    public String listVeterinarians(Model model) {
-        model.addAttribute("veterinarians", veterinarianService.getAllVeterinarians());
-        return "veterinarians_list";
+    public VeterinarianController(
+            VeterinarianService veterinarianService,
+            TreatmentService treatmentService
+    ) {
+        this.veterinarianService = veterinarianService;
+        this.treatmentService = treatmentService;
     }
 
+    /**
+     * Lista todos los veterinarios registrados.
+     *
+     * @return lista de veterinarios (sin datos sensibles)
+     */
+    @Operation(summary = "Listar veterinarios", description = "Devuelve todos los veterinarios registrados, sin datos sensibles.")
+    @GetMapping
+    public List<VeterinarianResponse> getAllVeterinarians() {
+        return veterinarianService.getAllVeterinarians();
+    }
+
+    /**
+     * Obtiene el detalle de un veterinario por su id.
+     *
+     * @param id id del veterinario
+     * @return el veterinario encontrado
+     */
+    @Operation(summary = "Obtener un veterinario", description = "Devuelve el detalle de un veterinario por su id.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Veterinario encontrado"),
+            @ApiResponse(responseCode = "404", description = "No existe un veterinario con ese id",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
     @GetMapping("/{id}")
-    public String getVeterinarian(@PathVariable Long id, Model model) {
-        model.addAttribute("veterinarian", veterinarianService.getVeterinarianById(id));
-        model.addAttribute("treatments", treatmentService.getTreatmentsByVeterinarianId(id));
-        return "veterinarian_details";
+    public VeterinarianResponse getVeterinarianById(
+            @Parameter(description = "Id del veterinario", example = "1") @PathVariable Long id) {
+        return veterinarianService.getVeterinarianById(id);
     }
 
-    @GetMapping("/add")
-    public String showAddVeterinarianForm(Model model) {
-        model.addAttribute("veterinarian", Veterinarian.builder().name("").document("").email("").password("").specialty("").photoUrl("").build());
-        return "veterinarian_form";
+    /**
+     * Registra un nuevo veterinario.
+     *
+     * @param request datos del veterinario
+     * @return el veterinario creado (201 + cabecera Location)
+     */
+    @Operation(summary = "Crear veterinario", description = "Registra un nuevo veterinario (activo por defecto). Devuelve 201 con la cabecera Location.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Veterinario creado (incluye cabecera Location)"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos (validación)",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Documento o correo ya registrados",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PostMapping
+    public ResponseEntity<VeterinarianResponse> createVeterinarian(@Valid @RequestBody VeterinarianRequest request) {
+        VeterinarianResponse newVeterinarian = veterinarianService.createVeterinarian(request);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(newVeterinarian.id())
+                .toUri();
+        return ResponseEntity.created(location).body(newVeterinarian);
     }
 
-    @PostMapping("/add")
-    public String addVeterinarian(Veterinarian veterinarian) {
-        veterinarianService.createVeterinarian(new VeterinarianRequest(
-                veterinarian.getDocument(), veterinarian.getName(), veterinarian.getEmail(),
-                veterinarian.getPassword(), veterinarian.getSpecialty(), veterinarian.getPhotoUrl()));
-        return "redirect:/veterinarians";
+    /**
+     * Actualiza los datos de un veterinario.
+     *
+     * @param id      id del veterinario
+     * @param request datos actualizados (la contraseña es opcional)
+     * @return el veterinario actualizado
+     */
+    @Operation(summary = "Actualizar veterinario",
+            description = "Reemplaza los datos del veterinario. Si la contraseña se omite o va en blanco, se conserva la actual. El estado y las atenciones no se modifican.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Veterinario actualizado"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos (validación)",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "No existe un veterinario con ese id",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Documento o correo pertenecen a otro veterinario",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PutMapping("/{id}")
+    public VeterinarianResponse updateVeterinarian(
+            @Parameter(description = "Id del veterinario", example = "1") @PathVariable Long id,
+            @Valid @RequestBody VeterinarianUpdateRequest request) {
+        return veterinarianService.updateVeterinarian(id, request);
     }
 
-    @GetMapping("/update/{id}")
-    public String updateVeterinarian(@PathVariable Long id, Model model) {
-        model.addAttribute("veterinarian", veterinarianMapper.toEntity(veterinarianService.getVeterinarianById(id)));
-        return "veterinarian_form";
+    /**
+     * Activa o desactiva un veterinario.
+     *
+     * @param id     id del veterinario
+     * @param active nuevo estado laboral
+     * @return el veterinario actualizado
+     */
+    @Operation(summary = "Activar o desactivar veterinario",
+            description = "Cambia el estado laboral del veterinario (activo o inactivo, p. ej. vacaciones o incapacidad).")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Estado actualizado"),
+            @ApiResponse(responseCode = "400", description = "Parámetro active inválido",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "No existe un veterinario con ese id",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PutMapping("/{id}/active")
+    public VeterinarianResponse switchVeterinarianActiveStatus(
+            @Parameter(description = "Id del veterinario", example = "1") @PathVariable Long id,
+            @Parameter(description = "Nuevo estado", example = "true") @RequestParam("active") boolean active) {
+        return veterinarianService.switchVeterinarianActiveStatus(id, active);
     }
 
-    @PostMapping("/update/{id}")
-    public String saveUpdatedVeterinarian(@PathVariable Long id, Veterinarian veterinarian) {
-        veterinarianService.updateVeterinarian(id, new VeterinarianUpdateRequest(
-                veterinarian.getDocument(), veterinarian.getName(), veterinarian.getEmail(),
-                veterinarian.getPassword(), veterinarian.getSpecialty(), veterinarian.getPhotoUrl()));
-        return "redirect:/veterinarians/" + id;
-    }
-
-    @PostMapping("/toggle/{id}")
-    public String switchVeterinarianActive(@PathVariable Long id,
-                                            @RequestParam(required = false, defaultValue = "false") boolean active,
-                                            @RequestParam(defaultValue = "false") boolean redirectToDetails) {
-        veterinarianService.switchVeterinarianActiveStatus(id, active);
-        return redirectToDetails ? "redirect:/veterinarians/" + id : "redirect:/veterinarians";
-    }
-
-    /** Convierte los campos de texto vacíos en null al recibir formularios. */
-    @InitBinder
-    public void initBinder(WebDataBinder binder) {
-        binder.registerCustomEditor(String.class, new StringTrimmerEditor(true));
+    /**
+     * Lista los tratamientos (mascotas atendidas) de un veterinario.
+     *
+     * @param id id del veterinario
+     * @return lista de tratamientos del veterinario
+     */
+    @Operation(summary = "Listar tratamientos de un veterinario",
+            description = "Devuelve las mascotas atendidas por el veterinario. Falla con 404 si el veterinario no existe.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista de tratamientos del veterinario"),
+            @ApiResponse(responseCode = "404", description = "No existe un veterinario con ese id",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @GetMapping("/{id}/treatments")
+    public List<TreatmentResponse> getTreatmentsByVeterinarianId(
+            @Parameter(description = "Id del veterinario", example = "1") @PathVariable Long id) {
+        veterinarianService.getVeterinarianById(id);
+        return treatmentService.getTreatmentsByVeterinarianId(id);
     }
 }

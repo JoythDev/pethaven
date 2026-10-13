@@ -1,90 +1,170 @@
 package io.github.pethaven.controller;
 
+import io.github.pethaven.dto.common.ApiErrorResponse;
 import io.github.pethaven.dto.request.PetRequest;
-import io.github.pethaven.entity.Pet;
-import io.github.pethaven.service.OwnerService;
+import io.github.pethaven.dto.response.PetResponse;
+import io.github.pethaven.dto.response.TreatmentResponse;
 import io.github.pethaven.service.PetService;
 import io.github.pethaven.service.TreatmentService;
-
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.beans.propertyeditors.StringTrimmerEditor;
-import org.springframework.web.bind.WebDataBinder;
-import org.springframework.web.bind.annotation.InitBinder;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-@Controller
-@RequestMapping("/pets")
+import java.net.URI;
+import java.util.List;
+
+/**
+ * Controlador REST del módulo de mascotas.
+ */
+@Tag(name = "Pets", description = "Gestión de mascotas")
+@RestController
+@RequestMapping("/api/pets")
 public class PetController {
 
-    @Autowired
-    private PetService petService;
+    private final PetService petService;
+    private final TreatmentService treatmentService;
 
     @Autowired
-    private OwnerService ownerService;
-
-    @Autowired
-    private TreatmentService treatmentService;
-
-    @GetMapping()
-    public String listPets(Model model) {
-        model.addAttribute("pets", petService.getAllPets());
-        return "pets_list";
+    public PetController(
+            PetService petService,
+            TreatmentService treatmentService
+    ) {
+        this.petService = petService;
+        this.treatmentService = treatmentService;
     }
 
+    /**
+     * Lista todas las mascotas o busca por nombre.
+     *
+     * @param search filtro opcional por nombre (substring, sin distinguir mayúsculas)
+     * @return lista de mascotas
+     */
+    @Operation(summary = "Listar o buscar mascotas",
+            description = "Sin parámetros devuelve todas las mascotas. Con search filtra por nombre (substring, sin distinguir mayúsculas; incluye activas e inactivas).")
+    @GetMapping
+    public List<PetResponse> getAllPets(
+            @Parameter(description = "Filtro por nombre (substring, sin distinguir mayúsculas)", example = "bud")
+            @RequestParam(value = "search", required = false) String search) {
+        if (search == null || search.isBlank()) {
+            return petService.getAllPets();
+        }
+        return petService.searchPets(search.trim());
+    }
+
+    /**
+     * Obtiene el detalle de una mascota por su id.
+     *
+     * @param id id de la mascota
+     * @return la mascota encontrada
+     */
+    @Operation(summary = "Obtener una mascota", description = "Devuelve el detalle de una mascota por su id, incluido su dueño.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Mascota encontrada"),
+            @ApiResponse(responseCode = "404", description = "No existe una mascota con ese id",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
     @GetMapping("/{id}")
-    public String getPet(@PathVariable Long id, Model model) {
-        model.addAttribute("pet", petService.getPetEntity(id));
-        model.addAttribute("treatments", treatmentService.getTreatmentsByPetId(id));
-        return "pet_details";
+    public PetResponse getPetById(
+            @Parameter(description = "Id de la mascota", example = "1") @PathVariable Long id) {
+        return petService.getPetById(id);
     }
 
-    @GetMapping("/add")
-    public String showAddPetForm(Model model) {
-        model.addAttribute("pet", Pet.builder().name("").owner(null).species(null).breed("").age(0).weight(0.0).disease("").photoUrl("").build());
-        model.addAttribute("owners", ownerService.getAllOwners());
-        return "pet_form";
+    /**
+     * Registra una nueva mascota.
+     *
+     * @param request datos de la mascota
+     * @return la mascota creada (201 + cabecera Location)
+     */
+    @Operation(summary = "Crear mascota", description = "Registra una nueva mascota (activa por defecto). Devuelve 201 con la cabecera Location.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Mascota creada (incluye cabecera Location)"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos (validación)",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "No existe un dueño con el ownerId indicado",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PostMapping
+    public ResponseEntity<PetResponse> createPet(@Valid @RequestBody PetRequest request) {
+        PetResponse newPet = petService.createPet(request);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(newPet.id())
+                .toUri();
+        return ResponseEntity.created(location).body(newPet);
     }
 
-    @PostMapping("/add")
-    public String addPet(Pet pet, @RequestParam("ownerId") Long ownerId) {
-        petService.createPet(new PetRequest(
-                pet.getName(), ownerId, pet.getSpecies(), pet.getBreed(),
-                pet.getAge(), pet.getWeight(), pet.getDisease(), pet.getPhotoUrl()));
-        return "redirect:/pets";
+    /**
+     * Actualiza los datos de una mascota (reemplazo total; puede reasignar dueño).
+     *
+     * @param id      id de la mascota
+     * @param request datos actualizados
+     * @return la mascota actualizada
+     */
+    @Operation(summary = "Actualizar mascota",
+            description = "Reemplaza los datos de la mascota; puede reasignarla a otro dueño.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Mascota actualizada"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos (validación)",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "No existe la mascota o el dueño indicados",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PutMapping("/{id}")
+    public PetResponse updatePet(
+            @Parameter(description = "Id de la mascota", example = "1") @PathVariable Long id,
+            @Valid @RequestBody PetRequest request) {
+        return petService.updatePet(id, request);
     }
 
-    @GetMapping("/update/{id}")
-    public String updatePet(@PathVariable Long id, Model model) {
-        model.addAttribute("pet", petService.getPetEntity(id));
-        model.addAttribute("owners", ownerService.getAllOwners());
-        return "pet_form";
+    /**
+     * Activa o desactiva una mascota.
+     *
+     * @param id     id de la mascota
+     * @param active nuevo estado
+     * @return la mascota actualizada
+     */
+    @Operation(summary = "Activar o desactivar mascota",
+            description = "Cambia el estado de la mascota (en la veterinaria o en su casa).")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Estado actualizado"),
+            @ApiResponse(responseCode = "400", description = "Parámetro active inválido",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "No existe una mascota con ese id",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PutMapping("/{id}/active")
+    public PetResponse switchPetActiveStatus(
+            @Parameter(description = "Id de la mascota", example = "1") @PathVariable Long id,
+            @Parameter(description = "Nuevo estado", example = "true") @RequestParam("active") boolean active) {
+        return petService.switchPetActiveStatus(id, active);
     }
 
-    @PostMapping("/update/{id}")
-    public String saveUpdatedPet(@PathVariable Long id, Pet pet, @RequestParam("ownerId") Long ownerId) {
-        petService.updatePet(id, new PetRequest(
-                pet.getName(), ownerId, pet.getSpecies(), pet.getBreed(),
-                pet.getAge(), pet.getWeight(), pet.getDisease(), pet.getPhotoUrl()));
-        return "redirect:/pets/" + id;
-    }
-
-    @PostMapping("/toggle/{id}")
-    public String switchPetActive(@PathVariable Long id,
-                                  @RequestParam(required = false, defaultValue = "false") boolean active,
-                                  @RequestParam(defaultValue = "false") boolean redirectToDetails) {
-        petService.switchPetActiveStatus(id, active);
-        return redirectToDetails ? "redirect:/pets/" + id : "redirect:/pets";
-    }
-
-    /** Convierte los campos de texto vacíos en null al recibir formularios. */
-    @InitBinder
-    public void initBinder(WebDataBinder binder) {
-        binder.registerCustomEditor(String.class, new StringTrimmerEditor(true));
+    /**
+     * Lista los tratamientos (historial médico) de una mascota.
+     *
+     * @param id id de la mascota
+     * @return lista de tratamientos de la mascota
+     */
+    @Operation(summary = "Listar tratamientos de una mascota",
+            description = "Devuelve el historial de tratamientos de la mascota. Falla con 404 si la mascota no existe.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Historial de tratamientos"),
+            @ApiResponse(responseCode = "404", description = "No existe una mascota con ese id",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @GetMapping("/{id}/treatments")
+    public List<TreatmentResponse> getTreatmentsByPetId(
+            @Parameter(description = "Id de la mascota", example = "1") @PathVariable Long id) {
+        petService.getPetById(id);
+        return treatmentService.getTreatmentsByPetId(id);
     }
 }

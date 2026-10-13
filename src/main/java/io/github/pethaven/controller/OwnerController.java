@@ -1,93 +1,165 @@
 package io.github.pethaven.controller;
 
+import io.github.pethaven.dto.common.ApiErrorResponse;
 import io.github.pethaven.dto.request.OwnerRequest;
 import io.github.pethaven.dto.request.OwnerUpdateRequest;
-import io.github.pethaven.entity.Owner;
-import io.github.pethaven.mapper.OwnerMapper;
+import io.github.pethaven.dto.response.OwnerResponse;
+import io.github.pethaven.dto.response.PetResponse;
 import io.github.pethaven.service.OwnerService;
 import io.github.pethaven.service.PetService;
-
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.WebDataBinder;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.InitBinder;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.beans.propertyeditors.StringTrimmerEditor;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-@Controller
-@RequestMapping("/owners")
+import java.net.URI;
+import java.util.List;
+
+/**
+ * Controlador REST del módulo de dueños.
+ */
+@Tag(name = "Owners", description = "Gestión de dueños de mascotas")
+@RestController
+@RequestMapping("/api/owners")
 public class OwnerController {
 
-    @Autowired
-    private OwnerService ownerService;
+    private final OwnerService ownerService;
+    private final PetService petService;
 
     @Autowired
-    private PetService petService;
-
-    @Autowired
-    private OwnerMapper ownerMapper;
-
-    @GetMapping()
-    public String listOwners(Model model) {
-        model.addAttribute("owners", ownerService.getAllOwners());
-        return "owners_list";
+    public OwnerController(
+            OwnerService ownerService,
+            PetService petService
+    ) {
+        this.ownerService = ownerService;
+        this.petService = petService;
     }
 
+    /**
+     * Lista todos los dueños registrados.
+     *
+     * @return lista de dueños (sin datos sensibles)
+     */
+    @Operation(summary = "Listar dueños", description = "Devuelve todos los dueños registrados, sin datos sensibles.")
+    @GetMapping
+    public List<OwnerResponse> getAllOwners() {
+        return ownerService.getAllOwners();
+    }
+
+    /**
+     * Obtiene el detalle de un dueño por su id.
+     *
+     * @param id id del dueño
+     * @return el dueño encontrado
+     */
+    @Operation(summary = "Obtener un dueño", description = "Devuelve el detalle de un dueño por su id.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Dueño encontrado"),
+            @ApiResponse(responseCode = "404", description = "No existe un dueño con ese id",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
     @GetMapping("/{id}")
-    public String getOwner(@PathVariable Long id, Model model) {
-        model.addAttribute("owner", ownerService.getOwnerById(id));
-        model.addAttribute("pets", petService.getPetsByOwnerId(id));
-        return "owner_details";
+    public OwnerResponse getOwnerById(
+            @Parameter(description = "Id del dueño", example = "1") @PathVariable Long id) {
+        return ownerService.getOwnerById(id);
     }
 
-    @GetMapping("/{id}/profile")
-    public String getOwnerProfile(@PathVariable Long id, Model model) {
-        model.addAttribute("owner", ownerService.getOwnerById(id));
-        model.addAttribute("pets", petService.getPetsByOwnerId(id));
-        return "logged_owner_details";
+    /**
+     * Registra un nuevo dueño.
+     *
+     * @param request datos del dueño
+     * @return el dueño creado (201 + cabecera Location)
+     */
+    @Operation(summary = "Crear dueño", description = "Registra un nuevo dueño. Devuelve 201 con la cabecera Location.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Dueño creado (incluye cabecera Location)"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos (validación)",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Documento o correo ya registrados",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PostMapping
+    public ResponseEntity<OwnerResponse> createOwner(@Valid @RequestBody OwnerRequest request) {
+        OwnerResponse newOwner = ownerService.createOwner(request);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(newOwner.id())
+                .toUri();
+        return ResponseEntity.created(location).body(newOwner);
     }
 
-    @GetMapping("/add")
-    public String showAddOwnerForm(Model model) {
-        model.addAttribute("owner", Owner.builder().name("").document("").phone("").email("").password("").build());
-        return "owner_form";
+    /**
+     * Actualiza los datos de un dueño.
+     *
+     * @param id      id del dueño
+     * @param request datos actualizados (la contraseña es opcional)
+     * @return el dueño actualizado
+     */
+    @Operation(summary = "Actualizar dueño",
+            description = "Reemplaza los datos del dueño. Si la contraseña se omite o va en blanco, se conserva la actual.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Dueño actualizado"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos (validación)",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "No existe un dueño con ese id",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Documento o correo pertenecen a otro dueño",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PutMapping("/{id}")
+    public OwnerResponse updateOwner(
+            @Parameter(description = "Id del dueño", example = "1") @PathVariable Long id,
+            @Valid @RequestBody OwnerUpdateRequest request) {
+        return ownerService.updateOwner(id, request);
     }
 
-    @PostMapping("/add")
-    public String addOwner(Owner owner) {
-        ownerService.createOwner(new OwnerRequest(
-                owner.getDocument(), owner.getName(), owner.getEmail(),
-                owner.getPassword(), owner.getPhone()));
-        return "redirect:/owners";
-    }
-
-    @GetMapping("/update/{id}")
-    public String updateOwner(@PathVariable Long id, Model model) {
-        model.addAttribute("owner", ownerMapper.toEntity(ownerService.getOwnerById(id)));
-        return "owner_form";
-    }
-
-    @PostMapping("/update/{id}")
-    public String saveUpdatedOwner(@PathVariable Long id, Owner owner) {
-        ownerService.updateOwner(id, new OwnerUpdateRequest(
-                owner.getDocument(), owner.getName(), owner.getEmail(),
-                owner.getPassword(), owner.getPhone()));
-        return "redirect:/owners/" + id;
-    }
-
-    @GetMapping("/delete/{id}")
-    public String deleteOwner(@PathVariable Long id) {
+    /**
+     * Elimina un dueño y sus mascotas en cascada.
+     *
+     * @param id id del dueño
+     */
+    @Operation(summary = "Eliminar dueño",
+            description = "Elimina un dueño y sus mascotas en cascada. Falla con 409 si alguna mascota tiene tratamientos registrados.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Dueño eliminado"),
+            @ApiResponse(responseCode = "404", description = "No existe un dueño con ese id",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Alguna mascota del dueño tiene tratamientos registrados",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteOwner(
+            @Parameter(description = "Id del dueño", example = "1") @PathVariable Long id) {
         ownerService.deleteOwnerById(id);
-        return "redirect:/owners";
+        return ResponseEntity.noContent().build();
     }
 
-    /** Convierte los campos de texto vacíos en null al recibir formularios. */
-    @InitBinder
-    public void initBinder(WebDataBinder binder) {
-        binder.registerCustomEditor(String.class, new StringTrimmerEditor(true));
+    /**
+     * Lista las mascotas de un dueño.
+     *
+     * @param id id del dueño
+     * @return lista de mascotas del dueño
+     */
+    @Operation(summary = "Listar mascotas de un dueño",
+            description = "Devuelve todas las mascotas registradas a nombre del dueño. Falla con 404 si el dueño no existe.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista de mascotas del dueño"),
+            @ApiResponse(responseCode = "404", description = "No existe un dueño con ese id",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @GetMapping("/{id}/pets")
+    public List<PetResponse> getPetsByOwnerId(
+            @Parameter(description = "Id del dueño", example = "1") @PathVariable Long id) {
+        ownerService.getOwnerById(id);
+        return petService.getPetsByOwnerId(id);
     }
+
 }
