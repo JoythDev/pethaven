@@ -119,7 +119,7 @@ public class VeterinarianServiceImpl implements VeterinarianService {
     @Override
     public Veterinarian authenticate(String email, String password) {
         Veterinarian veterinarian = veterinarianRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Veterinarian", "email", email));
+                .orElseThrow(() -> new InvalidCredentialsException());
         if (!veterinarian.isActive()) {
             throw new AccountDisabledException();
         }
