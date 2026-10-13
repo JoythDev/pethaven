@@ -3,7 +3,9 @@ package io.github.pethaven.controller;
 import io.github.pethaven.dto.common.ApiErrorResponse;
 import io.github.pethaven.dto.request.VeterinarianRequest;
 import io.github.pethaven.dto.request.VeterinarianUpdateRequest;
+import io.github.pethaven.dto.response.TreatmentResponse;
 import io.github.pethaven.dto.response.VeterinarianResponse;
+import io.github.pethaven.service.TreatmentService;
 import io.github.pethaven.service.VeterinarianService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -30,10 +32,15 @@ import java.util.List;
 public class VeterinarianRestController {
 
     private final VeterinarianService veterinarianService;
+    private final TreatmentService treatmentService;
 
     @Autowired
-    public VeterinarianRestController(VeterinarianService veterinarianService) {
+    public VeterinarianRestController(
+            VeterinarianService veterinarianService,
+            TreatmentService treatmentService
+    ) {
         this.veterinarianService = veterinarianService;
+        this.treatmentService = treatmentService;
     }
 
     /**
@@ -137,5 +144,23 @@ public class VeterinarianRestController {
         return veterinarianService.switchVeterinarianActiveStatus(id, active);
     }
 
-    // TODO (Fase 5): habilitar GET /{id}/treatments → [TreatmentResponse] al cerrar la Fase 5.
+    /**
+     * Lista los tratamientos (mascotas atendidas) de un veterinario.
+     *
+     * @param id id del veterinario
+     * @return lista de tratamientos del veterinario
+     */
+    @Operation(summary = "Listar tratamientos de un veterinario",
+            description = "Devuelve las mascotas atendidas por el veterinario. Falla con 404 si el veterinario no existe.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista de tratamientos del veterinario"),
+            @ApiResponse(responseCode = "404", description = "No existe un veterinario con ese id",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @GetMapping("/{id}/treatments")
+    public List<TreatmentResponse> getTreatmentsByVeterinarianId(
+            @Parameter(description = "Id del veterinario", example = "1") @PathVariable Long id) {
+        veterinarianService.getVeterinarianById(id);
+        return treatmentService.getTreatmentsByVeterinarianId(id);
+    }
 }

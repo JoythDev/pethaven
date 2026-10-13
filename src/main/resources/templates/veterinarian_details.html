@@ -88,14 +88,14 @@
                 <tbody class="divide-y divide-text/10">
                   <tr th:each="treatment : ${treatments}" class="border-b border-text/5 hover:bg-background/50 transition-colors">
                     <td class="py-4 px-4">
-                      <a th:href="@{/pets/{id}(id=${treatment.pet.id})}" class="font-bold text-sm text-text hover:text-tertiary transition-colors"
-                         th:text="${treatment.pet.name}">Buddy</a>
+                      <a th:href="@{/pets/{id}(id=${treatment.petId})}" class="font-bold text-sm text-text hover:text-tertiary transition-colors"
+                         th:text="${treatment.petName}">Buddy</a>
                     </td>
                     <td class="py-4 px-4">
                       <span class="text-sm" th:text="${#temporals.format(treatment.date, 'dd MMM yyyy, HH:mm')}">21 sep 2026, 10:00</span>
                     </td>
                     <td class="py-4 px-4">
-                      <span class="text-sm" th:text="${#lists.size(treatment.treatmentDrugs)}">2</span>
+                      <span class="text-sm" th:text="${#lists.size(treatment.drugs)}">2</span>
                     </td>
                     <td class="py-4 px-4">
                       <a th:href="@{/treatments/{id}(id=${treatment.id})}" class="text-sm font-bold text-primary hover:text-tertiary transition-colors">

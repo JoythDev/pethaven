@@ -40,19 +40,19 @@
                 <tr th:each="treatment : ${treatments}" class="border-b border-text/5 hover:bg-background/50 transition-colors">
 
                   <td class="py-4 px-4">
-                    <a th:href="@{/pets/{id}(id=${treatment.pet.id})}" class="font-bold text-sm text-text hover:text-tertiary transition-colors"
-                       th:text="${treatment.pet.name}">Buddy</a>
+                    <a th:href="@{/pets/{id}(id=${treatment.petId})}" class="font-bold text-sm text-text hover:text-tertiary transition-colors"
+                       th:text="${treatment.petName}">Buddy</a>
                   </td>
                   <td class="py-4 px-4">
-                    <a th:href="@{/veterinarians/{id}(id=${treatment.veterinarian.id})}" class="text-sm hover:text-tertiary transition-colors"
-                       th:text="${treatment.veterinarian.name}">Dra. Valentina Soler</a>
+                    <a th:href="@{/veterinarians/{id}(id=${treatment.veterinarianId})}" class="text-sm hover:text-tertiary transition-colors"
+                       th:text="${treatment.veterinarianName}">Dra. Valentina Soler</a>
                   </td>
                   <td class="py-4 px-4">
                     <span class="text-sm" th:text="${#temporals.format(treatment.date, 'dd MMM yyyy, HH:mm')}">21 sep 2026, 10:00</span>
                   </td>
                   <td class="py-4 px-4">
                     <span class="inline-flex items-center bg-primary/20 text-tertiary px-3 py-1 rounded-md text-xs font-bold"
-                          th:text="${#lists.size(treatment.treatmentDrugs)}">2</span>
+                          th:text="${#lists.size(treatment.drugs)}">2</span>
                   </td>
                   <td class="py-4 px-4">
                     <a th:href="@{/treatments/{id}(id=${treatment.id})}" class="text-sm font-bold text-primary hover:text-tertiary transition-colors">

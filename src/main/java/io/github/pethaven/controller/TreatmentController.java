@@ -1,5 +1,7 @@
 package io.github.pethaven.controller;
 
+import io.github.pethaven.dto.request.TreatmentRequest;
+import io.github.pethaven.dto.response.TreatmentResponse;
 import io.github.pethaven.entity.Treatment;
 import io.github.pethaven.service.DrugService;
 import io.github.pethaven.service.PetService;
@@ -66,8 +68,9 @@ public class TreatmentController {
     public String addTreatment(Treatment treatment,
                                 @RequestParam("petId") Long petId,
                                 @RequestParam("veterinarianId") Long veterinarianId) {
-        treatmentService.createTreatment(treatment, petId, veterinarianId);
-        return "redirect:/treatments/" + treatment.getId();
+        TreatmentResponse created = treatmentService.createTreatment(
+                new TreatmentRequest(petId, veterinarianId, treatment.getDate()));
+        return "redirect:/treatments/" + created.id();
     }
 
 }

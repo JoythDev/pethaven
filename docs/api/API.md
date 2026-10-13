@@ -118,7 +118,7 @@ Controller: `VeterinarianRestController` → `@RequestMapping("/api/veterinarian
 |---|---|---|
 | `GET` | `/api/veterinarians` | `200` `[VeterinarianResponse]` |
 | `GET` | `/api/veterinarians/{id}` | `200` `VeterinarianResponse` |
-| `GET` | `/api/veterinarians/{id}/treatments` | `200` `[TreatmentResponse]` (Fase 5) |
+| `GET` | `/api/veterinarians/{id}/treatments` | `200` `[TreatmentResponse]`; `404` si el veterinario no existe |
 | `POST` | `/api/veterinarians` | `201` + `Location` |
 | `PUT` | `/api/veterinarians/{id}` | `200` |
 | `PUT` | `/api/veterinarians/{id}/active?active=true\|false` | `200` |
@@ -145,11 +145,11 @@ Controller: `DrugRestController` → `@RequestMapping("/api/drugs")`
 
 ## Fase 5 — Tratamientos y drogas administradas
 
-Controllers: `TreatmentRestController` y `TreatmentDrugRestController`
+Controller: `TreatmentRestController` (incluye los medicamentos administrados)
 
 | DTO | Campos |
 |---|---|
-| `TreatmentRequest` | `petId`, `veterinarianId`, `date` (opcional; por defecto, ahora) |
+| `TreatmentRequest` | `petId`, `veterinarianId`, `date` (opcional; por defecto, ahora; no puede ser futura) |
 | `TreatmentResponse` | `id`, `date`, `petId`, `petName`, `veterinarianId`, `veterinarianName`, `drugs` |
 | `TreatmentDrugRequest` | `drugId`, `units` |
 | `TreatmentDrugResponse` | `id`, `drugId`, `drugName`, `units`, `unitPurchasePrice`, `unitSalePrice` |
@@ -158,11 +158,11 @@ Controllers: `TreatmentRestController` y `TreatmentDrugRestController`
 |---|---|---|
 | `GET` | `/api/treatments` | `200` `[TreatmentResponse]` |
 | `GET` | `/api/treatments/{id}` | `200` `TreatmentResponse` |
-| `POST` | `/api/treatments` | `201` + `Location`; incrementa atenciones del veterinario |
-| `GET` | `/api/treatments/{id}/drugs` | `200` `[TreatmentDrugResponse]` |
-| `POST` | `/api/treatments/{id}/drugs` | `201`; descuenta inventario; `409` sin stock o droga repetida |
-| `GET` | `/api/pets/{id}/treatments` | `200` `[TreatmentResponse]` (historial) |
-| `GET` | `/api/veterinarians/{id}/treatments` | `200` `[TreatmentResponse]` (mascotas atendidas) |
+| `POST` | `/api/treatments` | `201` + `Location`; incrementa atenciones del veterinario; `409` si la mascota o el veterinario no están activos |
+| `GET` | `/api/treatments/{id}/drugs` | `200` `[TreatmentDrugResponse]`; `404` si el tratamiento no existe |
+| `POST` | `/api/treatments/{id}/drugs` | `201` (sin `Location`); descuenta inventario; `409` sin stock, droga repetida o mascota inactiva |
+| `GET` | `/api/pets/{id}/treatments` | `200` `[TreatmentResponse]` (historial); `404` si la mascota no existe |
+| `GET` | `/api/veterinarians/{id}/treatments` | `200` `[TreatmentResponse]` (mascotas atendidas); `404` si el veterinario no existe |
 
 ## Fase 6 — Autenticación (provisional, sin Spring Security)
 
@@ -187,4 +187,4 @@ Controller: `AuthRestController` → `@RequestMapping("/api/auth")`
 | Mappers | Una clase `@Component` por agregado (`mapper/`): `toResponse`, `toEntity(request)`, `applyUpdate` y `toEntity(response)` (este último solo para formularios MVC). |
 | Services | Métodos que devuelven DTO = proyección para la API REST; métodos que devuelven entidad (`getOwnerEntity`, patrón `getXxxEntity`) = accesor de dominio para uso interno entre services. Las entidades nunca se exponen desde controllers REST. |
 | Contraseñas | Nunca en respuestas. En actualización: omitir el campo o enviarlo en blanco = conservar la actual. |
-| Documentación | Swagger UI (springdoc) en `/swagger-ui.html`; documenta los módulos migrados (`/api/owners/**`, `/api/pets/**`, `/api/veterinarians/**`, `/api/drugs/**`) y se amplía por fase. `docs/api/API.md` sigue siendo el contrato fuente. |
+| Documentación | Swagger UI (springdoc) en `/swagger-ui.html`; documenta los módulos migrados (`/api/owners/**`, `/api/pets/**`, `/api/veterinarians/**`, `/api/drugs/**`, `/api/treatments/**`) y se amplía por fase. `docs/api/API.md` sigue siendo el contrato fuente. |

@@ -293,10 +293,10 @@
                             </p>
                         </div>
 
-                        <a th:href="@{/veterinarians/{id}(id=${treatment.veterinarian.id})}"
+                        <a th:href="@{/veterinarians/{id}(id=${treatment.veterinarianId})}"
                            class="bg-background rounded-2xl px-5 py-3 hover:bg-secondary/30 transition-colors shrink-0">
                             <p class="text-xs text-text/50 mb-1">Veterinario a cargo</p>
-                            <p class="font-bold text-sm" th:text="${treatment.veterinarian.name}">Dra. Valentina Soler</p>
+                            <p class="font-bold text-sm" th:text="${treatment.veterinarianName}">Dra. Valentina Soler</p>
                         </a>
                     </div>
 
@@ -304,11 +304,11 @@
 
                     <p class="text-sm font-bold text-text/70 mb-3">Drogas administradas</p>
 
-                    <p th:if="${#lists.isEmpty(treatment.treatmentDrugs)}" class="text-sm text-text/50">
+                    <p th:if="${#lists.isEmpty(treatment.drugs)}" class="text-sm text-text/50">
                         No se administró ninguna droga en este tratamiento.
                     </p>
 
-                    <div th:unless="${#lists.isEmpty(treatment.treatmentDrugs)}" class="overflow-x-auto">
+                    <div th:unless="${#lists.isEmpty(treatment.drugs)}" class="overflow-x-auto">
                         <table class="w-full text-left text-sm">
                             <thead>
                                 <tr class="text-text/50 border-b border-text/10">
@@ -318,8 +318,8 @@
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-text/5">
-                                <tr th:each="td : ${treatment.treatmentDrugs}">
-                                    <td class="py-2 pr-4 font-bold" th:text="${td.drug.name}">Amoxicilina 250mg</td>
+                                <tr th:each="td : ${treatment.drugs}">
+                                    <td class="py-2 pr-4 font-bold" th:text="${td.drugName}">Amoxicilina 250mg</td>
                                     <td class="py-2 pr-4" th:text="${td.units}">3</td>
                                     <td class="py-2 pr-4" th:text="'$' + ${td.unitSalePrice}">$15.000</td>
                                 </tr>

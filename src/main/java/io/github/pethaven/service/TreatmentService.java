@@ -1,14 +1,18 @@
 package io.github.pethaven.service;
 
+import io.github.pethaven.dto.request.TreatmentRequest;
+import io.github.pethaven.dto.response.TreatmentResponse;
 import io.github.pethaven.entity.Treatment;
 import java.util.List;
 
 public interface TreatmentService {
 
-    public Treatment getTreatmentById(Long id);
-    public List<Treatment> getAllTreatments();
-    public List<Treatment> getTreatmentsByPetId(Long petId);
-    public List<Treatment> getTreatmentsByVeterinarianId(Long veterinarianId);
-    public void createTreatment(Treatment treatment, Long petId, Long veterinarianId);
+    Treatment getTreatmentEntity(Long id);
+    List<TreatmentResponse> getAllTreatments();
+    TreatmentResponse getTreatmentById(Long id);
+    TreatmentResponse createTreatment(TreatmentRequest request);
+
+    List<TreatmentResponse> getTreatmentsByPetId(Long petId);
+    List<TreatmentResponse> getTreatmentsByVeterinarianId(Long veterinarianId);
 
 }

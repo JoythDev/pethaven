@@ -327,6 +327,71 @@ Accept: application/json
 DELETE {{baseUrl}}/api/drugs/1
 
 ### ═══════════════════════════════════════════
+### REST · /api/treatments
+### ═══════════════════════════════════════════
+
+### Listar tratamientos → 200 [TreatmentResponse]
+GET {{baseUrl}}/api/treatments
+Accept: application/json
+
+### Detalle de tratamiento → 200
+GET {{baseUrl}}/api/treatments/1
+Accept: application/json
+
+### Crear tratamiento (fecha por defecto) → 201 + Location
+POST {{baseUrl}}/api/treatments
+Content-Type: application/json
+Accept: application/json
+
+{
+  "petId": 1,
+  "veterinarianId": 1
+}
+
+### Crear con fecha futura → 400
+POST {{baseUrl}}/api/treatments
+Content-Type: application/json
+Accept: application/json
+
+{
+  "petId": 1,
+  "veterinarianId": 1,
+  "date": "2030-01-01T10:00:00"
+}
+
+### Medicamentos del tratamiento → 200 (404 si el tratamiento no existe)
+GET {{baseUrl}}/api/treatments/1/drugs
+Accept: application/json
+
+### Administrar medicamento → 201 (sin Location)
+POST {{baseUrl}}/api/treatments/1/drugs
+Content-Type: application/json
+Accept: application/json
+
+{
+  "drugId": 5,
+  "units": 2
+}
+
+### Administrar duplicado → 409
+POST {{baseUrl}}/api/treatments/1/drugs
+Content-Type: application/json
+Accept: application/json
+
+{
+  "drugId": 5,
+  "units": 1
+}
+
+### Historial de una mascota → 200 (404 si no existe)
+GET {{baseUrl}}/api/pets/1/treatments
+Accept: application/json
+
+### Mascotas atendidas por un veterinario → 200 (404 si no existe)
+GET {{baseUrl}}/api/veterinarians/1/treatments
+Accept: application/json
+
+### ═══════════════════════════════════════════
 ### MVC Thymeleaf (convivencia con la API)
 ### ═══════════════════════════════════════════
 
@@ -371,6 +436,15 @@ GET {{baseUrl}}/drugs/1
 
 ### Formulario de edición de medicamento → 200
 GET {{baseUrl}}/drugs/update/1
+
+### Lista de tratamientos → 200
+GET {{baseUrl}}/treatments
+
+### Detalle de tratamiento → 200
+GET {{baseUrl}}/treatments/1
+
+### Formulario de tratamiento → 200
+GET {{baseUrl}}/treatments/add
 
 ### Login de dueño (form) → 302
 POST {{baseUrl}}/login
