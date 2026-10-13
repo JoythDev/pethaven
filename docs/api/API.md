@@ -173,6 +173,8 @@ Controller: `AuthRestController` → `@RequestMapping("/api/auth")`
 | `LoginRequest` | `email`, `password` |
 | `AuthResponse` | `id`, `name`, `email`, `role` (`"OWNER"` \| `"VETERINARIAN"`); nunca incluye contraseña |
 
+> Provisional: **no emite token ni sesión** — el resto de la API sigue abierta hasta la Entrega 3 (control de acceso por roles). El email desconocido y la contraseña incorrecta responden igual (`401`) para no enumerar usuarios.
+
 | Método | Ruta | Respuesta |
 |---|---|---|
 | `POST` | `/api/auth/owners/login` | `200` `AuthResponse`; `401` credenciales inválidas |
@@ -186,5 +188,5 @@ Controller: `AuthRestController` → `@RequestMapping("/api/auth")`
 | Unicidad | No se valida en el DTO: pre-chequeo en el service (`409`) + constraint única en BD como garantía; el handler de `DataIntegrityViolation` queda como red de seguridad. |
 | Mappers | Una clase `@Component` por agregado (`mapper/`): `toResponse`, `toEntity(request)`, `applyUpdate` y `toEntity(response)` (este último solo para formularios MVC). |
 | Services | Métodos que devuelven DTO = proyección para la API REST; métodos que devuelven entidad (`getOwnerEntity`, patrón `getXxxEntity`) = accesor de dominio para uso interno entre services. Las entidades nunca se exponen desde controllers REST. |
-| Contraseñas | Nunca en respuestas. En actualización: omitir el campo o enviarlo en blanco = conservar la actual. |
-| Documentación | Swagger UI (springdoc) en `/swagger-ui.html`; documenta los módulos migrados (`/api/owners/**`, `/api/pets/**`, `/api/veterinarians/**`, `/api/drugs/**`, `/api/treatments/**`) y se amplía por fase. `docs/api/API.md` sigue siendo el contrato fuente. |
+| Contraseñas | Nunca en respuestas. En actualización: omitir el campo o enviarlo en blanco = conservar la actual. Almacenadas en texto plano por ahora; el hashing (BCrypt) llega con el control de acceso (Entrega 3). |
+| Documentación | Swagger UI (springdoc) en `/swagger-ui.html`; documenta los módulos migrados (`/api/owners/**`, `/api/pets/**`, `/api/veterinarians/**`, `/api/drugs/**`, `/api/treatments/**`, `/api/auth/**`) y se amplía por fase. `docs/api/API.md` sigue siendo el contrato fuente. |

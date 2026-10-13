@@ -124,7 +124,7 @@ public class OwnerServiceImpl implements OwnerService {
     @Override
     public Owner authenticate(String email, String password) {
         Owner owner = ownerRepository.findByEmail(email)
-                .orElseThrow(() -> new ResourceNotFoundException("Owner", "email", email));
+                .orElseThrow(() -> new InvalidCredentialsException());
         if (owner.getPassword().equals(password)) {
             return owner;
         }
