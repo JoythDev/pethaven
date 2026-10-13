@@ -33,18 +33,6 @@ public class OwnerMapper {
             .build();
     }
 
-    /** Adaptador de solo lectura para formularios/vistas MVC (necesitan un objeto mutable). */
-    public Owner toEntity(OwnerResponse response) {
-        if (response == null) return null;
-        return Owner.builder()
-            .id(response.id())
-            .document(response.document())
-            .name(response.name())
-            .email(response.email())
-            .phone(response.phone())
-            .build();
-    }
-
     public void applyUpdate(OwnerUpdateRequest request, Owner owner) {
         owner.setDocument(request.document());
         owner.setName(request.name());

@@ -26,14 +26,14 @@ import org.springframework.web.bind.annotation.RestController;
 @Tag(name = "Auth", description = "Inicio de sesión provisional (sin token)")
 @RestController
 @RequestMapping("/api/auth")
-public class AuthRestController {
+public class AuthController {
 
     private final OwnerService ownerService;
     private final VeterinarianService veterinarianService;
     private final AuthMapper authMapper;
 
     @Autowired
-    public AuthRestController(
+    public AuthController(
             OwnerService ownerService,
             VeterinarianService veterinarianService,
             AuthMapper authMapper

@@ -39,21 +39,6 @@ public class VeterinarianMapper {
             .build();
     }
 
-    /** Adaptador de solo lectura para formularios/vistas MVC (necesitan un objeto mutable). */
-    public Veterinarian toEntity(VeterinarianResponse response) {
-        if (response == null) return null;
-        return Veterinarian.builder()
-            .id(response.id())
-            .document(response.document())
-            .name(response.name())
-            .email(response.email())
-            .specialty(response.specialty())
-            .photoUrl(response.photoUrl())
-            .attentions(response.attentions())
-            .active(response.active())
-            .build();
-    }
-
     /** Copia los campos editables sobre la entidad; el estado se gestiona en el service. */
     public void applyUpdate(VeterinarianUpdateRequest request, Veterinarian veterinarian) {
         veterinarian.setDocument(request.document());

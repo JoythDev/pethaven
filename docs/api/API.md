@@ -15,7 +15,7 @@
 | Creación | `201 Created` + cabecera `Location` |
 | Eliminación | `204 No Content` |
 | CORS | `http://localhost:4200` sobre `/api/**` (`config/CorsConfig.java`), sin credenciales por ahora |
-| Advice REST | `RestExceptionHandler` aplica solo a `@RestController`; convive con el handler MVC de Thymeleaf |
+| Errores | `GlobalExceptionHandler` (`@RestControllerAdvice`) traduce toda excepción a `ApiErrorResponse` (JSON) |
 
 ## Formato de error
 
@@ -49,7 +49,7 @@ Todas las excepciones REST usan `ApiErrorResponse`:
 
 ## Fase 1 — Dueños
 
-Controller: `OwnerRestController` → `@RequestMapping("/api/owners")`
+Controller: `OwnerController` → `@RequestMapping("/api/owners")`
 
 | DTO | Campos |
 |---|---|
@@ -70,7 +70,7 @@ Controller: `OwnerRestController` → `@RequestMapping("/api/owners")`
 
 ## Fase 2 — Mascotas
 
-Controller: `PetRestController` (se reescribe) → `@RequestMapping("/api/pets")`
+Controller: `PetController` → `@RequestMapping("/api/pets")`
 
 | DTO | Campos |
 |---|---|
@@ -104,7 +104,7 @@ Controller: `PetRestController` (se reescribe) → `@RequestMapping("/api/pets")
 
 ## Fase 3 — Veterinarios
 
-Controller: `VeterinarianRestController` → `@RequestMapping("/api/veterinarians")`
+Controller: `VeterinarianController` → `@RequestMapping("/api/veterinarians")`
 
 | DTO | Campos |
 |---|---|
@@ -126,7 +126,7 @@ Controller: `VeterinarianRestController` → `@RequestMapping("/api/veterinarian
 
 ## Fase 4 — Drogas
 
-Controller: `DrugRestController` → `@RequestMapping("/api/drugs")`
+Controller: `DrugController` → `@RequestMapping("/api/drugs")`
 
 | DTO | Campos |
 |---|---|
@@ -145,7 +145,7 @@ Controller: `DrugRestController` → `@RequestMapping("/api/drugs")`
 
 ## Fase 5 — Tratamientos y drogas administradas
 
-Controller: `TreatmentRestController` (incluye los medicamentos administrados)
+Controller: `TreatmentController` (incluye los medicamentos administrados)
 
 | DTO | Campos |
 |---|---|
@@ -166,7 +166,7 @@ Controller: `TreatmentRestController` (incluye los medicamentos administrados)
 
 ## Fase 6 — Autenticación (provisional, sin Spring Security)
 
-Controller: `AuthRestController` → `@RequestMapping("/api/auth")`
+Controller: `AuthController` → `@RequestMapping("/api/auth")`
 
 | DTO | Campos |
 |---|---|
@@ -186,7 +186,7 @@ Controller: `AuthRestController` → `@RequestMapping("/api/auth")`
 |---|---|
 | Validaciones | Jakarta Validation en los DTOs: obligatoriedad (`@NotBlank`), formato (`@Email`) y topes de longitud alineados a las columnas de la BD. Mensajes inline en español. |
 | Unicidad | No se valida en el DTO: pre-chequeo en el service (`409`) + constraint única en BD como garantía; el handler de `DataIntegrityViolation` queda como red de seguridad. |
-| Mappers | Una clase `@Component` por agregado (`mapper/`): `toResponse`, `toEntity(request)`, `applyUpdate` y `toEntity(response)` (este último solo para formularios MVC). |
+| Mappers | Una clase `@Component` por agregado (`mapper/`): `toResponse`, `toEntity(request)` y `applyUpdate`. |
 | Services | Métodos que devuelven DTO = proyección para la API REST; métodos que devuelven entidad (`getOwnerEntity`, patrón `getXxxEntity`) = accesor de dominio para uso interno entre services. Las entidades nunca se exponen desde controllers REST. |
 | Contraseñas | Nunca en respuestas. En actualización: omitir el campo o enviarlo en blanco = conservar la actual. Almacenadas en texto plano por ahora; el hashing (BCrypt) llega con el control de acceso (Entrega 3). |
 | Documentación | Swagger UI (springdoc) en `/swagger-ui.html`; documenta los módulos migrados (`/api/owners/**`, `/api/pets/**`, `/api/veterinarians/**`, `/api/drugs/**`, `/api/treatments/**`, `/api/auth/**`) y se amplía por fase. `docs/api/API.md` sigue siendo el contrato fuente. |
