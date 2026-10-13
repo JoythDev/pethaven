@@ -16,7 +16,9 @@
       <label for="name" class="text-sm font-bold text-text">Nombre</label>
       <input pInputText id="name" formControlName="name" class="w-full" />
       @if (form.controls.name.invalid && form.controls.name.touched) {
-        <p-message severity="error" variant="simple" size="small">El nombre es obligatorio.</p-message>
+        <p-message severity="error" variant="simple" size="small">
+          El nombre es obligatorio (máximo 60 caracteres).
+        </p-message>
       }
     </div>
 
@@ -37,7 +39,9 @@
         <label for="breed" class="text-sm font-bold text-text">Raza</label>
         <input pInputText id="breed" formControlName="breed" class="w-full" />
         @if (form.controls.breed.invalid && form.controls.breed.touched) {
-          <p-message severity="error" variant="simple" size="small">La raza es obligatoria.</p-message>
+          <p-message severity="error" variant="simple" size="small">
+            La raza es obligatoria (máximo 60 caracteres).
+          </p-message>
         }
       </div>
     </div>
@@ -76,7 +80,7 @@
       <p-select
         inputId="owner"
         formControlName="ownerId"
-        [options]="ownerOptions()"
+        [options]="(ownerOptions$ | async) ?? []"
         optionLabel="label"
         optionValue="value"
         placeholder="Selecciona un dueño"
@@ -98,6 +102,11 @@
         placeholder="Déjalo vacío si no tiene ninguno"
         class="w-full"
       />
+      @if (form.controls.disease.invalid && form.controls.disease.touched) {
+        <p-message severity="error" variant="simple" size="small">
+          El diagnóstico no puede superar los 120 caracteres.
+        </p-message>
+      }
     </div>
 
     <div class="flex flex-col gap-1">
@@ -123,7 +132,7 @@
     </div>
 
     <div class="mt-2 flex items-center gap-4">
-      <p-button type="submit" label="Guardar" [disabled]="form.invalid" />
+      <p-button type="submit" label="Guardar" [disabled]="form.invalid" [loading]="saving()" />
       <p-button
         type="button"
         label="Cancelar"
