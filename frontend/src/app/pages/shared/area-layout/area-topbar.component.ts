@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, inject, output, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
@@ -7,36 +7,36 @@ import { AvatarModule } from 'primeng/avatar';
 import { BreadcrumbModule } from 'primeng/breadcrumb';
 import { ButtonModule } from 'primeng/button';
 import { MenuModule } from 'primeng/menu';
+import {
+  DEFAULT_HOME_ITEM,
+  DEFAULT_PAGE_LABELS,
+  DEFAULT_SUB_PAGE_LABELS,
+  DEFAULT_USER_MENU_ITEMS,
+} from './area-layout-config';
 
+/** Barra superior de un área: breadcrumb, usuario y menú. Configurable y por defecto veterinario. */
 @Component({
-  selector: 'app-dashboard-topbar',
+  selector: 'app-area-topbar',
   imports: [AvatarModule, BreadcrumbModule, ButtonModule, MenuModule],
-  templateUrl: './topbar.component.html',
+  templateUrl: './area-topbar.component.html',
 })
-export class DashboardTopbarComponent implements OnInit {
+export class AreaTopbarComponent implements OnInit {
   /** Notifica al layout para abrir el drawer en móvil. */
   readonly menuToggle = output<void>();
 
   private readonly router = inject(Router);
   private readonly destroyRef = inject(DestroyRef);
 
-  readonly homeItem: MenuItem = { icon: 'pi pi-home', routerLink: '/veterinario' };
+  readonly homeItem = input<MenuItem>(DEFAULT_HOME_ITEM);
+  readonly pageLabels = input<Record<string, string>>(DEFAULT_PAGE_LABELS);
+  readonly subPageLabels = input<Record<string, Record<string, string>>>(DEFAULT_SUB_PAGE_LABELS);
+  readonly userName = input<string>('Admin');
+  readonly userInitial = input<string>('A');
+  readonly userMenuItems = input<MenuItem[]>(DEFAULT_USER_MENU_ITEMS);
+  /** En el cliente el id del dueño va antes de la página (/cliente/7/mascotas). */
+  readonly skipNumericSegment = input<boolean>(false);
+
   readonly breadcrumbItems = signal<MenuItem[]>([]);
-
-  readonly userMenuItems: MenuItem[] = [
-    { label: 'Perfil', icon: 'pi pi-user', disabled: true },
-    { label: 'Cerrar sesión', icon: 'pi pi-sign-out', disabled: true },
-  ];
-
-  private readonly pageLabels: Record<string, string> = {
-    pets: 'Mascotas',
-    owners: 'Dueños',
-  };
-
-  private readonly subPageLabels: Record<string, Record<string, string>> = {
-    pets: { add: 'Nueva mascota', update: 'Editar mascota' },
-    owners: { add: 'Nuevo dueño', update: 'Editar dueño' },
-  };
 
   ngOnInit(): void {
     // Se suscribe en ngOnInit, no en el constructor, para que la suscripción se libere con la vista.
@@ -49,14 +49,19 @@ export class DashboardTopbarComponent implements OnInit {
     this.updateBreadcrumb(this.router.url);
   }
 
+  /** parts[1] es la página y parts[2] la subpágina. */
   private updateBreadcrumb(url: string): void {
     const parts = url.split('?')[0].split('/').filter(Boolean);
+    // Con skipNumericSegment, parts[1] puede ser el id del área y no una página.
+    if (this.skipNumericSegment() && /^\d+$/.test(parts[1] ?? '')) {
+      parts.splice(1, 1);
+    }
     const items: MenuItem[] = [];
     const segment = parts[1];
     if (!segment) {
       items.push({ label: 'Inicio' });
     } else {
-      items.push({ label: this.pageLabels[segment] ?? segment });
+      items.push({ label: this.pageLabels()[segment] ?? segment });
       const sub = parts[2];
       if (sub) {
         items.push({ label: this.subPageLabel(segment, sub) });
@@ -66,13 +71,14 @@ export class DashboardTopbarComponent implements OnInit {
   }
 
   private subPageLabel(parent: string, segment: string): string {
-    const label = this.subPageLabels[parent]?.[segment];
+    const label = this.subPageLabels()[parent]?.[segment];
     if (label) {
       return label;
     }
+    // Los segmentos numéricos son ids de detalle.
     if (/^\d+$/.test(segment)) {
       return 'Detalle';
     }
-    return this.pageLabels[segment] ?? segment;
+    return this.pageLabels()[segment] ?? segment;
   }
 }
