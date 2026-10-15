@@ -1,12 +1,12 @@
-import { AfterViewInit, Directive, ElementRef, OnDestroy, inject } from '@angular/core';
+import { AfterViewInit, Directive, ElementRef, OnDestroy, OnInit, inject } from '@angular/core';
 
 /**
  * Scroll reveal, port of the Motion block of `static/js/script.js`.
  *
  * `html.js .reveal { opacity: 0 }` is what hides the elements until they are
  * revealed, so the `js` class has to reach <html> before the first paint. It is
- * added in the constructor, which runs while the landing view is being created
- * and therefore well before the browser paints.
+ * added in ngOnInit, which runs during the landing view's first change detection,
+ * before the browser paints.
  *
  * The original queried `document`; querying the host subtree instead keeps the
  * behaviour identical while scoping the effect to the landing, which is why
@@ -18,13 +18,13 @@ import { AfterViewInit, Directive, ElementRef, OnDestroy, inject } from '@angula
 @Directive({
   selector: '[appReveal]'
 })
-export class RevealDirective implements AfterViewInit, OnDestroy {
+export class RevealDirective implements OnInit, AfterViewInit, OnDestroy {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
   private readonly reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
   private observer?: IntersectionObserver;
 
-  constructor() {
+  ngOnInit(): void {
     document.documentElement.classList.add('js');
   }
 

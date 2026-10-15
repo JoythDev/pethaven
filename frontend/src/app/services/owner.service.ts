@@ -1,7 +1,7 @@
 import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { API_BASE_URL } from '../config/api.config';
+import { API_BASE_URL } from '../core/api/api-base-url';
 import { Owner, OwnerRequest, OwnerUpdateRequest } from '../models/owner.model';
 
 // Cliente del API de dueños. Cada método devuelve un Observable frío:

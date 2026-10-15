@@ -7,18 +7,18 @@ export const routes: Routes = [
   { path: 'login', component: PortalPlaceholderComponent },
   { path: 'vet/login', component: PortalPlaceholderComponent },
 
-  // Panel post-login (dashboard): layout propio e independiente de la landing.
+  // Panel del veterinario: layout propio e independiente de la landing.
   {
-    path: 'dashboard',
+    path: 'veterinario',
     loadComponent: () =>
-      import('./pages/dashboard/dashboard-layout/dashboard-layout.component').then(
+      import('./pages/veterinario/dashboard-layout/dashboard-layout.component').then(
         (m) => m.DashboardLayoutComponent
       ),
     children: [
       {
         path: '',
         loadComponent: () =>
-          import('./pages/dashboard/home/home.component').then((m) => m.DashboardHomeComponent),
+          import('./pages/veterinario/home/home.component').then((m) => m.DashboardHomeComponent),
       },
       {
         path: 'pets',
@@ -26,28 +26,28 @@ export const routes: Routes = [
           {
             path: '',
             loadComponent: () =>
-              import('./pages/dashboard/pets/pets-list/pets-list.component').then(
+              import('./pages/veterinario/pets/pets-list/pets-list.component').then(
                 (m) => m.PetsListComponent
               ),
           },
           {
             path: 'add',
             loadComponent: () =>
-              import('./pages/dashboard/pets/pet-form/pet-form.component').then(
+              import('./pages/veterinario/pets/pet-form/pet-form.component').then(
                 (m) => m.PetsFormComponent
               ),
           },
           {
             path: 'update/:id',
             loadComponent: () =>
-              import('./pages/dashboard/pets/pet-form/pet-form.component').then(
+              import('./pages/veterinario/pets/pet-form/pet-form.component').then(
                 (m) => m.PetsFormComponent
               ),
           },
           {
             path: ':id',
             loadComponent: () =>
-              import('./pages/dashboard/pets/pet-detail/pet-detail.component').then(
+              import('./pages/veterinario/pets/pet-detail/pet-detail.component').then(
                 (m) => m.PetsDetailComponent
               ),
           },
@@ -59,28 +59,28 @@ export const routes: Routes = [
           {
             path: '',
             loadComponent: () =>
-              import('./pages/dashboard/owners/owners-list/owners-list.component').then(
+              import('./pages/veterinario/owners/owners-list/owners-list.component').then(
                 (m) => m.OwnersListComponent
               ),
           },
           {
             path: 'add',
             loadComponent: () =>
-              import('./pages/dashboard/owners/owner-form/owner-form.component').then(
+              import('./pages/veterinario/owners/owner-form/owner-form.component').then(
                 (m) => m.OwnersFormComponent
               ),
           },
           {
             path: 'update/:id',
             loadComponent: () =>
-              import('./pages/dashboard/owners/owner-form/owner-form.component').then(
+              import('./pages/veterinario/owners/owner-form/owner-form.component').then(
                 (m) => m.OwnersFormComponent
               ),
           },
           {
             path: ':id',
             loadComponent: () =>
-              import('./pages/dashboard/owners/owner-detail/owner-detail.component').then(
+              import('./pages/veterinario/owners/owner-detail/owner-detail.component').then(
                 (m) => m.OwnersDetailComponent
               ),
           },
@@ -88,6 +88,29 @@ export const routes: Routes = [
       },
     ],
   },
+
+  // Placeholders de los portales que aún no existen.
+  {
+    path: 'cliente',
+    loadComponent: () =>
+      import('./pages/shared/coming-soon/coming-soon.component').then((m) => m.ComingSoonComponent),
+    data: {
+      title: 'Portal del cliente',
+      description: 'El portal del cliente está en preparación.',
+    },
+  },
+  {
+    path: 'administrador',
+    loadComponent: () =>
+      import('./pages/shared/coming-soon/coming-soon.component').then((m) => m.ComingSoonComponent),
+    data: {
+      title: 'Portal del administrador',
+      description: 'El portal del administrador está en preparación.',
+    },
+  },
+
+  // Compatibilidad: la ruta anterior del panel redirige al panel del veterinario.
+  { path: 'dashboard', redirectTo: 'veterinario', pathMatch: 'prefix' },
 
   { path: '**', redirectTo: '' }
 ];

@@ -1,7 +1,7 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import { Observable } from 'rxjs';
-import { API_BASE_URL } from '../config/api.config';
+import { API_BASE_URL } from '../core/api/api-base-url';
 import { Pet, PetRequest } from '../models/pet.model';
 
 // Cliente del API de mascotas. Cada método devuelve un Observable frío:
