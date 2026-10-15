@@ -1,3 +1,4 @@
+import { DatePipe } from '@angular/common';
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
@@ -5,23 +6,27 @@ import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 import { map, of, switchMap } from 'rxjs';
 import { Pet } from '../../../../models/pet.model';
+import { Treatment } from '../../../../models/treatment.model';
 import { PetService } from '../../../../services/pet.service';
+import { TreatmentService } from '../../../../services/treatment.service';
 import { parseRouteId } from '../../../../core/http/route-id';
 import { ViewState, toViewState } from '../../../../core/http/view-state';
 import { PetStatusTagComponent } from '../components/pet-status-tag/pet-status-tag.component';
 
 @Component({
   selector: 'app-pets-detail',
-  imports: [RouterLink, ButtonModule, TagModule, PetStatusTagComponent],
+  imports: [DatePipe, RouterLink, ButtonModule, TagModule, PetStatusTagComponent],
   templateUrl: './pet-detail.component.html',
 })
 export class PetsDetailComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly petService = inject(PetService);
+  private readonly treatmentService = inject(TreatmentService);
   private readonly destroyRef = inject(DestroyRef);
 
   readonly state = signal<ViewState<Pet>>({ status: 'loading' });
+  readonly treatmentsState = signal<ViewState<Treatment[]>>({ status: 'loading' });
 
   // Lee el :id de la URL y llama a PetService.getById. Un id inválido termina en error sin
   // llamar al API. switchMap descarta la consulta anterior si el id cambia antes de que
@@ -38,6 +43,19 @@ export class PetsDetailComponent implements OnInit {
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((state) => this.state.set(state));
+
+    // Carga el historial de tratamientos de la mascota consultada.
+    this.route.paramMap
+      .pipe(
+        map((params) => parseRouteId(params.get('id'))),
+        switchMap((id) =>
+          id === null
+            ? of<ViewState<Treatment[]>>({ status: 'error', message: 'La mascota solicitada no existe.' })
+            : this.treatmentService.getByPetId(id).pipe(toViewState<Treatment[]>()),
+        ),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((state) => this.treatmentsState.set(state));
   }
 
   editar(id: number): void {
