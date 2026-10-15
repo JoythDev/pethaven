@@ -1,11 +1,11 @@
 import { Routes } from '@angular/router';
 import { LandingComponent } from './pages/landing/landing.component';
-import { PortalPlaceholderComponent } from './pages/portal-placeholder/portal-placeholder.component';
+import { LoginComponent } from './pages/auth/login/login.component';
 
 export const routes: Routes = [
   { path: '', component: LandingComponent },
-  { path: 'login', component: PortalPlaceholderComponent },
-  { path: 'vet/login', component: PortalPlaceholderComponent },
+  { path: 'login', component: LoginComponent, data: { kind: 'owner' } },
+  { path: 'vet/login', component: LoginComponent, data: { kind: 'vet' } },
 
   // Panel del veterinario: layout propio e independiente de la landing.
   {
