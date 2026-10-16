@@ -18,3 +18,17 @@ export interface TreatmentDrug {
   unitPurchasePrice: number;
   unitSalePrice: number;
 }
+
+// Cuerpo para registrar un tratamiento (TreatmentRequest): con date en null
+// el API usa la fecha actual, y la fecha no puede ser futura.
+export interface TreatmentRequest {
+  petId: number;
+  veterinarianId: number;
+  date: string | null;
+}
+
+// Cuerpo para administrar un medicamento en un tratamiento (TreatmentDrugRequest).
+export interface TreatmentDrugRequest {
+  drugId: number;
+  units: number;
+}
