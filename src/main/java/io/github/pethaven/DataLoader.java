@@ -390,7 +390,7 @@ public class DataLoader implements CommandLineRunner {
         drugRepository.save(Drug.builder().name("Dexametasona").purchasePrice(new BigDecimal("7000")).salePrice(new BigDecimal("13000")).unitsAvailable(120).unitsSold(0).build());
         drugRepository.save(Drug.builder().name("Tramadol 50mg").purchasePrice(new BigDecimal("9000")).salePrice(new BigDecimal("17000")).unitsAvailable(90).unitsSold(0).build());
 
-        // Cargar medicamentos desde el excel EXCEL_FILE_PATH
+        // Cargar medicamentos desde el Excel en EXCEL_FILE_PATH
         excelReadingService.loadDrugsFromExcel(EXCEL_FILE_PATH);
 
         // =======================================
