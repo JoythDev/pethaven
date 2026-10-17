@@ -2,6 +2,7 @@ package io.github.pethaven.service;
 
 import io.github.pethaven.dto.request.DrugRequest;
 import io.github.pethaven.dto.response.DrugResponse;
+import io.github.pethaven.exception.InvalidExcelFormatException;
 import org.apache.poi.ss.usermodel.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -29,10 +30,12 @@ public class ExcelReadingServiceImpl implements ExcelReadingService {
         List<DrugResponse> loadedDrugs = new ArrayList<>();
 
         for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+            validateRowTypes(sheet.getRow(i), i);
             DrugRequest request = readDrugFromRow(sheet.getRow(i));
             loadedDrugs.add(drugService.createDrug(request));
         }
 
+        workbook.close();
         return loadedDrugs;
     }
 
@@ -48,6 +51,18 @@ public class ExcelReadingServiceImpl implements ExcelReadingService {
         BigDecimal salePrice = BigDecimal.valueOf(row.getCell(2).getNumericCellValue());
         Integer unitsAvailable = (int) row.getCell(3).getNumericCellValue();
         return new DrugRequest(name, purchasePrice, salePrice, unitsAvailable);
+    }
+
+    private void validateRowTypes(Row row, int rowIndex) {
+        if (row.getCell(0).getCellType() != CellType.STRING) {
+            throw new InvalidExcelFormatException(rowIndex+1, 'A', CellType.STRING, row.getCell(0).toString());
+        } else if (row.getCell(1).getCellType() != CellType.NUMERIC) {
+            throw new InvalidExcelFormatException(rowIndex+1, 'B', CellType.NUMERIC, row.getCell(1).toString());
+        } else if (row.getCell(2).getCellType() != CellType.NUMERIC) {
+            throw new InvalidExcelFormatException(rowIndex+1, 'C', CellType.NUMERIC, row.getCell(2).toString());
+        } else if (row.getCell(3).getCellType() != CellType.NUMERIC) {
+            throw new InvalidExcelFormatException(rowIndex+1, 'D', CellType.NUMERIC, row.getCell(3).toString());
+        }
     }
 
 }

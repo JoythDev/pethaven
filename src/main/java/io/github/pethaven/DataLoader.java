@@ -7,6 +7,7 @@ import io.github.pethaven.entity.Species;
 import io.github.pethaven.entity.Treatment;
 import io.github.pethaven.entity.TreatmentDrug;
 import io.github.pethaven.entity.Veterinarian;
+import io.github.pethaven.exception.InvalidExcelFormatException;
 import io.github.pethaven.repository.DrugRepository;
 import io.github.pethaven.repository.OwnerRepository;
 import io.github.pethaven.repository.PetRepository;
@@ -14,6 +15,8 @@ import io.github.pethaven.repository.TreatmentDrugRepository;
 import io.github.pethaven.repository.TreatmentRepository;
 import io.github.pethaven.repository.VeterinarianRepository;
 import io.github.pethaven.service.ExcelReadingService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -50,6 +53,8 @@ public class DataLoader implements CommandLineRunner {
     @Autowired
     private ExcelReadingService excelReadingService;
     private static final String EXCEL_FILE_PATH = "src/main/resources/data/medicamentos-veterinaria.xlsx";
+
+    private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
 
     private final Random random = new Random(42);
 
@@ -391,7 +396,13 @@ public class DataLoader implements CommandLineRunner {
         drugRepository.save(Drug.builder().name("Tramadol 50mg").purchasePrice(new BigDecimal("9000")).salePrice(new BigDecimal("17000")).unitsAvailable(90).unitsSold(0).build());
 
         // Cargar medicamentos desde el Excel en EXCEL_FILE_PATH
-        excelReadingService.loadDrugsFromExcel(EXCEL_FILE_PATH);
+        try {
+            excelReadingService.loadDrugsFromExcel(EXCEL_FILE_PATH);
+        } catch (InvalidExcelFormatException e) {
+            log.error("Algo ocurrió durante la lectura del archivo Excel de medicamentos.", e);
+        } catch (Exception e) {
+            log.error("Algo inesperado ocurrió con el archivo Excel de medicamentos.", e);
+        }
 
         // =======================================
         // ==== Cargar tratamientos de ejemplo ====
