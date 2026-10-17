@@ -19,8 +19,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -52,7 +54,7 @@ public class DataLoader implements CommandLineRunner {
 
     @Autowired
     private ExcelReadingService excelReadingService;
-    private static final String EXCEL_FILE_PATH = "src/main/resources/data/medicamentos-veterinaria.xlsx";
+    private static final String EXCEL_RESOURCE_PATH = "data/medicamentos-veterinaria.xlsx";
 
     private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
 
@@ -395,9 +397,9 @@ public class DataLoader implements CommandLineRunner {
         drugRepository.save(Drug.builder().name("Dexametasona").purchasePrice(new BigDecimal("7000")).salePrice(new BigDecimal("13000")).unitsAvailable(120).unitsSold(0).build());
         drugRepository.save(Drug.builder().name("Tramadol 50mg").purchasePrice(new BigDecimal("9000")).salePrice(new BigDecimal("17000")).unitsAvailable(90).unitsSold(0).build());
 
-        // Cargar medicamentos desde el Excel en EXCEL_FILE_PATH
-        try {
-            excelReadingService.loadDrugsFromExcel(EXCEL_FILE_PATH);
+        // Cargar medicamentos desde el Excel
+        try (InputStream excelStream = new ClassPathResource(EXCEL_RESOURCE_PATH).getInputStream()) {
+            excelReadingService.loadDrugsFromExcel(excelStream);
         } catch (InvalidExcelFormatException e) {
             log.error("Algo ocurrió durante la lectura del archivo Excel de medicamentos. No se cargó ningún medicamento", e);
         } catch (Exception e) {
