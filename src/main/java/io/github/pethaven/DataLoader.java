@@ -13,6 +13,7 @@ import io.github.pethaven.repository.PetRepository;
 import io.github.pethaven.repository.TreatmentDrugRepository;
 import io.github.pethaven.repository.TreatmentRepository;
 import io.github.pethaven.repository.VeterinarianRepository;
+import io.github.pethaven.service.ExcelReadingService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
@@ -45,6 +46,10 @@ public class DataLoader implements CommandLineRunner {
 
     @Autowired
     private TreatmentDrugRepository treatmentDrugRepository;
+
+    @Autowired
+    private ExcelReadingService excelReadingService;
+    private static final String EXCEL_FILE_PATH = "src/main/resources/data/medicamentos-veterinaria.xlsx";
 
     private final Random random = new Random(42);
 
@@ -384,6 +389,9 @@ public class DataLoader implements CommandLineRunner {
         drugRepository.save(Drug.builder().name("Omeprazol 20mg").purchasePrice(new BigDecimal("5000")).salePrice(new BigDecimal("10000")).unitsAvailable(180).unitsSold(0).build());
         drugRepository.save(Drug.builder().name("Dexametasona").purchasePrice(new BigDecimal("7000")).salePrice(new BigDecimal("13000")).unitsAvailable(120).unitsSold(0).build());
         drugRepository.save(Drug.builder().name("Tramadol 50mg").purchasePrice(new BigDecimal("9000")).salePrice(new BigDecimal("17000")).unitsAvailable(90).unitsSold(0).build());
+
+        // Cargar medicamentos desde el excel EXCEL_FILE_PATH
+        excelReadingService.loadDrugsFromExcel(EXCEL_FILE_PATH);
 
         // =======================================
         // ==== Cargar tratamientos de ejemplo ====
