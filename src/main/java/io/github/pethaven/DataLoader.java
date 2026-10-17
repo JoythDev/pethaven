@@ -399,7 +399,7 @@ public class DataLoader implements CommandLineRunner {
         try {
             excelReadingService.loadDrugsFromExcel(EXCEL_FILE_PATH);
         } catch (InvalidExcelFormatException e) {
-            log.error("Algo ocurrió durante la lectura del archivo Excel de medicamentos.", e);
+            log.error("Algo ocurrió durante la lectura del archivo Excel de medicamentos. No se cargó ningún medicamento", e);
         } catch (Exception e) {
             log.error("Algo inesperado ocurrió con el archivo Excel de medicamentos.", e);
         }

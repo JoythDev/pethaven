@@ -27,10 +27,10 @@ public class ExcelReadingServiceImpl implements ExcelReadingService {
         Workbook workbook = openWorkbook(filePath);
         Sheet sheet = workbook.getSheetAt(0);
 
+        validateRowTypes(sheet);
         List<DrugResponse> loadedDrugs = new ArrayList<>();
 
         for (int i = 1; i <= sheet.getLastRowNum(); i++) {
-            validateRowTypes(sheet.getRow(i), i);
             DrugRequest request = readDrugFromRow(sheet.getRow(i));
             loadedDrugs.add(drugService.createDrug(request));
         }
@@ -53,15 +53,18 @@ public class ExcelReadingServiceImpl implements ExcelReadingService {
         return new DrugRequest(name, purchasePrice, salePrice, unitsAvailable);
     }
 
-    private void validateRowTypes(Row row, int rowIndex) {
-        if (row.getCell(0).getCellType() != CellType.STRING) {
-            throw new InvalidExcelFormatException(rowIndex+1, 'A', CellType.STRING, row.getCell(0).toString());
-        } else if (row.getCell(1).getCellType() != CellType.NUMERIC) {
-            throw new InvalidExcelFormatException(rowIndex+1, 'B', CellType.NUMERIC, row.getCell(1).toString());
-        } else if (row.getCell(2).getCellType() != CellType.NUMERIC) {
-            throw new InvalidExcelFormatException(rowIndex+1, 'C', CellType.NUMERIC, row.getCell(2).toString());
-        } else if (row.getCell(3).getCellType() != CellType.NUMERIC) {
-            throw new InvalidExcelFormatException(rowIndex+1, 'D', CellType.NUMERIC, row.getCell(3).toString());
+    private void validateRowTypes(Sheet sheet) {
+        for (int i = 1; i <= sheet.getLastRowNum(); i++) {
+            Row row = sheet.getRow(i);
+            if (row.getCell(0).getCellType() != CellType.STRING) {
+                throw new InvalidExcelFormatException(i+1, 'A', CellType.STRING, row.getCell(0).toString());
+            } else if (row.getCell(1).getCellType() != CellType.NUMERIC) {
+                throw new InvalidExcelFormatException(i+1, 'B', CellType.NUMERIC, row.getCell(1).toString());
+            } else if (row.getCell(2).getCellType() != CellType.NUMERIC) {
+                throw new InvalidExcelFormatException(i+1, 'C', CellType.NUMERIC, row.getCell(2).toString());
+            } else if (row.getCell(3).getCellType() != CellType.NUMERIC) {
+                throw new InvalidExcelFormatException(i+1, 'D', CellType.NUMERIC, row.getCell(3).toString());
+            }
         }
     }
 
