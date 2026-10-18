@@ -22,6 +22,13 @@ export const routes: Routes = [
           import('./pages/veterinario/home/home.component').then((m) => m.DashboardHomeComponent),
       },
       {
+        path: 'perfil',
+        loadComponent: () =>
+          import('./pages/veterinario/perfil/perfil.component').then(
+            (m) => m.VeterinarioPerfilComponent
+          ),
+      },
+      {
         path: 'pets',
         children: [
           {
@@ -43,6 +50,13 @@ export const routes: Routes = [
             loadComponent: () =>
               import('./pages/veterinario/pets/pet-form/pet-form.component').then(
                 (m) => m.PetsFormComponent
+              ),
+          },
+          {
+            path: ':id/treatments/add',
+            loadComponent: () =>
+              import('./pages/veterinario/pets/treatment-form/treatment-form.component').then(
+                (m) => m.TreatmentFormComponent
               ),
           },
           {

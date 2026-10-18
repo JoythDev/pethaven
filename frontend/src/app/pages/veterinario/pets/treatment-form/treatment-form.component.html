@@ -1,0 +1,163 @@
+<div class="mx-auto max-w-2xl p-5 lg:p-8">
+  @let s = state();
+
+  @if (s.status === 'loading') {
+    <a routerLink="/veterinario/pets" class="text-sm font-semibold text-olive transition-colors hover:text-tertiary">
+      ← Volver a Mascotas
+    </a>
+    <div class="mt-6 rounded-3xl border border-olive/15 bg-white p-10 text-center shadow-sm">
+      <i class="pi pi-spin pi-spinner text-2xl text-text/40" aria-hidden="true"></i>
+      <p class="mt-3 text-text/60">Cargando información...</p>
+    </div>
+  } @else if (s.status === 'error') {
+    <a routerLink="/veterinario/pets" class="text-sm font-semibold text-olive transition-colors hover:text-tertiary">
+      ← Volver a Mascotas
+    </a>
+    <div class="mt-6 rounded-3xl border border-olive/15 bg-white p-10 text-center shadow-sm">
+      <i class="pi pi-search text-2xl text-text/30" aria-hidden="true"></i>
+      <p class="mt-3 text-text/60">{{ s.message }}</p>
+    </div>
+  } @else {
+    @let pet = s.data.pet;
+
+    <a
+      [routerLink]="['/veterinario/pets', pet.id]"
+      class="text-sm font-semibold text-olive transition-colors hover:text-tertiary"
+    >
+      ← Volver a {{ pet.name }}
+    </a>
+
+    <h1 class="font-display mt-4 mb-8 text-3xl font-bold text-text">Registrar Tratamiento</h1>
+
+    <div class="mb-5 flex items-center gap-4 rounded-3xl border border-olive/15 bg-white p-4 shadow-sm">
+      <img
+        [src]="pet.photoUrl"
+        [alt]="pet.name"
+        class="h-14 w-14 shrink-0 rounded-full bg-secondary/50 object-cover"
+      />
+      <div class="flex flex-col leading-tight">
+        <span class="flex items-center gap-2 font-bold text-text">
+          {{ pet.name }}
+          <app-pet-status-tag [pet]="pet" />
+        </span>
+        <span class="text-sm text-text/60">{{ pet.breed }} · Dueño: {{ pet.ownerName }}</span>
+      </div>
+    </div>
+
+    @if (blockedReason(); as reason) {
+      <div class="rounded-3xl border border-olive/15 bg-white p-8 text-center shadow-sm">
+        <i class="pi pi-exclamation-triangle text-2xl text-text/30" aria-hidden="true"></i>
+        <p class="mt-3 text-text/70">{{ reason }}</p>
+        <p-button
+          class="mt-4"
+          [label]="'Volver a ' + pet.name"
+          [outlined]="true"
+          (onClick)="cancelar(pet.id)"
+        />
+      </div>
+    } @else {
+      <form
+        [formGroup]="form"
+        (ngSubmit)="guardar()"
+        class="flex flex-col gap-5 rounded-3xl border border-olive/15 bg-white p-6 shadow-sm lg:p-8"
+      >
+        @if (s.data.veterinarian; as vet) {
+          <div class="flex flex-col gap-1">
+            <span class="text-sm font-bold text-text">Veterinario</span>
+            <p class="rounded-xl border border-olive/10 bg-surface-50 px-4 py-3 text-sm text-text">
+              {{ vet.name }} <span class="text-text/60">· {{ vet.specialty }}</span>
+            </p>
+            <span class="text-xs text-text/50">El tratamiento se registra a tu nombre.</span>
+          </div>
+        }
+
+        <div class="flex flex-col gap-3" formArrayName="drugs">
+          <div class="flex items-center justify-between gap-3">
+            <span class="text-sm font-bold text-text">Medicamentos</span>
+            <p-button
+              type="button"
+              label="Agregar medicamento"
+              icon="pi pi-plus"
+              size="small"
+              [text]="true"
+              [disabled]="form.controls.drugs.length >= s.data.drugs.length"
+              (onClick)="agregarMedicamento()"
+            />
+          </div>
+
+          @for (line of form.controls.drugs.controls; track line; let i = $index) {
+            @let stock = stockOf(line.controls.drugId.value);
+
+            <div
+              [formGroupName]="i"
+              class="grid grid-cols-1 gap-3 rounded-2xl border border-olive/10 bg-surface-50 p-4 sm:grid-cols-[1fr_9rem_auto] sm:items-start"
+            >
+              <div class="flex flex-col gap-1">
+                <label [for]="'drug-' + i" class="text-xs font-semibold text-text/60">Medicamento</label>
+                <p-select
+                  [inputId]="'drug-' + i"
+                  formControlName="drugId"
+                  [options]="drugOptionsByLine()[i]"
+                  optionLabel="label"
+                  optionValue="id"
+                  placeholder="Busca un medicamento"
+                  [filter]="true"
+                  filterBy="label"
+                  [virtualScroll]="true"
+                  [virtualScrollItemSize]="38"
+                  [fluid]="true"
+                />
+                @if (line.controls.drugId.invalid && line.controls.drugId.touched) {
+                  <p-message severity="error" variant="simple" size="small">Selecciona un medicamento.</p-message>
+                }
+              </div>
+
+              <div class="flex flex-col gap-1">
+                <label [for]="'units-' + i" class="text-xs font-semibold text-text/60">Unidades</label>
+                <p-inputnumber
+                  [inputId]="'units-' + i"
+                  formControlName="units"
+                  [min]="1"
+                  [max]="stock"
+                  [step]="1"
+                  [fluid]="true"
+                />
+                @if (line.errors?.['exceedsStock']; as exceeds) {
+                  <p-message severity="error" variant="simple" size="small">
+                    Solo hay {{ exceeds.available }} disponibles.
+                  </p-message>
+                } @else if (line.controls.units.invalid && line.controls.units.touched) {
+                  <p-message severity="error" variant="simple" size="small">Ingresa un entero de 1 o más.</p-message>
+                } @else if (stock !== null) {
+                  <span class="text-xs text-text/50">Disponibles: {{ stock }}</span>
+                }
+              </div>
+
+              <p-button
+                type="button"
+                class="sm:mt-6"
+                icon="pi pi-trash"
+                severity="danger"
+                [text]="true"
+                ariaLabel="Quitar medicamento"
+                [disabled]="form.controls.drugs.length === 1"
+                (onClick)="quitarMedicamento(i)"
+              />
+            </div>
+          }
+        </div>
+
+        <div class="mt-2 flex items-center gap-4">
+          <p-button type="submit" label="Registrar" [disabled]="form.invalid" [loading]="saving()" />
+          <p-button
+            type="button"
+            label="Cancelar"
+            severity="secondary"
+            [text]="true"
+            (onClick)="cancelar(pet.id)"
+          />
+        </div>
+      </form>
+    }
+  }
+</div>

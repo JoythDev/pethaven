@@ -48,6 +48,14 @@ public class DrugServiceImpl implements DrugService {
 
     @Override
     @Transactional(readOnly = true)
+    public List<DrugResponse> getAvailableDrugs() {
+        return drugRepository.findByUnitsAvailableGreaterThan(0).stream()
+                .map(drugMapper::toResponse)
+                .toList();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
     public DrugResponse getDrugById(Long id) {
         return drugMapper.toResponse(getDrugEntity(id));
     }

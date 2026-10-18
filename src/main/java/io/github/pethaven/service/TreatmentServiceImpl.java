@@ -8,6 +8,7 @@ import io.github.pethaven.entity.Veterinarian;
 import io.github.pethaven.exception.IllegalOperationException;
 import io.github.pethaven.exception.ResourceNotFoundException;
 import io.github.pethaven.mapper.TreatmentMapper;
+import io.github.pethaven.repository.DrugRepository;
 import io.github.pethaven.repository.TreatmentRepository;
 import io.github.pethaven.repository.VeterinarianRepository;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +26,8 @@ public class TreatmentServiceImpl implements TreatmentService {
     private final VeterinarianRepository veterinarianRepository;
     private final PetService petService;
     private final VeterinarianService veterinarianService;
+    private final DrugRepository drugRepository;
+    private final TreatmentDrugService treatmentDrugService;
 
     @Autowired
     public TreatmentServiceImpl(
@@ -32,13 +35,17 @@ public class TreatmentServiceImpl implements TreatmentService {
             TreatmentMapper treatmentMapper,
             VeterinarianRepository veterinarianRepository,
             PetService petService,
-            VeterinarianService veterinarianService
+            VeterinarianService veterinarianService,
+            DrugRepository drugRepository,
+            TreatmentDrugService treatmentDrugService
     ) {
         this.treatmentRepository = treatmentRepository;
         this.treatmentMapper = treatmentMapper;
         this.veterinarianRepository = veterinarianRepository;
         this.petService = petService;
         this.veterinarianService = veterinarianService;
+        this.drugRepository = drugRepository;
+        this.treatmentDrugService = treatmentDrugService;
     }
 
     @Override
@@ -78,6 +85,11 @@ public class TreatmentServiceImpl implements TreatmentService {
             throw new IllegalOperationException(
                     "El veterinario '" + veterinarian.getName() + "' no está activo: no puede registrar atenciones.");
         }
+        // Un tratamiento se apoya en el inventario de medicamentos: sin ninguno con stock no se puede registrar.
+        if (!drugRepository.existsByUnitsAvailableGreaterThan(0)) {
+            throw new IllegalOperationException(
+                    "No hay medicamentos disponibles en el inventario: no se pueden registrar tratamientos.");
+        }
 
         Treatment treatment = treatmentMapper.toEntity(request);
         if (treatment.getDate() == null) {
@@ -87,6 +99,7 @@ public class TreatmentServiceImpl implements TreatmentService {
         treatment.setVeterinarian(veterinarian);
 
         Treatment saved = treatmentRepository.save(treatment);
+        treatmentDrugService.administerDrugs(saved, request.drugs());
 
         veterinarian.setAttentions(veterinarian.getAttentions() + 1);
         veterinarianRepository.save(veterinarian);

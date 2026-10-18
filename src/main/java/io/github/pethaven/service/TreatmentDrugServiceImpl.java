@@ -6,9 +6,11 @@ import io.github.pethaven.entity.Drug;
 import io.github.pethaven.entity.Treatment;
 import io.github.pethaven.entity.TreatmentDrug;
 import io.github.pethaven.exception.IllegalOperationException;
+import io.github.pethaven.exception.ResourceNotFoundException;
 import io.github.pethaven.mapper.TreatmentDrugMapper;
 import io.github.pethaven.repository.DrugRepository;
 import io.github.pethaven.repository.TreatmentDrugRepository;
+import io.github.pethaven.repository.TreatmentRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -24,7 +26,7 @@ public class TreatmentDrugServiceImpl implements TreatmentDrugService {
 
     private final TreatmentDrugRepository treatmentDrugRepository;
     private final TreatmentDrugMapper treatmentDrugMapper;
-    private final TreatmentService treatmentService;
+    private final TreatmentRepository treatmentRepository;
     private final DrugService drugService;
     private final DrugRepository drugRepository;
 
@@ -32,13 +34,13 @@ public class TreatmentDrugServiceImpl implements TreatmentDrugService {
     public TreatmentDrugServiceImpl(
             TreatmentDrugRepository treatmentDrugRepository,
             TreatmentDrugMapper treatmentDrugMapper,
-            TreatmentService treatmentService,
+            TreatmentRepository treatmentRepository,
             DrugService drugService,
             DrugRepository drugRepository
     ) {
         this.treatmentDrugRepository = treatmentDrugRepository;
         this.treatmentDrugMapper = treatmentDrugMapper;
-        this.treatmentService = treatmentService;
+        this.treatmentRepository = treatmentRepository;
         this.drugService = drugService;
         this.drugRepository = drugRepository;
     }
@@ -57,19 +59,35 @@ public class TreatmentDrugServiceImpl implements TreatmentDrugService {
     @Override
     @Transactional
     public TreatmentDrugResponse createTreatmentDrug(Long treatmentId, TreatmentDrugRequest request) {
+        Treatment treatment = treatmentRepository.findById(treatmentId)
+                .orElseThrow(() -> new ResourceNotFoundException("Treatment", "id", treatmentId));
+        return treatmentDrugMapper.toResponse(administer(treatment, request));
+    }
+
+    // Administra varios medicamentos dentro de la transacción del llamador: si alguno falla
+    // (sin stock, repetido, etc.) la excepción hace rollback también del tratamiento que los contiene.
+    @Override
+    @Transactional
+    public void administerDrugs(Treatment treatment, List<TreatmentDrugRequest> requests) {
+        if (requests == null) {
+            return;
+        }
+        requests.forEach(request -> administer(treatment, request));
+    }
+
+    private TreatmentDrug administer(Treatment treatment, TreatmentDrugRequest request) {
         if (request.units() == null || request.units() <= 0) {
             throw new IllegalOperationException("Las unidades administradas deben ser mayores a cero.");
         }
 
-        Treatment treatment = treatmentService.getTreatmentEntity(treatmentId);
         ensurePetIsActive(treatment);
-        Drug drug = loadAvailableDrugFor(treatmentId, request);
+        Drug drug = loadAvailableDrugFor(treatment.getId(), request);
 
         registerStockMovement(drug, request.units());
 
         TreatmentDrug treatmentDrug = saveTreatmentDrug(treatment, drug, request.units());
         treatment.getTreatmentDrugs().add(treatmentDrug);
-        return treatmentDrugMapper.toResponse(treatmentDrug);
+        return treatmentDrug;
     }
 
     private void ensurePetIsActive(Treatment treatment) {
