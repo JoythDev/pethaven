@@ -4,17 +4,16 @@ import io.github.pethaven.entity.Drug;
 import io.github.pethaven.entity.Owner;
 import io.github.pethaven.entity.Pet;
 import io.github.pethaven.entity.Species;
-import io.github.pethaven.entity.Treatment;
-import io.github.pethaven.entity.TreatmentDrug;
 import io.github.pethaven.entity.Veterinarian;
+import io.github.pethaven.dto.request.TreatmentDrugRequest;
+import io.github.pethaven.dto.request.TreatmentRequest;
 import io.github.pethaven.exception.InvalidExcelFormatException;
 import io.github.pethaven.repository.DrugRepository;
 import io.github.pethaven.repository.OwnerRepository;
 import io.github.pethaven.repository.PetRepository;
-import io.github.pethaven.repository.TreatmentDrugRepository;
-import io.github.pethaven.repository.TreatmentRepository;
 import io.github.pethaven.repository.VeterinarianRepository;
 import io.github.pethaven.service.ExcelReadingService;
+import io.github.pethaven.service.TreatmentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -23,7 +22,6 @@ import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import java.io.InputStream;
-import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -47,10 +45,7 @@ public class DataLoader implements CommandLineRunner {
     private DrugRepository drugRepository;
 
     @Autowired
-    private TreatmentRepository treatmentRepository;
-
-    @Autowired
-    private TreatmentDrugRepository treatmentDrugRepository;
+    private TreatmentService treatmentService;
 
     @Autowired
     private ExcelReadingService excelReadingService;
@@ -65,36 +60,6 @@ public class DataLoader implements CommandLineRunner {
     private void savePet(Pet pet) {
         pet.setOwner(ownerPool.get(random.nextInt(ownerPool.size())));
         petRepository.save(pet);
-    }
-
-    private Treatment saveTreatment(Pet pet, Veterinarian veterinarian, LocalDateTime date) {
-        Treatment treatment = Treatment.builder().pet(pet).veterinarian(veterinarian).date(date).build();
-        treatmentRepository.save(treatment);
-
-        veterinarian.setAttentions(veterinarian.getAttentions() + 1);
-        veterinarianRepository.save(veterinarian);
-
-        return treatment;
-    }
-
-    /** Descuenta el inventario de la droga y registra el renglón, igual que TreatmentDrugServiceImpl. */
-    private void administerDrug(Treatment treatment, Drug drug, int units) {
-        int unitsToAdminister = Math.min(units, drug.getUnitsAvailable());
-        if (unitsToAdminister <= 0) {
-            return;
-        }
-
-        drug.setUnitsAvailable(drug.getUnitsAvailable() - unitsToAdminister);
-        drug.setUnitsSold(drug.getUnitsSold() + unitsToAdminister);
-        drugRepository.save(drug);
-
-        treatmentDrugRepository.save(TreatmentDrug.builder()
-                .treatment(treatment)
-                .drug(drug)
-                .units(unitsToAdminister)
-                .unitPurchasePrice(drug.getPurchasePrice())
-                .unitSalePrice(drug.getSalePrice())
-                .build());
     }
 
     @Override
@@ -386,17 +351,6 @@ public class DataLoader implements CommandLineRunner {
         veterinarianRepository.save(Veterinarian.builder().name("Dra. Sofía Herrera").document("192049284").email("sofia.herrera@pethaven.com").password("vet12345").specialty("Dermatología").build());
         veterinarianRepository.save(Veterinarian.builder().name("Dr. Julián Restrepo").document("102938471").email("julian.restrepo@pethaven.com").password("vet12345").specialty("Odontología Veterinaria").active(false).build());
 
-        // ==================================
-        // ==== Cargar drogas de ejemplo ====
-        // ==================================
-        drugRepository.save(Drug.builder().name("Amoxicilina 250mg").purchasePrice(new BigDecimal("8000")).salePrice(new BigDecimal("15000")).unitsAvailable(200).unitsSold(0).build());
-        drugRepository.save(Drug.builder().name("Meloxicam 5mg").purchasePrice(new BigDecimal("12000")).salePrice(new BigDecimal("22000")).unitsAvailable(150).unitsSold(0).build());
-        drugRepository.save(Drug.builder().name("Ivermectina").purchasePrice(new BigDecimal("6000")).salePrice(new BigDecimal("11000")).unitsAvailable(300).unitsSold(0).build());
-        drugRepository.save(Drug.builder().name("Suero Fisiológico 500ml").purchasePrice(new BigDecimal("4000")).salePrice(new BigDecimal("9000")).unitsAvailable(100).unitsSold(0).build());
-        drugRepository.save(Drug.builder().name("Omeprazol 20mg").purchasePrice(new BigDecimal("5000")).salePrice(new BigDecimal("10000")).unitsAvailable(180).unitsSold(0).build());
-        drugRepository.save(Drug.builder().name("Dexametasona").purchasePrice(new BigDecimal("7000")).salePrice(new BigDecimal("13000")).unitsAvailable(120).unitsSold(0).build());
-        drugRepository.save(Drug.builder().name("Tramadol 50mg").purchasePrice(new BigDecimal("9000")).salePrice(new BigDecimal("17000")).unitsAvailable(90).unitsSold(0).build());
-
         // Cargar medicamentos desde el Excel
         try (InputStream excelStream = new ClassPathResource(EXCEL_RESOURCE_PATH).getInputStream()) {
             excelReadingService.loadDrugsFromExcel(excelStream);
@@ -409,35 +363,49 @@ public class DataLoader implements CommandLineRunner {
         // =======================================
         // ==== Cargar tratamientos de ejemplo ====
         // =======================================
-        // Se generan sobre mascotas y veterinarios activos ya cargados arriba, descontando
-        // inventario y sumando atenciones tal como lo hacen TreatmentService/TreatmentDrugService.
-        List<Pet> petPool = petRepository.findAll();
+        // Se registran a través de TreatmentService para que apliquen las mismas reglas que el API:
+        // mascota y veterinario activos, descuento de inventario de las drogas cargadas desde el Excel
+        // y suma de atenciones. Sin drogas con stock no hay tratamientos que cargar.
+        if (!drugRepository.existsByUnitsAvailableGreaterThan(0)) {
+            log.warn("No hay medicamentos con stock: no se cargó ningún tratamiento de ejemplo.");
+            return;
+        }
+
+        List<Pet> activePets = petRepository.findAll().stream().filter(Pet::isActive).toList();
         // La mayoría de los tratamientos deben caer sobre mascotas con una enfermedad diagnosticada
-        // (para que la demo tenga sentido); el resto son controles/vacunas sobre cualquier mascota.
-        List<Pet> petsWithDisease = petPool.stream().filter(pet -> pet.getDisease() != null).toList();
+        // (para que la demo tenga sentido); el resto son controles/vacunas sobre cualquier mascota activa.
+        List<Pet> activePetsWithDisease = activePets.stream().filter(pet -> pet.getDisease() != null).toList();
         List<Veterinarian> activeVeterinarianPool = veterinarianRepository.findAll().stream()
                 .filter(Veterinarian::isActive)
                 .toList();
-        List<Drug> drugPool = drugRepository.findAll();
         LocalDateTime firstTreatmentDate = LocalDateTime.of(2026, 8, 1, 9, 0);
 
         for (int i = 0; i < 15; i++) {
+            // Se consulta el stock en cada vuelta porque los tratamientos anteriores ya descontaron unidades.
+            List<Drug> availableDrugs = new ArrayList<>(drugRepository.findByUnitsAvailableGreaterThan(0));
+            if (availableDrugs.isEmpty()) {
+                log.warn("Se agotó el inventario de medicamentos: se cargaron {} tratamientos de ejemplo.", i);
+                break;
+            }
+
             boolean forDiagnosedDisease = random.nextInt(10) < 8; // 80% de las veces
             Pet pet = forDiagnosedDisease
-                    ? petsWithDisease.get(random.nextInt(petsWithDisease.size()))
-                    : petPool.get(random.nextInt(petPool.size()));
+                    ? activePetsWithDisease.get(random.nextInt(activePetsWithDisease.size()))
+                    : activePets.get(random.nextInt(activePets.size()));
             Veterinarian veterinarian = activeVeterinarianPool.get(random.nextInt(activeVeterinarianPool.size()));
             LocalDateTime date = firstTreatmentDate.plusDays(i * 2L).plusHours(random.nextInt(9));
 
-            Treatment treatment = saveTreatment(pet, veterinarian, date);
-
             // Drogas distintas entre sí (treatment_id + drug_id es único en treatment_drugs).
-            List<Drug> shuffledDrugs = new ArrayList<>(drugPool);
-            Collections.shuffle(shuffledDrugs, random);
-            int drugLines = 1 + random.nextInt(2); // 1 o 2 drogas administradas por tratamiento
+            Collections.shuffle(availableDrugs, random);
+            int drugLines = Math.min(1 + random.nextInt(2), availableDrugs.size()); // 1 o 2 drogas por tratamiento
+            List<TreatmentDrugRequest> drugs = new ArrayList<>();
             for (int j = 0; j < drugLines; j++) {
-                administerDrug(treatment, shuffledDrugs.get(j), 1 + random.nextInt(5));
+                Drug drug = availableDrugs.get(j);
+                int units = 1 + random.nextInt(Math.min(5, drug.getUnitsAvailable()));
+                drugs.add(new TreatmentDrugRequest(drug.getId(), units));
             }
+
+            treatmentService.createTreatment(new TreatmentRequest(pet.getId(), veterinarian.getId(), date, drugs));
         }
     }
 }

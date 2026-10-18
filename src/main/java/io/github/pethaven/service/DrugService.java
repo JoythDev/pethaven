@@ -9,6 +9,7 @@ public interface DrugService {
 
     Drug getDrugEntity(Long id);
     List<DrugResponse> getAllDrugs();
+    List<DrugResponse> getAvailableDrugs();
     DrugResponse getDrugById(Long id);
     DrugResponse getDrugByName(String name);
     DrugResponse createDrug(DrugRequest request);

@@ -36,14 +36,18 @@ public class DrugController {
     }
 
     /**
-     * Lista todos los medicamentos registrados.
+     * Lista los medicamentos registrados, opcionalmente solo los que tienen stock.
      *
+     * @param available si es true, filtra los medicamentos sin unidades disponibles
      * @return lista de medicamentos
      */
-    @Operation(summary = "Listar medicamentos", description = "Devuelve todos los medicamentos registrados.")
+    @Operation(summary = "Listar medicamentos",
+            description = "Devuelve todos los medicamentos registrados. Con available=true devuelve solo los que tienen unidades disponibles.")
     @GetMapping
-    public List<DrugResponse> getAllDrugs() {
-        return drugService.getAllDrugs();
+    public List<DrugResponse> getAllDrugs(
+            @Parameter(description = "Si es true, solo los medicamentos con stock", example = "true")
+            @RequestParam(defaultValue = "false") boolean available) {
+        return available ? drugService.getAvailableDrugs() : drugService.getAllDrugs();
     }
 
     /**

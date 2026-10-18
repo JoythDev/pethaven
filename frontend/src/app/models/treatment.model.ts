@@ -20,11 +20,13 @@ export interface TreatmentDrug {
 }
 
 // Cuerpo para registrar un tratamiento (TreatmentRequest): con date en null
-// el API usa la fecha actual, y la fecha no puede ser futura.
+// el API usa la fecha actual, y la fecha no puede ser futura. Los medicamentos
+// viajan junto al tratamiento y el API los registra todos o ninguno.
 export interface TreatmentRequest {
   petId: number;
   veterinarianId: number;
   date: string | null;
+  drugs: TreatmentDrugRequest[];
 }
 
 // Cuerpo para administrar un medicamento en un tratamiento (TreatmentDrugRequest).

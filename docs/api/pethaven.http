@@ -266,6 +266,10 @@ DELETE {{baseUrl}}/api/veterinarians/1
 GET {{baseUrl}}/api/drugs
 Accept: application/json
 
+### Listar solo medicamentos con stock → 200 [DrugResponse]
+GET {{baseUrl}}/api/drugs?available=true
+Accept: application/json
+
 ### Detalle de medicamento → 200
 GET {{baseUrl}}/api/drugs/1
 Accept: application/json
@@ -346,6 +350,20 @@ Accept: application/json
 {
   "petId": 1,
   "veterinarianId": 1
+}
+
+### Crear tratamiento con medicamentos (atómico) → 201 + Location
+POST {{baseUrl}}/api/treatments
+Content-Type: application/json
+Accept: application/json
+
+{
+  "petId": 1,
+  "veterinarianId": 1,
+  "drugs": [
+    { "drugId": 10, "units": 1 },
+    { "drugId": 11, "units": 1 }
+  ]
 }
 
 ### Crear con fecha futura → 400

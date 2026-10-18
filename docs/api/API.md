@@ -472,12 +472,16 @@ Cuerpo para `POST /api/treatments`.
 | `petId` | number | Sí | Debe existir y estar activa |
 | `veterinarianId` | number | Sí | Debe existir y estar activo |
 | `date` | string \| null | No | ISO-8601 sin zona (`2026-08-05T10:30:00`). No puede ser futura. Si se omite, se usa el momento actual |
+| `drugs` | array<`TreatmentDrugRequest`> | No | Medicamentos a administrar junto con el tratamiento. Si se envían, se registran de forma atómica con él (todos o ninguno) |
 
 ```json
 {
   "petId": 24,
   "veterinarianId": 1,
-  "date": "2026-08-05T10:30:00"
+  "date": "2026-08-05T10:30:00",
+  "drugs": [
+    { "drugId": 5, "units": 2 }
+  ]
 }
 ```
 
@@ -1235,7 +1239,9 @@ Devuelve las mascotas atendidas por el veterinario, con los medicamentos adminis
 
 Devuelve todos los medicamentos registrados.
 
-Sin parámetros.
+| Parámetro | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `available` | boolean | No | Con `true` devuelve solo los medicamentos con `unitsAvailable` mayor a 0. Por defecto `false` |
 
 **Respuesta** `200 OK` — `array<DrugResponse>` (fragmento; los valores de `unitsAvailable` y `unitsSold` reflejan las administraciones ya registradas, incluidas las del seed):
 
@@ -1409,7 +1415,9 @@ Devuelve el detalle de un tratamiento.
 
 #### `POST /api/treatments`
 
-Registra un tratamiento para una mascota activa, atendido por un veterinario activo. Si se omite `date`, el servidor usa el momento actual; una fecha futura es un `400`.
+Registra un tratamiento para una mascota activa, atendido por un veterinario activo, siempre que exista al menos un medicamento con unidades disponibles. Si se omite `date`, el servidor usa el momento actual; una fecha futura es un `400`.
+
+Si se envía `drugs`, cada medicamento se administra dentro de la misma transacción que el tratamiento (descuenta inventario y copia los precios actuales): si alguno falla, no se registra nada.
 
 **Cuerpo** (`TreatmentRequest`):
 
@@ -1417,7 +1425,10 @@ Registra un tratamiento para una mascota activa, atendido por un veterinario act
 {
   "petId": 24,
   "veterinarianId": 1,
-  "date": "2026-08-05T10:30:00"
+  "date": "2026-08-05T10:30:00",
+  "drugs": [
+    { "drugId": 5, "units": 2 }
+  ]
 }
 ```
 
@@ -1431,18 +1442,29 @@ Registra un tratamiento para una mascota activa, atendido por un veterinario act
   "petName": "Canela",
   "veterinarianId": 1,
   "veterinarianName": "Dra. Valentina Soler",
-  "drugs": []
+  "drugs": [
+    {
+      "id": 22,
+      "drugId": 5,
+      "drugName": "Omeprazol 20mg",
+      "units": 2,
+      "unitPurchasePrice": 5000.00,
+      "unitSalePrice": 10000.00
+    }
+  ]
 }
 ```
 
 Además, el contador `attentions` del veterinario se incrementa en 1.
 
 **Errores**:
-- `400` validación de campos, o fecha futura (`errors.date`: `La fecha del tratamiento no puede ser futura`)
+- `400` validación de campos, o fecha futura (`errors.date`: `La fecha del tratamiento no puede ser futura`); también si algún elemento de `drugs` es inválido (p. ej. `errors["drugs[0].units"]`)
 - `404` la mascota no existe: `El recurso 'Pet' con id: '999' no fue encontrado`
 - `404` el veterinario no existe: `El recurso 'Veterinarian' con id: '999' no fue encontrado`
 - `409` la mascota no está activa: `La mascota 'Canela' no está activa: no se le pueden registrar tratamientos.`
 - `409` el veterinario no está activo: `El veterinario 'Dr. Julián Restrepo' no está activo: no puede registrar atenciones.`
+- `409` no hay ningún medicamento con unidades disponibles: `No hay medicamentos disponibles en el inventario: no se pueden registrar tratamientos.`
+- `409` un medicamento de `drugs` está repetido o no tiene stock suficiente (mismos mensajes que `POST /api/treatments/{id}/drugs`); el tratamiento no se crea
 
 #### `GET /api/treatments/{id}/drugs`
 
@@ -1600,7 +1622,7 @@ Ejemplo con una cuenta desactivada del seed (`julian.restrepo@pethaven.com`):
 
 - Una mascota `active: true` está hospitalizada; `active: false` está en su casa.
 - Un veterinario `active: false` no puede registrar atenciones.
-- `POST /api/treatments` exige mascota activa **y** veterinario activo; en caso contrario responde `409` con el motivo concreto.
+- `POST /api/treatments` exige mascota activa **y** veterinario activo, y al menos un medicamento con stock; en caso contrario responde `409` con el motivo concreto.
 - `POST /api/treatments/{id}/drugs` exige que la mascota del tratamiento siga activa; si se desactivó después de crear el tratamiento, la administración falla con `409`.
 - El login de un veterinario desactivado responde `403`. El estado se evalúa antes que la contraseña, así que una cuenta desactivada responde `403` incluso con una contraseña incorrecta.
 - Las búsquedas y los listados no filtran por estado: `GET /api/pets` y `GET /api/pets?search=` incluyen mascotas activas e inactivas. Lo mismo ocurre con `GET /api/owners/{id}/pets`, `GET /api/veterinarians` y los listados de tratamientos.
