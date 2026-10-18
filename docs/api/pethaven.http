@@ -310,6 +310,17 @@ Accept: application/json
   "unitsAvailable": -5
 }
 
+### Importar medicamentos desde Excel → 200 DrugImportSummaryResponse
+POST {{baseUrl}}/api/drugs/import
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="medicamentos.xlsx"
+Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+< ./medicamentos.xlsx
+--WebAppBoundary--
+
 ### Actualizar (unitsSold en el body se ignora) → 200
 PUT {{baseUrl}}/api/drugs/1
 Content-Type: application/json

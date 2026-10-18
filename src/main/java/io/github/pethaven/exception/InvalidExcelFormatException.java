@@ -8,6 +8,58 @@ public class InvalidExcelFormatException extends RuntimeException {
         super(message);
     }
 
+    public InvalidExcelFormatException(String message, Throwable cause) {
+        super(message, cause);
+    }
+
+    /**
+     * El archivo no tiene contenido.
+     */
+    public static InvalidExcelFormatException emptyFile() {
+        return new InvalidExcelFormatException(
+                "El archivo Excel está vacío. Seleccione un archivo con datos de medicamentos.");
+    }
+
+    /**
+     * La extensión del archivo no corresponde a un Excel.
+     */
+    public static InvalidExcelFormatException unsupportedExtension(String fileName) {
+        return new InvalidExcelFormatException(String.format(
+                "El archivo '%s' tiene una extensión no soportada. Use un archivo .xlsx o .xls.",
+                fileName
+        ));
+    }
+
+    /**
+     * El contenido del archivo no corresponde a un formato Excel (XLSX u XLS).
+     */
+    public static InvalidExcelFormatException unsupportedFormat(String fileName) {
+        return new InvalidExcelFormatException(String.format(
+                "El archivo '%s' no es un archivo Excel válido. Use un archivo .xlsx o .xls.",
+                fileName
+        ));
+    }
+
+    /**
+     * El archivo no se pudo leer (dañado, protegido o con un formato interno inválido).
+     */
+    public static InvalidExcelFormatException unreadable(String fileName, Throwable cause) {
+        return new InvalidExcelFormatException(String.format(
+                "No se pudo leer el archivo Excel '%s'. Verifique que no esté dañado ni protegido con contraseña.",
+                fileName
+        ), cause);
+    }
+
+    /**
+     * La hoja no contiene filas de datos.
+     */
+    public static InvalidExcelFormatException noDataRows(String sheetName) {
+        return new InvalidExcelFormatException(String.format(
+                "El archivo Excel no contiene filas de datos en la hoja '%s'.",
+                sheetName
+        ));
+    }
+
     /**
      * La celda esperada está vacía o no existe.
      */

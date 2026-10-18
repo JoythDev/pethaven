@@ -2,7 +2,9 @@ package io.github.pethaven.controller;
 
 import io.github.pethaven.dto.common.ApiErrorResponse;
 import io.github.pethaven.dto.request.DrugRequest;
+import io.github.pethaven.dto.response.DrugImportSummaryResponse;
 import io.github.pethaven.dto.response.DrugResponse;
+import io.github.pethaven.service.DrugImportService;
 import io.github.pethaven.service.DrugService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -13,8 +15,10 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.net.URI;
@@ -29,10 +33,15 @@ import java.util.List;
 public class DrugController {
 
     private final DrugService drugService;
+    private final DrugImportService drugImportService;
 
     @Autowired
-    public DrugController(DrugService drugService) {
+    public DrugController(
+            DrugService drugService,
+            DrugImportService drugImportService
+    ) {
         this.drugService = drugService;
+        this.drugImportService = drugImportService;
     }
 
     /**
@@ -87,6 +96,27 @@ public class DrugController {
                 .buildAndExpand(newDrug.id())
                 .toUri();
         return ResponseEntity.created(location).body(newDrug);
+    }
+
+    @Operation(summary = "Importar medicamentos desde Excel",
+            description = "Carga masiva desde un archivo .xlsx/.xls. La importación es todo o nada: si hay nombres duplicados en el archivo o ya existentes, no se importa ninguno.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Importación exitosa",
+                    content = @Content(schema = @Schema(implementation = DrugImportSummaryResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Archivo inválido, vacío o sin filas de datos",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Nombres duplicados en el archivo o ya existentes",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "413", description = "El archivo supera el tamaño máximo permitido (10 MB)",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "415", description = "El tipo de contenido no es multipart/form-data",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<DrugImportSummaryResponse> importDrugsFromExcel(
+            @Parameter(description = "Archivo Excel (.xlsx/.xls), máximo 10 MB", required = true)
+            @RequestPart("file") MultipartFile file) {
+        return ResponseEntity.ok(drugImportService.importFromExcel(file));
     }
 
     /**

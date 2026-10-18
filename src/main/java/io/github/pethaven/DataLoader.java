@@ -7,22 +7,17 @@ import io.github.pethaven.entity.Species;
 import io.github.pethaven.entity.Treatment;
 import io.github.pethaven.entity.TreatmentDrug;
 import io.github.pethaven.entity.Veterinarian;
-import io.github.pethaven.exception.InvalidExcelFormatException;
 import io.github.pethaven.repository.DrugRepository;
 import io.github.pethaven.repository.OwnerRepository;
 import io.github.pethaven.repository.PetRepository;
 import io.github.pethaven.repository.TreatmentDrugRepository;
 import io.github.pethaven.repository.TreatmentRepository;
 import io.github.pethaven.repository.VeterinarianRepository;
-import io.github.pethaven.service.ExcelReadingService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import java.io.InputStream;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -31,6 +26,7 @@ import java.util.List;
 import java.util.Random;
 
 @Component
+@Order(1)
 @Transactional
 public class DataLoader implements CommandLineRunner {
 
@@ -51,12 +47,6 @@ public class DataLoader implements CommandLineRunner {
 
     @Autowired
     private TreatmentDrugRepository treatmentDrugRepository;
-
-    @Autowired
-    private ExcelReadingService excelReadingService;
-    private static final String EXCEL_RESOURCE_PATH = "data/medicamentos-veterinaria.xlsx";
-
-    private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
 
     private final Random random = new Random(42);
 
@@ -396,15 +386,6 @@ public class DataLoader implements CommandLineRunner {
         drugRepository.save(Drug.builder().name("Omeprazol 20mg").purchasePrice(new BigDecimal("5000")).salePrice(new BigDecimal("10000")).unitsAvailable(180).unitsSold(0).build());
         drugRepository.save(Drug.builder().name("Dexametasona").purchasePrice(new BigDecimal("7000")).salePrice(new BigDecimal("13000")).unitsAvailable(120).unitsSold(0).build());
         drugRepository.save(Drug.builder().name("Tramadol 50mg").purchasePrice(new BigDecimal("9000")).salePrice(new BigDecimal("17000")).unitsAvailable(90).unitsSold(0).build());
-
-        // Cargar medicamentos desde el Excel
-        try (InputStream excelStream = new ClassPathResource(EXCEL_RESOURCE_PATH).getInputStream()) {
-            excelReadingService.loadDrugsFromExcel(excelStream);
-        } catch (InvalidExcelFormatException e) {
-            log.error("Algo ocurrió durante la lectura del archivo Excel de medicamentos. No se cargó ningún medicamento", e);
-        } catch (Exception e) {
-            log.error("Algo inesperado ocurrió con el archivo Excel de medicamentos.", e);
-        }
 
         // =======================================
         // ==== Cargar tratamientos de ejemplo ====
