@@ -49,11 +49,13 @@ Al arrancar, la base se crea y se puebla con datos de prueba; la API queda en el
 
 ### Datos de prueba
 
-El arranque carga datos de ejemplo: **100 dueños, 150 mascotas, 6 veterinarios (5 activos y 1 inactivo), 7 medicamentos y 15 tratamientos** repartidos desde el `2026-08-01`. Los tratamientos del seed ya descuentan inventario y suman atenciones, igual que lo hace la API, así que el stock y las unidades vendidas de un medicamento pueden ser menores que su valor inicial.
+El arranque carga datos de ejemplo: **100 dueños, 150 mascotas, 6 veterinarios (5 activos y 1 inactivo), 523 medicamentos importados desde el Excel al arrancar y 15 tratamientos** repartidos desde el `2026-08-01`. Los tratamientos del seed ya descuentan inventario y suman atenciones, igual que lo hace la API, así que el stock y las unidades vendidas de un medicamento pueden ser menores que su valor inicial.
 
-Como los id salen de una columna autoincremental en orden de inserción, son estables entre arranques: el dueño `31` es **Diego Aguilar**, el veterinario `1` es la **Dra. Valentina Soler** y el medicamento `1` es **Amoxicilina 250mg**.
+El catálogo `data/medicamentos-veterinaria.xlsx` se importa al arrancar, antes de los datos de ejemplo, con el mismo mecanismo de [`POST /api/drugs/import`](#post-apidrugsimport). El archivo se procesa como una carga masiva normal: si se vuelve a subir el mismo catálogo, los nombres ya existen y la petición responde `409`.
 
-Por el mismo motivo, los ejemplos de creación de este documento muestran los id `101` (dueño), `151` (mascota), `7` (veterinario), `8` (medicamento) y `16` (tratamiento): son los siguientes valores de cada tabla en una base recién poblada. Los importes de inventario y los contadores de atenciones, en cambio, dependen de los tratamientos que ya se hayan registrado.
+Como los id salen de una columna autoincremental en orden de inserción, son estables entre arranques: el dueño `31` es **Diego Aguilar**, el veterinario `1` es la **Dra. Valentina Soler** y el medicamento `1` es el primero del catálogo importado desde el Excel.
+
+Por el mismo motivo, los ejemplos de creación de este documento muestran los id `101` (dueño), `151` (mascota), `7` (veterinario), `8` (medicamento) y `16` (tratamiento). Esos valores son ilustrativos: dueños, mascotas, veterinarios y tratamientos continúan en esos ids, pero los medicamentos continúan después de los 523 registros iniciales, así que el siguiente id real de medicamento es `524`. Los importes de inventario y los contadores de atenciones dependen de los tratamientos que ya se hayan registrado.
 
 Credenciales de demostración:
 
@@ -136,6 +138,7 @@ Respuesta real (`200 OK`):
 |---|---|
 | Base URL | `http://localhost:8080/api` |
 | Formato | JSON con campos en `camelCase`; `Content-Type: application/json` en toda petición con cuerpo |
+| Archivos | Las cargas usan `multipart/form-data`; la parte del archivo se llama `file`, admite `.xlsx` y `.xls`, y el tamaño máximo es de 10 MB (ver [`POST /api/drugs/import`](#post-apidrugsimport)) |
 | Identificadores | `id` numéricos (`Long`); se generan en el servidor y no se envían al crear |
 | Especie | `"DOG"` o `"CAT"` (cualquier otro valor es un `400`) |
 | Booleanos | El nombre del campo es `active` (nunca `isActive`) |
@@ -196,7 +199,7 @@ Todas las respuestas de error comparten el cuerpo `ApiErrorResponse`:
 
 | Código | Cuándo se usa |
 |---|---|
-| `200 OK` | Consulta, actualización o login exitosos |
+| `200 OK` | Consulta, actualización, login o importación exitosos |
 | `201 Created` | Recurso creado; incluye `Location` salvo en `POST /api/treatments/{id}/drugs` |
 | `204 No Content` | Eliminación exitosa de un dueño o de un medicamento |
 | `400 Bad Request` | Cuerpo o parámetros inválidos: validación de campos (con `errors`), parámetro obligatorio ausente, parámetro con formato inválido o JSON mal formado (por ejemplo `species` fuera del enum) |
@@ -205,6 +208,8 @@ Todas las respuestas de error comparten el cuerpo `ApiErrorResponse`:
 | `404 Not Found` | No existe el recurso solicitado, o la ruta no está mapeada |
 | `405 Method Not Allowed` | La ruta existe pero no admite ese método (por ejemplo `DELETE /api/pets/1`) |
 | `409 Conflict` | Regla de negocio: valor duplicado, borrado bloqueado, mascota o veterinario inactivos, stock insuficiente |
+| `413 Payload Too Large` | El archivo subido supera el tamaño máximo permitido (10 MB) |
+| `415 Unsupported Media Type` | El tipo de contenido de la petición no es `multipart/form-data` en una carga de archivos |
 | `500 Internal Server Error` | Fallo inesperado; la causa queda registrada en los logs del servidor |
 
 ## Modelo de datos
@@ -461,6 +466,28 @@ Cuerpo para `POST /api/drugs` y `PUT /api/drugs/{id}`.
 }
 ```
 
+#### `DrugImportSummaryResponse`
+
+Resumen que devuelve `POST /api/drugs/import` cuando la importación es exitosa.
+
+| Campo | Tipo | Obligatorio | Restricciones |
+|---|---|---|---|
+| `fileName` | string | — | Nombre del archivo tal como se envió |
+| `sheetName` | string | — | Nombre de la primera hoja del libro, la única que se procesa |
+| `totalRows` | number | — | Filas con datos procesadas; no incluye la fila de encabezados ni las filas vacías |
+| `importedCount` | number | — | Medicamentos insertados; en una importación exitosa coincide con `totalRows` |
+| `skippedBlankRows` | number | — | Filas completamente vacías ignoradas, incluidas las filas finales con formato pero sin contenido |
+
+```json
+{
+  "fileName": "medicamentos-nuevos.xlsx",
+  "sheetName": "Medicamentos",
+  "totalRows": 3,
+  "importedCount": 3,
+  "skippedBlankRows": 2
+}
+```
+
 ### Tratamientos
 
 #### `TreatmentRequest`
@@ -594,7 +621,7 @@ Cuerpo para los dos logins.
 
 ## Endpoints
 
-Las 18 rutas y 30 operaciones de la API, agrupadas por recurso. Los endpoints que cruzan dos recursos se documentan en su recurso anfitrión y se referencian desde el otro.
+Las 19 rutas y 31 operaciones de la API, agrupadas por recurso. Los endpoints que cruzan dos recursos se documentan en su recurso anfitrión y se referencian desde el otro.
 
 ### Dueños (`/api/owners`)
 
@@ -1315,6 +1342,66 @@ Registra un medicamento nuevo. Las unidades vendidas empiezan en `0` y las contr
 **Errores**:
 - `400` validación de campos (nombre vacío, precios negativos, más de 2 decimales, etc.)
 - `409` el nombre ya existe: `Ya existe un medicamento con el nombre 'Amoxicilina 250mg'.`
+
+#### `POST /api/drugs/import`
+
+Importa medicamentos de forma masiva desde un archivo Excel. Procesa **solo la primera hoja** del libro y responde `200 OK` (no `201`), porque no crea un recurso individual.
+
+**Content-Type:** `multipart/form-data`.
+
+**Parte de la petición**
+
+| Nombre | Tipo | Obligatorio | Descripción |
+|---|---|---|---|
+| `file` | binary | Sí | Archivo `.xlsx` o `.xls`, máximo 10 MB. Se validan la extensión y la firma binaria (ZIP para XLSX, OLE2 para XLS), no solo el nombre |
+
+**Estructura del Excel**
+
+| Elemento | Regla |
+|---|---|
+| Hoja | Solo se procesa la primera hoja del libro |
+| Fila 1 | Reservada para encabezados. No se validan los textos ni el orden, pero las columnas A–D deben contener texto; un valor numérico, de fecha o booleano en ellas se rechaza como si el archivo no tuviera encabezados |
+| Datos | Empiezan en la fila 2. Las filas completamente vacías se ignoran y se cuentan en `skippedBlankRows`, incluidas las filas finales con formato pero sin contenido |
+| Columna A | `name`: texto de 1 a 120 caracteres; único |
+| Columna B | `salePrice`: número mayor o igual a 0, con máximo 10 dígitos enteros y 2 decimales |
+| Columna C | `purchasePrice`: número mayor o igual a 0, con máximo 10 dígitos enteros y 2 decimales |
+| Columna D | `unitsAvailable`: entero mayor o igual a 0 |
+| Columna E | `unitsSold`: se ignora en la importación |
+
+**Restricciones**
+
+- Todas las filas con datos deben ser válidas: si una celda falta, tiene un tipo incorrecto o incumple las reglas de nombre, precio o unidades, la petición responde `400` y no se importa nada.
+- La importación es **todo o nada**. Si un nombre se repite dentro del archivo o ya existe en la base de datos, la petición responde `409` y no se inserta ningún medicamento.
+- El mensaje de `409` lista hasta 10 nombres; si hay más, termina con `y N más`.
+
+**Respuesta** `200 OK` — `DrugImportSummaryResponse`:
+
+```json
+{
+  "fileName": "medicamentos.xlsx",
+  "sheetName": "Medicamentos",
+  "totalRows": 3,
+  "importedCount": 3,
+  "skippedBlankRows": 2
+}
+```
+
+**Errores**:
+
+| Código | Cuándo |
+|---|---|
+| `400 Bad Request` | Parte `file` ausente, archivo vacío, extensión no soportada, firma binaria inválida, libro sin hojas, celda o fila inválida, o ninguna fila de datos |
+| `409 Conflict` | Nombres duplicados dentro del archivo (`El archivo contiene medicamentos duplicados: …`) o ya existentes en la base de datos (`Ya existen medicamentos con estos nombres: …`). No se importa ningún medicamento |
+| `413 Payload Too Large` | El archivo supera los 10 MB |
+| `415 Unsupported Media Type` | La petición no usa `multipart/form-data` |
+
+**Ejemplo**
+
+```bash
+curl -X POST http://localhost:8080/api/drugs/import -F "file=@medicamentos.xlsx"
+```
+
+> **Nota:** el catálogo `data/medicamentos-veterinaria.xlsx` se importa al arrancar. Volver a subir ese mismo archivo responde `409` porque sus 523 nombres ya existen en la base de datos.
 
 #### `PUT /api/drugs/{id}`
 

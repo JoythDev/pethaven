@@ -1,11 +1,20 @@
 package io.github.pethaven.service;
 
-import io.github.pethaven.dto.response.DrugResponse;
-
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
 
+/**
+ * Lectura de medicamentos desde un archivo Excel.
+ */
 public interface ExcelReadingService {
-    List<DrugResponse> loadDrugsFromExcel(InputStream inputStream) throws IOException;
+
+    /**
+     * Lee y valida las filas de medicamentos de la primera hoja del archivo.
+     * No persiste ningún dato.
+     *
+     * @param inputStream contenido del archivo Excel
+     * @return nombre de la hoja, medicamentos leídos y filas vacías ignoradas
+     * @throws IOException si el archivo no se puede leer
+     */
+    ExcelReadingResult readDrugsFromExcel(InputStream inputStream) throws IOException;
 }

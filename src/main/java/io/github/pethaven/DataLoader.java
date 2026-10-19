@@ -7,21 +7,18 @@ import io.github.pethaven.entity.Species;
 import io.github.pethaven.entity.Veterinarian;
 import io.github.pethaven.dto.request.TreatmentDrugRequest;
 import io.github.pethaven.dto.request.TreatmentRequest;
-import io.github.pethaven.exception.InvalidExcelFormatException;
 import io.github.pethaven.repository.DrugRepository;
 import io.github.pethaven.repository.OwnerRepository;
 import io.github.pethaven.repository.PetRepository;
 import io.github.pethaven.repository.VeterinarianRepository;
-import io.github.pethaven.service.ExcelReadingService;
 import io.github.pethaven.service.TreatmentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
-import org.springframework.core.io.ClassPathResource;
+import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
-import java.io.InputStream;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,6 +26,7 @@ import java.util.List;
 import java.util.Random;
 
 @Component
+@Order(1)
 @Transactional
 public class DataLoader implements CommandLineRunner {
 
@@ -46,10 +44,6 @@ public class DataLoader implements CommandLineRunner {
 
     @Autowired
     private TreatmentService treatmentService;
-
-    @Autowired
-    private ExcelReadingService excelReadingService;
-    private static final String EXCEL_RESOURCE_PATH = "data/medicamentos-veterinaria.xlsx";
 
     private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
 
@@ -350,15 +344,6 @@ public class DataLoader implements CommandLineRunner {
         veterinarianRepository.save(Veterinarian.builder().name("Dr. Miguel Ángel Torres").document("522124823").email("miguel.torres@pethaven.com").password("vet12345").specialty("Medicina Interna").build());
         veterinarianRepository.save(Veterinarian.builder().name("Dra. Sofía Herrera").document("192049284").email("sofia.herrera@pethaven.com").password("vet12345").specialty("Dermatología").build());
         veterinarianRepository.save(Veterinarian.builder().name("Dr. Julián Restrepo").document("102938471").email("julian.restrepo@pethaven.com").password("vet12345").specialty("Odontología Veterinaria").active(false).build());
-
-        // Cargar medicamentos desde el Excel
-        try (InputStream excelStream = new ClassPathResource(EXCEL_RESOURCE_PATH).getInputStream()) {
-            excelReadingService.loadDrugsFromExcel(excelStream);
-        } catch (InvalidExcelFormatException e) {
-            log.error("Algo ocurrió durante la lectura del archivo Excel de medicamentos. No se cargó ningún medicamento", e);
-        } catch (Exception e) {
-            log.error("Algo inesperado ocurrió con el archivo Excel de medicamentos.", e);
-        }
 
         // =======================================
         // ==== Cargar tratamientos de ejemplo ====

@@ -1,7 +1,6 @@
 package io.github.pethaven.service;
 
 import io.github.pethaven.dto.request.DrugRequest;
-import io.github.pethaven.dto.response.DrugResponse;
 import io.github.pethaven.exception.InvalidExcelFormatException;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validator;
@@ -11,6 +10,7 @@ import org.apache.poi.ss.usermodel.Row;
 import org.apache.poi.ss.usermodel.Sheet;
 import org.apache.poi.ss.usermodel.Workbook;
 import org.apache.poi.ss.usermodel.WorkbookFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.io.IOException;
@@ -32,30 +32,41 @@ public class ExcelReadingServiceImpl implements ExcelReadingService {
     private static final int PURCHASE_PRICE_COLUMN = 2;
     // Índice de la columna D: UNIDADES DISPONIBLES
     private static final int UNITS_AVAILABLE_COLUMN = 3;
+    // Índice de la columna E: UNIDADES VENDIDAS (se ignora, pero se usa para detectar filas vacías)
+    private static final int UNITS_SOLD_COLUMN = 4;
+    // Última columna que se inspecciona en los encabezados (A-D)
+    private static final int LAST_HEADER_COLUMN = UNITS_AVAILABLE_COLUMN;
     // Primer índice de fila con datos (la fila 0 contiene los encabezados)
     private static final int FIRST_DATA_ROW = 1;
 
-    private final DrugService drugService;
     private final Validator validator;
 
-    public ExcelReadingServiceImpl(DrugService drugService, Validator validator) {
-        this.drugService = drugService;
+    @Autowired
+    public ExcelReadingServiceImpl(Validator validator) {
         this.validator = validator;
     }
 
     @Override
-    public List<DrugResponse> loadDrugsFromExcel(InputStream inputStream) throws IOException {
-        List<DrugRequest> requests = new ArrayList<>();
-
-        // Primera pasada: leer y validar todas las filas antes de persistir nada.
+    public ExcelReadingResult readDrugsFromExcel(InputStream inputStream) throws IOException {
         try (Workbook workbook = WorkbookFactory.create(inputStream)) {
+            if (workbook.getNumberOfSheets() == 0) {
+                throw new InvalidExcelFormatException("El archivo Excel no contiene ninguna hoja.");
+            }
+
             Sheet sheet = workbook.getSheetAt(0);
+            validateHeaderRow(sheet);
+
+            List<DrugRequest> requests = new ArrayList<>();
+            int skippedBlankRows = 0;
 
             for (int i = FIRST_DATA_ROW; i <= sheet.getLastRowNum(); i++) {
                 int excelRow = i + 1;
                 Row row = sheet.getRow(i);
-                if (row == null) {
-                    throw InvalidExcelFormatException.emptyRow(excelRow);
+
+                // Las filas con formato pero sin contenido se ignoran.
+                if (isBlankRow(row)) {
+                    skippedBlankRows++;
+                    continue;
                 }
 
                 String name = requireCell(row, NAME_COLUMN, CellType.STRING, "el nombre, como texto", excelRow)
@@ -81,14 +92,80 @@ public class ExcelReadingServiceImpl implements ExcelReadingService {
 
                 requests.add(request);
             }
+
+            if (requests.isEmpty()) {
+                throw InvalidExcelFormatException.noDataRows(sheet.getSheetName());
+            }
+
+            return new ExcelReadingResult(sheet.getSheetName(), requests, skippedBlankRows);
+        }
+    }
+
+    /**
+     * Rechaza una primera fila con datos de medicamentos en lugar de encabezados.
+     * No valida los textos ni el orden de los encabezados.
+     */
+    private void validateHeaderRow(Sheet sheet) {
+        Row headerRow = sheet.getRow(0);
+        if (headerRow == null) {
+            return;
         }
 
-        // Segunda pasada: persistir solo cuando todas las filas son válidas.
-        List<DrugResponse> loadedDrugs = new ArrayList<>();
-        for (DrugRequest request : requests) {
-            loadedDrugs.add(drugService.createDrug(request));
+        for (int column = NAME_COLUMN; column <= LAST_HEADER_COLUMN; column++) {
+            Cell cell = headerRow.getCell(column);
+            if (cell != null && !isHeaderCell(cell)) {
+                throw new InvalidExcelFormatException(
+                        "La primera fila debe contener los encabezados (texto), no datos de medicamentos.");
+            }
         }
-        return loadedDrugs;
+    }
+
+    private boolean isHeaderCell(Cell cell) {
+        CellType type = cell.getCellType();
+        return switch (type) {
+            case STRING, BLANK, _NONE -> true;
+            case FORMULA -> cell.getCachedFormulaResultType() == CellType.STRING;
+            default -> false;
+        };
+    }
+
+    /**
+     * Una fila es completamente vacía cuando no hay contenido en las columnas A-E.
+     */
+    private boolean isBlankRow(Row row) {
+        if (row == null) {
+            return true;
+        }
+        for (int column = NAME_COLUMN; column <= UNITS_SOLD_COLUMN; column++) {
+            if (!isBlankCell(row.getCell(column))) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private boolean isBlankCell(Cell cell) {
+        if (cell == null) {
+            return true;
+        }
+
+        CellType type = cell.getCellType();
+        if (type == CellType.BLANK || type == CellType._NONE) {
+            return true;
+        }
+        if (type == CellType.STRING) {
+            return cell.getStringCellValue().isBlank();
+        }
+        if (type == CellType.FORMULA) {
+            CellType cachedType = cell.getCachedFormulaResultType();
+            if (cachedType == CellType.BLANK || cachedType == CellType._NONE) {
+                return true;
+            }
+            if (cachedType == CellType.STRING) {
+                return cell.getStringCellValue().isBlank();
+            }
+        }
+        return false;
     }
 
     private Integer readUnitsAvailable(Row row, int excelRow) {
