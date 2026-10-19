@@ -15,10 +15,11 @@ import java.io.InputStream;
 
 /**
  * Importa los medicamentos del archivo Excel incluido en el classpath al arrancar la aplicación.
- * Se ejecuta después de {@link DataLoader} para no compartir su transacción de datos de ejemplo.
+ * Se ejecuta antes de {@link DataLoader} porque el seed de tratamientos necesita el stock importado,
+ * y usa su propia transacción, independiente de la de los datos de ejemplo.
  */
 @Component
-@Order(2)
+@Order(0)
 public class ExcelDrugImportRunner implements CommandLineRunner {
 
     private static final String EXCEL_RESOURCE_PATH = "data/medicamentos-veterinaria.xlsx";

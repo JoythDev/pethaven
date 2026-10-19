@@ -16,4 +16,7 @@ public interface DrugRepository extends JpaRepository<Drug, Long> {
 
     boolean existsByName(String name);
     boolean existsByNameAndIdNot(String name, Long id);
+
+    boolean existsByUnitsAvailableGreaterThan(Integer units);
+    List<Drug> findByUnitsAvailableGreaterThan(Integer units);
 }
