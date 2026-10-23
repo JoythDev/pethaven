@@ -40,94 +40,74 @@ Hasta ahora, buena parte de la operación vivía en papel y en hojas de Excel: e
 3. La mascota queda hospitalizada mientras recibe tratamientos.
 4. Al recuperarse y ser recogida, la mascota pasa a estado **inactivo** — su historial nunca se borra.
 
-**Arquitectura actual:** el backend Spring Boot expone toda la operación como **API REST** y el frontend **Angular + PrimeNG + RxJS** consume esa API como una SPA. Las antiguas vistas Thymeleaf ya fueron retiradas; el detalle y lo que falta está en [Estado de la migración](#estado-de-la-migración).
+**Arquitectura actual:** el backend Spring Boot expone toda la operación como **API REST** y el frontend **Angular + PrimeNG + RxJS** consume esa API como una SPA. Las antiguas vistas Thymeleaf ya fueron retiradas; el avance por entrega está en [Roadmap y estado del proyecto](#roadmap-y-estado-del-proyecto).
 
 ---
 
-## Estado de la migración
+## Roadmap y estado del proyecto
 
-La migración dejó atrás el renderizado en el servidor: un solo frontend Angular (SPA) consume una API REST del backend.
+El avance se organiza según las entregas del enunciado. Cada funcionalidad indica su cobertura en el backend y en el frontend, además del estado real de implementación.
 
-| Pieza | Estado |
+**Leyenda:**
+
+| Símbolo | Significado |
 |---|---|
-| Backend (`src/`) | **API REST completa** — incluye dueños, mascotas, veterinarios, medicamentos y tratamientos, autenticación provisional e importación de medicamentos desde Excel |
-| Frontend (`frontend/`) | **SPA Angular integrada a la API** — portales de cliente y veterinario con `HttpClient` + RxJS |
+| ✅ | Implementado |
+| 🟡 | Parcial |
+| ⬜ | Pendiente |
+| ➖ | No aplica |
 
-**Fases:**
+**Resumen de avance:**
 
-- [x] **Demo funcional** — landing portada a Angular y primeros módulos de mascotas y dueños sobre datos de prueba en memoria. Fue la base del frontend actual.
-- [x] **API REST** — todos los recursos del backend expuestos como API REST bajo `/api/**`, documentados con Swagger.
-- [x] **Integración SPA** — el frontend consume la API con `HttpClient` + RxJS, con login de dueño y veterinario, portales por rol y configuración por entorno.
-- [ ] **Módulos restantes** — portal de administración, dashboard de KPIs y pantalla de medicamentos. Veterinarios, tratamientos e historial ya están implementados.
-- [x] **Retiro de Thymeleaf** — vistas de servidor y MVC legacy eliminados del repositorio.
+| Entrega | Completas | Parciales | Pendientes | Estado general |
+|---|---|---|---|---|
+| 1 | 7 | 0 | 0 | Completada |
+| 2 | 2 | 3 | 1 | En progreso |
+| 3 | 0 | 1 | 2 | Pendiente |
 
-<div align="center">
-  <img src="docs/screenshots/dashboard-pets.png" alt="Módulo de mascotas del portal veterinario" width="100%"/>
-  <br/>
-  <sub>Módulo de mascotas — listado con búsqueda, filtro por especie y paginación (Angular + PrimeNG)</sub>
-  <br/><br/>
-  <img src="docs/screenshots/dashboard-pet-form.png" alt="Formulario de registro de mascota" width="100%"/>
-  <br/>
-  <sub>Registro de una mascota — formulario del portal veterinario</sub>
-</div>
+### Entrega 1 — Features 1 a 7
 
----
+| Feature · AC | Funcionalidad | Detalle | Backend | Frontend | Estado |
+|---|---|---|---|---|---|
+| F01 · AC1–AC5 | Diseño | Diagramas de clases y entidad-relación, mockups navegables, logo y paleta de colores | ➖ | ➖ | Completado — entregables en `docs/` |
+| F02 · AC6–AC8 | Repositorio | Repositorio público, ramas `main` y `desarrollo`, y README del proyecto | ➖ | ➖ | Completado |
+| F03 · AC9–AC11 | Base de datos | Entidades JPA, repositorios Spring Data y datos de prueba | ✅ | ➖ | Backend completo; el frontend consume los datos vía API |
+| F04 · AC12 | Landing page | Sitio promocional con navegación hacia los portales | ➖ | ✅ | Completado |
+| F05 · AC13–AC14 | Portal del cliente | Login, mascotas en tarjetas, detalle e historial de tratamientos | ✅ | ✅ | Completado |
+| F06 · AC15–AC19 | CRUD de dueños | Acceso del veterinario y CRUD con eliminación en cascada | ✅ | ✅ | Completado |
+| F07 · AC20–AC24 | CRUD de mascotas | Crear, leer, actualizar, buscar y activar/desactivar | ✅ | ✅ | Completado |
 
-## Funcionalidades
+### Entrega 2 — Features 8 a 11 + SPA
 
-### Implementadas — Entrega 1 (Features 1 a 7)
+> El enunciado numera dos funcionalidades distintas como Feature 09; aquí se separan como F09-A (dashboard) y F09-B (carga de medicamentos).
 
-- [x] **Feature 01 — Diseño**: nombre, logo, paleta de colores y mockups navegables diferenciados por tipo de usuario
-- [x] **Feature 02 — Repositorio**: GitHub público con ramas de `desarrollo` y `main` (producción)
-- [x] **Feature 03 — Base de datos**: entidades JPA, repositorios Spring Data y datos de prueba que simulan el funcionamiento real
-- [x] **Feature 04 — Landing page**: sitio promocional de la clínica con navegación hacia los portales
-- [x] **Feature 05 — Portal cliente**: inicio de sesión y consulta de mascotas en tarjetas con su detalle
-- [x] **Feature 06 — CRUD de dueños**: crear, consultar, actualizar y eliminar (con eliminación en cascada de sus mascotas)
-- [x] **Feature 07 — CRUD de mascotas**: crear, consultar, actualizar y activar/desactivar
+| Feature · AC | Funcionalidad | Detalle | Backend | Frontend | Estado |
+|---|---|---|---|---|---|
+| F08 · AC25–AC28 | Portal de administración | Acceso del administrador y CRUD de veterinarios | 🟡 | ⬜ | Parcial — CRUD de veterinarios en la API; faltan autenticación/rol de administrador y UI |
+| F09-A · AC29 | Dashboard de KPIs | Métricas de tratamientos, veterinarios, mascotas, ventas y ganancias | ⬜ | ⬜ | Pendiente — sin endpoints ni pantalla |
+| F09-B · AC30 | Carga de medicamentos | Importación del inventario desde Excel al iniciar | ✅ | ➖ | Completo en backend; el enunciado no exige interfaz |
+| F10 · AC31–AC32 | Tratamientos | Registrar tratamiento, descontar stock y listar mascotas tratadas por veterinario | ✅ | 🟡 | Parcial — registro y stock completos; falta la vista de mascotas tratadas |
+| F11 · AC33 | Historial médico | Lista de tratamientos por mascota | ✅ | ✅ | Completado — visible en la ficha de la mascota |
+| E2 · SPA | SPA en Angular | Frontend Angular consumiendo la API REST | ✅ | 🟡 | Parcial — portales de cliente y veterinario; faltan administración y KPIs |
 
-### Frontend Angular (SPA integrada)
+### Entrega 3 — Feature 13 + pruebas
 
-- [x] Landing page portada a Angular, fiel a la versión Thymeleaf (secciones + directivas de animación)
-- [x] Login de dueño y veterinario contra la API, con sesión en `sessionStorage` y redirección según el rol
-- [x] Portal del cliente: mascotas en tarjetas, detalle de cada mascota y perfil
-- [x] Portal del veterinario con layout propio (sidebar y topbar) e inicio
-- [x] Módulo de mascotas: listado con búsqueda por nombre o raza, filtro por especie y paginación (PrimeNG Table)
-- [x] Detalle, registro y edición de mascotas, con activar/desactivar
-- [x] Módulo de dueños: listado con búsqueda por nombre o documento y paginación; ficha con sus mascotas; registro, edición y eliminación en cascada
-- [x] Vínculo mascota ↔ dueño: selector de dueño en el formulario de mascota, columna «Dueño» en el listado y navegación entre fichas
-- [x] Tratamientos: registro con uno o más medicamentos, descuento automático del stock e historial en la ficha de la mascota
-- [x] Perfil del veterinario con sus datos y especialidad
-- [ ] Pantalla de medicamentos: catálogo e importación desde Excel (el backend ya expone ambos)
-- [ ] Portal de administración y dashboard de KPIs
+| Feature · AC | Funcionalidad | Detalle | Backend | Frontend | Estado |
+|---|---|---|---|---|---|
+| F13 · AC34 | Control de acceso por roles | Autorización según el rol del usuario | 🟡 | ⬜ | Parcial — el login devuelve el rol; no hay token ni guards de autorización |
+| E3 · Pruebas cliente | Pruebas del cliente web | Al menos 2 casos de uso automatizados | ➖ | ⬜ | Pendiente — no hay specs de cliente |
+| E3 · Pruebas backend | Pruebas de backend | 25 pruebas con datos propios y limpieza posterior | ⬜ | ➖ | Pendiente — solo existe la prueba de contexto |
 
-> El frontend consume la API en `http://localhost:8080/api`, así que el backend debe estar encendido. Ver [Estado de la migración](#estado-de-la-migración).
+### Extras fuera del enunciado
 
-### Roadmap
+Estas funcionalidades no están exigidas por el enunciado, pero ya forman parte del producto:
 
-**Entrega 1**
-
-| Funcionalidad | Detalle | Estado |
-|---|---|---|
-| Búsqueda de mascotas | Buscar una mascota por nombre y mostrar su información junto con la de su dueño (AC21) | Hecho — el listado filtra por nombre o raza y muestra el dueño |
-
-**Entrega 2 (Features 8 a 11)**
-
-| Funcionalidad | Detalle | Estado |
-|---|---|---|
-| Portal de administración | Registrar, actualizar y activar/desactivar veterinarios (Feature 08) | Backend listo — UI de administración pendiente |
-| Dashboard de KPIs | Mascotas en tratamiento, atenciones, ventas, ganancias y top de tratamientos más vendidos (Feature 09) | Pendiente |
-| Carga de medicamentos | Importar el inventario de drogas desde un archivo al iniciar el programa (Feature 09) | Hecho — importación al arrancar y endpoint `POST /api/drugs/import` |
-| Tratamientos | Administrar una droga a una mascota y descontar el inventario disponible (Feature 10) | Hecho |
-| Historial médico | Consultar la lista de tratamientos dados a cada mascota (Feature 11) | Hecho |
-| SPA en Angular | Frontend Angular consumiendo la API REST | Hecho — portales de cliente y veterinario |
-
-**Entrega 3**
-
-| Funcionalidad | Detalle |
-|---|---|
-| Control de acceso por roles | Restringir cada funcionalidad según el rol del usuario (Feature 13) |
-| Pruebas del cliente web | Al menos 2 casos de uso automatizados |
-| Pruebas de backend | 25 pruebas automatizadas que cargan y limpian sus propios datos de prueba |
+| Funcionalidad | Detalle | Backend | Frontend | Estado |
+|---|---|---|---|---|
+| Perfil del cliente | Consulta de datos personales desde el portal del cliente | ✅ | ✅ | Completado |
+| Perfil del veterinario | Datos y especialidad del veterinario autenticado | ✅ | ✅ | Completado |
+| Importación por endpoint | Carga de medicamentos desde un archivo mediante `POST /api/drugs/import` | ✅ | ➖ | Backend completo |
+| CRUD de medicamentos | Listado, creación, actualización y eliminación de medicamentos | ✅ | ⬜ | Backend completo; sin pantalla |
 
 ---
 
