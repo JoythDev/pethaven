@@ -111,6 +111,39 @@ Estas funcionalidades no están exigidas por el enunciado, pero ya forman parte 
 
 ---
 
+## Capturas
+
+Una mirada al estado actual de la aplicación, con datos de prueba.
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/portal-cliente-mascotas.png" alt="Portal del cliente con tarjetas de mascotas" width="100%">
+      <br>
+      <sub><strong>Portal del cliente · F05.</strong> Mascotas, estado y acceso al historial.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/gestion-mascotas-veterinario.png" alt="Listado de mascotas del veterinario" width="100%">
+      <br>
+      <sub><strong>Gestión de mascotas · F07.</strong> Búsqueda, filtros, paginación y estado.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/registrar-tratamiento.png" alt="Formulario para registrar un tratamiento" width="100%">
+      <br>
+      <sub><strong>Registrar tratamiento · F10.</strong> Medicamentos, stock y total.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/historial-tratamientos.png" alt="Historial de tratamientos de una mascota" width="100%">
+      <br>
+      <sub><strong>Historial médico · F11.</strong> Línea de tiempo de tratamientos por mascota.</sub>
+    </td>
+  </tr>
+</table>
+
+---
+
 ## Stack tecnológico
 
 ### Backend
