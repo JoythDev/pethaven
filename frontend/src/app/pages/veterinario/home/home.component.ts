@@ -48,6 +48,7 @@ export class DashboardHomeComponent {
     { initialValue: { status: 'loading' } as ViewState<DashboardStats> },
   );
 
+// Módulos disponibles en el portal veterinario.
   readonly modules: DashboardModule[] = [
     {
       label: 'Mascotas',
@@ -63,6 +64,7 @@ export class DashboardHomeComponent {
     },
   ];
 
+// Obtener los datos del dashboard del veterinario autenticado.
   private loadDashboard(): Observable<DashboardStats> {
     const user = this.authService.user();
     if (!user || user.role !== 'VETERINARIAN') {
