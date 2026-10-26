@@ -28,7 +28,20 @@
         [formControl]="speciesControl"
         styleClass="w-full lg:w-48"
       />
+
+      <p-select
+        [options]="patientFilterOptions"
+        optionLabel="label"
+        optionValue="value"
+        [formControl]="patientFilterControl"
+        [loading]="patientFilterLoading()"
+        styleClass="w-full lg:w-52"
+      />
     </div>
+
+    @if (patientFilterError(); as error) {
+      <p class="border-b border-olive/15 px-4 py-2 text-sm text-red-700">{{ error }}</p>
+    }
 
     @let state = pets();
 
@@ -42,7 +55,7 @@
       <p-table
         #dt
         [value]="filteredPets()"
-        [loading]="state.status === 'loading'"
+        [loading]="state.status === 'loading' || patientFilterLoading()"
         dataKey="id"
         [paginator]="true"
         [rows]="10"
