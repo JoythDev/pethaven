@@ -22,6 +22,7 @@ export class AdminLayoutComponent {
     return {
       sidebar: {
         items: [
+          { label: 'Resumen', icon: 'pi pi-chart-bar', link: '/administrador/dashboard' },
           { label: 'Veterinarios', icon: '/images/icons/stethoscope-icon.svg', link: '/administrador/veterinarios' },
           { label: 'Mascotas', icon: '/images/icons/paw-print-icon.svg', link: '/administrador/mascotas' },
           cerrarSesion,
@@ -31,7 +32,7 @@ export class AdminLayoutComponent {
       },
       topbar: {
         homeItem: { icon: 'pi pi-home', routerLink: '/administrador' },
-        pageLabels: { veterinarios: 'Veterinarios', mascotas: 'Mascotas' },
+        pageLabels: { dashboard: 'Resumen', veterinarios: 'Veterinarios', mascotas: 'Mascotas' },
         subPageLabels: { veterinarios: { add: 'Nuevo veterinario', update: 'Editar veterinario' } },
         userName: admin?.name ?? '',
         userInitial: admin ? admin.name.charAt(0).toUpperCase() : '',

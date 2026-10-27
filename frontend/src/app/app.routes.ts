@@ -150,7 +150,14 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./pages/administrador/layout/admin-layout.component').then((m) => m.AdminLayoutComponent),
     children: [
-      { path: '', redirectTo: 'veterinarios', pathMatch: 'full' },
+      { path: '', redirectTo: 'dashboard', pathMatch: 'full' },
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./pages/administrador/dashboard/admin-dashboard.component').then(
+            (m) => m.AdminDashboardComponent
+          ),
+      },
       {
         path: 'veterinarios',
         loadComponent: () =>

@@ -1,0 +1,189 @@
+@let view = state();
+
+<div class="mx-auto max-w-7xl p-5 lg:p-8" [attr.aria-busy]="view.status === 'loading'">
+  <header class="mb-8 flex flex-col gap-5 border-b border-olive/20 pb-6 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <h1 class="font-display text-3xl font-bold text-text sm:text-4xl">Panorama de la clínica</h1>
+      <p class="mt-2 max-w-2xl text-text/70">Actividad, capacidad y finanzas en un solo vistazo.</p>
+    </div>
+
+    @if (view.status === 'ready') {
+      <div class="max-w-full rounded-2xl border-l-4 border-l-olive bg-white px-4 py-3 sm:max-w-md">
+        <p class="text-xs font-bold text-text/55">Período de actividad</p>
+        <p class="mt-1 font-semibold text-text">{{ formatPeriod(view.data) }}</p>
+      </div>
+    }
+  </header>
+
+  @if (view.status === 'loading') {
+    <section
+      class="flex min-h-52 flex-col items-center justify-center gap-3 rounded-3xl border border-olive/15 bg-white p-8 text-center"
+      role="status"
+      aria-live="polite"
+    >
+      <i class="pi pi-chart-bar text-2xl text-olive" aria-hidden="true"></i>
+      <p class="font-semibold text-text">Cargando los indicadores…</p>
+    </section>
+  } @else if (view.status === 'error') {
+    <section
+      class="flex min-h-64 flex-col items-center justify-center gap-3 rounded-3xl border border-terracotta/30 bg-white p-8 text-center"
+      role="alert"
+    >
+      <i class="pi pi-exclamation-triangle text-2xl text-terracotta" aria-hidden="true"></i>
+      <h2 class="font-display text-xl font-bold text-text">No se pudieron cargar los indicadores</h2>
+      <p class="max-w-xl text-sm text-text/65">{{ view.message }}</p>
+      <p-button label="Reintentar" icon="pi pi-refresh" (onClick)="retry()" />
+    </section>
+  } @else {
+    @let data = view.data;
+
+    <div class="space-y-8">
+      <section class="grid grid-cols-1 gap-5 xl:grid-cols-5" aria-labelledby="monthly-activity-title">
+        <article class="relative overflow-hidden rounded-3xl border border-olive/20 bg-olive/10 p-6 sm:p-8 xl:col-span-2">
+          <div class="flex items-start justify-between gap-4">
+            <div>
+              <h2 id="monthly-activity-title" class="font-display text-xl font-bold text-text">Actividad del mes</h2>
+              <p class="mt-1 text-sm text-text/65">Tratamientos administrados</p>
+            </div>
+            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-honey/55 text-text">
+              <i class="pi pi-heart-fill text-lg" aria-hidden="true"></i>
+            </span>
+          </div>
+
+          <p class="mt-8 font-display text-6xl font-bold leading-none text-text sm:text-7xl">
+            {{ formatCount(data.administeredTreatmentsLastMonth) }}
+          </p>
+          <p class="mt-3 max-w-sm text-sm leading-relaxed text-text/70">
+            Atenciones con tratamiento en el período. Las altas de mascotas no se cuentan.
+          </p>
+        </article>
+
+        <article class="overflow-hidden rounded-3xl border border-olive/15 bg-white p-5 sm:p-7 xl:col-span-3">
+          <div class="mb-5">
+            <h2 class="font-display text-xl font-bold text-text">Tratamientos por medicamento</h2>
+            <p class="mt-1 text-sm text-text/65">Tratamientos distintos del período que incluyeron cada medicamento.</p>
+          </div>
+
+          @if (data.treatmentsByMedicationLastMonth.length === 0) {
+            <div class="rounded-2xl border border-dashed border-olive/25 bg-background/60 px-5 py-8 text-center">
+              <p class="font-semibold text-text/75">No hubo tratamientos con medicamentos en este período.</p>
+              <p class="mt-1 text-sm text-text/55">El total de tratamientos del mes se muestra en el panel de actividad.</p>
+            </div>
+          } @else {
+            <div class="overflow-x-auto">
+              <p-table [value]="data.treatmentsByMedicationLastMonth" [tableStyle]="{ 'min-width': '24rem' }">
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th scope="col">Medicamento</th>
+                    <th scope="col" class="text-right">Tratamientos</th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-medication>
+                  <tr>
+                    <td class="font-semibold text-text">{{ medication.medicationName }}</td>
+                    <td class="text-right tabular-nums text-text/75">{{ formatCount(medication.treatmentCount) }}</td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            </div>
+          }
+        </article>
+      </section>
+
+      <section aria-labelledby="clinic-capacity-title">
+        <div class="mb-4">
+          <h2 id="clinic-capacity-title" class="font-display text-2xl font-bold text-text">Equipo y mascotas</h2>
+          <p class="mt-1 text-sm text-text/65">Estado actual de los registros de la clínica.</p>
+        </div>
+
+        <div class="grid grid-cols-1 gap-5 lg:grid-cols-2">
+          <article class="rounded-3xl border border-olive/15 bg-white p-6 sm:p-7">
+            <div class="flex items-center justify-between gap-4">
+              <h3 class="font-display text-xl font-bold text-text">Equipo veterinario</h3>
+              <i class="pi pi-users text-xl text-olive" aria-hidden="true"></i>
+            </div>
+            <dl class="mt-6 grid grid-cols-2 divide-x divide-olive/20">
+              <div class="pr-5">
+                <dt class="text-sm text-text/65">Activos</dt>
+                <dd class="mt-2 font-display text-4xl font-bold text-primary-800">{{ formatCount(data.activeVeterinarians) }}</dd>
+              </div>
+              <div class="pl-5">
+                <dt class="text-sm text-text/65">Inactivos</dt>
+                <dd class="mt-2 font-display text-4xl font-bold text-text/65">{{ formatCount(data.inactiveVeterinarians) }}</dd>
+              </div>
+            </dl>
+          </article>
+
+          <article class="rounded-3xl border border-sage/45 bg-sage/15 p-6 sm:p-7">
+            <div class="flex items-center justify-between gap-4">
+              <h3 class="font-display text-xl font-bold text-text">Mascotas registradas</h3>
+              <img src="/images/icons/paw-print-icon.svg" alt="" class="h-7 w-7" />
+            </div>
+            <p class="mt-5 font-display text-4xl font-bold text-text">{{ formatCount(data.totalPets) }}</p>
+            <div class="mt-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/80 px-4 py-3">
+              <span class="text-sm text-text/70">Activas en la clínica</span>
+              <span class="font-bold tabular-nums text-primary-800">{{ formatCount(data.activePets) }}</span>
+            </div>
+          </article>
+        </div>
+      </section>
+
+      <section class="grid grid-cols-1 gap-5 xl:grid-cols-5" aria-labelledby="historical-finances-title">
+        <article class="rounded-3xl bg-text p-6 text-white sm:p-8 xl:col-span-2">
+          <div class="flex items-center justify-between gap-4">
+            <div>
+              <h2 id="historical-finances-title" class="font-display text-xl font-bold">Finanzas históricas</h2>
+              <p class="mt-1 text-sm text-white/65">Medicamentos administrados · valores en COP</p>
+            </div>
+            <i class="pi pi-wallet text-2xl text-honey" aria-hidden="true"></i>
+          </div>
+
+          <dl class="mt-7 divide-y divide-white/15">
+            <div class="py-4 first:pt-0 last:pb-0">
+              <dt class="text-sm text-white/70">Ventas acumuladas</dt>
+              <dd class="mt-1 font-display text-3xl font-bold tabular-nums sm:text-4xl">{{ formatCurrency(data.totalSales) }}</dd>
+            </div>
+            <div class="py-4 last:pb-0">
+              <dt class="text-sm text-white/70">Utilidad bruta acumulada</dt>
+              <dd class="mt-1 font-display text-3xl font-bold tabular-nums sm:text-4xl">{{ formatCurrency(data.grossProfit) }}</dd>
+              <dd class="mt-2 max-w-sm text-xs leading-relaxed text-white/60">Ventas menos costo de compra histórico; no descuenta otros gastos.</dd>
+            </div>
+          </dl>
+        </article>
+
+        <article class="overflow-hidden rounded-3xl border border-olive/15 bg-white p-5 sm:p-7 xl:col-span-3">
+          <div class="mb-5">
+            <h2 class="font-display text-xl font-bold text-text">Medicamentos más administrados</h2>
+            <p class="mt-1 text-sm text-text/65">Histórico · ordenados por unidades administradas.</p>
+          </div>
+
+          @if (data.topThreeMedicationsByUnitsSold.length === 0) {
+            <div class="rounded-2xl border border-dashed border-olive/25 bg-background/60 px-5 py-8 text-center">
+              <p class="font-semibold text-text/75">Todavía no hay medicamentos administrados.</p>
+              <p class="mt-1 text-sm text-text/55">El ranking aparecerá cuando existan registros.</p>
+            </div>
+          } @else {
+            <div class="overflow-x-auto">
+              <p-table [value]="data.topThreeMedicationsByUnitsSold" [tableStyle]="{ 'min-width': '24rem' }">
+                <ng-template pTemplate="header">
+                  <tr>
+                    <th scope="col" class="w-20">Puesto</th>
+                    <th scope="col">Medicamento</th>
+                    <th scope="col" class="text-right">Unidades</th>
+                  </tr>
+                </ng-template>
+                <ng-template pTemplate="body" let-medication let-rowIndex="rowIndex">
+                  <tr>
+                    <td class="font-bold text-olive">{{ rowIndex + 1 }}</td>
+                    <td class="font-semibold text-text">{{ medication.medicationName }}</td>
+                    <td class="text-right tabular-nums text-text/75">{{ formatCount(medication.unitsSold) }}</td>
+                  </tr>
+                </ng-template>
+              </p-table>
+            </div>
+          }
+        </article>
+      </section>
+    </div>
+  }
+</div>
