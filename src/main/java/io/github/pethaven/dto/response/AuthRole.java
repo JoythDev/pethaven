@@ -8,5 +8,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 @Schema(description = "Rol del usuario autenticado")
 public enum AuthRole {
     OWNER,
-    VETERINARIAN
+    VETERINARIAN,
+    ADMIN
 }

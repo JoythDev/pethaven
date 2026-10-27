@@ -34,6 +34,13 @@ export class AuthService {
       .pipe(tap((user) => this.setUser(user)));
   }
 
+  // POST /auth/administrators/login: 401 si las credenciales no son válidas.
+  loginAdmin(request: LoginRequest): Observable<AuthUser> {
+    return this.http
+      .post<AuthUser>(`${this.apiUrl}/auth/administrators/login`, request)
+      .pipe(tap((user) => this.setUser(user)));
+  }
+
   // Cierra la sesión y borra al usuario guardado.
   logout(): void {
     this._user.set(null);

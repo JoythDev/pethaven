@@ -7,6 +7,7 @@ export const routes: Routes = [
   { path: '', component: LandingComponent },
   { path: 'login', component: LoginComponent, data: { kind: 'owner' } },
   { path: 'vet/login', component: LoginComponent, data: { kind: 'vet' } },
+  { path: 'admin/login', component: LoginComponent, data: { kind: 'admin' } },
 
   // Panel del veterinario: layout propio sobre el shell compartido.
   {
@@ -136,15 +137,42 @@ export const routes: Routes = [
     ],
   },
 
-  // Placeholder del portal que aún no existe.
+  // Panel del administrador: gestiona veterinarios y mascotas (se desactivan, no se borran).
   {
     path: 'administrador',
     loadComponent: () =>
-      import('./pages/shared/coming-soon/coming-soon.component').then((m) => m.ComingSoonComponent),
-    data: {
-      title: 'Portal del administrador',
-      description: 'El portal del administrador está en preparación.',
-    },
+      import('./pages/administrador/layout/admin-layout.component').then((m) => m.AdminLayoutComponent),
+    children: [
+      { path: '', redirectTo: 'veterinarios', pathMatch: 'full' },
+      {
+        path: 'veterinarios',
+        loadComponent: () =>
+          import('./pages/administrador/veterinarios/vets-list/vets-list.component').then(
+            (m) => m.VetsListComponent
+          ),
+      },
+      {
+        path: 'veterinarios/add',
+        loadComponent: () =>
+          import('./pages/administrador/veterinarios/vet-form/vet-form.component').then(
+            (m) => m.VetFormComponent
+          ),
+      },
+      {
+        path: 'veterinarios/update/:id',
+        loadComponent: () =>
+          import('./pages/administrador/veterinarios/vet-form/vet-form.component').then(
+            (m) => m.VetFormComponent
+          ),
+      },
+      {
+        path: 'mascotas',
+        loadComponent: () =>
+          import('./pages/administrador/mascotas/admin-pets-list.component').then(
+            (m) => m.AdminPetsListComponent
+          ),
+      },
+    ],
   },
 
   // Compatibilidad: la ruta anterior del panel redirige al panel del veterinario.

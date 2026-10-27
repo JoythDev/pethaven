@@ -8,7 +8,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
  * @param id    id del usuario
  * @param name  nombre completo
  * @param email correo electrónico
- * @param role  rol del usuario (OWNER o VETERINARIAN)
+ * @param role  rol del usuario (OWNER, VETERINARIAN o ADMIN)
  */
 @Schema(description = "Usuario autenticado")
 public record AuthResponse(

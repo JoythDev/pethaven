@@ -2,11 +2,13 @@ import { Component, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { applyServerErrors, getErrorMessage } from '../../../core/http/http-error';
+import { Observable } from 'rxjs';
+import { AuthUser, LoginRequest } from '../../../models/auth.model';
 import { AuthService } from '../../../services/auth.service';
 
-type LoginKind = 'owner' | 'vet';
+type LoginKind = 'owner' | 'vet' | 'admin';
 
-// Textos, imagen y destino de cada portal. El mismo componente sirve para los dos.
+// Textos, imagen y destino de cada portal. El mismo componente sirve para todos.
 interface LoginConfig {
   title: string;
   subtitle: string;
@@ -39,9 +41,25 @@ const CONFIGS: Record<LoginKind, LoginConfig> = {
     otherLink: '/login',
     otherCta: 'Inicia sesión aquí',
   },
+  admin: {
+    title: 'Portal Administrador',
+    subtitle: 'Gestiona veterinarios y mascotas de la clínica.',
+    image: '/images/instalacion_recepcion2.jpg',
+    icon: '/images/icons/gear-icon.svg',
+    successRoute: '/administrador',
+    otherLabel: '¿Eres veterinario?',
+    otherLink: '/vet/login',
+    otherCta: 'Ingresa aquí',
+  },
 };
 
-// Pantalla de inicio de sesión. Qué portal es (dueño o veterinario)
+const LOGIN_REQUESTS: Record<LoginKind, (auth: AuthService, credentials: LoginRequest) => Observable<AuthUser>> = {
+  owner: (auth, credentials) => auth.loginOwner(credentials),
+  vet: (auth, credentials) => auth.loginVeterinarian(credentials),
+  admin: (auth, credentials) => auth.loginAdmin(credentials),
+};
+
+// Pantalla de inicio de sesión. Qué portal es (dueño, veterinario o administrador)
 // se decide con data.kind en app.routes.ts.
 @Component({
   selector: 'app-login',
@@ -53,8 +71,7 @@ export class LoginComponent {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
 
-  private readonly kind: LoginKind =
-    inject(ActivatedRoute).snapshot.data['kind'] === 'vet' ? 'vet' : 'owner';
+  private readonly kind: LoginKind = inject(ActivatedRoute).snapshot.data['kind'] ?? 'owner';
 
   readonly config = CONFIGS[this.kind];
 
@@ -82,12 +99,7 @@ export class LoginComponent {
     this.submitting.set(true);
 
     const credentials = this.form.getRawValue();
-    const request$ =
-      this.kind === 'vet'
-        ? this.auth.loginVeterinarian(credentials)
-        : this.auth.loginOwner(credentials);
-
-    request$.subscribe({
+    LOGIN_REQUESTS[this.kind](this.auth, credentials).subscribe({
       next: () => {
         this.submitting.set(false);
         this.router.navigateByUrl(this.config.successRoute);

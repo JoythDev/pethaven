@@ -1,5 +1,6 @@
 package io.github.pethaven;
 
+import io.github.pethaven.entity.Administrator;
 import io.github.pethaven.entity.Drug;
 import io.github.pethaven.entity.Owner;
 import io.github.pethaven.entity.Pet;
@@ -7,6 +8,7 @@ import io.github.pethaven.entity.Species;
 import io.github.pethaven.entity.Veterinarian;
 import io.github.pethaven.dto.request.TreatmentDrugRequest;
 import io.github.pethaven.dto.request.TreatmentRequest;
+import io.github.pethaven.repository.AdministratorRepository;
 import io.github.pethaven.repository.DrugRepository;
 import io.github.pethaven.repository.OwnerRepository;
 import io.github.pethaven.repository.PetRepository;
@@ -41,6 +43,9 @@ public class DataLoader implements CommandLineRunner {
 
     @Autowired
     private DrugRepository drugRepository;
+
+    @Autowired
+    private AdministratorRepository administratorRepository;
 
     @Autowired
     private TreatmentService treatmentService;
@@ -344,6 +349,12 @@ public class DataLoader implements CommandLineRunner {
         veterinarianRepository.save(Veterinarian.builder().name("Dr. Miguel Ángel Torres").document("522124823").email("miguel.torres@pethaven.com").password("vet12345").specialty("Medicina Interna").build());
         veterinarianRepository.save(Veterinarian.builder().name("Dra. Sofía Herrera").document("192049284").email("sofia.herrera@pethaven.com").password("vet12345").specialty("Dermatología").build());
         veterinarianRepository.save(Veterinarian.builder().name("Dr. Julián Restrepo").document("102938471").email("julian.restrepo@pethaven.com").password("vet12345").specialty("Odontología Veterinaria").active(false).build());
+
+        // ==========================================
+        // ==== Cargar administradores de prueba ====
+        // ==========================================
+        administratorRepository.save(Administrator.builder().name("Admin Principal").email("admin@pethaven.com").password("admin12345").build());
+        administratorRepository.save(Administrator.builder().name("Laura Admin").email("laura.admin@pethaven.com").password("admin12345").build());
 
         // =======================================
         // ==== Cargar tratamientos de ejemplo ====
