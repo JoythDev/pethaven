@@ -15,4 +15,7 @@ public interface VeterinarianRepository extends JpaRepository<Veterinarian, Long
     boolean existsByEmail(String email);
     boolean existsByDocumentAndIdNot(String document, Long id);
     boolean existsByEmailAndIdNot(String email, Long id);
+
+    long countByActiveTrue();
+    long countByActiveFalse();
 }

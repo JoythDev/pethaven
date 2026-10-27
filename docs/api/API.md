@@ -1,6 +1,6 @@
 # API REST PetHaven
 
-Referencia de la API REST de PetHaven: dueños, mascotas, veterinarios, medicamentos, tratamientos y autenticación provisional, bajo el prefijo `/api`.
+Referencia de la API REST de PetHaven: dueños, mascotas, veterinarios, medicamentos, tratamientos, KPIs administrativos y autenticación provisional, bajo el prefijo `/api`.
 
 **Enlaces:** [README del proyecto](../../README.md) · [Swagger UI](http://localhost:8080/swagger-ui.html) · [Colección de peticiones (pethaven.http)](./pethaven.http)
 
@@ -16,6 +16,7 @@ Referencia de la API REST de PetHaven: dueños, mascotas, veterinarios, medicame
   - [Mascotas (`/api/pets`)](#mascotas-apipets)
   - [Veterinarios (`/api/veterinarians`)](#veterinarios-apiveterinarians)
   - [Medicamentos (`/api/drugs`)](#medicamentos-apidrugs)
+  - [Administración (`/api/administrators`)](#administración-apiadministrators)
   - [Tratamientos (`/api/treatments`)](#tratamientos-apitreatments)
   - [Autenticación (`/api/auth`)](#autenticación-apiauth)
 - [Reglas de negocio](#reglas-de-negocio)
@@ -1501,6 +1502,54 @@ Elimina un medicamento que no tenga historial.
 **Errores**:
 - `404` el medicamento no existe
 - `409` el medicamento está asociado a tratamientos: `No se puede eliminar el medicamento 'Amoxicilina 250mg' porque está asociado a uno o más tratamientos existentes.`
+
+### Administración (`/api/administrators`)
+
+#### `GET /api/administrators/dashboard`
+
+Devuelve en una sola respuesta los nueve KPI de AC29. No acepta parámetros.
+
+Los indicadores mensuales usan el mes calendario anterior en `America/Bogota`. `monthlyPeriodStart` es inclusivo y `monthlyPeriodEndExclusive` es exclusivo; ambos representan fechas locales al inicio del día. El total de tratamientos excluye los registros `RECOVERED` usados para dar de alta una mascota. El desglose por medicamento cuenta tratamientos distintos que tengan un medicamento administrado en ese período.
+
+`totalPets` incluye mascotas activas e inactivas; `activePets` cuenta las que tienen `Pet.active: true`. `activeVeterinarians` e `inactiveVeterinarians` cuentan veterinarios según `Veterinarian.active`. Las ventas y la utilidad bruta son acumuladas históricas, no del mes anterior: usan las unidades y los precios unitarios guardados en cada `TreatmentDrug` al administrarlo. La utilidad bruta no descuenta otros gastos. El top tres también es histórico y ordena por unidades administradas descendentes, luego por nombre e id del medicamento para resolver empates. Si no existen datos de ventas, los importes devuelven `0` y las listas devuelven `[]`.
+
+**Respuesta** `200 OK` — `AdministratorDashboardResponse` (ejemplo ilustrativo):
+
+```json
+{
+  "monthlyPeriodStart": "2026-09-01",
+  "monthlyPeriodEndExclusive": "2026-10-01",
+  "monthlyPeriodTimeZone": "America/Bogota",
+  "administeredTreatmentsLastMonth": 15,
+  "treatmentsByMedicationLastMonth": [
+    {
+      "medicationId": 8,
+      "medicationName": "Amoxicilina 250mg",
+      "treatmentCount": 4
+    }
+  ],
+  "activeVeterinarians": 5,
+  "inactiveVeterinarians": 1,
+  "totalPets": 150,
+  "activePets": 143,
+  "totalSales": 350000.00,
+  "grossProfit": 128500.00,
+  "topThreeMedicationsByUnitsSold": [
+    {
+      "medicationId": 8,
+      "medicationName": "Amoxicilina 250mg",
+      "unitsSold": 72
+    },
+    {
+      "medicationId": 9,
+      "medicationName": "Vitamina B12 Inyectable",
+      "unitsSold": 45
+    }
+  ]
+}
+```
+
+El endpoint sigue las convenciones de acceso actuales: la API aún no exige credenciales ni autorización por rol; el control de acceso queda para la Feature 13.
 
 ### Tratamientos (`/api/treatments`)
 
