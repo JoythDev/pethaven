@@ -56,12 +56,12 @@
     <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
       <div class="flex flex-col gap-1">
         <label for="age" class="text-sm font-bold text-text">Edad (años)</label>
-        <p-inputnumber inputId="age" formControlName="age" [min]="0" [step]="1" [fluid]="true" />
+        <p-inputnumber inputId="age" formControlName="age" [min]="0" [max]="limits.ageMax" [step]="1" [fluid]="true" />
         @if (form.controls.age.errors?.['server']; as serverMessage) {
           <p-message severity="error" variant="simple" size="small">{{ serverMessage }}</p-message>
         } @else if (form.controls.age.invalid && form.controls.age.touched) {
           <p-message severity="error" variant="simple" size="small">
-            Ingresa una edad entera (0 o más).
+            Ingresa una edad entera entre 0 y {{ limits.ageMax }} años.
           </p-message>
         }
       </div>
@@ -71,7 +71,8 @@
         <p-inputnumber
           inputId="weight"
           formControlName="weight"
-          [min]="0"
+          [min]="limits.weightMin"
+          [max]="limits.weightMax"
           [step]="0.1"
           [maxFractionDigits]="1"
           [fluid]="true"
@@ -80,7 +81,7 @@
           <p-message severity="error" variant="simple" size="small">{{ serverMessage }}</p-message>
         } @else if (form.controls.weight.invalid && form.controls.weight.touched) {
           <p-message severity="error" variant="simple" size="small">
-            Ingresa un peso válido (0 o más).
+            Ingresa un peso entre {{ limits.weightMin }} y {{ limits.weightMax }} kg.
           </p-message>
         }
       </div>
@@ -115,24 +116,6 @@
     </div>
 
     <div class="flex flex-col gap-1">
-      <label for="disease" class="text-sm font-bold text-text">Diagnóstico (opcional)</label>
-      <input
-        pInputText
-        id="disease"
-        formControlName="disease"
-        placeholder="Déjalo vacío si no tiene ninguno"
-        class="w-full"
-      />
-      @if (form.controls.disease.errors?.['server']; as serverMessage) {
-        <p-message severity="error" variant="simple" size="small">{{ serverMessage }}</p-message>
-      } @else if (form.controls.disease.invalid && form.controls.disease.touched) {
-        <p-message severity="error" variant="simple" size="small">
-          El diagnóstico no puede superar los 120 caracteres.
-        </p-message>
-      }
-    </div>
-
-    <div class="flex flex-col gap-1">
       <label for="photoUrl" class="text-sm font-bold text-text">URL de la foto</label>
       <input pInputText id="photoUrl" formControlName="photoUrl" placeholder="https://..." class="w-full" />
       @if (form.controls.photoUrl.errors?.['server']; as serverMessage) {
@@ -157,6 +140,26 @@
     </div>
     @if (form.controls.active.errors?.['server']; as serverMessage) {
       <p-message severity="error" variant="simple" size="small">{{ serverMessage }}</p-message>
+    }
+
+    @if (currentDisease(); as disease) {
+      <div class="flex flex-col gap-3 rounded-2xl border border-olive/15 bg-surface-50 p-4 sm:flex-row sm:items-center sm:justify-between">
+        <div class="text-sm">
+          <p class="font-bold text-text">En tratamiento por: {{ disease }}</p>
+          <p class="text-text/60">Cuando ya esté bien y no necesite medicamentos, dale el alta para dejarla estable. Antes se guardan los cambios del formulario.</p>
+        </div>
+        <p-button
+          class="shrink-0"
+          styleClass="w-full whitespace-nowrap px-6 sm:w-auto"
+          type="button"
+          label="Dar de alta"
+          icon="pi pi-check-circle"
+          severity="success"
+          [outlined]="true"
+          [loading]="discharging()"
+          (onClick)="darDeAlta()"
+        />
+      </div>
     }
 
     <div class="mt-2 flex items-center gap-4">

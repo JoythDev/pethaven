@@ -10,8 +10,10 @@ import {
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { InputNumberModule } from 'primeng/inputnumber';
+import { InputTextModule } from 'primeng/inputtext';
 import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
+import { TextareaModule } from 'primeng/textarea';
 import {
   EMPTY,
   Observable,
@@ -26,8 +28,8 @@ import {
   switchMap,
 } from 'rxjs';
 import { Drug } from '../../../../models/drug.model';
-import { Pet } from '../../../../models/pet.model';
-import { Treatment, TreatmentRequest } from '../../../../models/treatment.model';
+import { PET_WEIGHT_MAX, PET_WEIGHT_MIN, Pet } from '../../../../models/pet.model';
+import { EVOLUTION_LABELS, Evolution, Treatment, TreatmentRequest } from '../../../../models/treatment.model';
 import { Veterinarian } from '../../../../models/veterinarian.model';
 import { AuthService } from '../../../../services/auth.service';
 import { DrugService } from '../../../../services/drug.service';
@@ -65,8 +67,10 @@ const currencyFormat = new Intl.NumberFormat('es-CO', {
     RouterLink,
     ButtonModule,
     InputNumberModule,
+    InputTextModule,
     MessageModule,
     SelectModule,
+    TextareaModule,
     PetStatusTagComponent,
   ],
   templateUrl: './treatment-form.component.html',
@@ -85,12 +89,33 @@ export class TreatmentFormComponent implements OnInit {
 
   readonly state = signal<ViewState<TreatmentFormData>>({ status: 'loading' });
   readonly saving = signal(false);
+  readonly weightLimits = { min: PET_WEIGHT_MIN, max: PET_WEIGHT_MAX };
+
+  // RECOVERED queda fuera: dejar estable a la mascota es el alta, no un tratamiento.
+  readonly evolutionOptions = (['STABLE', 'IMPROVING', 'WORSENING'] as const).map((value) => ({
+    value,
+    label: EVOLUTION_LABELS[value],
+  }));
+
+  // Si la mascota llega estable es un ingreso: no hay con qué comparar, así que no se pide evolución.
+  readonly isAdmission = computed(() => {
+    const state = this.state();
+    return state.status === 'ready' && state.data.pet.disease === null;
+  });
 
   // Cada emisión es un envío válido del formulario que debe registrarse en el API.
   private readonly submit$ = new Subject<TreatmentRequest>();
 
   // Arranca con una línea de medicamento vacía; el veterinario puede agregar o quitar más.
   readonly form = this.formBuilder.group({
+    weight: this.formBuilder.control<number | null>(null, [
+      Validators.required,
+      Validators.min(PET_WEIGHT_MIN),
+      Validators.max(PET_WEIGHT_MAX),
+    ]),
+    diagnosis: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(200)]],
+    evolution: this.formBuilder.control<Evolution | null>(null, Validators.required),
+    notes: ['', Validators.maxLength(1000)],
     drugs: this.formBuilder.array([this.createLine()], Validators.minLength(1)),
   });
 
@@ -184,7 +209,34 @@ export class TreatmentFormComponent implements OnInit {
         ),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe((state) => this.state.set(state));
+      .subscribe((state) => {
+        this.state.set(state);
+        // Parte del peso y el diagnóstico actuales; el veterinario los corrige si cambiaron.
+        // En el ingreso la evolución se deshabilita para que no sea obligatoria.
+        if (state.status === 'ready') {
+          this.form.controls.weight.setValue(state.data.pet.weight);
+          this.form.controls.diagnosis.setValue(state.data.pet.disease ?? '');
+          if (this.isAdmission()) {
+            this.form.controls.evolution.disable();
+          } else {
+            this.form.controls.evolution.enable();
+          }
+        }
+      });
+
+    // "Sin cambios" significa que sigue con el mismo diagnóstico: se fija el actual y se bloquea.
+    this.form.controls.evolution.valueChanges
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe((evolution) => {
+        const diagnosis = this.form.controls.diagnosis;
+        const state = this.state();
+        if (evolution === 'STABLE' && state.status === 'ready') {
+          diagnosis.setValue(state.data.pet.disease ?? '');
+          diagnosis.disable();
+        } else {
+          diagnosis.enable();
+        }
+      });
   }
 
   agregarMedicamento(): void {
@@ -208,8 +260,8 @@ export class TreatmentFormComponent implements OnInit {
     }
 
     const state = this.state();
-    const { drugs } = this.form.getRawValue();
-    if (state.status !== 'ready' || state.data.veterinarian === null) {
+    const { drugs, weight, diagnosis, evolution, notes } = this.form.getRawValue();
+    if (state.status !== 'ready' || state.data.veterinarian === null || weight === null) {
       return;
     }
 
@@ -217,6 +269,10 @@ export class TreatmentFormComponent implements OnInit {
       petId: state.data.pet.id,
       veterinarianId: state.data.veterinarian.id,
       date: null,
+      weight,
+      diagnosis: diagnosis.trim(),
+      evolution: this.isAdmission() ? null : evolution,
+      notes: notes.trim() || null,
       drugs: drugs.flatMap((line) => (line.drugId === null ? [] : [{ drugId: line.drugId, units: line.units }])),
     });
   }

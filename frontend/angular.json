@@ -23,6 +23,7 @@
           "builder": "@angular-devkit/build-angular:application",
           "options": {
             "outputPath": "dist/pethaven-frontend",
+            "allowedCommonJsDependencies": ["core-js", "html2canvas", "raf", "rgbcolor"],
             "index": "src/index.html",
             "browser": "src/main.ts",
             "polyfills": [

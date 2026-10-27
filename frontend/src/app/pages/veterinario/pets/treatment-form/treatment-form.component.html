@@ -71,6 +71,73 @@
           </div>
         }
 
+        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
+          <div class="flex flex-col gap-1">
+            <label for="weight" class="text-sm font-bold text-text">Peso en la consulta (kg)</label>
+            <p-inputnumber
+              inputId="weight"
+              formControlName="weight"
+              [min]="weightLimits.min"
+              [max]="weightLimits.max"
+              [minFractionDigits]="0"
+              [maxFractionDigits]="2"
+              [fluid]="true"
+            />
+            @if (form.controls.weight.invalid && form.controls.weight.touched) {
+              <p-message severity="error" variant="simple" size="small">Ingresa un peso entre {{ weightLimits.min }} y {{ weightLimits.max }} kg.</p-message>
+            }
+          </div>
+
+          @if (isAdmission()) {
+            <div class="flex flex-col gap-1">
+              <span class="text-sm font-bold text-text">Evolución</span>
+              <p class="rounded-xl border border-olive/10 bg-surface-50 px-4 py-3 text-sm text-text">
+                Ingreso <span class="text-text/60">· llega estable, es su primer diagnóstico</span>
+              </p>
+            </div>
+          } @else {
+            <div class="flex flex-col gap-1">
+              <label for="evolution" class="text-sm font-bold text-text">Evolución</label>
+              <p-select
+                inputId="evolution"
+                formControlName="evolution"
+                [options]="evolutionOptions"
+                optionLabel="label"
+                optionValue="value"
+                placeholder="¿Cómo sigue la mascota?"
+                [fluid]="true"
+              />
+              @if (form.controls.evolution.invalid && form.controls.evolution.touched) {
+                <p-message severity="error" variant="simple" size="small">Selecciona la evolución.</p-message>
+              } @else if (form.controls.evolution.value) {
+                <small class="text-text/60">La mascota quedará con este diagnóstico.</small>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <label for="diagnosis" class="text-sm font-bold text-text">Diagnóstico</label>
+          <input pInputText id="diagnosis" formControlName="diagnosis" class="w-full" />
+          @if (form.controls.diagnosis.invalid && form.controls.diagnosis.touched) {
+            <p-message severity="error" variant="simple" size="small">
+              El diagnóstico es obligatorio (máximo 200 caracteres).
+            </p-message>
+          } @else if (isAdmission()) {
+            <small class="text-text/60">La mascota quedará con este diagnóstico.</small>
+          } @else if (form.controls.diagnosis.disabled) {
+            <small class="text-text/60">Sin cambios: se mantiene el diagnóstico actual.</small>
+          }
+        </div>
+
+        <div class="flex flex-col gap-1">
+          <label for="notes" class="text-sm font-bold text-text">Observaciones (opcional)</label>
+          <textarea pTextarea id="notes" formControlName="notes" rows="3" class="w-full"></textarea>
+          @if (form.controls.notes.invalid && form.controls.notes.touched) {
+            <p-message severity="error" variant="simple" size="small">Máximo 1000 caracteres.</p-message>
+          }
+        </div>
+
         <div class="flex flex-col gap-3" formArrayName="drugs">
           <div class="flex items-center justify-between gap-3">
             <span class="text-sm font-bold text-text">Medicamentos</span>

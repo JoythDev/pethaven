@@ -11,6 +11,7 @@ public interface TreatmentService {
     List<TreatmentResponse> getAllTreatments();
     TreatmentResponse getTreatmentById(Long id);
     TreatmentResponse createTreatment(TreatmentRequest request);
+    TreatmentResponse dischargePet(Long petId, Long veterinarianId);
 
     List<TreatmentResponse> getTreatmentsByPetId(Long petId);
     List<TreatmentResponse> getTreatmentsByVeterinarianId(Long veterinarianId);

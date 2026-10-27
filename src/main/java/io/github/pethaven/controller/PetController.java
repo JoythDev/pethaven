@@ -15,6 +15,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -166,5 +167,51 @@ public class PetController {
             @Parameter(description = "Id de la mascota", example = "1") @PathVariable Long id) {
         petService.getPetById(id);
         return treatmentService.getTreatmentsByPetId(id);
+    }
+
+    /**
+     * Sirve la foto de la mascota desde el API.
+     *
+     * @param id id de la mascota
+     * @return la imagen, o 404 si no tiene foto o no se pudo descargar
+     */
+    @Operation(summary = "Foto de una mascota",
+            description = "Descarga la foto desde su URL y la sirve desde el API, para usarla donde el host original no permite CORS (p. ej. el PDF de la historia clínica). Solo JPEG, PNG, WebP, GIF o AVIF de hasta 5 MB.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Imagen de la mascota"),
+            @ApiResponse(responseCode = "404", description = "La mascota no existe, no tiene foto o no se pudo descargar")
+    })
+    @GetMapping("/{id}/photo")
+    public ResponseEntity<byte[]> getPetPhoto(
+            @Parameter(description = "Id de la mascota", example = "1") @PathVariable Long id) {
+        return petService.getPetPhoto(id)
+                .map(photo -> ResponseEntity.ok()
+                        .header(HttpHeaders.CONTENT_TYPE, photo.contentType())
+                        .header("X-Content-Type-Options", "nosniff")
+                        .body(photo.data()))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    /**
+     * Da de alta a una mascota: queda estable y el alta se registra en su historia clínica.
+     *
+     * @param id             id de la mascota
+     * @param veterinarianId id del veterinario que da el alta
+     * @return el registro del alta (sin medicamentos, evolución RECOVERED)
+     */
+    @Operation(summary = "Dar de alta a una mascota",
+            description = "La mascota mejoró y ya no necesita medicamentos: queda estable (sin diagnóstico) y el alta se registra en su historia clínica. Falla con 409 si ya está estable o si el veterinario está inactivo.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Alta registrada"),
+            @ApiResponse(responseCode = "404", description = "No existe la mascota o el veterinario",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "La mascota ya está estable o el veterinario está inactivo",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PostMapping("/{id}/discharge")
+    public TreatmentResponse dischargePet(
+            @Parameter(description = "Id de la mascota", example = "1") @PathVariable Long id,
+            @Parameter(description = "Id del veterinario que da el alta", example = "1") @RequestParam("veterinarianId") Long veterinarianId) {
+        return treatmentService.dischargePet(id, veterinarianId);
     }
 }

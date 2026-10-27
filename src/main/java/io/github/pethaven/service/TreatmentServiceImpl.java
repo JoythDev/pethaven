@@ -2,6 +2,7 @@ package io.github.pethaven.service;
 
 import io.github.pethaven.dto.request.TreatmentRequest;
 import io.github.pethaven.dto.response.TreatmentResponse;
+import io.github.pethaven.entity.Evolution;
 import io.github.pethaven.entity.Pet;
 import io.github.pethaven.entity.Treatment;
 import io.github.pethaven.entity.Veterinarian;
@@ -92,10 +93,14 @@ public class TreatmentServiceImpl implements TreatmentService {
         }
 
         Treatment treatment = treatmentMapper.toEntity(request);
+        ensureCoherentWithCurrentState(pet, treatment);
         if (treatment.getDate() == null) {
             treatment.setDate(LocalDateTime.now());
         }
         treatment.setPet(pet);
+        // La consulta define el estado actual de la mascota: su peso y su diagnóstico.
+        pet.setWeight(treatment.getWeight());
+        pet.setDisease(treatment.getDiagnosis());
         treatment.setVeterinarian(veterinarian);
 
         Treatment saved = treatmentRepository.save(treatment);
@@ -105,6 +110,57 @@ public class TreatmentServiceImpl implements TreatmentService {
         veterinarianRepository.save(veterinarian);
 
         return treatmentMapper.toResponse(saved);
+    }
+
+    // Alta: la mascota mejoró y ya no necesita medicamentos. Queda en su historia clínica como un
+    // registro sin medicamentos (evolución RECOVERED, con el diagnóstico del que se recuperó) y
+    // la mascota vuelve a estar estable. No suma atenciones: no es un tratamiento.
+    @Override
+    @Transactional
+    public TreatmentResponse dischargePet(Long petId, Long veterinarianId) {
+        Pet pet = petService.getPetEntity(petId);
+        Veterinarian veterinarian = veterinarianService.getVeterinarianEntity(veterinarianId);
+        if (pet.getDisease() == null) {
+            throw new IllegalOperationException("La mascota '" + pet.getName() + "' ya está estable.");
+        }
+        if (!veterinarian.isActive()) {
+            throw new IllegalOperationException(
+                    "El veterinario '" + veterinarian.getName() + "' no está activo: no puede dar de alta.");
+        }
+        Treatment discharge = Treatment.builder()
+                .pet(pet)
+                .veterinarian(veterinarian)
+                .date(LocalDateTime.now())
+                .weight(pet.getWeight())
+                .diagnosis(pet.getDisease())
+                .evolution(Evolution.RECOVERED)
+                .notes("Alta: la mascota queda estable.")
+                .build();
+        pet.setDisease(null);
+        return treatmentMapper.toResponse(treatmentRepository.save(discharge));
+    }
+
+    // Si la mascota llega estable es un ingreso: no hay con qué comparar, así que no lleva evolución.
+    // Si está en tratamiento la evolución es obligatoria, y "sin cambios" conserva su diagnóstico.
+    private void ensureCoherentWithCurrentState(Pet pet, Treatment treatment) {
+        String currentDisease = pet.getDisease();
+        Evolution evolution = treatment.getEvolution();
+        if (currentDisease == null && evolution != null) {
+            throw new IllegalOperationException(
+                    "La mascota '" + pet.getName() + "' está estable: es un ingreso y no lleva evolución.");
+        }
+        if (currentDisease != null && evolution == null) {
+            throw new IllegalOperationException(
+                    "La mascota '" + pet.getName() + "' está en tratamiento por '" + currentDisease + "': indica su evolución.");
+        }
+        if (evolution == Evolution.RECOVERED) {
+            throw new IllegalOperationException(
+                    "Un tratamiento siempre formula medicamentos: para dejar estable a la mascota dale el alta.");
+        }
+        if (evolution == Evolution.STABLE && !treatment.getDiagnosis().equals(currentDisease)) {
+            throw new IllegalOperationException(
+                    "Con evolución 'sin cambios' el diagnóstico debe seguir siendo '" + currentDisease + "'.");
+        }
     }
 
     @Override

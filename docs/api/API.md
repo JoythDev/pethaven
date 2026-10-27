@@ -297,7 +297,7 @@ Cuerpo para `PUT /api/owners/{id}`. Igual que `OwnerRequest`, salvo que `passwor
 
 #### `PetRequest`
 
-Cuerpo para `POST /api/pets` y `PUT /api/pets/{id}`. El estado `active` no forma parte del cuerpo.
+Cuerpo para `POST /api/pets` y `PUT /api/pets/{id}`. El estado `active` no forma parte del cuerpo. El diagnóstico (`disease`) tampoco: lo define cada tratamiento registrado (ver `TreatmentRequest`).
 
 | Campo | Tipo | Obligatorio | Restricciones |
 |---|---|---|---|
@@ -305,9 +305,8 @@ Cuerpo para `POST /api/pets` y `PUT /api/pets/{id}`. El estado `active` no forma
 | `ownerId` | number | Sí | Debe existir un dueño con ese `id` |
 | `species` | string | Sí | `"DOG"` o `"CAT"` |
 | `breed` | string | Sí | No vacío; máximo 60 caracteres |
-| `age` | number | Sí | Entero mayor o igual a 0 (años) |
-| `weight` | number | Sí | Mayor o igual a 0 (kilogramos, admite decimales) |
-| `disease` | string \| null | No | Máximo 120 caracteres |
+| `age` | number | Sí | Entero entre 0 y 30 (años) |
+| `weight` | number | Sí | Entre 0.1 y 120 (kilogramos, admite decimales). También lo actualiza cada tratamiento |
 | `photoUrl` | string \| null | No | Máximo 500 caracteres |
 
 ```json
@@ -318,7 +317,6 @@ Cuerpo para `POST /api/pets` y `PUT /api/pets/{id}`. El estado `active` no forma
   "breed": "Cocker Spaniel",
   "age": 8,
   "weight": 13.2,
-  "disease": "Otitis externa",
   "photoUrl": "https://placedog.net/500/400?id=10"
 }
 ```
@@ -333,7 +331,7 @@ Cuerpo para `POST /api/pets` y `PUT /api/pets/{id}`. El estado `active` no forma
 | `breed` | string | — | — |
 | `age` | number | — | — |
 | `weight` | number | — | — |
-| `disease` | string \| null | — | — |
+| `disease` | string \| null | — | Diagnóstico actual; `null` = estable. Lo define el último tratamiento |
 | `photoUrl` | string \| null | — | — |
 | `active` | boolean | — | `true` = hospitalizada; `false` = en su casa |
 | `ownerId` | number | — | Dueño actual |
@@ -499,13 +497,21 @@ Cuerpo para `POST /api/treatments`.
 | `petId` | number | Sí | Debe existir y estar activa |
 | `veterinarianId` | number | Sí | Debe existir y estar activo |
 | `date` | string \| null | No | ISO-8601 sin zona (`2026-08-05T10:30:00`). No puede ser futura. Si se omite, se usa el momento actual |
-| `drugs` | array<`TreatmentDrugRequest`> | No | Medicamentos a administrar junto con el tratamiento. Si se envían, se registran de forma atómica con él (todos o ninguno) |
+| `weight` | number | Sí | Peso en kg medido en la consulta, entre 0.1 y 120. Pasa a ser el peso actual de la mascota |
+| `diagnosis` | string | Sí | Diagnóstico de la consulta. Máx. 200 caracteres |
+| `evolution` | string \| null | Según el estado | `STABLE`, `IMPROVING` o `WORSENING` (`RECOVERED` solo lo usa el alta). Obligatoria si la mascota tiene un diagnóstico activo; debe ir en `null` si llega estable (ingreso). Con `STABLE` el `diagnosis` debe ser el actual. Si no se cumple → `409` |
+| `notes` | string \| null | No | Observaciones. Máx. 1000 caracteres |
+| `drugs` | array<`TreatmentDrugRequest`> | Sí | Al menos uno: un tratamiento es formular medicamentos. Se registran de forma atómica con él (todos o ninguno). Para dejar estable a una mascota sin medicamentos se usa [`POST /api/pets/{id}/discharge`](#post-apipetsiddischarge) |
 
 ```json
 {
   "petId": 24,
   "veterinarianId": 1,
   "date": "2026-08-05T10:30:00",
+  "weight": 12.4,
+  "diagnosis": "Otitis externa",
+  "evolution": "IMPROVING",
+  "notes": "Menos inflamación que en la consulta anterior.",
   "drugs": [
     { "drugId": 5, "units": 2 }
   ]
@@ -522,6 +528,10 @@ Cuerpo para `POST /api/treatments`.
 | `petName` | string | — | Nombre de la mascota atendida |
 | `veterinarianId` | number | — | Veterinario que atendió |
 | `veterinarianName` | string | — | Nombre del veterinario que atendió |
+| `weight` | number | — | Peso en kg medido en la consulta |
+| `diagnosis` | string | — | Diagnóstico de la consulta |
+| `evolution` | string \| null | — | `STABLE`, `IMPROVING` o `WORSENING`; `RECOVERED` = alta (sin medicamentos); `null` = ingreso |
+| `notes` | string \| null | — | Observaciones |
 | `drugs` | array<`TreatmentDrugResponse`> | — | Medicamentos administrados; puede ser una lista vacía |
 
 ```json
@@ -532,6 +542,10 @@ Cuerpo para `POST /api/treatments`.
   "petName": "Canela",
   "veterinarianId": 1,
   "veterinarianName": "Dra. Valentina Soler",
+  "weight": 12.4,
+  "diagnosis": "Otitis externa",
+  "evolution": "IMPROVING",
+  "notes": "Menos inflamación que en la consulta anterior.",
   "drugs": [
     {
       "id": 25,
@@ -908,7 +922,6 @@ Registra una mascota nueva. Nace activa: el cuerpo no incluye `active`.
   "breed": "Cocker Spaniel",
   "age": 8,
   "weight": 13.2,
-  "disease": "Otitis externa",
   "photoUrl": "https://placedog.net/500/400?id=10"
 }
 ```
@@ -955,7 +968,6 @@ Reemplaza los datos editables de la mascota. Puede reasignarla a otro dueño; el
   "breed": "Cocker Spaniel",
   "age": 8,
   "weight": 13.5,
-  "disease": "Otitis externa",
   "photoUrl": "https://placedog.net/500/400?id=10"
 }
 ```
@@ -1056,6 +1068,38 @@ Devuelve el historial de tratamientos de la mascota, del más antiguo al más re
 - `404` la mascota no existe: `El recurso 'Pet' con id: '999' no fue encontrado`
 
 > **Relacionado:** la misma colección de tratamientos se puede consultar desde el veterinario en [`GET /api/veterinarians/{id}/treatments`](#get-apiveterinariansidtreatments). El endpoint de creación vive en [Tratamientos](#tratamientos-apitreatments).
+
+#### `POST /api/pets/{id}/discharge`
+
+Da de alta a la mascota: ya mejoró y no necesita medicamentos. Queda estable (`disease` en `null`) y el alta se registra en su historia clínica como un `TreatmentResponse` sin medicamentos, con `evolution: "RECOVERED"` y el diagnóstico del que se recuperó. No suma atenciones al veterinario.
+
+**Parámetros**
+
+| Nombre | Ubicación | Tipo | Obligatorio | Descripción |
+|---|---|---|---|---|
+| `id` | path | number | Sí | Id de la mascota |
+| `veterinarianId` | query | number | Sí | Veterinario que da el alta (debe estar activo) |
+
+**Respuesta** `200 OK` — `TreatmentResponse` del alta.
+
+**Errores**:
+- `404` la mascota o el veterinario no existen
+- `409` la mascota ya está estable, o el veterinario está inactivo
+
+#### `GET /api/pets/{id}/photo`
+
+Descarga la foto de la mascota desde su `photoUrl` y la sirve desde el API. Existe porque varios hosts de imágenes (p. ej. placedog.net) no permiten CORS, y la SPA necesita leer la imagen para ponerla en el PDF de la historia clínica.
+
+**Parámetros**
+
+| Nombre | Ubicación | Tipo | Obligatorio | Descripción |
+|---|---|---|---|---|
+| `id` | path | number | Sí | Id de la mascota |
+
+**Respuesta** `200 OK` — la imagen, con el `Content-Type` original. Solo se aceptan JPEG, PNG, WebP, GIF o AVIF de hasta 5 MB (SVG no, porque puede contener scripts).
+
+**Errores**:
+- `404` la mascota no existe, no tiene foto, o la foto no se pudo descargar o no es un formato aceptado
 
 ### Veterinarios (`/api/veterinarians`)
 

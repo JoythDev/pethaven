@@ -11,7 +11,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
 import java.util.List;
+import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class PetServiceImpl implements PetService {
@@ -19,6 +28,15 @@ public class PetServiceImpl implements PetService {
     private final PetRepository petRepository;
     private final PetMapper petMapper;
     private final OwnerService ownerService;
+
+    // SVG queda fuera a propósito: puede traer scripts y se serviría desde el origen del API.
+    private static final Set<String> PHOTO_TYPES =
+            Set.of("image/jpeg", "image/jpg", "image/png", "image/webp", "image/gif", "image/avif");
+    private static final int MAX_PHOTO_BYTES = 5 * 1024 * 1024;
+    private final HttpClient httpClient = HttpClient.newBuilder()
+            .connectTimeout(Duration.ofSeconds(5))
+            .followRedirects(HttpClient.Redirect.NORMAL)
+            .build();
 
     @Autowired
     public PetServiceImpl(
@@ -97,5 +115,33 @@ public class PetServiceImpl implements PetService {
         return petRepository.findByOwnerId(ownerId).stream()
                 .map(petMapper::toResponse)
                 .toList();
+    }
+
+    // Descarga la foto desde su URL externa para servirla desde el API: varios hosts
+    // (p. ej. placedog.net) no permiten CORS y el navegador no podría leerla para el PDF.
+    // Sin foto, con URL inválida o si la descarga falla, devuelve vacío.
+    @Override
+    public Optional<Photo> getPetPhoto(Long id) {
+        String url = getPetEntity(id).getPhotoUrl();
+        if (url == null || !(url.startsWith("https://") || url.startsWith("http://"))) {
+            return Optional.empty();
+        }
+        try {
+            HttpRequest request = HttpRequest.newBuilder(URI.create(url)).timeout(Duration.ofSeconds(10)).GET().build();
+            HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
+            try (InputStream body = response.body()) {
+                String type = response.headers().firstValue("Content-Type").orElse("").split(";")[0].trim().toLowerCase();
+                if (response.statusCode() != 200 || !PHOTO_TYPES.contains(type)) {
+                    return Optional.empty();
+                }
+                byte[] data = body.readNBytes(MAX_PHOTO_BYTES + 1);
+                return data.length > MAX_PHOTO_BYTES ? Optional.empty() : Optional.of(new Photo(data, type));
+            }
+        } catch (IOException | IllegalArgumentException e) {
+            return Optional.empty();
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return Optional.empty();
+        }
     }
 }

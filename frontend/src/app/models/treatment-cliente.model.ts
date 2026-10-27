@@ -22,5 +22,8 @@ export interface ClienteTreatment {
   petName: string;
   veterinarianId: number;
   veterinarianName: string;
+  diagnosis: string;
+  // 'RECOVERED' marca un alta: la mascota se recuperó y no recibió medicamentos.
+  evolution: string | null;
   drugs: ClienteTreatmentDrug[];
 }

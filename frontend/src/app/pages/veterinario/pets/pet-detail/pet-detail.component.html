@@ -51,8 +51,14 @@
           </div>
         </dl>
 
-        <div class="mt-12">
+        <div class="mt-12 flex flex-wrap gap-3">
           <p-button label="Editar mascota" icon="pi pi-pencil" (onClick)="editar(p.id)" />
+          <p-button
+            label="Historia clínica"
+            icon="pi pi-file"
+            [outlined]="true"
+            [routerLink]="['/veterinario/pets', p.id, 'historia']"
+          />
         </div>
       </div>
     </div>

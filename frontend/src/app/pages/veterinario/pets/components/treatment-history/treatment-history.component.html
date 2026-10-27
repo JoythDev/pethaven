@@ -24,6 +24,23 @@
           </div>
         </div>
 
+        <dl class="mt-4 grid grid-cols-1 gap-3 text-sm sm:grid-cols-3">
+          <div class="sm:col-span-2">
+            <dt class="text-text/50">Diagnóstico</dt>
+            <dd class="font-semibold text-text">{{ treatment.diagnosis }}</dd>
+          </div>
+          <div>
+            <dt class="text-text/50">Peso · Evolución</dt>
+            <dd class="font-semibold text-text">{{ treatment.weight }} kg · {{ evolutionLabel(treatment.evolution) }}</dd>
+          </div>
+          @if (treatment.notes) {
+            <div class="sm:col-span-3">
+              <dt class="text-text/50">Observaciones</dt>
+              <dd class="text-text">{{ treatment.notes }}</dd>
+            </div>
+          }
+        </dl>
+
         <div class="mt-4">
           <p class="text-sm font-semibold text-text">Medicamentos suministrados</p>
           @if (treatment.drugs.length === 0) {

@@ -2,6 +2,7 @@ import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angula
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NonNullableFormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
@@ -21,8 +22,9 @@ import {
   switchMap,
 } from 'rxjs';
 import { Owner } from '../../../../models/owner.model';
-import { Pet, PetRequest, Species } from '../../../../models/pet.model';
+import { PET_AGE_MAX, PET_WEIGHT_MAX, PET_WEIGHT_MIN, Pet, PetRequest, Species } from '../../../../models/pet.model';
 import { OwnerService } from '../../../../services/owner.service';
+import { AuthService } from '../../../../services/auth.service';
 import { PetService } from '../../../../services/pet.service';
 import { applyServerErrors, getErrorMessage } from '../../../../core/http/http-error';
 import { parseRouteId } from '../../../../core/http/route-id';
@@ -67,6 +69,8 @@ export class PetsFormComponent implements OnInit {
   private readonly formBuilder = inject(NonNullableFormBuilder);
   private readonly notifications = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly confirmationService = inject(ConfirmationService);
+  private readonly auth = inject(AuthService);
 
   readonly speciesOptions: SpeciesOption[] = [
     { label: 'Perro', value: Species.DOG },
@@ -89,6 +93,11 @@ export class PetsFormComponent implements OnInit {
   editandoId: number | null = null;
 
   readonly saving = signal(false);
+  readonly limits = { weightMin: PET_WEIGHT_MIN, weightMax: PET_WEIGHT_MAX, ageMax: PET_AGE_MAX };
+
+  // Diagnóstico actual de la mascota en edición; el botón de alta solo aparece si tiene uno.
+  readonly currentDisease = signal<string | null>(null);
+  readonly discharging = signal(false);
 
   // Cada emisión es un envío válido del formulario que debe guardarse en el API.
   private readonly submit$ = new Subject<PetSubmission>();
@@ -98,9 +107,8 @@ export class PetsFormComponent implements OnInit {
     name: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(60)]],
     species: [Species.DOG, Validators.required],
     breed: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(60)]],
-    age: [0, [Validators.required, Validators.min(0), Validators.pattern(/^\d+$/)]],
-    weight: [0, [Validators.required, Validators.min(0)]],
-    disease: [null as string | null, Validators.maxLength(120)],
+    age: [0, [Validators.required, Validators.min(0), Validators.max(PET_AGE_MAX), Validators.pattern(/^\d+$/)]],
+    weight: [null as number | null, [Validators.required, Validators.min(PET_WEIGHT_MIN), Validators.max(PET_WEIGHT_MAX)]],
     photoUrl: ['', [Validators.required, Validators.maxLength(500), Validators.pattern(/^https?:\/\/.+/)]],
     ownerId: [null as number | null, Validators.required],
     active: [true],
@@ -160,19 +168,63 @@ export class PetsFormComponent implements OnInit {
         }),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe((pet) =>
+      .subscribe((pet) => {
+        this.currentDisease.set(pet.disease);
         this.form.patchValue({
           name: pet.name,
           species: pet.species,
           breed: pet.breed,
           age: pet.age,
           weight: pet.weight,
-          disease: pet.disease,
           photoUrl: pet.photoUrl ?? '',
           ownerId: pet.ownerId,
           active: pet.active,
-        }),
-      );
+        });
+      });
+  }
+
+  // La mascota ya mejoró y no necesita medicamentos: primero guarda el formulario (así el alta
+  // queda con el peso actual) y luego la deja estable; el alta queda en su historia clínica a
+  // nombre del veterinario de la sesión. Si el guardado falla, save() avisa y no se da el alta.
+  darDeAlta(): void {
+    const id = this.editandoId;
+    const user = this.auth.user();
+    if (id === null) return;
+    if (user?.role !== 'VETERINARIAN') {
+      this.notifications.warn('Inicia sesión como veterinario para dar de alta.', '');
+      return;
+    }
+    if (this.form.invalid) {
+      this.form.markAllAsTouched();
+      this.notifications.warn('Revisa los campos marcados antes de dar de alta.', '');
+      return;
+    }
+    const submission = this.buildSubmission();
+    if (!submission) return;
+    this.confirmationService.confirm({
+      header: 'Dar de alta',
+      message: `Se guardarán los cambios del formulario (peso: ${submission.request.weight} kg) y la mascota dejará de estar en tratamiento por "${this.currentDisease()}". Quedará estable y el alta se registra en su historia clínica.`,
+      icon: 'pi pi-check-circle',
+      acceptLabel: 'Dar de alta',
+      rejectLabel: 'Cancelar',
+      rejectButtonStyleClass: 'p-button-text',
+      accept: () => {
+        this.discharging.set(true);
+        this.save(submission.request, submission.active)
+          .pipe(
+            concatMap(() => this.petService.discharge(id, user.id)),
+            finalize(() => this.discharging.set(false)),
+            takeUntilDestroyed(this.destroyRef),
+          )
+          .subscribe({
+            next: (discharge) => {
+              this.notifications.success('Alta registrada', `${discharge.petName} quedó estable.`);
+              this.router.navigate(['/veterinario/pets', id]);
+            },
+            error: (error: unknown) => this.notifications.error('No se pudo dar de alta', error),
+          });
+      },
+    });
   }
 
   // Valida el formulario, arma el cuerpo que espera el API y lo envía a submit$.
@@ -182,12 +234,18 @@ export class PetsFormComponent implements OnInit {
       return;
     }
 
-    const value = this.form.getRawValue();
-    if (value.ownerId === null) {
-      return;
+    const submission = this.buildSubmission();
+    if (submission) {
+      this.submit$.next(submission);
     }
+  }
 
-    this.submit$.next({
+  private buildSubmission(): PetSubmission | null {
+    const value = this.form.getRawValue();
+    if (value.ownerId === null || value.weight === null) {
+      return null;
+    }
+    return {
       request: {
         name: value.name.trim(),
         ownerId: value.ownerId,
@@ -195,11 +253,10 @@ export class PetsFormComponent implements OnInit {
         breed: value.breed.trim(),
         age: value.age,
         weight: value.weight,
-        disease: value.disease?.trim() || null,
         photoUrl: value.photoUrl.trim() || null,
       },
       active: value.active,
-    });
+    };
   }
 
   cancelar(): void {
