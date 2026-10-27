@@ -2,6 +2,7 @@ package io.github.pethaven.mapper;
 
 import io.github.pethaven.dto.response.AuthResponse;
 import io.github.pethaven.dto.response.AuthRole;
+import io.github.pethaven.entity.Administrator;
 import io.github.pethaven.entity.Owner;
 import io.github.pethaven.entity.Veterinarian;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,16 @@ public class AuthMapper {
             veterinarian.getName(),
             veterinarian.getEmail(),
             AuthRole.VETERINARIAN
+        );
+    }
+
+    public AuthResponse toResponse(Administrator administrator) {
+        if (administrator == null) return null;
+        return new AuthResponse(
+            administrator.getId(),
+            administrator.getName(),
+            administrator.getEmail(),
+            AuthRole.ADMIN
         );
     }
 }

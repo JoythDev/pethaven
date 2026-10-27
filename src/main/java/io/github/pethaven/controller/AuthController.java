@@ -4,6 +4,7 @@ import io.github.pethaven.dto.common.ApiErrorResponse;
 import io.github.pethaven.dto.request.LoginRequest;
 import io.github.pethaven.dto.response.AuthResponse;
 import io.github.pethaven.mapper.AuthMapper;
+import io.github.pethaven.service.AdministratorService;
 import io.github.pethaven.service.OwnerService;
 import io.github.pethaven.service.VeterinarianService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,16 +31,19 @@ public class AuthController {
 
     private final OwnerService ownerService;
     private final VeterinarianService veterinarianService;
+    private final AdministratorService administratorService;
     private final AuthMapper authMapper;
 
     @Autowired
     public AuthController(
             OwnerService ownerService,
             VeterinarianService veterinarianService,
+            AdministratorService administratorService,
             AuthMapper authMapper
     ) {
         this.ownerService = ownerService;
         this.veterinarianService = veterinarianService;
+        this.administratorService = administratorService;
         this.authMapper = authMapper;
     }
 
@@ -83,5 +87,25 @@ public class AuthController {
     @PostMapping("/veterinarians/login")
     public AuthResponse loginVeterinarian(@Valid @RequestBody LoginRequest request) {
         return authMapper.toResponse(veterinarianService.authenticate(request.email(), request.password()));
+    }
+
+    /**
+     * Inicia sesión como administrador.
+     *
+     * @param request credenciales del administrador
+     * @return el administrador autenticado con su rol
+     */
+    @Operation(summary = "Login de administrador",
+            description = "Valida las credenciales del administrador y devuelve sus datos con el rol ADMIN. Provisional: no emite token.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Credenciales válidas"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos (validación)",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "401", description = "Credenciales inválidas",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PostMapping("/administrators/login")
+    public AuthResponse loginAdministrator(@Valid @RequestBody LoginRequest request) {
+        return authMapper.toResponse(administratorService.authenticate(request.email(), request.password()));
     }
 }

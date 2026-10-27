@@ -1,7 +1,7 @@
 // Roles que devuelve el API de login (AuthRole del backend).
-export type AuthRole = 'OWNER' | 'VETERINARIAN';
+export type AuthRole = 'OWNER' | 'VETERINARIAN' | 'ADMIN';
 
-// Cuerpo que se envía a los dos logins (LoginRequest).
+// Cuerpo que se envía a los logins (LoginRequest).
 export interface LoginRequest {
   email: string;
   password: string;
