@@ -1,7 +1,7 @@
 import { DatePipe } from '@angular/common';
 import { Component, input } from '@angular/core';
 import { ViewState } from '../../../../../core/http/view-state';
-import { Treatment } from '../../../../../models/treatment.model';
+import { Treatment, evolutionLabel } from '../../../../../models/treatment.model';
 
 /** Lista el historial de tratamientos de una mascota según el estado de la consulta. */
 @Component({
@@ -11,4 +11,5 @@ import { Treatment } from '../../../../../models/treatment.model';
 })
 export class TreatmentHistoryComponent {
   readonly state = input.required<ViewState<Treatment[]>>();
+  readonly evolutionLabel = evolutionLabel;
 }

@@ -2,6 +2,7 @@ package io.github.pethaven;
 
 import io.github.pethaven.entity.Administrator;
 import io.github.pethaven.entity.Drug;
+import io.github.pethaven.entity.Evolution;
 import io.github.pethaven.entity.Owner;
 import io.github.pethaven.entity.Pet;
 import io.github.pethaven.entity.Species;
@@ -53,6 +54,9 @@ public class DataLoader implements CommandLineRunner {
     private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
 
     private final Random random = new Random(42);
+
+    private static final Evolution[] SEED_FOLLOW_UPS = {Evolution.STABLE, Evolution.IMPROVING, Evolution.WORSENING};
+    private static final String[] SEED_DIAGNOSES = {"Gastroenteritis", "Dermatitis alérgica", "Otitis externa", "Infección urinaria"};
 
     private List<Owner> ownerPool;
 
@@ -401,7 +405,17 @@ public class DataLoader implements CommandLineRunner {
                 drugs.add(new TreatmentDrugRequest(drug.getId(), units));
             }
 
-            treatmentService.createTreatment(new TreatmentRequest(pet.getId(), veterinarian.getId(), date, drugs));
+            // Peso con variación de ±5 % sobre el actual, para que la historia muestre una evolución.
+            double weight = Math.round(pet.getWeight() * (0.95 + random.nextDouble() * 0.1) * 10) / 10.0;
+            // Mismas reglas que el API: si la mascota está estable es un ingreso con un diagnóstico nuevo
+            // y sin evolución; si está en tratamiento sigue con su diagnóstico y evoluciona.
+            boolean admission = pet.getDisease() == null;
+            String diagnosis = admission ? SEED_DIAGNOSES[random.nextInt(SEED_DIAGNOSES.length)] : pet.getDisease();
+            Evolution evolution = admission ? null : SEED_FOLLOW_UPS[random.nextInt(SEED_FOLLOW_UPS.length)];
+
+            treatmentService.createTreatment(new TreatmentRequest(
+                    pet.getId(), veterinarian.getId(), date, weight, diagnosis, evolution,
+                    admission ? "Ingreso: se inicia tratamiento." : "Consulta de seguimiento.", drugs));
         }
     }
 }

@@ -35,20 +35,21 @@ public class PetMapper {
             .breed(request.breed())
             .age(request.age())
             .weight(request.weight())
-            .disease(request.disease())
             .photoUrl(request.photoUrl())
             .active(true)
             .build();
     }
 
-    /** Copia los campos editables sobre la entidad; el dueño y el estado se gestionan en el service. */
+    /**
+     * Copia los campos editables sobre la entidad; el dueño y el estado activo se gestionan en el service.
+     * El diagnóstico no se edita aquí: lo define cada tratamiento (historia clínica).
+     */
     public void applyUpdate(PetRequest request, Pet pet) {
         pet.setName(request.name());
         pet.setSpecies(request.species());
         pet.setBreed(request.breed());
         pet.setAge(request.age());
         pet.setWeight(request.weight());
-        pet.setDisease(request.disease());
         pet.setPhotoUrl(request.photoUrl());
     }
 }

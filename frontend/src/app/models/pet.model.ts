@@ -13,7 +13,7 @@ export interface Pet {
   breed: string;
   age: number;
   weight: number;
-  disease: string | null; // null si la mascota está sana
+  disease: string | null; // diagnóstico del último tratamiento; null si está estable
   photoUrl: string | null;
   active: boolean;
   ownerId: number;
@@ -21,7 +21,8 @@ export interface Pet {
 }
 
 // Cuerpo que recibe el API para crear o actualizar una mascota (PetRequest).
-// El estado "active" no va aquí: el API lo cambia con un endpoint aparte.
+// El estado "active" no va aquí: el API lo cambia con un endpoint aparte. El diagnóstico
+// tampoco: lo define cada tratamiento registrado.
 export interface PetRequest {
   name: string;
   ownerId: number;
@@ -29,6 +30,10 @@ export interface PetRequest {
   breed: string;
   age: number;
   weight: number;
-  disease: string | null;
   photoUrl: string | null;
 }
+
+// Límites de peso (kg) y edad (años) que valida el API.
+export const PET_WEIGHT_MIN = 0.1;
+export const PET_WEIGHT_MAX = 120;
+export const PET_AGE_MAX = 30;

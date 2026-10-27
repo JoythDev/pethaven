@@ -1,0 +1,140 @@
+<div class="mx-auto max-w-4xl p-5 lg:p-8">
+  @let s = state();
+
+  @if (s.status === 'loading') {
+    <div class="rounded-3xl border border-olive/15 bg-white p-10 text-center shadow-sm">
+      <i class="pi pi-spin pi-spinner text-2xl text-text/40" aria-hidden="true"></i>
+      <p class="mt-3 text-text/60">Cargando historia clínica...</p>
+    </div>
+  } @else if (s.status === 'error') {
+    <a routerLink="/veterinario/pets" class="text-sm font-semibold text-olive transition-colors hover:text-tertiary">
+      ← Volver a Mascotas
+    </a>
+    <div class="mt-6 rounded-3xl border border-olive/15 bg-white p-10 text-center shadow-sm">
+      <i class="pi pi-search text-2xl text-text/30" aria-hidden="true"></i>
+      <p class="mt-3 text-text/60">{{ s.message }}</p>
+    </div>
+  } @else {
+    @let h = s.data;
+    @let first = h.visits[0];
+    @let last = h.visits[h.visits.length - 1];
+
+    <div class="mb-6 flex flex-wrap items-center justify-between gap-3">
+      <a
+        [routerLink]="['/veterinario/pets', h.pet.id]"
+        class="text-sm font-semibold text-olive transition-colors hover:text-tertiary"
+      >
+        ← Volver a {{ h.pet.name }}
+      </a>
+      <p-button label="Descargar PDF" icon="pi pi-file-pdf" [loading]="downloading()" (onClick)="descargarPdf(h)" />
+    </div>
+
+    <article
+      class="rounded-3xl border border-olive/15 bg-white p-6 text-sm text-text shadow-sm lg:p-10"
+    >
+      <!-- Encabezado -->
+      <header class="flex flex-wrap items-center justify-between gap-4 border-b border-olive/20 pb-5">
+        <img src="/images/logo-header.png" alt="PetHaven" class="h-14 w-auto" />
+        <div class="text-right">
+          <h1 class="font-display text-2xl font-bold">Historia clínica</h1>
+          <p class="text-text/60">N.º {{ h.pet.id }} · Generada el {{ generatedAt | date: 'dd/MM/yyyy HH:mm' }}</p>
+        </div>
+      </header>
+
+      <!-- Paciente y dueño -->
+      <section class="mt-6 grid grid-cols-1 gap-6 sm:grid-cols-2">
+        <div>
+          <h2 class="mb-3 font-display text-lg font-bold">Paciente</h2>
+          <dl class="grid grid-cols-2 gap-y-2">
+            <dt class="text-text/60">Nombre</dt>
+            <dd class="font-semibold">{{ h.pet.name }}</dd>
+            <dt class="text-text/60">Especie · Raza</dt>
+            <dd class="font-semibold">{{ h.pet.species === 'DOG' ? 'Perro' : 'Gato' }} · {{ h.pet.breed }}</dd>
+            <dt class="text-text/60">Edad</dt>
+            <dd class="font-semibold">{{ h.pet.age }} años</dd>
+            <dt class="text-text/60">Peso actual</dt>
+            <dd class="font-semibold">{{ h.pet.weight }} kg</dd>
+            <dt class="text-text/60">Diagnóstico actual</dt>
+            <dd class="font-semibold">{{ h.pet.disease ?? 'Sin enfermedad registrada' }}</dd>
+            <dt class="text-text/60">Estado</dt>
+            <dd class="font-semibold">{{ h.pet.active ? 'Activa' : 'Inactiva' }}</dd>
+          </dl>
+        </div>
+        <div>
+          <h2 class="mb-3 font-display text-lg font-bold">Dueño</h2>
+          <dl class="grid grid-cols-2 gap-y-2">
+            <dt class="text-text/60">Nombre</dt>
+            <dd class="font-semibold">{{ h.owner.name }}</dd>
+            <dt class="text-text/60">Documento</dt>
+            <dd class="font-semibold">{{ h.owner.document }}</dd>
+            <dt class="text-text/60">Teléfono</dt>
+            <dd class="font-semibold">{{ h.owner.phone }}</dd>
+            <dt class="text-text/60">Correo</dt>
+            <dd class="font-semibold break-all">{{ h.owner.email }}</dd>
+          </dl>
+        </div>
+      </section>
+
+      <!-- Resumen de la evolución -->
+      @if (first && last) {
+        <section class="mt-6 grid grid-cols-2 gap-3 sm:grid-cols-4">
+          <div class="rounded-2xl bg-surface-50 p-4">
+            <p class="text-text/60">Consultas</p>
+            <p class="text-xl font-bold">{{ h.visits.length }}</p>
+          </div>
+          <div class="rounded-2xl bg-surface-50 p-4">
+            <p class="text-text/60">Primera · Última</p>
+            <p class="font-bold">{{ first.date | date: 'dd/MM/yy' }} · {{ last.date | date: 'dd/MM/yy' }}</p>
+          </div>
+          <div class="rounded-2xl bg-surface-50 p-4">
+            <p class="text-text/60">Peso</p>
+            <p class="font-bold">{{ first.weight }} → {{ last.weight }} kg</p>
+          </div>
+          <div class="rounded-2xl bg-surface-50 p-4">
+            <p class="text-text/60">Última evolución</p>
+            <p class="font-bold">{{ evolutionLabel(last.evolution) }}</p>
+          </div>
+        </section>
+      }
+
+      <!-- Consultas -->
+      <section class="mt-8">
+        <h2 class="mb-3 font-display text-lg font-bold">Consultas y tratamientos</h2>
+
+        @for (visit of h.visits; track visit.id; let i = $index) {
+          <div class="border-t border-olive/15 py-4">
+            <div class="flex flex-wrap items-baseline justify-between gap-2">
+              <p class="font-bold">
+                {{ i + 1 }}. {{ visit.date | date: 'dd/MM/yyyy HH:mm' }}
+                <span class="font-normal text-text/60">· {{ visit.veterinarianName }}</span>
+              </p>
+              <p class="font-semibold">
+                {{ visit.weight }} kg
+                @if (visit.weightDelta !== null && visit.weightDelta !== 0) {
+                  <span class="font-normal text-text/60">
+                    ({{ visit.weightDelta > 0 ? '+' : '' }}{{ visit.weightDelta | number: '1.0-2' }})
+                  </span>
+                }
+                · {{ evolutionLabel(visit.evolution) }}
+              </p>
+            </div>
+            <p class="mt-2"><span class="text-text/60">Diagnóstico:</span> {{ visit.diagnosis }}</p>
+            @if (visit.notes) {
+              <p class="mt-1"><span class="text-text/60">Observaciones:</span> {{ visit.notes }}</p>
+            }
+            <p class="mt-1">
+              <span class="text-text/60">Medicamentos:</span>
+              @for (drug of visit.drugs; track drug.id; let lastDrug = $last) {
+                {{ drug.drugName }} ({{ drug.units }} u.){{ lastDrug ? '' : ', ' }}
+              } @empty {
+                Ninguno
+              }
+            </p>
+          </div>
+        } @empty {
+          <p class="text-text/60">Esta mascota no tiene consultas registradas.</p>
+        }
+      </section>
+    </article>
+  }
+</div>

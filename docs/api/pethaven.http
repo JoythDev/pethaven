@@ -114,7 +114,6 @@ Accept: application/json
   "breed": "Mestizo",
   "age": 2,
   "weight": 8.5,
-  "disease": null,
   "photoUrl": null
 }
 
@@ -353,14 +352,19 @@ Accept: application/json
 GET {{baseUrl}}/api/treatments/1
 Accept: application/json
 
-### Crear tratamiento (fecha por defecto) → 201 + Location
+### Ingreso: la mascota está estable, así que va sin evolución → 201 + Location
 POST {{baseUrl}}/api/treatments
 Content-Type: application/json
 Accept: application/json
 
 {
   "petId": 1,
-  "veterinarianId": 1
+  "veterinarianId": 1,
+  "weight": 12.4,
+  "diagnosis": "Otitis externa",
+  "drugs": [
+    { "drugId": 10, "units": 1 }
+  ]
 }
 
 ### Crear tratamiento con medicamentos (atómico) → 201 + Location
@@ -371,6 +375,10 @@ Accept: application/json
 {
   "petId": 1,
   "veterinarianId": 1,
+  "weight": 12.4,
+  "diagnosis": "Otitis externa",
+  "evolution": "IMPROVING",
+  "notes": "Menos inflamación que en la consulta anterior.",
   "drugs": [
     { "drugId": 10, "units": 1 },
     { "drugId": 11, "units": 1 }
@@ -385,6 +393,9 @@ Accept: application/json
 {
   "petId": 1,
   "veterinarianId": 1,
+  "weight": 12.4,
+  "diagnosis": "Otitis externa",
+  "evolution": "IMPROVING",
   "date": "2030-01-01T10:00:00"
 }
 
@@ -415,6 +426,13 @@ Accept: application/json
 ### Historial de una mascota → 200 (404 si no existe)
 GET {{baseUrl}}/api/pets/1/treatments
 Accept: application/json
+
+### Dar de alta (queda estable; 409 si ya lo está) → 200 TreatmentResponse
+POST {{baseUrl}}/api/pets/1/discharge?veterinarianId=1
+Accept: application/json
+
+### Foto de una mascota servida por el API → 200 imagen (404 si no hay o no se pudo descargar)
+GET {{baseUrl}}/api/pets/1/photo
 
 ### Mascotas atendidas por un veterinario → 200 (404 si no existe)
 GET {{baseUrl}}/api/veterinarians/1/treatments

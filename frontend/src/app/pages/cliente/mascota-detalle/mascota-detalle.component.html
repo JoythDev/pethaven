@@ -79,24 +79,34 @@
                             <i class="pi pi-user text-olive" aria-hidden="true"></i>
                             {{ treatment.veterinarianName }}
                           </span>
-                          <p-tag [value]="drugCountLabel(treatment.drugs.length)" severity="secondary" />
+                          @if (treatment.evolution === 'RECOVERED') {
+                            <p-tag value="Alta" severity="success" />
+                          } @else {
+                            <p-tag [value]="drugCountLabel(treatment.drugs.length)" severity="secondary" />
+                          }
                         </span>
                       </p-accordion-header>
                       <p-accordion-content>
-                        <!-- Lista plana en vez de p-table: la tabla forzaba un ancho mínimo dentro de la tarjeta -->
-                        <div
-                          class="grid grid-cols-[1fr_auto] gap-4 border-b border-olive/15 pb-1 text-xs font-bold uppercase tracking-wide text-text/50"
-                        >
-                          <span>Medicamento</span>
-                          <span class="text-right">Unidades</span>
-                        </div>
-                        @for (drug of treatment.drugs; track drug.id) {
-                          <div class="grid grid-cols-[1fr_auto] gap-4 border-b border-olive/10 py-2 last:border-b-0">
-                            <span class="font-semibold text-text">{{ drug.drugName }}</span>
-                            <span class="text-right text-text/70 tabular-nums">{{ drug.units }}</span>
+                        @if (treatment.evolution === 'RECOVERED') {
+                          <p class="py-2 text-text">
+                            Se le dio el alta: se recuperó de <span class="font-semibold">{{ treatment.diagnosis }}</span> y quedó estable.
+                          </p>
+                        } @else {
+                          <!-- Lista plana en vez de p-table: la tabla forzaba un ancho mínimo dentro de la tarjeta -->
+                          <div
+                            class="grid grid-cols-[1fr_auto] gap-4 border-b border-olive/15 pb-1 text-xs font-bold uppercase tracking-wide text-text/50"
+                          >
+                            <span>Medicamento</span>
+                            <span class="text-right">Unidades</span>
                           </div>
-                        } @empty {
-                          <p class="py-2 text-text/60">Sin medicamentos registrados.</p>
+                          @for (drug of treatment.drugs; track drug.id) {
+                            <div class="grid grid-cols-[1fr_auto] gap-4 border-b border-olive/10 py-2 last:border-b-0">
+                              <span class="font-semibold text-text">{{ drug.drugName }}</span>
+                              <span class="text-right text-text/70 tabular-nums">{{ drug.units }}</span>
+                            </div>
+                          } @empty {
+                            <p class="py-2 text-text/60">Sin medicamentos registrados.</p>
+                          }
                         }
                       </p-accordion-content>
                     </p-accordion-panel>

@@ -21,6 +21,10 @@ public class TreatmentMapper {
             treatment.getPet().getName(),
             treatment.getVeterinarian().getId(),
             treatment.getVeterinarian().getName(),
+            treatment.getWeight(),
+            treatment.getDiagnosis(),
+            treatment.getEvolution(),
+            treatment.getNotes(),
             treatment.getTreatmentDrugs().stream()
                 .map(treatmentDrugMapper::toResponse)
                 .toList()
@@ -31,6 +35,10 @@ public class TreatmentMapper {
         if (request == null) return null;
         return Treatment.builder()
             .date(request.date())
+            .weight(request.weight())
+            .diagnosis(request.diagnosis().trim())
+            .evolution(request.evolution())
+            .notes(request.notes() == null || request.notes().isBlank() ? null : request.notes().trim())
             .build();
     }
 }

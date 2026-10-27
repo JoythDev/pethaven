@@ -54,6 +54,13 @@ export const routes: Routes = [
               ),
           },
           {
+            path: ':id/historia',
+            loadComponent: () =>
+              import('./pages/veterinario/pets/clinical-history/clinical-history.component').then(
+                (m) => m.ClinicalHistoryComponent
+              ),
+          },
+          {
             path: ':id/treatments/add',
             loadComponent: () =>
               import('./pages/veterinario/pets/treatment-form/treatment-form.component').then(
