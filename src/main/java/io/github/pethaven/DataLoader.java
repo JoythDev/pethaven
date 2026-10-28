@@ -378,7 +378,7 @@ public class DataLoader implements CommandLineRunner {
         List<Veterinarian> activeVeterinarianPool = veterinarianRepository.findAll().stream()
                 .filter(Veterinarian::isActive)
                 .toList();
-        LocalDateTime firstTreatmentDate = LocalDateTime.of(2026, 8, 1, 9, 0);
+        LocalDateTime firstTreatmentDate = LocalDateTime.of(2026, 10, 1, 9, 0);
 
         for (int i = 0; i < 15; i++) {
             // Se consulta el stock en cada vuelta porque los tratamientos anteriores ya descontaron unidades.
