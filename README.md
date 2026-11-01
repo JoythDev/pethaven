@@ -145,6 +145,18 @@ Una mirada al estado actual de la aplicación, con datos de prueba.
       <sub><strong>Historial médico · F11.</strong> Línea de tiempo de tratamientos por mascota.</sub>
     </td>
   </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/dashboard-admin.png" alt="Dashboard de KPIs del administrador" width="100%">
+      <br>
+      <sub><strong>Dashboard del administrador · F09.</strong> Tratamientos del mes, equipo, mascotas, ventas y ganancias.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/panel-veterinario.png" alt="Panel de inicio del veterinario" width="100%">
+      <br>
+      <sub><strong>Panel del veterinario · F10.</strong> Pacientes, tratamientos realizados y atenciones recientes.</sub>
+    </td>
+  </tr>
 </table>
 
 ---
