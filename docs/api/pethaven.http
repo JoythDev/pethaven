@@ -1,7 +1,16 @@
 ### PetHaven — Colección de verificación de peticiones HTTP
 
+# Pensada para ejecutarse de arriba hacia abajo sobre una base recién poblada
+# (el arranque recrea los datos). Las peticiones que desactivan una mascota o un
+# veterinario van seguidas de su reactivación, y los DELETE apuntan a los recursos
+# que crea esta misma colección, para no romper las peticiones siguientes.
+
 @baseUrl = http://localhost:8080
 @ownerId = 1
+# Id del dueño y del medicamento que crean las peticiones POST de este archivo
+# (101 y 524 en una base recién poblada con 100 dueños y 523 medicamentos).
+@createdOwnerId = 101
+@createdDrugId = 524
 
 ### ═══════════════════════════════════════════
 ### REST · /api/owners
@@ -83,8 +92,8 @@ Accept: application/json
   "phone": "3001234567"
 }
 
-### Eliminar dueño → 204 (o 409 si alguna mascota tiene tratamientos)
-DELETE {{baseUrl}}/api/owners/{{ownerId}}
+### Eliminar el dueño creado arriba (no tiene mascotas) → 204 (409 si alguna mascota tuviera tratamientos)
+DELETE {{baseUrl}}/api/owners/{{createdOwnerId}}
 
 ### ═══════════════════════════════════════════
 ### REST · /api/pets
@@ -173,8 +182,16 @@ Accept: application/json
   "weight": 15.0
 }
 
-### Activar/desactivar → 200
+### Desactivar mascota (se va a su casa) → 200
 PUT {{baseUrl}}/api/pets/1/active?active=false
+Accept: application/json
+
+### Reactivar mascota (las peticiones de tratamientos de abajo la necesitan activa) → 200
+PUT {{baseUrl}}/api/pets/1/active?active=true
+Accept: application/json
+
+### Sin el parámetro obligatorio → 400
+PUT {{baseUrl}}/api/pets/1/active
 Accept: application/json
 
 ### Mascotas de un dueño → 200 (404 si el dueño no existe)
@@ -250,8 +267,12 @@ Accept: application/json
   "photoUrl": "https://randomuser.me/api/portraits/women/44.jpg"
 }
 
-### Activar/desactivar → 200
+### Desactivar veterinario → 200
 PUT {{baseUrl}}/api/veterinarians/1/active?active=false
+Accept: application/json
+
+### Reactivar veterinario (los tratamientos y el login de abajo lo necesitan activo) → 200
+PUT {{baseUrl}}/api/veterinarians/1/active?active=true
 Accept: application/json
 
 ### DELETE no existe en la API → 405
@@ -337,8 +358,8 @@ Accept: application/json
   "unitsSold": 999
 }
 
-### Eliminar medicamento → 204 (o 409 si está asociado a tratamientos)
-DELETE {{baseUrl}}/api/drugs/1
+### Eliminar el medicamento creado arriba (sin tratamientos) → 204
+DELETE {{baseUrl}}/api/drugs/{{createdDrugId}}
 
 ### ═══════════════════════════════════════════
 ### REST · /api/treatments
@@ -352,7 +373,7 @@ Accept: application/json
 GET {{baseUrl}}/api/treatments/1
 Accept: application/json
 
-### Ingreso: la mascota está estable, así que va sin evolución → 201 + Location
+### Ingreso: la mascota 1 está estable, así que va sin evolución → 201 + Location
 POST {{baseUrl}}/api/treatments
 Content-Type: application/json
 Accept: application/json
@@ -367,7 +388,7 @@ Accept: application/json
   ]
 }
 
-### Crear tratamiento con medicamentos (atómico) → 201 + Location
+### Seguimiento con medicamentos (atómico): ya hay diagnóstico, la evolución es obligatoria → 201 + Location
 POST {{baseUrl}}/api/treatments
 Content-Type: application/json
 Accept: application/json
@@ -385,6 +406,67 @@ Accept: application/json
   ]
 }
 
+### Seguimiento sin evolución (la mascota 1 ya está en tratamiento) → 409
+POST {{baseUrl}}/api/treatments
+Content-Type: application/json
+Accept: application/json
+
+{
+  "petId": 1,
+  "veterinarianId": 1,
+  "weight": 12.4,
+  "diagnosis": "Otitis externa",
+  "drugs": [
+    { "drugId": 10, "units": 1 }
+  ]
+}
+
+### Evolución STABLE con un diagnóstico distinto al actual → 409
+POST {{baseUrl}}/api/treatments
+Content-Type: application/json
+Accept: application/json
+
+{
+  "petId": 1,
+  "veterinarianId": 1,
+  "weight": 12.4,
+  "diagnosis": "Gastroenteritis",
+  "evolution": "STABLE",
+  "drugs": [
+    { "drugId": 10, "units": 1 }
+  ]
+}
+
+### Evolución RECOVERED solo la usa el alta, no un tratamiento → 409
+POST {{baseUrl}}/api/treatments
+Content-Type: application/json
+Accept: application/json
+
+{
+  "petId": 1,
+  "veterinarianId": 1,
+  "weight": 12.4,
+  "diagnosis": "Otitis externa",
+  "evolution": "RECOVERED",
+  "drugs": [
+    { "drugId": 10, "units": 1 }
+  ]
+}
+
+### Crear sin medicamentos (drugs vacío) → 400 + errors{}
+POST {{baseUrl}}/api/treatments
+Content-Type: application/json
+Accept: application/json
+
+{
+  "petId": 1,
+  "veterinarianId": 1,
+  "weight": 12.4,
+  "diagnosis": "Otitis externa",
+  "evolution": "IMPROVING",
+  "drugs": []
+}
+
 ### Crear con fecha futura → 400
 POST {{baseUrl}}/api/treatments
 Content-Type: application/json
@@ -396,7 +478,10 @@ Accept: application/json
   "weight": 12.4,
   "diagnosis": "Otitis externa",
   "evolution": "IMPROVING",
-  "date": "2030-01-01T10:00:00"
+  "date": "2030-01-01T10:00:00",
+  "drugs": [
+    { "drugId": 10, "units": 1 }
+  ]
 }
 
 ### Medicamentos del tratamiento → 200 (404 si el tratamiento no existe)
@@ -427,8 +512,16 @@ Accept: application/json
 GET {{baseUrl}}/api/pets/1/treatments
 Accept: application/json
 
-### Dar de alta (queda estable; 409 si ya lo está) → 200 TreatmentResponse
+### Dar de alta (queda estable; evolution RECOVERED y sin medicamentos) → 200 TreatmentResponse
 POST {{baseUrl}}/api/pets/1/discharge?veterinarianId=1
+Accept: application/json
+
+### Dar de alta otra vez (la mascota ya está estable) → 409
+POST {{baseUrl}}/api/pets/1/discharge?veterinarianId=1
+Accept: application/json
+
+### Alta sin veterinarianId → 400
+POST {{baseUrl}}/api/pets/1/discharge
 Accept: application/json
 
 ### Foto de una mascota servida por el API → 200 imagen (404 si no hay o no se pudo descargar)
@@ -502,8 +595,30 @@ Accept: application/json
   "password": "vet12345"
 }
 
-### REST: /api/administrators
+### Login de administrador → 200 AuthResponse (role ADMIN)
+POST {{baseUrl}}/api/auth/administrators/login
+Content-Type: application/json
+Accept: application/json
 
-### Dashboard resumen (mes anterior; ventas y top tres historicos) -> 200 AdministratorDashboardResponse
+{
+  "email": "admin@pethaven.com",
+  "password": "admin12345"
+}
+
+### Login de administrador con password mala → 401
+POST {{baseUrl}}/api/auth/administrators/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "admin@pethaven.com",
+  "password": "mala"
+}
+
+### ═══════════════════════════════════════════
+### REST · /api/administrators
+### ═══════════════════════════════════════════
+
+### Dashboard resumen (mes anterior; ventas y top tres históricos) → 200 AdministratorDashboardResponse
 GET {{baseUrl}}/api/administrators/dashboard
 Accept: application/json

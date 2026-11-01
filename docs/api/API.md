@@ -25,7 +25,7 @@ Referencia de la API REST de PetHaven: dueños, mascotas, veterinarios, medicame
 
 ## Visión general
 
-Esta API expone la operación de la clínica veterinaria PetHaven (hospitalización de perros y gatos): los dueños y sus mascotas, el equipo de veterinarios, el inventario de medicamentos y el historial de tratamientos. Es una API REST con cuerpos JSON: el frontend es una SPA Angular que la consume, y **no hay renderizado en servidor**.
+Esta API expone la operación de la clínica veterinaria PetHaven (hospitalización de perros y gatos): los dueños y sus mascotas, el equipo de veterinarios, el inventario de medicamentos, el historial de tratamientos y el acceso de los administradores (login y KPIs). Es una API REST con cuerpos JSON: el frontend es una SPA Angular que la consume, y **no hay renderizado en servidor**.
 
 El backend está construido con **Spring Boot 4.1 sobre Java 21** (Spring Web, Spring Data JPA, Bean Validation) y persiste en una base **H2 en archivo**. La documentación interactiva la genera springdoc a partir de las anotaciones del código.
 
@@ -50,7 +50,7 @@ Al arrancar, la base se crea y se puebla con datos de prueba; la API queda en el
 
 ### Datos de prueba
 
-El arranque carga datos de ejemplo: **100 dueños, 150 mascotas, 6 veterinarios (5 activos y 1 inactivo), 523 medicamentos importados desde el Excel al arrancar y 15 tratamientos** repartidos desde el `2026-08-01`. Los tratamientos del seed ya descuentan inventario y suman atenciones, igual que lo hace la API, así que el stock y las unidades vendidas de un medicamento pueden ser menores que su valor inicial.
+El arranque carga datos de ejemplo: **100 dueños, 150 mascotas, 6 veterinarios (5 activos y 1 inactivo), 2 administradores, 523 medicamentos importados desde el Excel al arrancar y 15 tratamientos** repartidos desde el `2026-10-01`. Los tratamientos del seed ya descuentan inventario y suman atenciones, igual que lo hace la API, así que el stock y las unidades vendidas de un medicamento pueden ser menores que su valor inicial.
 
 El catálogo `data/medicamentos-veterinaria.xlsx` se importa al arrancar, antes de los datos de ejemplo, con el mismo mecanismo de [`POST /api/drugs/import`](#post-apidrugsimport). El archivo se procesa como una carga masiva normal: si se vuelve a subir el mismo catálogo, los nombres ya existen y la petición responde `409`.
 
@@ -64,6 +64,9 @@ Credenciales de demostración:
 |---|---|---|
 | Dueño | `john.doe@example.com` | `password123` |
 | Veterinario | `valentina.soler@pethaven.com` | `vet12345` |
+| Administrador | `admin@pethaven.com` | `admin12345` |
+
+Hay un segundo administrador sembrado (`laura.admin@pethaven.com`, misma contraseña) y un veterinario desactivado (`julian.restrepo@pethaven.com`) para probar el `403`.
 
 ### Inicio rápido
 
@@ -222,7 +225,14 @@ erDiagram
     VETERINARIAN ||--o{ TREATMENT : "atiende"
     TREATMENT ||--o{ TREATMENT_DRUG : "incluye"
     DRUG ||--o{ TREATMENT_DRUG : "se administra en"
+    ADMINISTRATOR {
+        number id
+        string name
+        string email
+    }
 ```
+
+`ADMINISTRATOR` no se relaciona con ninguna otra entidad: solo guarda las credenciales de acceso del administrador (`POST /api/auth/administrators/login`).
 
 Semántica de borrado:
 
@@ -602,7 +612,7 @@ Cuerpo para `POST /api/treatments/{id}/drugs`.
 
 #### `LoginRequest`
 
-Cuerpo para los dos logins.
+Cuerpo para los tres logins (dueño, veterinario y administrador).
 
 | Campo | Tipo | Obligatorio | Restricciones |
 |---|---|---|---|
@@ -623,7 +633,7 @@ Cuerpo para los dos logins.
 | `id` | number | — | Identificador del usuario |
 | `name` | string | — | Nombre completo |
 | `email` | string | — | Correo electrónico |
-| `role` | string | — | `"OWNER"` o `"VETERINARIAN"` |
+| `role` | string | — | `"OWNER"`, `"VETERINARIAN"` o `"ADMIN"` |
 
 ```json
 {
@@ -636,7 +646,7 @@ Cuerpo para los dos logins.
 
 ## Endpoints
 
-Las 19 rutas y 31 operaciones de la API, agrupadas por recurso. Los endpoints que cruzan dos recursos se documentan en su recurso anfitrión y se referencian desde el otro.
+Las 23 rutas y 35 operaciones de la API, agrupadas por recurso. Los endpoints que cruzan dos recursos se documentan en su recurso anfitrión y se referencian desde el otro.
 
 ### Dueños (`/api/owners`)
 
@@ -937,13 +947,15 @@ Registra una mascota nueva. Nace activa: el cuerpo no incluye `active`.
   "breed": "Cocker Spaniel",
   "age": 8,
   "weight": 13.2,
-  "disease": "Otitis externa",
+  "disease": null,
   "photoUrl": "https://placedog.net/500/400?id=10",
   "active": true,
   "ownerId": 31,
   "ownerName": "Diego Aguilar"
 }
 ```
+
+La mascota nace estable (`disease` en `null`): su primer diagnóstico lo fija el tratamiento de ingreso.
 
 **Errores**:
 - `400` validación de campos, o `species` con un valor que no sea `DOG` ni `CAT`
@@ -1051,6 +1063,10 @@ Devuelve el historial de tratamientos de la mascota, del más antiguo al más re
     "petName": "Canela",
     "veterinarianId": 1,
     "veterinarianName": "Dra. Valentina Soler",
+    "weight": 12.4,
+    "diagnosis": "Otitis externa",
+    "evolution": "IMPROVING",
+    "notes": "Menos inflamación que en la consulta anterior.",
     "drugs": [
       {
         "id": 25,
@@ -1064,6 +1080,8 @@ Devuelve el historial de tratamientos de la mascota, del más antiguo al más re
   }
 ]
 ```
+
+Si la mascota fue dada de alta, su historial incluye también el registro del alta: `evolution: "RECOVERED"` y `drugs` vacío (ver [`POST /api/pets/{id}/discharge`](#post-apipetsiddischarge)). El primer registro de un ingreso lleva `evolution: null`.
 
 **Errores**:
 - `404` la mascota no existe: `El recurso 'Pet' con id: '999' no fue encontrado`
@@ -1081,11 +1099,29 @@ Da de alta a la mascota: ya mejoró y no necesita medicamentos. Queda estable (`
 | `id` | path | number | Sí | Id de la mascota |
 | `veterinarianId` | query | number | Sí | Veterinario que da el alta (debe estar activo) |
 
-**Respuesta** `200 OK` — `TreatmentResponse` del alta.
+**Respuesta** `200 OK` — `TreatmentResponse` del alta (el `weight` es el último peso conocido de la mascota y `drugs` va vacío):
+
+```json
+{
+  "id": 17,
+  "date": "2026-08-12T09:15:00",
+  "petId": 24,
+  "petName": "Canela",
+  "veterinarianId": 1,
+  "veterinarianName": "Dra. Valentina Soler",
+  "weight": 12.4,
+  "diagnosis": "Otitis externa",
+  "evolution": "RECOVERED",
+  "notes": "Alta: la mascota queda estable.",
+  "drugs": []
+}
+```
 
 **Errores**:
 - `404` la mascota o el veterinario no existen
-- `409` la mascota ya está estable, o el veterinario está inactivo
+- `409` la mascota ya está estable: `La mascota 'Canela' ya está estable.`
+- `409` el veterinario está inactivo: `El veterinario 'Dr. Julián Restrepo' no está activo: no puede dar de alta.`
+- `400` falta `veterinarianId` o no es numérico
 
 #### `GET /api/pets/{id}/photo`
 
@@ -1286,6 +1322,10 @@ Devuelve las mascotas atendidas por el veterinario, con los medicamentos adminis
     "petName": "Canela",
     "veterinarianId": 1,
     "veterinarianName": "Dra. Valentina Soler",
+    "weight": 12.4,
+    "diagnosis": "Otitis externa",
+    "evolution": "IMPROVING",
+    "notes": "Menos inflamación que en la consulta anterior.",
     "drugs": [
       {
         "id": 25,
@@ -1559,7 +1599,7 @@ Devuelve todos los tratamientos registrados con su mascota, su veterinario y los
 
 Sin parámetros.
 
-**Respuesta** `200 OK` — `array<TreatmentResponse>` (fragmento; la lista completa incluye los 15 tratamientos del seed y los que se creen después):
+**Respuesta** `200 OK` — `array<TreatmentResponse>` (fragmento; la lista completa incluye los 15 tratamientos del seed y los que se creen después, además de los registros de alta, que llevan `evolution: "RECOVERED"` y `drugs` vacío):
 
 ```json
 [
@@ -1570,7 +1610,20 @@ Sin parámetros.
     "petName": "Canela",
     "veterinarianId": 1,
     "veterinarianName": "Dra. Valentina Soler",
-    "drugs": []
+    "weight": 12.4,
+    "diagnosis": "Otitis externa",
+    "evolution": "IMPROVING",
+    "notes": "Menos inflamación que en la consulta anterior.",
+    "drugs": [
+      {
+        "id": 25,
+        "drugId": 1,
+        "drugName": "Amoxicilina 250mg",
+        "units": 3,
+        "unitPurchasePrice": 8000.00,
+        "unitSalePrice": 15000.00
+      }
+    ]
   }
 ]
 ```
@@ -1595,19 +1648,39 @@ Devuelve el detalle de un tratamiento.
 
 #### `POST /api/treatments`
 
-Registra un tratamiento para una mascota activa, atendido por un veterinario activo, siempre que exista al menos un medicamento con unidades disponibles. Si se omite `date`, el servidor usa el momento actual; una fecha futura es un `400`.
+Registra una consulta para una mascota activa, atendida por un veterinario activo, siempre que exista al menos un medicamento con unidades disponibles. Si se omite `date`, el servidor usa el momento actual; una fecha futura es un `400`.
 
-Si se envía `drugs`, cada medicamento se administra dentro de la misma transacción que el tratamiento (descuenta inventario y copia los precios actuales): si alguno falla, no se registra nada.
+`weight` y `diagnosis` son obligatorios y pasan a ser el peso y el diagnóstico actuales de la mascota. `drugs` es obligatorio y debe traer al menos un elemento: cada medicamento se administra dentro de la misma transacción que el tratamiento (descuenta inventario y copia los precios actuales), y si alguno falla no se registra nada.
 
-**Cuerpo** (`TreatmentRequest`):
+La `evolution` depende del estado de la mascota (ver [Alta y evolución](#alta-y-evolución)): va en `null` en el **ingreso** (la mascota está estable, sin diagnóstico) y es obligatoria en cada **seguimiento** (la mascota ya tiene un diagnóstico activo).
+
+**Cuerpo** (`TreatmentRequest`, seguimiento de una mascota en tratamiento):
 
 ```json
 {
   "petId": 24,
   "veterinarianId": 1,
   "date": "2026-08-05T10:30:00",
+  "weight": 12.4,
+  "diagnosis": "Otitis externa",
+  "evolution": "IMPROVING",
+  "notes": "Menos inflamación que en la consulta anterior.",
   "drugs": [
     { "drugId": 5, "units": 2 }
+  ]
+}
+```
+
+Ingreso de una mascota estable (sin `evolution`):
+
+```json
+{
+  "petId": 1,
+  "veterinarianId": 1,
+  "weight": 15.0,
+  "diagnosis": "Otitis externa",
+  "drugs": [
+    { "drugId": 5, "units": 1 }
   ]
 }
 ```
@@ -1622,6 +1695,10 @@ Si se envía `drugs`, cada medicamento se administra dentro de la misma transacc
   "petName": "Canela",
   "veterinarianId": 1,
   "veterinarianName": "Dra. Valentina Soler",
+  "weight": 12.4,
+  "diagnosis": "Otitis externa",
+  "evolution": "IMPROVING",
+  "notes": "Menos inflamación que en la consulta anterior.",
   "drugs": [
     {
       "id": 22,
@@ -1638,12 +1715,16 @@ Si se envía `drugs`, cada medicamento se administra dentro de la misma transacc
 Además, el contador `attentions` del veterinario se incrementa en 1.
 
 **Errores**:
-- `400` validación de campos, o fecha futura (`errors.date`: `La fecha del tratamiento no puede ser futura`); también si algún elemento de `drugs` es inválido (p. ej. `errors["drugs[0].units"]`)
+- `400` validación de campos, o fecha futura (`errors.date`: `La fecha del tratamiento no puede ser futura`); también si `weight` o `diagnosis` faltan o exceden sus límites, si `drugs` está vacío o ausente (`errors.drugs`: `El tratamiento debe incluir al menos un medicamento`) o si algún elemento de `drugs` es inválido (p. ej. `errors["drugs[0].units"]`)
 - `404` la mascota no existe: `El recurso 'Pet' con id: '999' no fue encontrado`
 - `404` el veterinario no existe: `El recurso 'Veterinarian' con id: '999' no fue encontrado`
 - `409` la mascota no está activa: `La mascota 'Canela' no está activa: no se le pueden registrar tratamientos.`
 - `409` el veterinario no está activo: `El veterinario 'Dr. Julián Restrepo' no está activo: no puede registrar atenciones.`
 - `409` no hay ningún medicamento con unidades disponibles: `No hay medicamentos disponibles en el inventario: no se pueden registrar tratamientos.`
+- `409` la mascota está estable pero se envió `evolution`: `La mascota 'Buddy' está estable: es un ingreso y no lleva evolución.`
+- `409` la mascota está en tratamiento y falta `evolution`: `La mascota 'Canela' está en tratamiento por 'Otitis externa': indica su evolución.`
+- `409` `evolution` es `RECOVERED` (solo la usa el alta): `Un tratamiento siempre formula medicamentos: para dejar estable a la mascota dale el alta.`
+- `409` `evolution` es `STABLE` pero el diagnóstico cambió: `Con evolución 'sin cambios' el diagnóstico debe seguir siendo 'Otitis externa'.`
 - `409` un medicamento de `drugs` está repetido o no tiene stock suficiente (mismos mensajes que `POST /api/treatments/{id}/drugs`); el tratamiento no se crea
 
 #### `GET /api/treatments/{id}/drugs`
@@ -1716,10 +1797,10 @@ Administra un medicamento a un tratamiento: descuenta el inventario, suma las un
 
 ### Autenticación (`/api/auth`)
 
-Ambos logins validan credenciales y devuelven el usuario con su rol. No emiten token ni crean sesión.
+Los tres logins (dueño, veterinario y administrador) validan credenciales y devuelven el usuario con su rol. No emiten token ni crean sesión.
 
 > [!NOTE]
-> Autenticación provisional: **no hay token ni sesión**, y el resto de los endpoints no exige credenciales. Un correo desconocido y una contraseña incorrecta responden igual (`401`, mismo mensaje) para no enumerar usuarios. Las cuentas de veterinario desactivadas sí se distinguen: responden `403`.
+> Autenticación provisional: **no hay token ni sesión**, y el resto de los endpoints no exige credenciales; la autorización por rol y el JWT llegan con la Feature 13. Un correo desconocido y una contraseña incorrecta responden igual (`401`, mismo mensaje) para no enumerar usuarios. Las cuentas de veterinario desactivadas sí se distinguen: responden `403`. Los administradores no tienen estado activo/inactivo.
 
 #### `POST /api/auth/owners/login`
 
@@ -1787,6 +1868,32 @@ Ejemplo con una cuenta desactivada del seed (`julian.restrepo@pethaven.com`):
 }
 ```
 
+#### `POST /api/auth/administrators/login`
+
+**Cuerpo** (`LoginRequest`):
+
+```json
+{
+  "email": "admin@pethaven.com",
+  "password": "admin12345"
+}
+```
+
+**Respuesta** `200 OK` — `AuthResponse`:
+
+```json
+{
+  "id": 1,
+  "name": "Admin Principal",
+  "email": "admin@pethaven.com",
+  "role": "ADMIN"
+}
+```
+
+**Errores**:
+- `400` validación de campos
+- `401` credenciales inválidas: `Correo o contraseña incorrectos.`
+
 ## Reglas de negocio
 
 ### Borrado y desactivación
@@ -1803,6 +1910,7 @@ Ejemplo con una cuenta desactivada del seed (`julian.restrepo@pethaven.com`):
 - Una mascota `active: true` está hospitalizada; `active: false` está en su casa.
 - Un veterinario `active: false` no puede registrar atenciones.
 - `POST /api/treatments` exige mascota activa **y** veterinario activo, y al menos un medicamento con stock; en caso contrario responde `409` con el motivo concreto.
+- `POST /api/pets/{id}/discharge` exige un veterinario activo y una mascota con diagnóstico; no exige que la mascota esté activa.
 - `POST /api/treatments/{id}/drugs` exige que la mascota del tratamiento siga activa; si se desactivó después de crear el tratamiento, la administración falla con `409`.
 - El login de un veterinario desactivado responde `403`. El estado se evalúa antes que la contraseña, así que una cuenta desactivada responde `403` incluso con una contraseña incorrecta.
 - Las búsquedas y los listados no filtran por estado: `GET /api/pets` y `GET /api/pets?search=` incluyen mascotas activas e inactivas. Lo mismo ocurre con `GET /api/owners/{id}/pets`, `GET /api/veterinarians` y los listados de tratamientos.
@@ -1811,9 +1919,19 @@ Ejemplo con una cuenta desactivada del seed (`julian.restrepo@pethaven.com`):
 
 - `date` es opcional: si se omite, el servidor usa el momento actual.
 - `date` no puede ser futura; en ese caso responde `400` con `errors.date`.
+- `weight` y `diagnosis` son obligatorios: cada tratamiento actualiza el peso (`weight`) y el diagnóstico actual (`disease`) de la mascota.
+- `drugs` es obligatorio con al menos un medicamento: un tratamiento siempre formula medicamentos, y se registran de forma atómica con él.
 - Al crear un tratamiento se incrementa `attentions` del veterinario en 1.
 - Los tratamientos son inmutables: no hay `PUT` ni `DELETE`. Solo se crean y se consultan.
 - El listado de tratamientos de una mascota o de un veterinario devuelve también sus medicamentos administrados.
+
+### Alta y evolución
+
+- **Ingreso:** si la mascota está estable (`disease: null`), el tratamiento es un ingreso. Fija el primer diagnóstico y `evolution` debe ir en `null`; enviarla responde `409`.
+- **Seguimiento:** si la mascota ya tiene un diagnóstico activo, `evolution` es obligatoria (`STABLE`, `IMPROVING` o `WORSENING`). Con `STABLE` el `diagnosis` debe ser el actual; con las otras dos puede cambiar.
+- **`RECOVERED` solo lo genera el alta.** `POST /api/pets/{id}/discharge` deja a la mascota estable (`disease: null`) y registra en su historia clínica un tratamiento sin medicamentos, con `evolution: "RECOVERED"`, el diagnóstico del que se recuperó y la nota `Alta: la mascota queda estable.`. Un tratamiento normal con `RECOVERED` responde `409`.
+- El alta **no suma atenciones** al veterinario y no cuenta como tratamiento administrado en los KPIs del dashboard.
+- El alta no cambia `active`: sacar a la mascota de la clínica sigue siendo `PUT /api/pets/{id}/active?active=false`.
 
 ### Medicamentos administrados
 
@@ -1848,7 +1966,7 @@ Los duplicados se detectan antes de escribir y responden `409` con un mensaje ex
 
 ## Limitaciones y roadmap
 
-- **Autenticación provisional.** Los logins validan credenciales y devuelven el usuario con su rol, pero no emiten token ni crean sesión: el resto de la API está abierta. El `401` no enumera usuarios (correo inexistente y contraseña incorrecta responden igual), aunque el `403` de cuentas desactivadas sí distingue ese caso. El control de acceso por roles está en el roadmap.
+- **Autenticación provisional.** Los tres logins (dueño, veterinario y administrador) validan credenciales y devuelven el usuario con su rol (`OWNER`, `VETERINARIAN` o `ADMIN`), pero no emiten token ni crean sesión: el resto de la API está abierta, incluidos los endpoints de administración. El `401` no enumera usuarios (correo inexistente y contraseña incorrecta responden igual), aunque el `403` de veterinarios desactivados sí distingue ese caso. El control de acceso por roles y el JWT corresponden a la Feature 13.
 - **Sin paginación.** Los `GET` de colección devuelven todos los registros; no hay `page`/`size` ni totales.
 - **Sin versionado.** Las rutas no llevan versión (`/api`, no `/api/v1`).
 - **Sin borrado de mascotas ni veterinarios.** Solo desactivación.
