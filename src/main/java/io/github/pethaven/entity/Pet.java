@@ -50,7 +50,8 @@ public class Pet {
     @Column(name = "weight", nullable = false)
     private Double weight;
 
-    @Column(name = "disease", length = 120, nullable = true)
+    // Diagnóstico actual (null = estable). Lo define el último tratamiento registrado.
+    @Column(name = "disease", length = 200, nullable = true)
     private String disease;
 
     @Column(name = "photo_url", length = 500, nullable = true)

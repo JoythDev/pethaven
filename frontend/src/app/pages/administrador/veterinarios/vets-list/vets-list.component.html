@@ -1,0 +1,117 @@
+<div class="mx-auto max-w-7xl p-5 lg:p-8">
+  <header class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
+    <div>
+      <h1 class="font-display text-3xl font-bold text-text">Veterinarios</h1>
+      <p class="mt-1 text-text/70">Registra, edita y activa o desactiva al personal de la clínica.</p>
+    </div>
+    <p-button label="Nuevo veterinario" icon="pi pi-plus" (onClick)="nuevo()" />
+  </header>
+
+  <section class="overflow-hidden rounded-3xl border border-olive/15 bg-white shadow-sm">
+    <div class="border-b border-olive/15 p-4">
+      <p-iconfield class="w-full lg:max-w-sm">
+        <p-inputicon class="pi pi-search" />
+        <input
+          pInputText
+          placeholder="Buscar por nombre, documento o especialidad"
+          class="w-full"
+          [formControl]="searchControl"
+        />
+      </p-iconfield>
+    </div>
+
+    @let s = state();
+
+    @if (s.status === 'error') {
+      <div class="flex flex-col items-center gap-3 py-10 text-center">
+        <i class="pi pi-exclamation-triangle text-2xl text-text/30" aria-hidden="true"></i>
+        <p class="text-text/60">No se pudieron cargar los veterinarios.</p>
+        <p class="text-sm text-text/50">{{ s.message }}</p>
+      </div>
+    } @else {
+      <p-table
+        [value]="filteredVets()"
+        [loading]="s.status === 'loading'"
+        dataKey="id"
+        [paginator]="true"
+        [rows]="10"
+        [rowsPerPageOptions]="[10, 20, 50]"
+        [showCurrentPageReport]="true"
+        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} veterinarios"
+        [sortField]="'name'"
+        [sortOrder]="1"
+      >
+        <ng-template pTemplate="header">
+          <tr>
+            <th pSortableColumn="name">Veterinario <p-sortIcon field="name" /></th>
+            <th pSortableColumn="document">Documento <p-sortIcon field="document" /></th>
+            <th pSortableColumn="specialty">Especialidad <p-sortIcon field="specialty" /></th>
+            <th pSortableColumn="attentions">Atenciones <p-sortIcon field="attentions" /></th>
+            <th pSortableColumn="active">Estado <p-sortIcon field="active" /></th>
+            <th>Acciones</th>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="body" let-vet>
+          <tr [class.opacity-60]="!vet.active">
+            <td>
+              <div class="flex items-center gap-3">
+                <img
+                  [src]="vet.photoUrl"
+                  [alt]="vet.name"
+                  class="h-10 w-10 shrink-0 rounded-full bg-secondary/50 object-cover"
+                  (error)="onPhotoError($event)"
+                />
+                <div class="flex flex-col leading-tight">
+                  <span class="font-bold text-text">{{ vet.name }}</span>
+                  <span class="text-xs text-text/60">{{ vet.email }}</span>
+                </div>
+              </div>
+            </td>
+            <td class="text-sm">{{ vet.document }}</td>
+            <td class="text-sm">{{ vet.specialty }}</td>
+            <td class="text-sm">{{ vet.attentions }}</td>
+            <td>
+              <p-tag [value]="vet.active ? 'Activo' : 'Inactivo'" [severity]="vet.active ? 'success' : 'secondary'" />
+            </td>
+            <td>
+              <div class="flex items-center gap-1">
+                <p-button
+                  icon="pi pi-pencil"
+                  severity="secondary"
+                  [text]="true"
+                  [rounded]="true"
+                  ariaLabel="Editar"
+                  pTooltip="Editar"
+                  tooltipPosition="top"
+                  (onClick)="editar(vet)"
+                />
+                <p-button
+                  [icon]="vet.active ? 'pi pi-ban' : 'pi pi-check-circle'"
+                  [severity]="vet.active ? 'danger' : 'success'"
+                  [text]="true"
+                  [rounded]="true"
+                  [ariaLabel]="vet.active ? 'Desactivar' : 'Activar'"
+                  [pTooltip]="vet.active ? 'Desactivar' : 'Activar'"
+                  tooltipPosition="top"
+                  (onClick)="cambiarEstado(vet)"
+                />
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+
+        <ng-template pTemplate="emptymessage">
+          <tr>
+            <td colspan="6">
+              <div class="flex flex-col items-center gap-3 py-10 text-center">
+                <i class="pi pi-search text-2xl text-text/30" aria-hidden="true"></i>
+                <p class="text-text/60">No se encontraron veterinarios.</p>
+              </div>
+            </td>
+          </tr>
+        </ng-template>
+      </p-table>
+    }
+  </section>
+</div>

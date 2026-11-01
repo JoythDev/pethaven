@@ -10,4 +10,9 @@ import java.util.Optional;
 public interface OwnerRepository extends JpaRepository<Owner, Long> {
     Optional<Owner> findByDocument(String document);
     Optional<Owner> findByEmail(String email);
+
+    boolean existsByDocument(String document);
+    boolean existsByEmail(String email);
+    boolean existsByDocumentAndIdNot(String document, Long id);
+    boolean existsByEmailAndIdNot(String email, Long id);
 }

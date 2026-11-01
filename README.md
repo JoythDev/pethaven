@@ -8,7 +8,9 @@
 
 [![Java](https://img.shields.io/badge/Java-21-3E2C23?logo=openjdk&logoColor=white)](https://openjdk.org)
 [![Spring Boot](https://img.shields.io/badge/Spring_Boot-4.1-6DB33F?logo=springboot&logoColor=white)](https://spring.io/projects/spring-boot)
-[![Thymeleaf](https://img.shields.io/badge/Thymeleaf-Plantillas-005F0F?logo=thymeleaf&logoColor=white)](https://www.thymeleaf.org)
+[![Angular](https://img.shields.io/badge/Angular-19-DD0031?logo=angular&logoColor=white)](https://angular.dev)
+[![PrimeNG](https://img.shields.io/badge/PrimeNG-19-06B6D4?logo=primeng&logoColor=white)](https://primeng.org)
+[![RxJS](https://img.shields.io/badge/RxJS-7.8-B7178C?logo=reactivex&logoColor=white)](https://rxjs.dev)
 [![Database](https://img.shields.io/badge/Base_de_datos-H2-2563EB)](https://www.h2database.com)
 [![Maven](https://img.shields.io/badge/Maven-Wrapper-C71A36?logo=apachemaven&logoColor=white)](https://maven.apache.org)
 [![License](https://img.shields.io/badge/Licencia-MIT-8A9A5B)](LICENSE)
@@ -27,9 +29,9 @@ Hasta ahora, buena parte de la operación vivía en papel y en hojas de Excel: e
 
 | Rol | Qué puede hacer |
 |---|---|
-| **Cliente** (dueño) | Iniciar sesión, ver sus mascotas hospitalizadas en formato de tarjeta y consultar el detalle de cada una |
-| **Veterinario** | Registrar dueños y mascotas, llevar el historial de atenciones y administrar tratamientos *(en desarrollo)* |
-| **Administrador** | Gestionar el equipo de veterinarios y analizar los KPIs del negocio: mascotas en tratamiento, atenciones realizadas, ventas y ganancias *(en desarrollo)* |
+| **Cliente** (dueño) | Iniciar sesión, ver sus mascotas hospitalizadas en formato de tarjeta, consultar el detalle de cada una con su historial de tratamientos y revisar su perfil |
+| **Veterinario** | Iniciar sesión, registrar dueños y mascotas, llevar el historial de atenciones, administrar tratamientos con descuento de inventario, dar de alta a las mascotas y descargar su historia clínica en PDF |
+| **Administrador** | Iniciar sesión, gestionar el equipo de veterinarios (crear, editar, activar y desactivar), gestionar las mascotas (activar y desactivar) y analizar los KPIs del negocio: tratamientos del mes, mascotas, veterinarios, ventas, ganancias y medicamentos más usados |
 
 **El flujo del negocio:**
 
@@ -38,59 +40,155 @@ Hasta ahora, buena parte de la operación vivía en papel y en hojas de Excel: e
 3. La mascota queda hospitalizada mientras recibe tratamientos.
 4. Al recuperarse y ser recogida, la mascota pasa a estado **inactivo** — su historial nunca se borra.
 
+**Arquitectura actual:** el backend Spring Boot expone toda la operación como **API REST** y el frontend **Angular + PrimeNG + RxJS** consume esa API como una SPA ([ver diagrama de arquitectura](docs/architecture/Diagrama-Arquitectura.png)). Las antiguas vistas Thymeleaf ya fueron retiradas; el avance por entrega está en [Roadmap y estado del proyecto](#roadmap-y-estado-del-proyecto).
+
 ---
 
-## Funcionalidades
+## Roadmap y estado del proyecto
 
-### Implementadas — Entrega 1 (Features 1 a 7)
+El avance se organiza según las entregas del enunciado. Cada funcionalidad indica su cobertura en el backend y en el frontend, además del estado real de implementación.
 
-- [x] **Feature 01 — Diseño**: nombre, logo, paleta de colores y mockups navegables diferenciados por tipo de usuario
-- [x] **Feature 02 — Repositorio**: GitHub público con ramas de `desarrollo` y `main` (producción)
-- [x] **Feature 03 — Base de datos**: entidades JPA, repositorios Spring Data y datos de prueba que simulan el funcionamiento real
-- [x] **Feature 04 — Landing page**: sitio promocional de la clínica con navegación hacia los portales
-- [x] **Feature 05 — Portal cliente**: inicio de sesión y consulta de mascotas en tarjetas con su detalle
-- [x] **Feature 06 — CRUD de dueños**: crear, consultar, actualizar y eliminar (con eliminación en cascada de sus mascotas)
-- [x] **Feature 07 — CRUD de mascotas**: crear, consultar, actualizar y activar/desactivar
+**Leyenda:**
 
-### Roadmap
-
-**Pendientes de la Entrega 1**
-
-| Funcionalidad | Detalle |
+| Símbolo | Significado |
 |---|---|
-| Búsqueda de mascotas | Buscar una mascota por nombre y mostrar su información junto con la de su dueño (AC21) |
+| ✅ | Implementado |
+| 🟡 | Parcial |
+| ⬜ | Pendiente |
+| ➖ | No aplica |
 
-**Entrega 2 (Features 8 a 11)**
+**Resumen de avance:**
 
-| Funcionalidad | Detalle |
-|---|---|
-| Portal de administración | Registrar, actualizar y activar/desactivar veterinarios (Feature 08) |
-| Dashboard de KPIs | Mascotas en tratamiento, atenciones, ventas, ganancias y top de tratamientos más vendidos (Feature 09) |
-| Carga de medicamentos | Importar el inventario de drogas desde un archivo al iniciar el programa (Feature 09) |
-| Tratamientos | Administrar una droga a una mascota y descontar el inventario disponible (Feature 10) |
-| Historial médico | Consultar la lista de tratamientos dados a cada mascota (Feature 11) |
-| SPA en Angular | Migración del frontend a una aplicación de una sola página |
+| Entrega | Completas | Parciales | Pendientes | Estado general |
+|---|---|---|---|---|
+| 1 | 7 | 0 | 0 | Completada |
+| 2 | 6 | 0 | 0 | Completada |
+| 3 | 0 | 1 | 2 | Pendiente |
 
-**Entrega 3**
+### Entrega 1 — Features 1 a 7
 
-| Funcionalidad | Detalle |
-|---|---|
-| Control de acceso por roles | Restringir cada funcionalidad según el rol del usuario (Feature 13) |
-| Pruebas del cliente web | Al menos 2 casos de uso automatizados |
-| Pruebas de backend | 25 pruebas automatizadas que cargan y limpian sus propios datos de prueba |
+| Feature · AC | Funcionalidad | Detalle | Backend | Frontend | Estado |
+|---|---|---|---|---|---|
+| F01 · AC1–AC5 | Diseño | Diagramas de clases y entidad-relación, mockups navegables, logo y paleta de colores | ➖ | ➖ | Completado — entregables en `docs/` |
+| F02 · AC6–AC8 | Repositorio | Repositorio público, ramas `main` y `desarrollo`, y README del proyecto | ➖ | ➖ | Completado |
+| F03 · AC9–AC11 | Base de datos | Entidades JPA, repositorios Spring Data y datos de prueba | ✅ | ➖ | Backend completo; el frontend consume los datos vía API |
+| F04 · AC12 | Landing page | Sitio promocional con navegación hacia los portales | ➖ | ✅ | Completado |
+| F05 · AC13–AC14 | Portal del cliente | Login, mascotas en tarjetas, detalle e historial de tratamientos | ✅ | ✅ | Completado |
+| F06 · AC15–AC19 | CRUD de dueños | Acceso del veterinario y CRUD con eliminación en cascada | ✅ | ✅ | Completado |
+| F07 · AC20–AC24 | CRUD de mascotas | Crear, leer, actualizar, buscar y activar/desactivar | ✅ | ✅ | Completado |
+
+### Entrega 2 — Features 8 a 11 + SPA
+
+> El enunciado numera dos funcionalidades distintas como Feature 09; aquí se separan como F09-A (dashboard) y F09-B (carga de medicamentos).
+
+| Feature · AC | Funcionalidad | Detalle | Backend | Frontend | Estado |
+|---|---|---|---|---|---|
+| F08 · AC25–AC28 | Portal de administración | Acceso del administrador y CRUD de veterinarios | ✅ | ✅ | Completado — login con rol `ADMIN`, CRUD de veterinarios y gestión de mascotas; la autorización por rol y el JWT son de la Entrega 3 (F13) |
+| F09-A · AC29 | Dashboard de KPIs | Métricas de tratamientos, veterinarios, mascotas, ventas y ganancias | ✅ | ✅ | Completado — `GET /api/administrators/dashboard` y pantalla `/administrador/dashboard` |
+| F09-B · AC30 | Carga de medicamentos | Importación del inventario desde Excel al iniciar | ✅ | ➖ | Completo en backend; el enunciado no exige interfaz |
+| F10 · AC31–AC32 | Tratamientos | Registrar tratamiento, descontar stock y listar mascotas tratadas por veterinario | ✅ | ✅ | Completado — registro con stock y filtro «Mis pacientes» en el listado de mascotas del veterinario |
+| F11 · AC33 | Historial médico | Lista de tratamientos por mascota | ✅ | ✅ | Completado — visible en la ficha de la mascota |
+| E2 · SPA | SPA en Angular | Frontend Angular consumiendo la API REST | ✅ | ✅ | Completado — portales de cliente, veterinario y administrador |
+
+### Entrega 3 — Feature 13 + pruebas
+
+| Feature · AC | Funcionalidad | Detalle | Backend | Frontend | Estado |
+|---|---|---|---|---|---|
+| F13 · AC34 | Control de acceso por roles | Autorización según el rol del usuario | 🟡 | ⬜ | Parcial — los tres logins (dueño, veterinario y administrador) devuelven el rol; no hay token JWT ni guards de autorización |
+| E3 · Pruebas cliente | Pruebas del cliente web | Al menos 2 casos de uso automatizados | ➖ | ⬜ | Pendiente — no hay specs de cliente |
+| E3 · Pruebas backend | Pruebas de backend | 25 pruebas con datos propios y limpieza posterior | ⬜ | ➖ | Pendiente — solo existe la prueba de contexto |
+
+### Extras fuera del enunciado
+
+Estas funcionalidades no están exigidas por el enunciado, pero ya forman parte del producto:
+
+| Funcionalidad | Detalle | Backend | Frontend | Estado |
+|---|---|---|---|---|
+| Perfil del cliente | Consulta de datos personales desde el portal del cliente | ✅ | ✅ | Completado |
+| Perfil del veterinario | Datos y especialidad del veterinario autenticado | ✅ | ✅ | Completado |
+| Importación por endpoint | Carga de medicamentos desde un archivo mediante `POST /api/drugs/import` | ✅ | ➖ | Backend completo |
+| CRUD de medicamentos | Listado, creación, actualización y eliminación de medicamentos | ✅ | ⬜ | Backend completo; sin pantalla |
+| Evolución y diagnóstico por consulta | Cada tratamiento registra peso, diagnóstico, evolución (`STABLE`, `IMPROVING`, `WORSENING`) y notas; el ingreso va sin evolución | ✅ | ✅ | Completado |
+| Alta de mascotas | `POST /api/pets/{id}/discharge` deja a la mascota estable y registra el alta (`RECOVERED`) en su historia | ✅ | ✅ | Completado |
+| Historia clínica en PDF | El veterinario ve la historia clínica de la mascota y la descarga en PDF (jsPDF) | ➖ | ✅ | Completado — `/veterinario/pets/:id/historia` |
+| Foto de mascota vía API | `GET /api/pets/{id}/photo` sirve la foto desde el backend para poder incluirla en el PDF | ✅ | ✅ | Completado |
+| Gestión de mascotas por el administrador | Listado de mascotas con activación y desactivación desde el portal del administrador | ✅ | ✅ | Completado |
+
+---
+
+## Capturas
+
+Una mirada al estado actual de la aplicación, con datos de prueba.
+
+<table>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/portal-cliente-mascotas.png" alt="Portal del cliente con tarjetas de mascotas" width="100%">
+      <br>
+      <sub><strong>Portal del cliente · F05.</strong> Mascotas, estado y acceso al historial.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/gestion-mascotas-veterinario.png" alt="Listado de mascotas del veterinario" width="100%">
+      <br>
+      <sub><strong>Gestión de mascotas · F07.</strong> Búsqueda, filtros, paginación y estado.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/registrar-tratamiento.png" alt="Formulario para registrar un tratamiento" width="100%">
+      <br>
+      <sub><strong>Registrar tratamiento · F10.</strong> Medicamentos, stock y total.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/historial-tratamientos.png" alt="Historial de tratamientos de una mascota" width="100%">
+      <br>
+      <sub><strong>Historial médico · F11.</strong> Línea de tiempo de tratamientos por mascota.</sub>
+    </td>
+  </tr>
+  <tr>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/dashboard-admin.png" alt="Dashboard de KPIs del administrador" width="100%">
+      <br>
+      <sub><strong>Dashboard del administrador · F09.</strong> Tratamientos del mes, equipo, mascotas, ventas y ganancias.</sub>
+    </td>
+    <td width="50%" valign="top">
+      <img src="docs/screenshots/panel-veterinario.png" alt="Panel de inicio del veterinario" width="100%">
+      <br>
+      <sub><strong>Panel del veterinario · F10.</strong> Pacientes, tratamientos realizados y atenciones recientes.</sub>
+    </td>
+  </tr>
+</table>
 
 ---
 
 ## Stack tecnológico
 
+### Backend
+
 | Capa | Tecnología |
 |---|---|
 | Lenguaje | Java 21 |
-| Backend | Spring Boot 4.1 — Web MVC, Data JPA, DevTools |
-| Vistas | Thymeleaf + HTML, CSS y JavaScript |
+| Framework | Spring Boot 4.1 — API REST, Data JPA, Validation, DevTools |
+| Objetivo | API REST para el frontend Angular |
 | Base de datos | H2 en modo archivo, con consola de administración web |
+| Importación | Apache POI 5.5.1 — lectura de medicamentos desde Excel (`.xlsx`/`.xls`) |
+| Archivos | Carga multipart de hasta 10 MB (`POST /api/drugs/import`) |
+| Autenticación | Provisional — login de dueño, veterinario y administrador; devuelve el rol, sin token ni autorización por rol |
+| CORS | Origen permitido: `http://localhost:4200` |
 | Utilidades | Lombok |
 | Build | Maven Wrapper |
+
+### Frontend (`frontend/`)
+
+| Capa | Tecnología |
+|---|---|
+| Framework | Angular 19 — componentes standalone y lazy loading |
+| UI | PrimeNG 19 con tema propio de PetHaven + Tailwind CSS 4 |
+| API | `HttpClient` + RxJS, con URL base desde `environments/` |
+| Reactividad | RxJS 7.8 + signals |
+| PDF | jsPDF 4 — descarga de la historia clínica de la mascota |
+| Lenguaje | TypeScript 5.7 |
+| Tooling | Angular CLI + npm — requiere Node `^18.19.1 \|\| ^20.11.1 \|\| >=22` |
 
 ---
 
@@ -99,24 +197,49 @@ Hasta ahora, buena parte de la operación vivía en papel y en hojas de Excel: e
 ```
 pethaven/
 ├── docs/
-│   ├── architecture/              # Diagrama entidad-relación
+│   ├── api/                       # Contrato de la API y ejemplos de peticiones
+│   ├── architecture/              # Diagramas de arquitectura, dominio y entidad-relación
 │   ├── design/                    # Logo e identidad de marca
 │   ├── screenshots/               # Capturas para este README
 │   └── Enunciado_Veterinaria.pdf  # Definición del negocio y requerimientos
 │
-├── src/main/java/io/github/pethaven/
-│   ├── controller/                # Controladores MVC (rutas web)
-│   ├── service/                   # Lógica de negocio
-│   ├── repository/                # Repositorios Spring Data JPA
-│   ├── entity/                    # Entidades JPA: Owner, Pet, Species
+├── frontend/                      # Frontend Angular 19
+│   ├── public/                    # Imágenes, íconos y videos
+│   └── src/
+│       ├── app/
+│       │   ├── core/              # URL del API, errores HTTP, notificaciones y utilidades
+│       │   ├── models/            # Interfaces de dominio (mascota, dueño, medicamento…)
+│       │   ├── pages/
+│       │   │   ├── landing/       # Landing page (secciones + directivas de animación)
+│       │   │   ├── auth/          # Login de dueño y veterinario
+│       │   │   ├── cliente/       # Portal del cliente: mascotas, detalle y perfil
+│       │   │   ├── veterinario/   # Portal del veterinario: inicio, perfil, mascotas, tratamientos, historia clínica y dueños
+│       │   │   ├── administrador/ # Portal del administrador: dashboard de KPIs, veterinarios y mascotas
+│       │   │   └── shared/        # Layout compartido y páginas "coming soon"
+│       │   ├── services/          # Servicios HTTP por recurso
+│       │   ├── theme/             # Preset PrimeNG de la marca
+│       │   ├── app.config.ts      # Providers, locale es-CO y tema
+│       │   └── app.routes.ts      # Rutas de la SPA
+│       ├── environments/          # URL del API para desarrollo y producción
+│       ├── styles.css             # Tailwind CSS y estilos globales
+│       └── main.ts                # Punto de entrada
+│
+├── src/main/java/io/github/pethaven/   # Backend Spring Boot
+│   ├── config/                    # CORS y configuración de OpenAPI
+│   ├── controller/                # Controladores REST (/api/**)
+│   ├── dto/                       # Requests y responses de la API
+│   ├── mapper/                    # Conversión entidad ↔ DTO
+│   ├── service/                   # Lógica de negocio e importación de Excel
+│   ├── repository/                # Repositorios Spring Data JPA (y proyecciones de los KPIs)
+│   ├── entity/                    # Entidades JPA: Owner, Pet, Species, Treatment, Evolution, TreatmentDrug, Drug, Veterinarian, Administrator
 │   ├── exception/                 # Manejo global de errores
-│   ├── DataLoader.java            # Datos de prueba cargados al arrancar
+│   ├── DataLoader.java            # Datos de prueba (dueños, mascotas, veterinarios, administradores y tratamientos) cargados al arrancar
+│   ├── ExcelDrugImportRunner.java # Importación de medicamentos desde Excel al arrancar
 │   └── PethavenBackendApplication.java
 │
 ├── src/main/resources/
-│   ├── templates/                 # Vistas Thymeleaf (landing, login, CRUDs)
-│   ├── static/                    # CSS, JS, imágenes y videos
-│   └── application.properties     # Configuración (datasource, JPA, H2)
+│   ├── data/medicamentos-veterinaria.xlsx  # Inventario importado al arrancar
+│   └── application.properties     # Configuración (datasource, JPA, H2, CORS)
 │
 └── pom.xml
 ```
@@ -127,11 +250,12 @@ pethaven/
 
 ### Requisitos previos
 
-- **JDK 21** o superior
+- **JDK 21** o superior — backend
+- **Node.js** `^18.19.1 || ^20.11.1 || >=22` — frontend
 - **Git** (para clonar el repositorio)
 - No necesitas Maven instalado: el proyecto incluye el *Maven Wrapper*
 
-### Ejecución
+### Backend
 
 ```bash
 # 1. Clona el repositorio
@@ -142,15 +266,29 @@ cd pethaven
 ./mvnw spring-boot:run        # en Windows: .\mvnw.cmd spring-boot:run
 ```
 
-La base de datos H2 se crea y puebla automáticamente con datos de prueba al primer arranque. Abre **<http://localhost:8080>** en tu navegador.
+En cada arranque la base de datos H2 se recrea y se puebla automáticamente (`ddl-auto=create-drop`). Antes de cargar los datos de ejemplo, la aplicación importa los medicamentos de `src/main/resources/data/medicamentos-veterinaria.xlsx`; si el archivo no es válido, no se importa ninguno y el error queda en el log. La API queda en **<http://localhost:8080/api>**, con documentación interactiva en **<http://localhost:8080/swagger-ui.html>**.
+
+### Frontend
+
+```bash
+cd frontend
+npm install
+npm start
+```
+
+La SPA queda en **<http://localhost:4200>** y consume la API desde `http://localhost:8080/api`, así que el backend debe estar encendido. La URL base se configura en `frontend/src/environments/environment.ts` (y `environment.production.ts` para el build de producción).
 
 ### Credenciales de prueba
 
-Puedes iniciar sesión como cliente con cualquiera de los dueños precargados:
+Puedes iniciar sesión con cualquiera de los usuarios precargados:
 
-| Correo | Contraseña |
-|---|---|
-| `john.doe@example.com` | `password123` |
+| Rol | Correo | Contraseña |
+|---|---|---|
+| Cliente | `john.doe@example.com` | `password123` |
+| Veterinario | `valentina.soler@pethaven.com` | `vet12345` |
+| Administrador | `admin@pethaven.com` | `admin12345` |
+
+El cliente entra a `/cliente`, el veterinario a `/veterinario` y el administrador, desde `/admin/login`, a `/administrador`. También hay un veterinario inactivo (`julian.restrepo@pethaven.com`) para probar el rechazo de cuentas desactivadas.
 
 ### Consola de H2
 
@@ -167,22 +305,43 @@ La base de datos expone una consola web para explorar tablas y datos:
 
 ## Rutas disponibles
 
-| Método | Ruta | Descripción |
-|---|---|---|
-| `GET` | `/` | Landing page de la clínica |
-| `GET` | `/login` | Formulario de acceso del cliente |
-| `POST` | `/login` | Autenticación del cliente |
-| `GET` | `/pets` | Listado de todas las mascotas |
-| `GET` | `/pets/{id}` | Detalle de una mascota |
-| `GET` / `POST` | `/pets/add` | Registrar una nueva mascota |
-| `GET` / `POST` | `/pets/update/{id}` | Actualizar los datos de una mascota |
-| `POST` | `/pets/toggle/{id}` | Activar / desactivar una mascota |
-| `GET` | `/owners` | Listado de dueños |
-| `GET` | `/owners/{id}` | Detalle de un dueño y sus mascotas |
-| `GET` / `POST` | `/owners/add` | Registrar un nuevo dueño |
-| `GET` / `POST` | `/owners/update/{id}` | Actualizar los datos de un dueño |
-| `GET` | `/owners/delete/{id}` | Eliminar un dueño (y sus mascotas, en cascada) |
-| `GET` | `/h2` | Consola de administración de H2 |
+### Backend — API REST (`http://localhost:8080`)
+
+Los recursos viven bajo `/api/**`: `auth`, `owners`, `pets`, `veterinarians`, `drugs`, `treatments` y `administrators` (KPIs del dashboard). El contrato está en [docs/api/API.md](docs/api/API.md), hay ejemplos ejecutables en [docs/api/pethaven.http](docs/api/pethaven.http) y la documentación interactiva en `http://localhost:8080/swagger-ui.html`.
+
+### Frontend — SPA Angular (`http://localhost:4200`)
+
+| Ruta | Descripción |
+|---|---|
+| `/` | Landing page |
+| `/login` | Inicio de sesión de clientes |
+| `/vet/login` | Inicio de sesión de veterinarios |
+| `/admin/login` | Inicio de sesión de administradores |
+| `/cliente` | Entrada del cliente: resuelve su id y lo lleva a sus mascotas |
+| `/cliente/:ownerId/mascotas` | Mascotas del cliente |
+| `/cliente/:ownerId/mascotas/:petId` | Detalle de una mascota |
+| `/cliente/:ownerId/perfil` | Perfil del cliente |
+| `/veterinario` | Inicio del portal veterinario |
+| `/veterinario/perfil` | Perfil del veterinario |
+| `/veterinario/pets` | Listado de mascotas |
+| `/veterinario/pets/add` | Registrar una mascota |
+| `/veterinario/pets/update/:id` | Editar una mascota |
+| `/veterinario/pets/:id` | Detalle de una mascota e historial de tratamientos |
+| `/veterinario/pets/:id/historia` | Historia clínica de la mascota, con descarga en PDF |
+| `/veterinario/pets/:id/treatments/add` | Registrar un tratamiento |
+| `/veterinario/owners` | Listado de dueños |
+| `/veterinario/owners/add` | Registrar un dueño |
+| `/veterinario/owners/update/:id` | Editar un dueño |
+| `/veterinario/owners/:id` | Detalle de un dueño y sus mascotas |
+| `/administrador` | Portal del administrador: redirige a `/administrador/dashboard` |
+| `/administrador/dashboard` | Resumen de KPIs del negocio |
+| `/administrador/veterinarios` | Listado de veterinarios, con activación y desactivación |
+| `/administrador/veterinarios/add` | Registrar un veterinario |
+| `/administrador/veterinarios/update/:id` | Editar un veterinario |
+| `/administrador/mascotas` | Listado de mascotas, con activación y desactivación |
+| `/dashboard` | Redirección legacy al portal veterinario |
+
+> La autenticación es provisional: la sesión se guarda en `sessionStorage` y todavía no hay token ni guards de rol; cualquier portal es accesible por URL directa hasta la Entrega 3 (F13).
 
 ---
 
@@ -202,6 +361,8 @@ Los cambios se integran primero en `desarrollo`; solo cuando todo está funciona
 
 ## Documentación
 
+El contrato de la API REST está en [docs/api/API.md](docs/api/API.md), con ejemplos de peticiones en [docs/api/pethaven.http](docs/api/pethaven.http).
+
 <details>
 <summary><b>Identidad de marca</b></summary>
 <br/>
@@ -212,6 +373,18 @@ Los cambios se integran primero en `desarrollo`; solo cuando todo está funciona
 <summary><b>Diagrama entidad-relación</b></summary>
 <br/>
 <img src="docs/architecture/Diagrama-Entidad-Relacion.png" alt="Diagrama entidad-relación" width="600"/>
+</details>
+
+<details>
+<summary><b>Diagrama de clases del dominio</b></summary>
+<br/>
+<img src="docs/architecture/Diagrama-Clases-Dominio.png" alt="Diagrama de clases del dominio" width="600"/>
+</details>
+
+<details>
+<summary><b>Diagrama de arquitectura</b></summary>
+<br/>
+<img src="docs/architecture/Diagrama-Arquitectura.png" alt="Diagrama de arquitectura: SPA Angular, API REST Spring Boot en capas y sistemas externos" width="900"/>
 </details>
 
 <details>

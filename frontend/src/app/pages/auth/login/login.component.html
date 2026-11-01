@@ -1,0 +1,129 @@
+<div class="min-h-screen flex flex-col bg-background text-text font-body">
+  <!-- Encabezado: solo el logo, centrado -->
+  <header class="py-2 border-b border-olive/25 bg-background">
+    <div class="max-w-7xl mx-auto px-5 flex justify-center">
+      <a routerLink="/" class="flex items-center" aria-label="Volver al inicio">
+        <img src="/images/logo-header.png" alt="PetHaven" class="h-12 lg:h-20 w-auto" />
+      </a>
+    </div>
+  </header>
+
+  <main class="flex-1 flex items-center justify-center px-5 py-10 lg:py-16">
+    <div
+      class="w-full max-w-5xl grid lg:grid-cols-2 overflow-hidden rounded-3xl border border-olive/25 bg-white shadow-xl"
+    >
+      <!-- Columna de la imagen (solo en pantallas grandes) -->
+      <div class="relative hidden lg:block">
+        <img [src]="config.image" alt="" class="absolute inset-0 h-full w-full object-cover" />
+        <div class="absolute inset-0 bg-tertiary/55"></div>
+        <div class="absolute inset-x-0 bottom-0 p-10 text-background">
+          <p class="font-script text-3xl">Cuidamos a quien más quieres</p>
+          <p class="mt-2 text-sm text-background/80">PetHaven · Clínica veterinaria</p>
+        </div>
+      </div>
+
+      <!-- Columna del formulario -->
+      <div class="p-6 sm:p-10 lg:p-12 flex flex-col justify-center">
+        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary">
+          <img [src]="config.icon" alt="" class="h-7 w-7" />
+        </div>
+
+        <h1 class="mt-5 font-display text-3xl lg:text-4xl font-bold">{{ config.title }}</h1>
+        <p class="mt-2 text-sm lg:text-base text-text/80">{{ config.subtitle }}</p>
+
+        <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="mt-8 flex flex-col gap-5">
+          <!-- Correo -->
+          <div class="flex flex-col gap-1.5">
+            <label for="email" class="text-sm font-bold">Correo electrónico</label>
+            <input
+              id="email"
+              type="email"
+              formControlName="email"
+              autocomplete="email"
+              placeholder="tucorreo@ejemplo.com"
+              class="w-full rounded-xl border border-olive/40 bg-background px-4 py-3 outline-none transition focus:border-tertiary focus:ring-2 focus:ring-olive/40"
+              [class.border-terracotta]="form.controls.email.touched && form.controls.email.invalid"
+            />
+            @if (form.controls.email.touched && form.controls.email.errors; as errors) {
+              <p class="text-sm text-terracotta">
+                @if (errors['required']) {
+                  Escribe tu correo.
+                } @else if (errors['email']) {
+                  El correo no tiene un formato válido.
+                } @else if (errors['server']) {
+                  {{ errors['server'] }}
+                } @else {
+                  Revisa el correo.
+                }
+              </p>
+            }
+          </div>
+
+          <!-- Contraseña -->
+          <div class="flex flex-col gap-1.5">
+            <label for="password" class="text-sm font-bold">Contraseña</label>
+            <div class="relative">
+              <input
+                id="password"
+                [type]="showPassword() ? 'text' : 'password'"
+                formControlName="password"
+                autocomplete="current-password"
+                placeholder="Tu contraseña"
+                class="w-full rounded-xl border border-olive/40 bg-background px-4 py-3 pr-24 outline-none transition focus:border-tertiary focus:ring-2 focus:ring-olive/40"
+                [class.border-terracotta]="form.controls.password.touched && form.controls.password.invalid"
+              />
+              <button
+                type="button"
+                (click)="togglePassword()"
+                class="absolute right-3 top-1/2 -translate-y-1/2 cursor-pointer text-sm font-bold text-tertiary hover:opacity-75"
+              >
+                {{ showPassword() ? 'Ocultar' : 'Mostrar' }}
+              </button>
+            </div>
+            @if (form.controls.password.touched && form.controls.password.errors; as errors) {
+              <p class="text-sm text-terracotta">
+                @if (errors['required']) {
+                  Escribe tu contraseña.
+                } @else if (errors['server']) {
+                  {{ errors['server'] }}
+                }
+              </p>
+            }
+          </div>
+
+          <!-- Error general del servidor (401, 403, sin conexión) -->
+          @if (errorMessage(); as message) {
+            <div
+              role="alert"
+              class="rounded-xl border border-terracotta/40 bg-terracotta/10 px-4 py-3 text-sm text-terracotta"
+            >
+              {{ message }}
+            </div>
+          }
+
+          <button
+            type="submit"
+            [disabled]="submitting()"
+            class="mt-1 w-full cursor-pointer rounded-full bg-olive px-6 py-3 text-base font-bold text-background shadow-sm transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          >
+            {{ submitting() ? 'Ingresando…' : 'Iniciar sesión' }}
+          </button>
+        </form>
+
+        <p class="mt-6 text-center text-sm">
+          {{ config.otherLabel }}
+          <a [routerLink]="config.otherLink" class="font-bold text-tertiary underline-offset-4 hover:underline">
+            {{ config.otherCta }}
+          </a>
+        </p>
+        <p class="mt-2 text-center text-sm">
+          <a routerLink="/" class="text-text/70 hover:opacity-75">← Volver al inicio</a>
+        </p>
+      </div>
+    </div>
+  </main>
+
+  <footer class="py-4 text-center text-xs text-text/60">
+    © 2026 PetHaven · Clínica veterinaria
+  </footer>
+</div>

@@ -31,6 +31,20 @@ public class Treatment {
     @Column(name = "treatment_date", nullable = false)
     private LocalDateTime date;
 
+    // Datos clínicos de la consulta: forman la historia clínica de la mascota.
+    @Column(name = "weight", nullable = false)
+    private Double weight;
+
+    @Column(name = "diagnosis", length = 200, nullable = false)
+    private String diagnosis;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "evolution", length = 10, nullable = true) // null = ingreso
+    private Evolution evolution;
+
+    @Column(name = "notes", length = 1000, nullable = true)
+    private String notes;
+
     @Builder.Default
     @OneToMany(mappedBy = "treatment", cascade = CascadeType.ALL, orphanRemoval = true)
     private List<TreatmentDrug> treatmentDrugs = new ArrayList<>();

@@ -1,0 +1,624 @@
+### PetHaven — Colección de verificación de peticiones HTTP
+
+# Pensada para ejecutarse de arriba hacia abajo sobre una base recién poblada
+# (el arranque recrea los datos). Las peticiones que desactivan una mascota o un
+# veterinario van seguidas de su reactivación, y los DELETE apuntan a los recursos
+# que crea esta misma colección, para no romper las peticiones siguientes.
+
+@baseUrl = http://localhost:8080
+@ownerId = 1
+# Id del dueño y del medicamento que crean las peticiones POST de este archivo
+# (101 y 524 en una base recién poblada con 100 dueños y 523 medicamentos).
+@createdOwnerId = 101
+@createdDrugId = 524
+
+### ═══════════════════════════════════════════
+### REST · /api/owners
+### ═══════════════════════════════════════════
+
+### Listar dueños → 200 [OwnerResponse]
+GET {{baseUrl}}/api/owners
+Accept: application/json
+
+### Detalle de dueño → 200 OwnerResponse
+GET {{baseUrl}}/api/owners/{{ownerId}}
+Accept: application/json
+
+### Detalle inexistente → 404 ApiErrorResponse
+GET {{baseUrl}}/api/owners/99999
+Accept: application/json
+
+### Crear dueño → 201 + cabecera Location
+POST {{baseUrl}}/api/owners
+Content-Type: application/json
+Accept: application/json
+
+{
+  "document": "990000001",
+  "name": "Dueño de Prueba",
+  "email": "dueno.prueba@example.com",
+  "password": "password123",
+  "phone": "3000000000"
+}
+
+### Crear duplicado (mismo documento) → 409
+POST {{baseUrl}}/api/owners
+Content-Type: application/json
+Accept: application/json
+
+{
+  "document": "990000001",
+  "name": "Otro Dueño",
+  "email": "otro.prueba@example.com",
+  "password": "password123",
+  "phone": "3000000001"
+}
+
+### Crear inválido (campos vacíos, correo malo, password corta) → 400 + errors{}
+POST {{baseUrl}}/api/owners
+Content-Type: application/json
+Accept: application/json
+
+{
+  "document": "",
+  "name": "",
+  "email": "no-es-un-correo",
+  "password": "123",
+  "phone": ""
+}
+
+### Actualizar sin password (se conserva) → 200
+PUT {{baseUrl}}/api/owners/{{ownerId}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "document": "123456789",
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "phone": "3001234567"
+}
+
+### Actualizar con password corta → 400
+PUT {{baseUrl}}/api/owners/{{ownerId}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "document": "123456789",
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "password": "123",
+  "phone": "3001234567"
+}
+
+### Eliminar el dueño creado arriba (no tiene mascotas) → 204 (409 si alguna mascota tuviera tratamientos)
+DELETE {{baseUrl}}/api/owners/{{createdOwnerId}}
+
+### ═══════════════════════════════════════════
+### REST · /api/pets
+### ═══════════════════════════════════════════
+
+### Listar mascotas → 200 [PetResponse]
+GET {{baseUrl}}/api/pets
+Accept: application/json
+
+### Buscar por nombre (substring, sin distinguir mayúsculas) → 200 [PetResponse]
+GET {{baseUrl}}/api/pets?search=bud
+Accept: application/json
+
+### Detalle de mascota → 200 PetResponse
+GET {{baseUrl}}/api/pets/1
+Accept: application/json
+
+### Crear mascota → 201 + Location
+POST {{baseUrl}}/api/pets
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Firulais de Prueba",
+  "ownerId": 1,
+  "species": "DOG",
+  "breed": "Mestizo",
+  "age": 2,
+  "weight": 8.5,
+  "photoUrl": null
+}
+
+### Crear con dueño inexistente → 404
+POST {{baseUrl}}/api/pets
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Sin Dueno",
+  "ownerId": 99999,
+  "species": "CAT",
+  "breed": "Mestizo",
+  "age": 1,
+  "weight": 3.0
+}
+
+### Crear inválido (validación) → 400 + errors{}
+POST {{baseUrl}}/api/pets
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "",
+  "ownerId": null,
+  "species": "DOG",
+  "breed": "",
+  "age": -1,
+  "weight": -2.0
+}
+
+### Especie inválida → 400 (cuerpo mal formado)
+POST {{baseUrl}}/api/pets
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Ave",
+  "ownerId": 1,
+  "species": "BIRD",
+  "breed": "Mestizo",
+  "age": 1,
+  "weight": 1.0
+}
+
+### Actualizar (reasignar dueño) → 200
+PUT {{baseUrl}}/api/pets/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Buddy",
+  "ownerId": 2,
+  "species": "DOG",
+  "breed": "Golden Retriever",
+  "age": 3,
+  "weight": 15.0
+}
+
+### Desactivar mascota (se va a su casa) → 200
+PUT {{baseUrl}}/api/pets/1/active?active=false
+Accept: application/json
+
+### Reactivar mascota (las peticiones de tratamientos de abajo la necesitan activa) → 200
+PUT {{baseUrl}}/api/pets/1/active?active=true
+Accept: application/json
+
+### Sin el parámetro obligatorio → 400
+PUT {{baseUrl}}/api/pets/1/active
+Accept: application/json
+
+### Mascotas de un dueño → 200 (404 si el dueño no existe)
+GET {{baseUrl}}/api/owners/1/pets
+Accept: application/json
+
+### ═══════════════════════════════════════════
+### REST · /api/veterinarians
+### ═══════════════════════════════════════════
+
+### Listar veterinarios → 200 [VeterinarianResponse]
+GET {{baseUrl}}/api/veterinarians
+Accept: application/json
+
+### Detalle de veterinario → 200
+GET {{baseUrl}}/api/veterinarians/1
+Accept: application/json
+
+### Detalle inexistente → 404
+GET {{baseUrl}}/api/veterinarians/99999
+Accept: application/json
+
+### Crear veterinario → 201 + Location
+POST {{baseUrl}}/api/veterinarians
+Content-Type: application/json
+Accept: application/json
+
+{
+  "document": "102345284",
+  "name": "Dra. Laura Gómez",
+  "email": "laura.gomez@pethaven.com",
+  "password": "vet12345",
+  "specialty": "Cuidados Críticos",
+  "photoUrl": "https://randomuser.me/api/portraits/women/44.jpg"
+}
+
+### Crear duplicado (documento o correo) → 409
+POST {{baseUrl}}/api/veterinarians
+Content-Type: application/json
+Accept: application/json
+
+{
+  "document": "102345284",
+  "name": "Otro Veterinario",
+  "email": "otro.vet@pethaven.com",
+  "password": "vet12345",
+  "specialty": "Cirugía"
+}
+
+### Crear inválido → 400 + errors{}
+POST {{baseUrl}}/api/veterinarians
+Content-Type: application/json
+Accept: application/json
+
+{
+  "document": "",
+  "name": "",
+  "email": "no-es-un-correo",
+  "password": "123",
+  "specialty": ""
+}
+
+### Actualizar sin password (se conserva) → 200
+PUT {{baseUrl}}/api/veterinarians/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "document": "328146627",
+  "name": "Dra. Valentina Soler",
+  "email": "valentina.soler@pethaven.com",
+  "specialty": "Cuidados Críticos",
+  "photoUrl": "https://randomuser.me/api/portraits/women/44.jpg"
+}
+
+### Desactivar veterinario → 200
+PUT {{baseUrl}}/api/veterinarians/1/active?active=false
+Accept: application/json
+
+### Reactivar veterinario (los tratamientos y el login de abajo lo necesitan activo) → 200
+PUT {{baseUrl}}/api/veterinarians/1/active?active=true
+Accept: application/json
+
+### DELETE no existe en la API → 405
+DELETE {{baseUrl}}/api/veterinarians/1
+
+### ═══════════════════════════════════════════
+### REST · /api/drugs
+### ═══════════════════════════════════════════
+
+### Listar medicamentos → 200 [DrugResponse]
+GET {{baseUrl}}/api/drugs
+Accept: application/json
+
+### Listar solo medicamentos con stock → 200 [DrugResponse]
+GET {{baseUrl}}/api/drugs?available=true
+Accept: application/json
+
+### Detalle de medicamento → 200
+GET {{baseUrl}}/api/drugs/1
+Accept: application/json
+
+### Detalle inexistente → 404
+GET {{baseUrl}}/api/drugs/99999
+Accept: application/json
+
+### Crear medicamento → 201 + Location
+POST {{baseUrl}}/api/drugs
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Vitamina B12 Inyectable",
+  "purchasePrice": 5000.00,
+  "salePrice": 9500.00,
+  "unitsAvailable": 50
+}
+
+### Crear duplicado (mismo nombre) → 409
+POST {{baseUrl}}/api/drugs
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Vitamina B12 Inyectable",
+  "purchasePrice": 5000.00,
+  "salePrice": 9500.00,
+  "unitsAvailable": 10
+}
+
+### Crear inválido → 400 + errors{}
+POST {{baseUrl}}/api/drugs
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "",
+  "purchasePrice": -1,
+  "salePrice": null,
+  "unitsAvailable": -5
+}
+
+### Importar medicamentos desde Excel → 200 DrugImportSummaryResponse
+POST {{baseUrl}}/api/drugs/import
+Content-Type: multipart/form-data; boundary=WebAppBoundary
+
+--WebAppBoundary
+Content-Disposition: form-data; name="file"; filename="medicamentos.xlsx"
+Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
+
+< ./medicamentos.xlsx
+--WebAppBoundary--
+
+### Actualizar (unitsSold en el body se ignora) → 200
+PUT {{baseUrl}}/api/drugs/1
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Amoxicilina 250mg",
+  "purchasePrice": 8500.00,
+  "salePrice": 16000.00,
+  "unitsAvailable": 190,
+  "unitsSold": 999
+}
+
+### Eliminar el medicamento creado arriba (sin tratamientos) → 204
+DELETE {{baseUrl}}/api/drugs/{{createdDrugId}}
+
+### ═══════════════════════════════════════════
+### REST · /api/treatments
+### ═══════════════════════════════════════════
+
+### Listar tratamientos → 200 [TreatmentResponse]
+GET {{baseUrl}}/api/treatments
+Accept: application/json
+
+### Detalle de tratamiento → 200
+GET {{baseUrl}}/api/treatments/1
+Accept: application/json
+
+### Ingreso: la mascota 1 está estable, así que va sin evolución → 201 + Location
+POST {{baseUrl}}/api/treatments
+Content-Type: application/json
+Accept: application/json
+
+{
+  "petId": 1,
+  "veterinarianId": 1,
+  "weight": 12.4,
+  "diagnosis": "Otitis externa",
+  "drugs": [
+    { "drugId": 10, "units": 1 }
+  ]
+}
+
+### Seguimiento con medicamentos (atómico): ya hay diagnóstico, la evolución es obligatoria → 201 + Location
+POST {{baseUrl}}/api/treatments
+Content-Type: application/json
+Accept: application/json
+
+{
+  "petId": 1,
+  "veterinarianId": 1,
+  "weight": 12.4,
+  "diagnosis": "Otitis externa",
+  "evolution": "IMPROVING",
+  "notes": "Menos inflamación que en la consulta anterior.",
+  "drugs": [
+    { "drugId": 10, "units": 1 },
+    { "drugId": 11, "units": 1 }
+  ]
+}
+
+### Seguimiento sin evolución (la mascota 1 ya está en tratamiento) → 409
+POST {{baseUrl}}/api/treatments
+Content-Type: application/json
+Accept: application/json
+
+{
+  "petId": 1,
+  "veterinarianId": 1,
+  "weight": 12.4,
+  "diagnosis": "Otitis externa",
+  "drugs": [
+    { "drugId": 10, "units": 1 }
+  ]
+}
+
+### Evolución STABLE con un diagnóstico distinto al actual → 409
+POST {{baseUrl}}/api/treatments
+Content-Type: application/json
+Accept: application/json
+
+{
+  "petId": 1,
+  "veterinarianId": 1,
+  "weight": 12.4,
+  "diagnosis": "Gastroenteritis",
+  "evolution": "STABLE",
+  "drugs": [
+    { "drugId": 10, "units": 1 }
+  ]
+}
+
+### Evolución RECOVERED solo la usa el alta, no un tratamiento → 409
+POST {{baseUrl}}/api/treatments
+Content-Type: application/json
+Accept: application/json
+
+{
+  "petId": 1,
+  "veterinarianId": 1,
+  "weight": 12.4,
+  "diagnosis": "Otitis externa",
+  "evolution": "RECOVERED",
+  "drugs": [
+    { "drugId": 10, "units": 1 }
+  ]
+}
+
+### Crear sin medicamentos (drugs vacío) → 400 + errors{}
+POST {{baseUrl}}/api/treatments
+Content-Type: application/json
+Accept: application/json
+
+{
+  "petId": 1,
+  "veterinarianId": 1,
+  "weight": 12.4,
+  "diagnosis": "Otitis externa",
+  "evolution": "IMPROVING",
+  "drugs": []
+}
+
+### Crear con fecha futura → 400
+POST {{baseUrl}}/api/treatments
+Content-Type: application/json
+Accept: application/json
+
+{
+  "petId": 1,
+  "veterinarianId": 1,
+  "weight": 12.4,
+  "diagnosis": "Otitis externa",
+  "evolution": "IMPROVING",
+  "date": "2030-01-01T10:00:00",
+  "drugs": [
+    { "drugId": 10, "units": 1 }
+  ]
+}
+
+### Medicamentos del tratamiento → 200 (404 si el tratamiento no existe)
+GET {{baseUrl}}/api/treatments/1/drugs
+Accept: application/json
+
+### Administrar medicamento → 201 (sin Location)
+POST {{baseUrl}}/api/treatments/1/drugs
+Content-Type: application/json
+Accept: application/json
+
+{
+  "drugId": 5,
+  "units": 2
+}
+
+### Administrar duplicado → 409
+POST {{baseUrl}}/api/treatments/1/drugs
+Content-Type: application/json
+Accept: application/json
+
+{
+  "drugId": 5,
+  "units": 1
+}
+
+### Historial de una mascota → 200 (404 si no existe)
+GET {{baseUrl}}/api/pets/1/treatments
+Accept: application/json
+
+### Dar de alta (queda estable; evolution RECOVERED y sin medicamentos) → 200 TreatmentResponse
+POST {{baseUrl}}/api/pets/1/discharge?veterinarianId=1
+Accept: application/json
+
+### Dar de alta otra vez (la mascota ya está estable) → 409
+POST {{baseUrl}}/api/pets/1/discharge?veterinarianId=1
+Accept: application/json
+
+### Alta sin veterinarianId → 400
+POST {{baseUrl}}/api/pets/1/discharge
+Accept: application/json
+
+### Foto de una mascota servida por el API → 200 imagen (404 si no hay o no se pudo descargar)
+GET {{baseUrl}}/api/pets/1/photo
+
+### Mascotas atendidas por un veterinario → 200 (404 si no existe)
+GET {{baseUrl}}/api/veterinarians/1/treatments
+Accept: application/json
+
+### ═══════════════════════════════════════════
+### REST · /api/auth
+### ═══════════════════════════════════════════
+
+### Login de dueño → 200 AuthResponse (role OWNER)
+POST {{baseUrl}}/api/auth/owners/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "john.doe@example.com",
+  "password": "password123"
+}
+
+### Login de dueño con password mala → 401
+POST {{baseUrl}}/api/auth/owners/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "john.doe@example.com",
+  "password": "mala"
+}
+
+### Login de dueño con email desconocido → 401 (mismo mensaje, sin enumerar)
+POST {{baseUrl}}/api/auth/owners/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "noexiste@example.com",
+  "password": "password123"
+}
+
+### Login de veterinario → 200 AuthResponse (role VETERINARIAN)
+POST {{baseUrl}}/api/auth/veterinarians/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "valentina.soler@pethaven.com",
+  "password": "vet12345"
+}
+
+### Login de veterinario con password mala → 401
+POST {{baseUrl}}/api/auth/veterinarians/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "valentina.soler@pethaven.com",
+  "password": "mala"
+}
+
+### Login de veterinario desactivado → 403
+POST {{baseUrl}}/api/auth/veterinarians/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "julian.restrepo@pethaven.com",
+  "password": "vet12345"
+}
+
+### Login de administrador → 200 AuthResponse (role ADMIN)
+POST {{baseUrl}}/api/auth/administrators/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "admin@pethaven.com",
+  "password": "admin12345"
+}
+
+### Login de administrador con password mala → 401
+POST {{baseUrl}}/api/auth/administrators/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "admin@pethaven.com",
+  "password": "mala"
+}
+
+### ═══════════════════════════════════════════
+### REST · /api/administrators
+### ═══════════════════════════════════════════
+
+### Dashboard resumen (mes anterior; ventas y top tres históricos) → 200 AdministratorDashboardResponse
+GET {{baseUrl}}/api/administrators/dashboard
+Accept: application/json

@@ -1,80 +1,171 @@
 package io.github.pethaven.controller;
 
-import io.github.pethaven.entity.Drug;
+import io.github.pethaven.dto.common.ApiErrorResponse;
+import io.github.pethaven.dto.request.DrugRequest;
+import io.github.pethaven.dto.response.DrugImportSummaryResponse;
+import io.github.pethaven.dto.response.DrugResponse;
+import io.github.pethaven.service.DrugImportService;
 import io.github.pethaven.service.DrugService;
-
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.beans.propertyeditors.StringTrimmerEditor;
-import org.springframework.web.bind.WebDataBinder;
-import org.springframework.web.bind.annotation.InitBinder;
+import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.*;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
-import java.math.BigDecimal;
+import java.net.URI;
+import java.util.List;
 
-@Controller
-@RequestMapping("/drugs")
+/**
+ * Controlador REST del módulo de medicamentos.
+ */
+@Tag(name = "Drugs", description = "Gestión de medicamentos")
+@RestController
+@RequestMapping("/api/drugs")
 public class DrugController {
 
+    private final DrugService drugService;
+    private final DrugImportService drugImportService;
+
     @Autowired
-    private DrugService drugService;
-
-    @GetMapping()
-    public String listDrugs(Model model) {
-        model.addAttribute("drugs", drugService.getAllDrugs());
-        return "drugs_list";
+    public DrugController(
+            DrugService drugService,
+            DrugImportService drugImportService
+    ) {
+        this.drugService = drugService;
+        this.drugImportService = drugImportService;
     }
 
+    /**
+     * Lista los medicamentos registrados, opcionalmente solo los que tienen stock.
+     *
+     * @param available si es true, filtra los medicamentos sin unidades disponibles
+     * @return lista de medicamentos
+     */
+    @Operation(summary = "Listar medicamentos",
+            description = "Devuelve todos los medicamentos registrados. Con available=true devuelve solo los que tienen unidades disponibles.")
+    @GetMapping
+    public List<DrugResponse> getAllDrugs(
+            @Parameter(description = "Si es true, solo los medicamentos con stock", example = "true")
+            @RequestParam(defaultValue = "false") boolean available) {
+        return available ? drugService.getAvailableDrugs() : drugService.getAllDrugs();
+    }
+
+    /**
+     * Obtiene el detalle de un medicamento por su id.
+     *
+     * @param id id del medicamento
+     * @return el medicamento encontrado
+     */
+    @Operation(summary = "Obtener un medicamento", description = "Devuelve el detalle de un medicamento por su id.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Medicamento encontrado"),
+            @ApiResponse(responseCode = "404", description = "No existe un medicamento con ese id",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
     @GetMapping("/{id}")
-    public String getDrug(@PathVariable Long id, Model model) {
-        model.addAttribute("drug", drugService.getDrugById(id));
-        return "drug_details";
+    public DrugResponse getDrugById(
+            @Parameter(description = "Id del medicamento", example = "1") @PathVariable Long id) {
+        return drugService.getDrugById(id);
     }
 
-    @GetMapping("/add")
-    public String showAddDrugForm(Model model) {
-        model.addAttribute("drug", Drug.builder()
-                .name("")
-                .purchasePrice(BigDecimal.ZERO)
-                .salePrice(BigDecimal.ZERO)
-                .unitsAvailable(0)
-                .unitsSold(0)
-                .build());
-        return "drug_form";
+    /**
+     * Registra un nuevo medicamento.
+     *
+     * @param request datos del medicamento
+     * @return el medicamento creado (201 + cabecera Location)
+     */
+    @Operation(summary = "Crear medicamento",
+            description = "Registra un nuevo medicamento. Las unidades vendidas empiezan en 0 y las controla el sistema.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Medicamento creado (incluye cabecera Location)"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos (validación)",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Ya existe un medicamento con ese nombre",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PostMapping
+    public ResponseEntity<DrugResponse> createDrug(@Valid @RequestBody DrugRequest request) {
+        DrugResponse newDrug = drugService.createDrug(request);
+        URI location = ServletUriComponentsBuilder.fromCurrentRequest()
+                .path("/{id}")
+                .buildAndExpand(newDrug.id())
+                .toUri();
+        return ResponseEntity.created(location).body(newDrug);
     }
 
-    @PostMapping("/add")
-    public String addDrug(Drug drug) {
-        drugService.createDrug(drug);
-        return "redirect:/drugs";
+    @Operation(summary = "Importar medicamentos desde Excel",
+            description = "Carga masiva desde un archivo .xlsx/.xls. La importación es todo o nada: si hay nombres duplicados en el archivo o ya existentes, no se importa ninguno.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Importación exitosa",
+                    content = @Content(schema = @Schema(implementation = DrugImportSummaryResponse.class))),
+            @ApiResponse(responseCode = "400", description = "Archivo inválido, vacío o sin filas de datos",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Nombres duplicados en el archivo o ya existentes",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "413", description = "El archivo supera el tamaño máximo permitido (10 MB)",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "415", description = "El tipo de contenido no es multipart/form-data",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PostMapping(value = "/import", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ResponseEntity<DrugImportSummaryResponse> importDrugsFromExcel(
+            @Parameter(description = "Archivo Excel (.xlsx/.xls), máximo 10 MB", required = true)
+            @RequestPart("file") MultipartFile file) {
+        return ResponseEntity.ok(drugImportService.importFromExcel(file));
     }
 
-    @GetMapping("/update/{id}")
-    public String updateDrug(@PathVariable Long id, Model model) {
-        model.addAttribute("drug", drugService.getDrugById(id));
-        return "drug_form";
+    /**
+     * Actualiza los datos de un medicamento.
+     *
+     * @param id      id del medicamento
+     * @param request datos actualizados
+     * @return el medicamento actualizado
+     */
+    @Operation(summary = "Actualizar medicamento",
+            description = "Reemplaza los datos del medicamento. Las unidades vendidas no se modifican (solo lectura).")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Medicamento actualizado"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos (validación)",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "No existe un medicamento con ese id",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Ya existe otro medicamento con ese nombre",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PutMapping("/{id}")
+    public DrugResponse updateDrug(
+            @Parameter(description = "Id del medicamento", example = "1") @PathVariable Long id,
+            @Valid @RequestBody DrugRequest request) {
+        return drugService.updateDrug(id, request);
     }
 
-    @PostMapping("/update/{id}")
-    public String saveUpdatedDrug(@PathVariable Long id, Drug drug) {
-        drug.setId(id);
-        drugService.createDrug(drug);
-        return "redirect:/drugs/" + id;
-    }
-
-    @GetMapping("/delete/{id}")
-    public String deleteDrug(@PathVariable Long id) {
+    /**
+     * Elimina un medicamento.
+     *
+     * @param id id del medicamento
+     */
+    @Operation(summary = "Eliminar medicamento",
+            description = "Elimina un medicamento. Falla con 409 si está asociado a tratamientos existentes.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "204", description = "Medicamento eliminado"),
+            @ApiResponse(responseCode = "404", description = "No existe un medicamento con ese id",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "El medicamento está asociado a uno o más tratamientos",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteDrug(
+            @Parameter(description = "Id del medicamento", example = "1") @PathVariable Long id) {
         drugService.deleteDrugById(id);
-        return "redirect:/drugs";
-    }
-
-    /** Convierte los campos de texto vacíos en null al recibir formularios. */
-    @InitBinder
-    public void initBinder(WebDataBinder binder) {
-        binder.registerCustomEditor(String.class, new StringTrimmerEditor(true));
+        return ResponseEntity.noContent().build();
     }
 }

@@ -1,0 +1,47 @@
+<div class="min-h-screen flex bg-background text-text font-body">
+  @let config = layoutConfig();
+
+  <!-- Sidebar (desktop) -->
+  <aside class="hidden lg:block w-60 shrink-0 border-r border-olive/15 bg-white">
+    <div class="sticky top-0 h-screen">
+      <app-area-sidebar
+        [items]="config.sidebar.items"
+        [homeLink]="config.sidebar.homeLink"
+        [sectionLabel]="config.sidebar.sectionLabel"
+      />
+    </div>
+  </aside>
+
+  <!-- Contenido -->
+  <div class="flex-1 min-w-0 flex flex-col">
+    <app-area-topbar
+      [homeItem]="config.topbar.homeItem"
+      [pageLabels]="config.topbar.pageLabels"
+      [subPageLabels]="config.topbar.subPageLabels"
+      [userName]="config.topbar.userName"
+      [userInitial]="config.topbar.userInitial"
+      [userMenuItems]="config.topbar.userMenuItems"
+      [skipNumericSegment]="config.topbar.skipNumericSegment"
+      (menuToggle)="mobileMenuVisible.set(true)"
+    />
+    <main class="flex-1 min-w-0">
+      <router-outlet />
+    </main>
+  </div>
+
+  <!-- Sidebar (móvil) -->
+  <p-drawer [(visible)]="mobileMenuVisible" position="left" [style]="{ width: '15rem' }">
+    <div class="-m-5">
+      <app-area-sidebar
+        [items]="config.sidebar.items"
+        [homeLink]="config.sidebar.homeLink"
+        [sectionLabel]="config.sidebar.sectionLabel"
+        (itemClicked)="mobileMenuVisible.set(false)"
+      />
+    </div>
+  </p-drawer>
+
+  <!-- Feedback global del panel -->
+  <p-toast position="top-right" />
+  <p-confirmdialog />
+</div>
