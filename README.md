@@ -40,7 +40,7 @@ Hasta ahora, buena parte de la operación vivía en papel y en hojas de Excel: e
 3. La mascota queda hospitalizada mientras recibe tratamientos.
 4. Al recuperarse y ser recogida, la mascota pasa a estado **inactivo** — su historial nunca se borra.
 
-**Arquitectura actual:** el backend Spring Boot expone toda la operación como **API REST** y el frontend **Angular + PrimeNG + RxJS** consume esa API como una SPA. Las antiguas vistas Thymeleaf ya fueron retiradas; el avance por entrega está en [Roadmap y estado del proyecto](#roadmap-y-estado-del-proyecto).
+**Arquitectura actual:** el backend Spring Boot expone toda la operación como **API REST** y el frontend **Angular + PrimeNG + RxJS** consume esa API como una SPA ([ver diagrama de arquitectura](docs/architecture/Diagrama-Arquitectura.png)). Las antiguas vistas Thymeleaf ya fueron retiradas; el avance por entrega está en [Roadmap y estado del proyecto](#roadmap-y-estado-del-proyecto).
 
 ---
 
@@ -198,7 +198,7 @@ Una mirada al estado actual de la aplicación, con datos de prueba.
 pethaven/
 ├── docs/
 │   ├── api/                       # Contrato de la API y ejemplos de peticiones
-│   ├── architecture/              # Diagramas de dominio y entidad-relación
+│   ├── architecture/              # Diagramas de arquitectura, dominio y entidad-relación
 │   ├── design/                    # Logo e identidad de marca
 │   ├── screenshots/               # Capturas para este README
 │   └── Enunciado_Veterinaria.pdf  # Definición del negocio y requerimientos
@@ -379,6 +379,12 @@ El contrato de la API REST está en [docs/api/API.md](docs/api/API.md), con ejem
 <summary><b>Diagrama de clases del dominio</b></summary>
 <br/>
 <img src="docs/architecture/Diagrama-Clases-Dominio.png" alt="Diagrama de clases del dominio" width="600"/>
+</details>
+
+<details>
+<summary><b>Diagrama de arquitectura</b></summary>
+<br/>
+<img src="docs/architecture/Diagrama-Arquitectura.png" alt="Diagrama de arquitectura: SPA Angular, API REST Spring Boot en capas y sistemas externos" width="900"/>
 </details>
 
 <details>
