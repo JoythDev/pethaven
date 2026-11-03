@@ -1,5 +1,6 @@
 package io.github.pethaven.support;
 
+import io.github.pethaven.entity.Administrator;
 import io.github.pethaven.entity.Drug;
 import io.github.pethaven.entity.Evolution;
 import io.github.pethaven.entity.Owner;
@@ -26,6 +27,15 @@ public final class RepositoryTestData {
     private static final AtomicInteger SEQUENCE = new AtomicInteger();
 
     private RepositoryTestData() {
+    }
+
+    public static Administrator administrator() {
+        int sequence = SEQUENCE.incrementAndGet();
+        return Administrator.builder()
+                .name("Administrator " + sequence)
+                .email("admin" + sequence + "@pethaven.test")
+                .password("secret-password")
+                .build();
     }
 
     public static Owner owner() {
