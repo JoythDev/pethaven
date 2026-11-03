@@ -1,12 +1,15 @@
 package io.github.pethaven.support;
 
+import io.github.pethaven.entity.Drug;
 import io.github.pethaven.entity.Evolution;
 import io.github.pethaven.entity.Owner;
 import io.github.pethaven.entity.Pet;
 import io.github.pethaven.entity.Species;
 import io.github.pethaven.entity.Treatment;
+import io.github.pethaven.entity.TreatmentDrug;
 import io.github.pethaven.entity.Veterinarian;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -68,6 +71,43 @@ public final class RepositoryTestData {
                 .diagnosis("Test diagnosis")
                 .evolution(evolution)
                 .notes("Test notes")
+                .build();
+    }
+
+    public static Drug drug() {
+        int sequence = SEQUENCE.incrementAndGet();
+        return drug("Drug " + sequence);
+    }
+
+    /**
+     * Construye un medicamento sin guardar con el nombre indicado y precios de catálogo fijos.
+     *
+     * <p>Los precios de catálogo se fijan en 1.00 y 2.00, deliberadamente distintos de los precios
+     * guardados en cada fila de tratamiento, para que los tests distingan ambas fuentes.</p>
+     */
+    public static Drug drug(String name) {
+        return Drug.builder()
+                .name(name)
+                .purchasePrice(new BigDecimal("1.00"))
+                .salePrice(new BigDecimal("2.00"))
+                .unitsAvailable(100)
+                .unitsSold(0)
+                .build();
+    }
+
+    public static TreatmentDrug treatmentDrug(
+            Treatment treatment,
+            Drug drug,
+            int units,
+            BigDecimal unitPurchasePrice,
+            BigDecimal unitSalePrice
+    ) {
+        return TreatmentDrug.builder()
+                .treatment(treatment)
+                .drug(drug)
+                .units(units)
+                .unitPurchasePrice(unitPurchasePrice)
+                .unitSalePrice(unitSalePrice)
                 .build();
     }
 }
