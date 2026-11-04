@@ -15,3 +15,12 @@ export interface DrugRequest {
   salePrice: number;
   unitsAvailable: number;
 }
+
+// Resumen de una importación masiva desde Excel (DrugImportSummaryResponse).
+export interface DrugImportSummary {
+  fileName: string;
+  sheetName: string;
+  totalRows: number;
+  importedCount: number;
+  skippedBlankRows: number;
+}

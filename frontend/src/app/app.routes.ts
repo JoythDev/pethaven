@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 import { LandingComponent } from './pages/landing/landing.component';
 import { LoginComponent } from './pages/auth/login/login.component';
 import { ClienteEntryComponent } from './pages/cliente/cliente-entry/cliente-entry.component';
+import { ADMIN_DRUG_AREA, DRUG_AREA_DATA_KEY, VET_DRUG_AREA } from './pages/shared/drugs/drug-area';
 
 export const routes: Routes = [
   { path: '', component: LandingComponent },
@@ -109,6 +110,23 @@ export const routes: Routes = [
           },
         ],
       },
+      {
+        path: 'drugs',
+        // Solo consulta: el veterinario no crea, edita ni elimina medicamentos.
+        data: { [DRUG_AREA_DATA_KEY]: VET_DRUG_AREA },
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./pages/shared/drugs/drugs-list/drugs-list.component').then((m) => m.DrugsListComponent),
+          },
+          {
+            path: ':id',
+            loadComponent: () =>
+              import('./pages/shared/drugs/drug-detail/drug-detail.component').then((m) => m.DrugDetailComponent),
+          },
+        ],
+      },
     ],
   },
 
@@ -144,7 +162,7 @@ export const routes: Routes = [
     ],
   },
 
-  // Panel del administrador: gestiona veterinarios y mascotas (se desactivan, no se borran).
+  // Panel del administrador: gestiona veterinarios, mascotas (se desactivan, no se borran) y medicamentos.
   {
     path: 'administrador',
     loadComponent: () =>
@@ -185,6 +203,44 @@ export const routes: Routes = [
           import('./pages/administrador/mascotas/admin-pets-list.component').then(
             (m) => m.AdminPetsListComponent
           ),
+      },
+      {
+        path: 'medicamentos',
+        // Gestión completa: listado, detalle, alta, edición, eliminación e importación desde Excel.
+        data: { [DRUG_AREA_DATA_KEY]: ADMIN_DRUG_AREA },
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./pages/shared/drugs/drugs-list/drugs-list.component').then((m) => m.DrugsListComponent),
+          },
+          {
+            path: 'add',
+            loadComponent: () =>
+              import('./pages/administrador/medicamentos/drug-form/drug-form.component').then(
+                (m) => m.DrugFormComponent
+              ),
+          },
+          {
+            path: 'update/:id',
+            loadComponent: () =>
+              import('./pages/administrador/medicamentos/drug-form/drug-form.component').then(
+                (m) => m.DrugFormComponent
+              ),
+          },
+          {
+            path: 'import',
+            loadComponent: () =>
+              import('./pages/administrador/medicamentos/drug-import/drug-import.component').then(
+                (m) => m.DrugImportComponent
+              ),
+          },
+          {
+            path: ':id',
+            loadComponent: () =>
+              import('./pages/shared/drugs/drug-detail/drug-detail.component').then((m) => m.DrugDetailComponent),
+          },
+        ],
       },
     ],
   },
