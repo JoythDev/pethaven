@@ -27,6 +27,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
@@ -485,5 +487,46 @@ public class TreatmentDrugServiceMockTest {
         Assertions.assertThat(amoxicillin.getUnitsAvailable()).isEqualTo(10);
         Assertions.assertThat(amoxicillin.getUnitsSold()).isEqualTo(3);
         Assertions.assertThat(treatment.getTreatmentDrugs()).isEmpty();
+    }
+
+    @Test
+    public void treatmentDrugService_administerDrugs_NullElement_ThrowsIllegalOperationAndDoesNotSave() {
+        // Arrange
+        Treatment treatment = treatment(activePet());
+
+        // Act + Assert
+        // Collections.singletonList admite null (List.of no): el elemento nulo llega al servicio tal cual.
+        Assertions.assertThatThrownBy(
+                        () -> treatmentDrugService.administerDrugs(treatment, Collections.singletonList(null)))
+                .isInstanceOf(IllegalOperationException.class)
+                .hasMessage("Cada medicamento a administrar debe incluir sus datos.");
+        // El elemento nulo se rechaza antes de cargar el medicamento, mover stock o guardar nada.
+        Mockito.verifyNoInteractions(treatmentDrugRepository, treatmentRepository, drugService, drugRepository);
+        Assertions.assertThat(treatment.getTreatmentDrugs()).isEmpty();
+    }
+
+    @Test
+    public void treatmentDrugService_administerDrugs_NullElementAfterValidRequest_KeepsFirstRequestApplied() {
+        // Arrange
+        Treatment treatment = treatment(activePet());
+        Drug amoxicillin = drug(5L, "Amoxicilina 250mg", "8000.00", "15000.00", 10, 3);
+        Mockito.when(drugService.getDrugEntity(5L)).thenReturn(amoxicillin);
+        stubTreatmentDrugSaveWithGeneratedIds();
+
+        // Act + Assert
+        Assertions.assertThatThrownBy(() -> treatmentDrugService.administerDrugs(
+                        treatment, Arrays.asList(new TreatmentDrugRequest(5L, 4), null)))
+                .isInstanceOf(IllegalOperationException.class)
+                .hasMessage("Cada medicamento a administrar debe incluir sus datos.");
+
+        // El primer medicamento ya se descontó y se guardó antes de llegar al nulo: el servicio no lo revierte,
+        // porque el rollback es responsabilidad de la transacción del llamador.
+        Assertions.assertThat(amoxicillin.getUnitsAvailable()).isEqualTo(6);
+        Assertions.assertThat(amoxicillin.getUnitsSold()).isEqualTo(7);
+        Mockito.verify(drugRepository).save(amoxicillin);
+        Mockito.verify(treatmentDrugRepository, Mockito.times(1)).save(ArgumentMatchers.any(TreatmentDrug.class));
+        Assertions.assertThat(treatment.getTreatmentDrugs())
+                .singleElement()
+                .isSameAs(persistedTreatmentDrugs.get(0));
     }
 }

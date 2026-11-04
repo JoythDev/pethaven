@@ -90,6 +90,7 @@ public class TreatmentControllerTest {
     private static final String DIAGNOSIS_TOO_LONG_MESSAGE = "El diagnóstico no puede superar los 200 caracteres";
     private static final String NOTES_TOO_LONG_MESSAGE = "Las observaciones no pueden superar los 1000 caracteres";
     private static final String DRUGS_REQUIRED_MESSAGE = "El tratamiento debe incluir al menos un medicamento";
+    private static final String DRUG_ELEMENT_REQUIRED_MESSAGE = "Cada medicamento del tratamiento es obligatorio";
     private static final String DRUG_ID_REQUIRED_MESSAGE = "El ID del medicamento es obligatorio";
     private static final String UNITS_REQUIRED_MESSAGE = "La cantidad de unidades es obligatoria";
     private static final String UNITS_NOT_POSITIVE_MESSAGE = "La cantidad de unidades debe ser mayor que cero";
@@ -605,6 +606,37 @@ public class TreatmentControllerTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$.errors['drugs[1].units']")
                         .value(UNITS_NOT_POSITIVE_MESSAGE));
         Mockito.verifyNoInteractions(treatmentService);
+    }
+
+    @Test
+    public void treatmentController_createTreatment_NullDrugElement_Returns400AndDoesNotCallService() throws Exception {
+        // Act + Assert
+        // @Valid no valida los elementos null: la restricción @NotNull del propio elemento lo rechaza, y la clave
+        // del error lleva el índice del elemento.
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/treatments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(treatmentBody(31L, 2L, VALID_DATE, 12.5, VALID_DIAGNOSIS, Evolution.IMPROVING,
+                                VALID_NOTES, "[null]")))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(VALIDATION_MESSAGE))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errors['drugs[0]']")
+                        .value(DRUG_ELEMENT_REQUIRED_MESSAGE));
+        Mockito.verifyNoInteractions(treatmentService, treatmentDrugService);
+    }
+
+    @Test
+    public void treatmentController_createTreatment_SecondDrugElementNull_Returns400WithIndexedKey() throws Exception {
+        // Act + Assert
+        // El primer renglón es válido y el segundo es null: la clave del error indica cuál es el elemento nulo.
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/treatments")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(treatmentBody(31L, 2L, VALID_DATE, 12.5, VALID_DIAGNOSIS, Evolution.IMPROVING,
+                                VALID_NOTES, "[{\"drugId\":4,\"units\":3},null]")))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(VALIDATION_MESSAGE))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errors['drugs[1]']")
+                        .value(DRUG_ELEMENT_REQUIRED_MESSAGE));
+        Mockito.verifyNoInteractions(treatmentService, treatmentDrugService);
     }
 
     @Test

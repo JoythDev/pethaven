@@ -26,7 +26,7 @@ import java.util.List;
  *                       diagnóstico activo; null si llega estable (ingreso). Con STABLE el diagnóstico no cambia
  * @param notes          observaciones (opcional, máx. 1000 caracteres)
  * @param drugs          medicamentos a administrar (al menos uno: un tratamiento es formular medicamentos).
- *                       Se registran de forma atómica con el tratamiento
+ *                       Se registran de forma atómica con el tratamiento; ningún elemento puede ser null
  */
 public record TreatmentRequest(
         @Schema(description = "Id de la mascota", example = "1")
@@ -61,6 +61,5 @@ public record TreatmentRequest(
 
         @Schema(description = "Medicamentos a administrar (al menos uno)")
         @NotEmpty(message = "El tratamiento debe incluir al menos un medicamento")
-        @Valid
-        List<TreatmentDrugRequest> drugs
+        List<@NotNull(message = "Cada medicamento del tratamiento es obligatorio") @Valid TreatmentDrugRequest> drugs
 ) { }
