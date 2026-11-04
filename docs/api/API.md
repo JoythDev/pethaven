@@ -512,7 +512,7 @@ Cuerpo para `POST /api/treatments`.
 | `diagnosis` | string | Sí | Diagnóstico de la consulta. Máx. 200 caracteres |
 | `evolution` | string \| null | Según el estado | `STABLE`, `IMPROVING` o `WORSENING` (`RECOVERED` solo lo usa el alta). Obligatoria si la mascota tiene un diagnóstico activo; debe ir en `null` si llega estable (ingreso). Con `STABLE` el `diagnosis` debe ser el actual. Si no se cumple → `409` |
 | `notes` | string \| null | No | Observaciones. Máx. 1000 caracteres |
-| `drugs` | array<`TreatmentDrugRequest`> | Sí | Al menos uno: un tratamiento es formular medicamentos. Se registran de forma atómica con él (todos o ninguno). Para dejar estable a una mascota sin medicamentos se usa [`POST /api/pets/{id}/discharge`](#post-apipetsiddischarge) |
+| `drugs` | array<`TreatmentDrugRequest`> | Sí | Al menos uno: un tratamiento es formular medicamentos. Ningún elemento puede ser `null`. Se registran de forma atómica con él (todos o ninguno). Para dejar estable a una mascota sin medicamentos se usa [`POST /api/pets/{id}/discharge`](#post-apipetsiddischarge) |
 
 ```json
 {
@@ -1715,7 +1715,7 @@ Ingreso de una mascota estable (sin `evolution`):
 Además, el contador `attentions` del veterinario se incrementa en 1.
 
 **Errores**:
-- `400` validación de campos, o fecha futura (`errors.date`: `La fecha del tratamiento no puede ser futura`); también si `weight` o `diagnosis` faltan o exceden sus límites, si `drugs` está vacío o ausente (`errors.drugs`: `El tratamiento debe incluir al menos un medicamento`) o si algún elemento de `drugs` es inválido (p. ej. `errors["drugs[0].units"]`)
+- `400` validación de campos, o fecha futura (`errors.date`: `La fecha del tratamiento no puede ser futura`); también si `weight` o `diagnosis` faltan o exceden sus límites, si `drugs` está vacío o ausente (`errors.drugs`: `El tratamiento debe incluir al menos un medicamento`) si algún elemento de `drugs` es `null` (`errors["drugs[0]"]`: `Cada medicamento del tratamiento es obligatorio`, con el índice del elemento) o si algún elemento de `drugs` es inválido (p. ej. `errors["drugs[0].units"]`)
 - `404` la mascota no existe: `El recurso 'Pet' con id: '999' no fue encontrado`
 - `404` el veterinario no existe: `El recurso 'Veterinarian' con id: '999' no fue encontrado`
 - `409` la mascota no está activa: `La mascota 'Canela' no está activa: no se le pueden registrar tratamientos.`

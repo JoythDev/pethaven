@@ -76,6 +76,10 @@ public class TreatmentDrugServiceImpl implements TreatmentDrugService {
     }
 
     private TreatmentDrug administer(Treatment treatment, TreatmentDrugRequest request) {
+        if (request == null) {
+            throw new IllegalOperationException("Cada medicamento a administrar debe incluir sus datos.");
+        }
+
         if (request.units() == null || request.units() <= 0) {
             throw new IllegalOperationException("Las unidades administradas deben ser mayores a cero.");
         }

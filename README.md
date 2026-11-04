@@ -63,7 +63,7 @@ El avance se organiza según las entregas del enunciado. Cada funcionalidad indi
 |---|---|---|---|---|
 | 1 | 7 | 0 | 0 | Completada |
 | 2 | 6 | 0 | 0 | Completada |
-| 3 | 0 | 1 | 2 | Pendiente |
+| 3 | 1 | 1 | 1 | En progreso |
 
 ### Entrega 1 — Features 1 a 7
 
@@ -96,7 +96,7 @@ El avance se organiza según las entregas del enunciado. Cada funcionalidad indi
 |---|---|---|---|---|---|
 | F13 · AC34 | Control de acceso por roles | Autorización según el rol del usuario | 🟡 | ⬜ | Parcial — los tres logins (dueño, veterinario y administrador) devuelven el rol; no hay token JWT ni guards de autorización |
 | E3 · Pruebas cliente | Pruebas del cliente web | Al menos 2 casos de uso automatizados | ➖ | ⬜ | Pendiente — no hay specs de cliente |
-| E3 · Pruebas backend | Pruebas de backend | 25 pruebas con datos propios y limpieza posterior | ⬜ | ➖ | Pendiente — solo existe la prueba de contexto |
+| E3 · Pruebas backend | Pruebas de backend | 25 pruebas con datos propios y limpieza posterior | ✅ | ➖ | Implementado — 665 pruebas (636 unitarias y 29 de integración) sobre repositorios, servicios y controladores, cada una con sus propios datos y limpieza posterior. Ver [Pruebas del backend](#pruebas-del-backend) |
 
 ### Extras fuera del enunciado
 
@@ -176,6 +176,7 @@ Una mirada al estado actual de la aplicación, con datos de prueba.
 | Autenticación | Provisional — login de dueño, veterinario y administrador; devuelve el rol, sin token ni autorización por rol |
 | CORS | Origen permitido: `http://localhost:4200` |
 | Utilidades | Lombok |
+| Pruebas | JUnit 5, Mockito, AssertJ y MockMvc; Surefire (unitarias) y Failsafe (integración); JaCoCo con un mínimo de 80% de líneas en `service` y `controller` |
 | Build | Maven Wrapper |
 
 ### Frontend (`frontend/`)
@@ -300,6 +301,26 @@ La base de datos expone una consola web para explorar tablas y datos:
 | JDBC URL | `jdbc:h2:file:./pethaven-database` |
 | Usuario | `sa` |
 | Contraseña | *(vacía)* |
+
+### Pruebas del backend
+
+Las pruebas usan el perfil `test`: una base H2 en memoria que arranca vacía, sin los datos de ejemplo ni la importación del Excel. Nunca tocan la base `pethaven-database` del desarrollo.
+
+```bash
+./mvnw test      # solo pruebas unitarias (Surefire)
+./mvnw verify    # unitarias + integración (Failsafe) + reporte y mínimo de cobertura (JaCoCo)
+```
+
+En Windows usa `.\mvnw.cmd` en lugar de `./mvnw`. Para correr una sola clase: `./mvnw test -Dtest=PetControllerTest`.
+
+| Capa | Tipo de prueba | Clases |
+|---|---|---|
+| Repositorio | `@DataJpaTest` sobre H2 en memoria; cada prueba hace rollback | `*RepositoryTest` |
+| Servicio | Unitarias con Mockito y los mappers reales | `*ServiceMockTest`, `ExcelReadingServiceTest` |
+| Servicio | Integración con `@SpringBootTest`: transacciones, stock e importación real del Excel | `*IntegrationTest` |
+| Controlador | `@WebMvcTest` con MockMvc y servicios simulados: rutas, códigos HTTP, validación y JSON de error | `*ControllerTest`, `GlobalExceptionHandlerTest` |
+
+`./mvnw verify` falla si la cobertura de líneas de los paquetes `service` o `controller` baja de 80%. El reporte HTML queda en `target/site/jacoco/index.html`. Para ver el reporte sin que el mínimo detenga el build: `./mvnw verify -Djacoco.haltOnFailure=false`.
 
 ---
 
