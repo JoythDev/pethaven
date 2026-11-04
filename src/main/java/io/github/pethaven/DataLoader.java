@@ -19,6 +19,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
@@ -28,7 +29,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 
+// No se ejecuta con el perfil "test", para que las pruebas partan de una base vacía.
 @Component
+@Profile("!test")
 @Order(1)
 @Transactional
 public class DataLoader implements CommandLineRunner {
