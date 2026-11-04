@@ -145,6 +145,62 @@ public class OwnerRepositoryTest {
     }
 
     @Test
+    public void ownerRepository_save_NullDocument_ThrowsDataIntegrityViolation() {
+        // Arrange
+        // La columna document es obligatoria en la base de datos.
+        Owner ownerWithNullDocument = RepositoryTestData.owner();
+        ownerWithNullDocument.setDocument(null);
+
+        // Act
+        Throwable thrownException = Assertions.catchThrowable(() -> ownerRepository.saveAndFlush(ownerWithNullDocument));
+
+        // Assert
+        Assertions.assertThat(thrownException).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    public void ownerRepository_save_NullEmail_ThrowsDataIntegrityViolation() {
+        // Arrange
+        // La columna email es obligatoria en la base de datos.
+        Owner ownerWithNullEmail = RepositoryTestData.owner();
+        ownerWithNullEmail.setEmail(null);
+
+        // Act
+        Throwable thrownException = Assertions.catchThrowable(() -> ownerRepository.saveAndFlush(ownerWithNullEmail));
+
+        // Assert
+        Assertions.assertThat(thrownException).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    public void ownerRepository_save_NullPassword_ThrowsDataIntegrityViolation() {
+        // Arrange
+        // La columna password es obligatoria en la base de datos.
+        Owner ownerWithNullPassword = RepositoryTestData.owner();
+        ownerWithNullPassword.setPassword(null);
+
+        // Act
+        Throwable thrownException = Assertions.catchThrowable(() -> ownerRepository.saveAndFlush(ownerWithNullPassword));
+
+        // Assert
+        Assertions.assertThat(thrownException).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    public void ownerRepository_save_NullPhone_ThrowsDataIntegrityViolation() {
+        // Arrange
+        // La columna phone es obligatoria en la base de datos.
+        Owner ownerWithNullPhone = RepositoryTestData.owner();
+        ownerWithNullPhone.setPhone(null);
+
+        // Act
+        Throwable thrownException = Assertions.catchThrowable(() -> ownerRepository.saveAndFlush(ownerWithNullPhone));
+
+        // Assert
+        Assertions.assertThat(thrownException).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
     public void ownerRepository_findById_ExistingId_ReturnsOwner() {
         // Arrange
         entityManager.clear();

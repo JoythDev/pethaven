@@ -192,6 +192,34 @@ public class TreatmentDrugRepositoryTest {
     }
 
     @Test
+    public void treatmentDrugRepository_save_NullUnits_ThrowsDataIntegrityViolation() {
+        // Arrange
+        // La columna units es obligatoria en la base de datos.
+        TreatmentDrug treatmentDrug = unsavedTreatmentDrug();
+        treatmentDrug.setUnits(null);
+
+        // Act
+        Throwable thrownException = Assertions.catchThrowable(() -> treatmentDrugRepository.saveAndFlush(treatmentDrug));
+
+        // Assert
+        Assertions.assertThat(thrownException).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    public void treatmentDrugRepository_save_NullUnitPurchasePrice_ThrowsDataIntegrityViolation() {
+        // Arrange
+        // La columna unit_purchase_price es obligatoria en la base de datos.
+        TreatmentDrug treatmentDrug = unsavedTreatmentDrug();
+        treatmentDrug.setUnitPurchasePrice(null);
+
+        // Act
+        Throwable thrownException = Assertions.catchThrowable(() -> treatmentDrugRepository.saveAndFlush(treatmentDrug));
+
+        // Assert
+        Assertions.assertThat(thrownException).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
     public void treatmentDrugRepository_findAll_ExistingRows_ReturnsAllFixtureRows() {
         // Arrange
         // setUp creó exactamente nueve filas: r1, r2, r3, r4, r5, r6, r7, r8 y r9.

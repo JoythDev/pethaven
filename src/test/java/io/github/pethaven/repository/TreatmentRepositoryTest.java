@@ -137,6 +137,34 @@ public class TreatmentRepositoryTest {
     }
 
     @Test
+    public void treatmentRepository_save_NullDate_ThrowsDataIntegrityViolation() {
+        // Arrange
+        // La columna treatment_date es obligatoria en la base de datos.
+        Treatment treatment = RepositoryTestData.treatment(pet1, vet1, BASE_DATE.plusDays(10), Evolution.STABLE);
+        treatment.setDate(null);
+
+        // Act
+        Throwable thrownException = Assertions.catchThrowable(() -> treatmentRepository.saveAndFlush(treatment));
+
+        // Assert
+        Assertions.assertThat(thrownException).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    public void treatmentRepository_save_NullWeight_ThrowsDataIntegrityViolation() {
+        // Arrange
+        // La columna weight es obligatoria en la base de datos.
+        Treatment treatment = RepositoryTestData.treatment(pet1, vet1, BASE_DATE.plusDays(10), Evolution.STABLE);
+        treatment.setWeight(null);
+
+        // Act
+        Throwable thrownException = Assertions.catchThrowable(() -> treatmentRepository.saveAndFlush(treatment));
+
+        // Assert
+        Assertions.assertThat(thrownException).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
     public void treatmentRepository_findAll_ExistingTreatments_ReturnsAllFixtureTreatments() {
         // Arrange
         // setUp creó exactamente cuatro tratamientos: t1, t2, t3 y t4.
