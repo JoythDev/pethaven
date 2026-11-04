@@ -30,8 +30,8 @@ Hasta ahora, buena parte de la operación vivía en papel y en hojas de Excel: e
 | Rol | Qué puede hacer |
 |---|---|
 | **Cliente** (dueño) | Iniciar sesión, ver sus mascotas hospitalizadas en formato de tarjeta, consultar el detalle de cada una con su historial de tratamientos y revisar su perfil |
-| **Veterinario** | Iniciar sesión, registrar dueños y mascotas, llevar el historial de atenciones, administrar tratamientos con descuento de inventario, dar de alta a las mascotas y descargar su historia clínica en PDF |
-| **Administrador** | Iniciar sesión, gestionar el equipo de veterinarios (crear, editar, activar y desactivar), gestionar las mascotas (activar y desactivar) y analizar los KPIs del negocio: tratamientos del mes, mascotas, veterinarios, ventas, ganancias y medicamentos más usados |
+| **Veterinario** | Iniciar sesión, registrar dueños y mascotas, llevar el historial de atenciones, administrar tratamientos con descuento de inventario, consultar el inventario de medicamentos (solo lectura), dar de alta a las mascotas y descargar su historia clínica en PDF |
+| **Administrador** | Iniciar sesión, gestionar el equipo de veterinarios (crear, editar, activar y desactivar), gestionar las mascotas (activar y desactivar), gestionar el inventario de medicamentos (crear, editar, eliminar e importar desde Excel) y analizar los KPIs del negocio: tratamientos del mes, mascotas, veterinarios, ventas, ganancias y medicamentos más usados |
 
 **El flujo del negocio:**
 
@@ -85,7 +85,7 @@ El avance se organiza según las entregas del enunciado. Cada funcionalidad indi
 |---|---|---|---|---|---|
 | F08 · AC25–AC28 | Portal de administración | Acceso del administrador y CRUD de veterinarios | ✅ | ✅ | Completado — login con rol `ADMIN`, CRUD de veterinarios y gestión de mascotas; la autorización por rol y el JWT son de la Entrega 3 (F13) |
 | F09-A · AC29 | Dashboard de KPIs | Métricas de tratamientos, veterinarios, mascotas, ventas y ganancias | ✅ | ✅ | Completado — `GET /api/administrators/dashboard` y pantalla `/administrador/dashboard` |
-| F09-B · AC30 | Carga de medicamentos | Importación del inventario desde Excel al iniciar | ✅ | ➖ | Completo en backend; el enunciado no exige interfaz |
+| F09-B · AC30 | Carga de medicamentos | Importación del inventario desde Excel al iniciar | ✅ | ✅ | Completado — carga inicial al arrancar y, además, importación desde el portal del administrador en `/administrador/medicamentos/import` |
 | F10 · AC31–AC32 | Tratamientos | Registrar tratamiento, descontar stock y listar mascotas tratadas por veterinario | ✅ | ✅ | Completado — registro con stock y filtro «Mis pacientes» en el listado de mascotas del veterinario |
 | F11 · AC33 | Historial médico | Lista de tratamientos por mascota | ✅ | ✅ | Completado — visible en la ficha de la mascota |
 | E2 · SPA | SPA en Angular | Frontend Angular consumiendo la API REST | ✅ | ✅ | Completado — portales de cliente, veterinario y administrador |
@@ -106,8 +106,9 @@ Estas funcionalidades no están exigidas por el enunciado, pero ya forman parte 
 |---|---|---|---|---|
 | Perfil del cliente | Consulta de datos personales desde el portal del cliente | ✅ | ✅ | Completado |
 | Perfil del veterinario | Datos y especialidad del veterinario autenticado | ✅ | ✅ | Completado |
-| Importación por endpoint | Carga de medicamentos desde un archivo mediante `POST /api/drugs/import` | ✅ | ➖ | Backend completo |
-| CRUD de medicamentos | Listado, creación, actualización y eliminación de medicamentos | ✅ | ⬜ | Backend completo; sin pantalla |
+| Importación de medicamentos desde Excel | El administrador sube un `.xlsx`/`.xls` (hasta 10 MB, arrastrando o seleccionando; hay plantilla descargable) y ve el resumen de la importación mediante `POST /api/drugs/import` | ✅ | ✅ | Completado — `/administrador/medicamentos/import` |
+| Gestión de medicamentos por el administrador | Listado con búsqueda y filtro por stock, detalle, creación, edición y eliminación (el API rechaza con 409 los medicamentos con tratamientos asociados) | ✅ | ✅ | Completado — pestaña «Medicamentos» en el sidebar del administrador |
+| Consulta de medicamentos por el veterinario | Listado y detalle de solo lectura del inventario, sin crear, editar, eliminar ni importar | ✅ | ✅ | Completado — `/veterinario/medicamentos` |
 | Evolución y diagnóstico por consulta | Cada tratamiento registra peso, diagnóstico, evolución (`STABLE`, `IMPROVING`, `WORSENING`) y notas; el ingreso va sin evolución | ✅ | ✅ | Completado |
 | Alta de mascotas | `POST /api/pets/{id}/discharge` deja a la mascota estable y registra el alta (`RECOVERED`) en su historia | ✅ | ✅ | Completado |
 | Historia clínica en PDF | El veterinario ve la historia clínica de la mascota y la descarga en PDF (jsPDF) | ➖ | ✅ | Completado — `/veterinario/pets/:id/historia` |
@@ -205,7 +206,7 @@ pethaven/
 │   └── Enunciado_Veterinaria.pdf  # Definición del negocio y requerimientos
 │
 ├── frontend/                      # Frontend Angular 19
-│   ├── public/                    # Imágenes, íconos y videos
+│   ├── public/                    # Imágenes, íconos, videos y plantilla de Excel de medicamentos
 │   └── src/
 │       ├── app/
 │       │   ├── core/              # URL del API, errores HTTP, notificaciones y utilidades
@@ -214,9 +215,9 @@ pethaven/
 │       │   │   ├── landing/       # Landing page (secciones + directivas de animación)
 │       │   │   ├── auth/          # Login de dueño y veterinario
 │       │   │   ├── cliente/       # Portal del cliente: mascotas, detalle y perfil
-│       │   │   ├── veterinario/   # Portal del veterinario: inicio, perfil, mascotas, tratamientos, historia clínica y dueños
-│       │   │   ├── administrador/ # Portal del administrador: dashboard de KPIs, veterinarios y mascotas
-│       │   │   └── shared/        # Layout compartido y páginas "coming soon"
+│       │   │   ├── veterinario/   # Portal del veterinario: inicio, perfil, mascotas, tratamientos, historia clínica, dueños y consulta de medicamentos
+│       │   │   ├── administrador/ # Portal del administrador: dashboard de KPIs, veterinarios, mascotas y medicamentos
+│       │   │   └── shared/        # Layout compartido, páginas "coming soon" y pantallas de medicamentos
 │       │   ├── services/          # Servicios HTTP por recurso
 │       │   ├── theme/             # Preset PrimeNG de la marca
 │       │   ├── app.config.ts      # Providers, locale es-CO y tema
@@ -354,12 +355,19 @@ Los recursos viven bajo `/api/**`: `auth`, `owners`, `pets`, `veterinarians`, `d
 | `/veterinario/owners/add` | Registrar un dueño |
 | `/veterinario/owners/update/:id` | Editar un dueño |
 | `/veterinario/owners/:id` | Detalle de un dueño y sus mascotas |
+| `/veterinario/medicamentos` | Consulta del inventario de medicamentos (solo lectura) |
+| `/veterinario/medicamentos/:id` | Detalle de un medicamento (solo lectura) |
 | `/administrador` | Portal del administrador: redirige a `/administrador/dashboard` |
 | `/administrador/dashboard` | Resumen de KPIs del negocio |
 | `/administrador/veterinarios` | Listado de veterinarios, con activación y desactivación |
 | `/administrador/veterinarios/add` | Registrar un veterinario |
 | `/administrador/veterinarios/update/:id` | Editar un veterinario |
 | `/administrador/mascotas` | Listado de mascotas, con activación y desactivación |
+| `/administrador/medicamentos` | Inventario de medicamentos, con búsqueda y filtro por stock |
+| `/administrador/medicamentos/add` | Registrar un medicamento |
+| `/administrador/medicamentos/update/:id` | Editar un medicamento |
+| `/administrador/medicamentos/import` | Importar medicamentos desde un archivo Excel |
+| `/administrador/medicamentos/:id` | Detalle de un medicamento, con opción de eliminarlo |
 | `/dashboard` | Redirección legacy al portal veterinario |
 
 > La autenticación es provisional: la sesión se guarda en `sessionStorage` y todavía no hay token ni guards de rol; cualquier portal es accesible por URL directa hasta la Entrega 3 (F13).
