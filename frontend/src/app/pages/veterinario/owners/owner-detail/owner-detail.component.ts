@@ -77,19 +77,19 @@ export class OwnersDetailComponent implements OnInit {
         ),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe(() => this.router.navigate(['/veterinario/owners']));
+      .subscribe(() => this.router.navigate(['/veterinario/duenos']));
   }
 
   editar(id: number): void {
-    this.router.navigate(['/veterinario/owners/update', id]);
+    this.router.navigate(['/veterinario/duenos/update', id]);
   }
 
   volver(): void {
-    this.router.navigate(['/veterinario/owners']);
+    this.router.navigate(['/veterinario/duenos']);
   }
 
   verPet(id: number): void {
-    this.router.navigate(['/veterinario/pets', id]);
+    this.router.navigate(['/veterinario/mascotas', id]);
   }
 
   // Abre el diálogo de confirmación y, si el usuario acepta, envía el dueño a confirmedDelete$.

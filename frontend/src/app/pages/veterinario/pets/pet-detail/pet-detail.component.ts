@@ -99,14 +99,14 @@ export class PetsDetailComponent implements OnInit {
   }
 
   registrarTratamiento(id: number): void {
-    this.router.navigate(['/veterinario/pets', id, 'treatments', 'add']);
+    this.router.navigate(['/veterinario/mascotas', id, 'treatments', 'add']);
   }
 
   editar(id: number): void {
-    this.router.navigate(['/veterinario/pets/update', id]);
+    this.router.navigate(['/veterinario/mascotas/update', id]);
   }
 
   volver(): void {
-    this.router.navigate(['/veterinario/pets']);
+    this.router.navigate(['/veterinario/mascotas']);
   }
 }

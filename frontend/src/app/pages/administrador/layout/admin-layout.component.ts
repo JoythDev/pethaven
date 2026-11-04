@@ -25,6 +25,7 @@ export class AdminLayoutComponent {
           { label: 'Resumen', icon: 'pi pi-chart-bar', link: '/administrador/dashboard' },
           { label: 'Veterinarios', icon: '/images/icons/stethoscope-icon.svg', link: '/administrador/veterinarios' },
           { label: 'Mascotas', icon: '/images/icons/paw-print-icon.svg', link: '/administrador/mascotas' },
+          { label: 'Medicamentos', icon: '/images/icons/pulse-icon.svg', link: '/administrador/medicamentos' },
           cerrarSesion,
         ],
         homeLink: '/administrador',
@@ -32,8 +33,11 @@ export class AdminLayoutComponent {
       },
       topbar: {
         homeItem: { icon: 'pi pi-home', routerLink: '/administrador' },
-        pageLabels: { dashboard: 'Resumen', veterinarios: 'Veterinarios', mascotas: 'Mascotas' },
-        subPageLabels: { veterinarios: { add: 'Nuevo veterinario', update: 'Editar veterinario' } },
+        pageLabels: { dashboard: 'Resumen', veterinarios: 'Veterinarios', mascotas: 'Mascotas', medicamentos: 'Medicamentos' },
+        subPageLabels: {
+          veterinarios: { add: 'Nuevo veterinario', update: 'Editar veterinario' },
+          medicamentos: { add: 'Nuevo medicamento', update: 'Editar medicamento', import: 'Importar Excel' },
+        },
         userName: admin?.name ?? '',
         userInitial: admin ? admin.name.charAt(0).toUpperCase() : '',
         userMenuItems: [cerrarSesion],

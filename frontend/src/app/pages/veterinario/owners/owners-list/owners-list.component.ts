@@ -162,15 +162,15 @@ export class OwnersListComponent implements OnInit {
   }
 
   nuevo(): void {
-    this.router.navigate(['/veterinario/owners/add']);
+    this.router.navigate(['/veterinario/duenos/add']);
   }
 
   ver(owner: Owner): void {
-    this.router.navigate(['/veterinario/owners', owner.id]);
+    this.router.navigate(['/veterinario/duenos', owner.id]);
   }
 
   editar(owner: Owner): void {
-    this.router.navigate(['/veterinario/owners/update', owner.id]);
+    this.router.navigate(['/veterinario/duenos/update', owner.id]);
   }
 
   // Envía el dueño a deleteRequest$; la confirmación se abre cuando termina la consulta de mascotas.

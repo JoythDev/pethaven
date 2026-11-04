@@ -63,7 +63,7 @@ export class OwnersFormComponent implements OnInit {
           editando ? 'Dueño actualizado' : 'Dueño registrado',
           `${owner.name} se ${editando ? 'actualizó' : 'registró'} correctamente.`,
         );
-        this.router.navigate(editando ? ['/veterinario/owners', owner.id] : ['/veterinario/owners']);
+        this.router.navigate(editando ? ['/veterinario/duenos', owner.id] : ['/veterinario/duenos']);
       });
 
     // Lee el :id de la URL. Sin id es un alta. Con id, lo valida antes de llamar al API;
@@ -115,7 +115,7 @@ export class OwnersFormComponent implements OnInit {
   }
 
   cancelar(): void {
-    this.router.navigate(['/veterinario/owners']);
+    this.router.navigate(['/veterinario/duenos']);
   }
 
   // Guarda el id en edición y, en ese modo, vuelve opcional la contraseña: vacía significa
@@ -132,7 +132,7 @@ export class OwnersFormComponent implements OnInit {
   // Dueño inexistente o id inválido: mismo aviso y regreso al listado.
   private handleNotFound(error: unknown): void {
     this.notifications.error('Dueño no encontrado', error);
-    this.router.navigate(['/veterinario/owners']);
+    this.router.navigate(['/veterinario/duenos']);
   }
 
   // Llama a OwnerService.create o OwnerService.update según haya o no un id en la URL.

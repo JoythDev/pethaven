@@ -189,7 +189,7 @@ export class TreatmentFormComponent implements OnInit {
           'Tratamiento registrado',
           `Se registró el tratamiento de ${treatment.petName} con ${treatment.drugs.length} medicamento(s).`,
         );
-        this.router.navigate(['/veterinario/pets', treatment.petId]);
+        this.router.navigate(['/veterinario/mascotas', treatment.petId]);
       });
 
     // Lee el :id de la URL y pide en paralelo la mascota, los medicamentos con stock y el
@@ -278,7 +278,7 @@ export class TreatmentFormComponent implements OnInit {
   }
 
   cancelar(petId: number): void {
-    this.router.navigate(['/veterinario/pets', petId]);
+    this.router.navigate(['/veterinario/mascotas', petId]);
   }
 
   // Registra el tratamiento en el API. Si falla (stock agotado, mascota inactiva, etc.) avisa con
