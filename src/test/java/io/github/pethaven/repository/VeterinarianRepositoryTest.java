@@ -188,6 +188,48 @@ public class VeterinarianRepositoryTest {
     }
 
     @Test
+    public void veterinarianRepository_save_NullDocument_ThrowsDataIntegrityViolation() {
+        // Arrange
+        // La columna document es obligatoria en la base de datos.
+        Veterinarian veterinarianWithNullDocument = RepositoryTestData.veterinarian();
+        veterinarianWithNullDocument.setDocument(null);
+
+        // Act
+        Throwable thrownException = Assertions.catchThrowable(() -> veterinarianRepository.saveAndFlush(veterinarianWithNullDocument));
+
+        // Assert
+        Assertions.assertThat(thrownException).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    public void veterinarianRepository_save_NullEmail_ThrowsDataIntegrityViolation() {
+        // Arrange
+        // La columna email es obligatoria en la base de datos.
+        Veterinarian veterinarianWithNullEmail = RepositoryTestData.veterinarian();
+        veterinarianWithNullEmail.setEmail(null);
+
+        // Act
+        Throwable thrownException = Assertions.catchThrowable(() -> veterinarianRepository.saveAndFlush(veterinarianWithNullEmail));
+
+        // Assert
+        Assertions.assertThat(thrownException).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    public void veterinarianRepository_save_NullPassword_ThrowsDataIntegrityViolation() {
+        // Arrange
+        // La columna password es obligatoria en la base de datos.
+        Veterinarian veterinarianWithNullPassword = RepositoryTestData.veterinarian();
+        veterinarianWithNullPassword.setPassword(null);
+
+        // Act
+        Throwable thrownException = Assertions.catchThrowable(() -> veterinarianRepository.saveAndFlush(veterinarianWithNullPassword));
+
+        // Assert
+        Assertions.assertThat(thrownException).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
     public void veterinarianRepository_findById_ExistingId_ReturnsVeterinarian() {
         // Arrange
         entityManager.clear();

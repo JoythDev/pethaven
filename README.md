@@ -96,7 +96,7 @@ El avance se organiza según las entregas del enunciado. Cada funcionalidad indi
 |---|---|---|---|---|---|
 | F13 · AC34 | Control de acceso por roles | Autorización según el rol del usuario | 🟡 | ⬜ | Parcial — los tres logins (dueño, veterinario y administrador) devuelven el rol; no hay token JWT ni guards de autorización |
 | E3 · Pruebas cliente | Pruebas del cliente web | Al menos 2 casos de uso automatizados | ➖ | ⬜ | Pendiente — no hay specs de cliente |
-| E3 · Pruebas backend | Pruebas de backend | 25 pruebas con datos propios y limpieza posterior | ✅ | ➖ | Implementado — 665 pruebas (636 unitarias y 29 de integración) sobre repositorios, servicios y controladores, cada una con sus propios datos y limpieza posterior. Ver [Pruebas del backend](#pruebas-del-backend) |
+| E3 · Pruebas backend | Pruebas de backend | 25 pruebas con datos propios y limpieza posterior | ✅ | ➖ | Implementado — 676 pruebas (647 unitarias y 29 de integración) sobre repositorios, servicios y controladores, cada una con sus propios datos y limpieza posterior. Ver [Pruebas del backend](#pruebas-del-backend) |
 
 ### Extras fuera del enunciado
 
