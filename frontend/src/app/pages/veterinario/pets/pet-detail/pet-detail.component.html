@@ -1,5 +1,5 @@
 <div class="mx-auto max-w-3xl p-5 lg:p-8">
-  <a routerLink="/veterinario/pets" class="text-sm font-semibold text-olive transition-colors hover:text-tertiary">
+  <a routerLink="/veterinario/mascotas" class="text-sm font-semibold text-olive transition-colors hover:text-tertiary">
     ← Volver a Mascotas
   </a>
 
@@ -38,7 +38,7 @@
             <dt class="text-text/50">Dueño</dt>
             <dd class="font-semibold">
               <a
-                [routerLink]="['/veterinario/owners', p.ownerId]"
+                [routerLink]="['/veterinario/duenos', p.ownerId]"
                 class="text-olive transition-colors hover:text-tertiary"
               >
                 {{ p.ownerName }}
@@ -57,7 +57,7 @@
             label="Historia clínica"
             icon="pi pi-file"
             [outlined]="true"
-            [routerLink]="['/veterinario/pets', p.id, 'historia']"
+            [routerLink]="['/veterinario/mascotas', p.id, 'historia']"
           />
         </div>
       </div>

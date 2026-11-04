@@ -229,15 +229,15 @@ export class PetsListComponent implements OnInit {
   }
 
   nueva(): void {
-    this.router.navigate(['/veterinario/pets/add']);
+    this.router.navigate(['/veterinario/mascotas/add']);
   }
 
   ver(pet: Pet): void {
-    this.router.navigate(['/veterinario/pets', pet.id]);
+    this.router.navigate(['/veterinario/mascotas', pet.id]);
   }
 
   editar(pet: Pet): void {
-    this.router.navigate(['/veterinario/pets/update', pet.id]);
+    this.router.navigate(['/veterinario/mascotas/update', pet.id]);
   }
 
   // Pide confirmación y, si el usuario acepta, envía la mascota a toggleActive$.

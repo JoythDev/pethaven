@@ -54,13 +54,13 @@ export class DashboardHomeComponent {
       label: 'Mascotas',
       description: 'Registra y gestiona los pacientes de la clínica.',
       icon: '/images/icons/paw-print-icon.svg',
-      link: '/veterinario/pets',
+      link: '/veterinario/mascotas',
     },
     {
       label: 'Dueños',
       description: 'Administra los datos de contacto de las familias.',
       icon: '/images/icons/user-icon.svg',
-      link: '/veterinario/owners',
+      link: '/veterinario/duenos',
     },
   ];
 

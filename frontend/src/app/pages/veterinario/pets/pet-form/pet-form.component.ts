@@ -137,7 +137,7 @@ export class PetsFormComponent implements OnInit {
           editando ? 'Mascota actualizada' : 'Mascota registrada',
           `${pet.name} se ${editando ? 'actualizó' : 'registró'} correctamente.`,
         );
-        this.router.navigate(['/veterinario/pets', pet.id]);
+        this.router.navigate(['/veterinario/mascotas', pet.id]);
       });
 
     // Lee el :id de la URL. Sin id es un alta. Con id, lo valida antes de llamar al API;
@@ -219,7 +219,7 @@ export class PetsFormComponent implements OnInit {
           .subscribe({
             next: (discharge) => {
               this.notifications.success('Alta registrada', `${discharge.petName} quedó estable.`);
-              this.router.navigate(['/veterinario/pets', id]);
+              this.router.navigate(['/veterinario/mascotas', id]);
             },
             error: (error: unknown) => this.notifications.error('No se pudo dar de alta', error),
           });
@@ -260,13 +260,13 @@ export class PetsFormComponent implements OnInit {
   }
 
   cancelar(): void {
-    this.router.navigate(['/veterinario/pets']);
+    this.router.navigate(['/veterinario/mascotas']);
   }
 
   // Mascota inexistente o id inválido: mismo aviso y regreso al listado.
   private handleNotFound(error: unknown): void {
     this.notifications.error('Mascota no encontrada', error);
-    this.router.navigate(['/veterinario/pets']);
+    this.router.navigate(['/veterinario/mascotas']);
   }
 
   // Crea o actualiza la mascota según haya o no un id en la URL. concatMap espera a que

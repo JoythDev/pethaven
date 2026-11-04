@@ -1,7 +1,7 @@
 import { Drug } from '../../../models/drug.model';
 
 // Hasta este número de unidades (incluido) el medicamento se considera con stock bajo.
-export const LOW_STOCK_THRESHOLD = 10;
+export const LOW_STOCK_THRESHOLD = 5;
 
 export type DrugStockStatus = 'OUT' | 'LOW' | 'AVAILABLE';
 

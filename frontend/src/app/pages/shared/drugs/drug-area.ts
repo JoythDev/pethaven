@@ -13,7 +13,7 @@ export const DRUG_AREA_DATA_KEY = 'drugArea';
 
 export const ADMIN_DRUG_AREA: DrugAreaConfig = { basePath: '/administrador/medicamentos', canManage: true };
 
-export const VET_DRUG_AREA: DrugAreaConfig = { basePath: '/veterinario/drugs', canManage: false };
+export const VET_DRUG_AREA: DrugAreaConfig = { basePath: '/veterinario/medicamentos', canManage: false };
 
 // Lee la configuración de la ruta. Sin configuración, se asume solo lectura en el área del veterinario.
 export const readDrugArea = (route: ActivatedRoute): DrugAreaConfig =>

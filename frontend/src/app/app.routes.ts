@@ -30,8 +30,12 @@ export const routes: Routes = [
             (m) => m.VeterinarioPerfilComponent
           ),
       },
+      // Compatibilidad: las rutas anteriores en inglés redirigen a las nuevas conservando el resto de la URL.
+      { path: 'pets', redirectTo: 'mascotas', pathMatch: 'prefix' },
+      { path: 'owners', redirectTo: 'duenos', pathMatch: 'prefix' },
+      { path: 'drugs', redirectTo: 'medicamentos', pathMatch: 'prefix' },
       {
-        path: 'pets',
+        path: 'mascotas',
         children: [
           {
             path: '',
@@ -78,7 +82,7 @@ export const routes: Routes = [
         ],
       },
       {
-        path: 'owners',
+        path: 'duenos',
         children: [
           {
             path: '',
@@ -111,7 +115,7 @@ export const routes: Routes = [
         ],
       },
       {
-        path: 'drugs',
+        path: 'medicamentos',
         // Solo consulta: el veterinario no crea, edita ni elimina medicamentos.
         data: { [DRUG_AREA_DATA_KEY]: VET_DRUG_AREA },
         children: [

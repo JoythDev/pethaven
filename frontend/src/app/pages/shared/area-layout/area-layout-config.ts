@@ -28,24 +28,22 @@ export interface AreaLayoutConfig {
 
 /** Ítems por defecto: panel del veterinario. */
 export const DEFAULT_NAV_ITEMS: AreaNavItem[] = [
-  { label: 'Mascotas', icon: '/images/icons/paw-print-icon.svg', link: '/veterinario/pets' },
-  { label: 'Dueños', icon: '/images/icons/user-icon.svg', link: '/veterinario/owners' },
-  { label: 'Veterinarios', icon: '/images/icons/stethoscope-icon.svg', disabled: true },
-  { label: 'Medicamentos', icon: '/images/icons/pulse-icon.svg', link: '/veterinario/drugs' },
-  { label: 'Tratamientos', icon: '/images/icons/hospital-bed-icon.svg', disabled: true },
+  { label: 'Mascotas', icon: '/images/icons/paw-print-icon.svg', link: '/veterinario/mascotas' },
+  { label: 'Dueños', icon: '/images/icons/user-icon.svg', link: '/veterinario/duenos' },
+  { label: 'Medicamentos', icon: '/images/icons/pulse-icon.svg', link: '/veterinario/medicamentos' },
 ];
 
 export const DEFAULT_HOME_ITEM: MenuItem = { icon: 'pi pi-home', routerLink: '/veterinario' };
 
 export const DEFAULT_PAGE_LABELS: Record<string, string> = {
-  pets: 'Mascotas',
-  owners: 'Dueños',
-  drugs: 'Medicamentos',
+  mascotas: 'Mascotas',
+  duenos: 'Dueños',
+  medicamentos: 'Medicamentos',
 };
 
 export const DEFAULT_SUB_PAGE_LABELS: Record<string, Record<string, string>> = {
-  pets: { add: 'Nueva mascota', update: 'Editar mascota' },
-  owners: { add: 'Nuevo dueño', update: 'Editar dueño' },
+  mascotas: { add: 'Nueva mascota', update: 'Editar mascota' },
+  duenos: { add: 'Nuevo dueño', update: 'Editar dueño' },
 };
 
 export const DEFAULT_USER_MENU_ITEMS: MenuItem[] = [
