@@ -22,15 +22,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.List;
 
 // Pruebas de integración: el servicio, los repositorios y la base H2 son los reales (sin mocks).
-// Cada prueba corre dentro de una transacción que se revierte al terminar, y la base es en
-// memoria para no tocar el archivo pethaven-database de la app.
-@SpringBootTest(properties = "spring.datasource.url=jdbc:h2:mem:treatment-service-it;DB_CLOSE_DELAY=-1")
+// Cada prueba corre dentro de una transacción que se revierte al terminar. El perfil "test" usa
+// una base en memoria (no toca el archivo pethaven-database de la app) y no carga datos de ejemplo.
+@SpringBootTest
+@ActiveProfiles("test")
 @Transactional
 public class TreatmentServiceIntegrationTest {
 

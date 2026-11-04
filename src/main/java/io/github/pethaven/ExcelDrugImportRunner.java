@@ -7,6 +7,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
@@ -17,8 +18,10 @@ import java.io.InputStream;
  * Importa los medicamentos del archivo Excel incluido en el classpath al arrancar la aplicación.
  * Se ejecuta antes de {@link DataLoader} porque el seed de tratamientos necesita el stock importado,
  * y usa su propia transacción, independiente de la de los datos de ejemplo.
+ * No se ejecuta con el perfil {@code test}, para que las pruebas partan de una base vacía.
  */
 @Component
+@Profile("!test")
 @Order(0)
 public class ExcelDrugImportRunner implements CommandLineRunner {
 
