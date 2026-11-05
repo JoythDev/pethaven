@@ -56,7 +56,7 @@
       @if (form.controls.email.errors?.['server']; as serverMessage) {
         <p-message severity="error" variant="simple" size="small">{{ serverMessage }}</p-message>
       } @else if (form.controls.email.invalid && form.controls.email.touched) {
-        <p-message severity="error" variant="simple" size="small">
+        <p-message id="emailError" severity="error" variant="simple" size="small">
           Ingresa un correo válido (máximo 120 caracteres).
         </p-message>
       }
@@ -82,7 +82,7 @@
     </div>
 
     <div class="mt-2 flex items-center gap-4">
-      <p-button type="submit" label="Guardar" [disabled]="form.invalid" [loading]="saving()" />
+      <p-button id="btnGuardar" type="submit" label="Guardar" [disabled]="form.invalid" [loading]="saving()" />
       <p-button
         type="button"
         label="Cancelar"

@@ -144,11 +144,11 @@
           <dl class="mt-7 divide-y divide-white/15">
             <div class="py-4 first:pt-0 last:pb-0">
               <dt class="text-sm text-white/70">Ventas acumuladas</dt>
-              <dd class="mt-1 font-display text-3xl font-bold tabular-nums sm:text-4xl">{{ formatCurrency(data.totalSales) }}</dd>
+              <dd id="totalSales" class="mt-1 font-display text-3xl font-bold tabular-nums sm:text-4xl">{{ formatCurrency(data.totalSales) }}</dd>
             </div>
             <div class="py-4 last:pb-0">
               <dt class="text-sm text-white/70">Utilidad bruta acumulada</dt>
-              <dd class="mt-1 font-display text-3xl font-bold tabular-nums sm:text-4xl">{{ formatCurrency(data.grossProfit) }}</dd>
+              <dd id="grossProfit" class="mt-1 font-display text-3xl font-bold tabular-nums sm:text-4xl">{{ formatCurrency(data.grossProfit) }}</dd>
               <dd class="mt-2 max-w-sm text-xs leading-relaxed text-white/60">Ventas menos costo de compra histórico; no descuenta otros gastos.</dd>
             </div>
           </dl>
@@ -178,8 +178,8 @@
                 <ng-template pTemplate="body" let-medication let-rowIndex="rowIndex">
                   <tr>
                     <td class="font-bold text-olive">{{ rowIndex + 1 }}</td>
-                    <td class="font-semibold text-text">{{ medication.medicationName }}</td>
-                    <td class="text-right tabular-nums text-text/75">{{ formatCount(medication.unitsSold) }}</td>
+                    <td class="top-med-name font-semibold text-text">{{ medication.medicationName }}</td>
+                    <td class="top-med-units text-right tabular-nums text-text/75">{{ formatCount(medication.unitsSold) }}</td>
                   </tr>
                 </ng-template>
               </p-table>
