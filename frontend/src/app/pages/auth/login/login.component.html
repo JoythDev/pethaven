@@ -94,6 +94,7 @@
           <!-- Error general del servidor (401, 403, sin conexión) -->
           @if (errorMessage(); as message) {
             <div
+              id="loginError"
               role="alert"
               class="rounded-xl border border-terracotta/40 bg-terracotta/10 px-4 py-3 text-sm text-terracotta"
             >
@@ -102,6 +103,7 @@
           }
 
           <button
+            id="btnLogin"
             type="submit"
             [disabled]="submitting()"
             class="mt-1 w-full cursor-pointer rounded-full bg-olive px-6 py-3 text-base font-bold text-background shadow-sm transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
