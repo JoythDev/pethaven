@@ -314,6 +314,8 @@ Las pruebas usan el perfil `test`: una base H2 en memoria que arranca vacía, si
 
 En Windows usa `.\mvnw.cmd` en lugar de `./mvnw`. Para correr una sola clase: `./mvnw test -Dtest=PetControllerTest`.
 
+Estos comandos excluyen las pruebas E2E (marcadas con `@Tag("e2e")`), así que no necesitan el frontend ni Chrome. Las E2E se ejecutan aparte con el perfil `e2e`; ver [Pruebas E2E](#pruebas-e2e).
+
 | Capa | Tipo de prueba | Clases |
 |---|---|---|
 | Repositorio | `@DataJpaTest` sobre H2 en memoria; cada prueba hace rollback | `*RepositoryTest` |
@@ -332,15 +334,19 @@ Dos casos de uso automatizados con Selenium WebDriver recorren la SPA en Chrome 
 | `Case1Test` | El veterinario inicia sesión (falla una vez con contraseña errada), registra un dueño (se equivoca una vez con el correo) y su mascota; luego el dueño entra al portal de clientes y ve la mascota en su tarjeta |
 | `Case2Test` | El veterinario busca una mascota, abre su ficha y registra un tratamiento con un medicamento; vuelve a buscarla para verificar el historial, y el administrador comprueba en el dashboard las unidades suministradas, las ventas y la ganancia |
 
-**Requisitos:** Chrome instalado (WebDriverManager descarga el driver) y el frontend corriendo con `npm start` en `http://localhost:4200`. El navegador se abre visible; el modo *headless* está comentado en `setUp()`.
+**Requisitos:** Chrome instalado (WebDriverManager descarga el driver), el frontend corriendo con `npm start` en `http://localhost:4200` y el puerto 8080 libre.
 
 ```bash
 # Terminal 1: frontend
 cd frontend && npm start
 
-# Terminal 2: un caso E2E (el backend lo levanta la propia prueba)
-./mvnw test -Dtest=Case1Test
+# Terminal 2: pruebas E2E (el backend lo levanta la propia prueba)
+./mvnw test -Pe2e                        # ambos casos, con el navegador visible
+./mvnw test -Pe2e -Dtest=Case1Test       # un solo caso
+./mvnw test -Pe2e -De2e.headless=true    # sin ventana (CI), a 1920×1080
 ```
+
+El perfil `e2e` ejecuta solo las clases con `@Tag("e2e")` y omite las pruebas de integración y JaCoCo: las E2E no cuentan para el mínimo de cobertura. Sin `-Pe2e`, `-Dtest=Case1Test` termina en BUILD SUCCESS sin ejecutar ninguna prueba, porque las E2E están excluidas por defecto.
 
 En Windows usa `.\mvnw.cmd`. Para localizar los elementos, las plantillas Angular tienen `id` y clases estables (`btnLogin`, `btnGuardar`, `pet-name`, `owner-document`…).
 
