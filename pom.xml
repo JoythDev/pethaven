@@ -31,6 +31,9 @@
         <jacoco.version>0.8.16</jacoco.version>
         <!-- Minimum line coverage required for the service and controller packages. -->
         <jacoco.line.coverage.minimum>0.80</jacoco.line.coverage.minimum>
+        <!-- JUnit tags for the test run: E2E tests (@Tag("e2e")) are excluded unless -Pe2e is active. -->
+        <test.groups></test.groups>
+        <test.excludedGroups>e2e</test.excludedGroups>
     </properties>
     <dependencies>
         <dependency>
@@ -155,11 +158,13 @@
                 </executions>
             </plugin>
 
-            <!-- Unit tests (mvn test): everything except Spring Boot integration tests. -->
+            <!-- Unit tests (mvn test): everything except Spring Boot integration tests and E2E tests. -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
+                    <groups>${test.groups}</groups>
+                    <excludedGroups>${test.excludedGroups}</excludedGroups>
                     <excludes>
                         <exclude>**/*IntegrationTest.java</exclude>
                         <exclude>**/PethavenBackendApplicationTests.java</exclude>
@@ -258,5 +263,19 @@
             </plugin>
         </plugins>
     </build>
+
+    <profiles>
+        <!-- E2E tests (mvn test -Pe2e): only @Tag("e2e") Selenium tests. They need the frontend
+             on http://localhost:4200 and port 8080 free; integration tests and coverage are skipped. -->
+        <profile>
+            <id>e2e</id>
+            <properties>
+                <test.groups>e2e</test.groups>
+                <test.excludedGroups></test.excludedGroups>
+                <skipITs>true</skipITs>
+                <jacoco.skip>true</jacoco.skip>
+            </properties>
+        </profile>
+    </profiles>
 
 </project>

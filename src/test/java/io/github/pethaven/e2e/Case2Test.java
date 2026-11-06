@@ -7,6 +7,7 @@ import java.time.Duration;
 import java.util.Map;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Test;
 import org.openqa.selenium.By;
 import org.openqa.selenium.Keys;
@@ -27,6 +28,7 @@ import org.springframework.test.context.ActiveProfiles;
  *
  * Requisito: el frontend debe estar corriendo con {@code ng serve} en el puerto 4200.
  */
+@Tag("e2e")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @ActiveProfiles("test")
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
