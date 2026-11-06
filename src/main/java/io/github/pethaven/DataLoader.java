@@ -1,19 +1,9 @@
 package io.github.pethaven;
 
-import io.github.pethaven.entity.Administrator;
-import io.github.pethaven.entity.Drug;
-import io.github.pethaven.entity.Evolution;
-import io.github.pethaven.entity.Owner;
-import io.github.pethaven.entity.Pet;
-import io.github.pethaven.entity.Species;
-import io.github.pethaven.entity.Veterinarian;
+import io.github.pethaven.entity.*;
 import io.github.pethaven.dto.request.TreatmentDrugRequest;
 import io.github.pethaven.dto.request.TreatmentRequest;
-import io.github.pethaven.repository.AdministratorRepository;
-import io.github.pethaven.repository.DrugRepository;
-import io.github.pethaven.repository.OwnerRepository;
-import io.github.pethaven.repository.PetRepository;
-import io.github.pethaven.repository.VeterinarianRepository;
+import io.github.pethaven.repository.*;
 import io.github.pethaven.service.TreatmentService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -21,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
@@ -54,6 +45,15 @@ public class DataLoader implements CommandLineRunner {
     @Autowired
     private TreatmentService treatmentService;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private RoleRepository roleRepository;
+
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
     private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
 
     private final Random random = new Random(42);
@@ -70,6 +70,13 @@ public class DataLoader implements CommandLineRunner {
 
     @Override
     public void run(String... args) throws Exception {
+
+        // ==================================
+        // ==== Cargar roles de PetHaven ====
+        // ==================================
+        roleRepository.save(new Role("ADMIN"));
+        roleRepository.save(new Role("VETERINARIAN"));
+        roleRepository.save(new Role("OWNER"));
 
         // ==================================
         // ==== Cargar dueños de ejemplo ====
