@@ -55,7 +55,10 @@ public class Case1Test {
         // El aviso de contraseñas filtradas de Chrome roba el foco del teclado tras el login.
         options.addArguments("--disable-features=PasswordLeakDetection,PasswordManagerOnboarding");
         options.setExperimentalOption("prefs", java.util.Map.of("credentials_enable_service", false, "profile.password_manager_enabled", false, "profile.password_manager_leak_detection", false));
-        // options.addArguments("--headless");
+        // Sin pantalla (CI): -De2e.headless=true. Se fija el tamaño para no caer en el diseño móvil.
+        if (Boolean.getBoolean("e2e.headless")) {
+            options.addArguments("--headless=new", "--window-size=1920,1080");
+        }
         this.driver = new ChromeDriver(options);
         this.wait = new WebDriverWait(driver, Duration.ofSeconds(5));
     }

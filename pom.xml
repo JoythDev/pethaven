@@ -266,7 +266,8 @@
 
     <profiles>
         <!-- E2E tests (mvn test -Pe2e): only @Tag("e2e") Selenium tests. They need the frontend
-             on http://localhost:4200 and port 8080 free; integration tests and coverage are skipped. -->
+             on http://localhost:4200 and port 8080 free; integration tests and coverage are skipped.
+             Add -De2e.headless=true to run Chrome without a window (CI). -->
         <profile>
             <id>e2e</id>
             <properties>
