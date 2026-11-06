@@ -95,7 +95,7 @@ El avance se organiza según las entregas del enunciado. Cada funcionalidad indi
 | Feature · AC | Funcionalidad | Detalle | Backend | Frontend | Estado |
 |---|---|---|---|---|---|
 | F13 · AC34 | Control de acceso por roles | Autorización según el rol del usuario | 🟡 | ⬜ | Parcial — los tres logins (dueño, veterinario y administrador) devuelven el rol; no hay token JWT ni guards de autorización |
-| E3 · Pruebas cliente | Pruebas del cliente web | Al menos 2 casos de uso automatizados | ➖ | ⬜ | Pendiente — no hay specs de cliente |
+| E3 · Pruebas cliente | Pruebas del cliente web | Al menos 2 casos de uso automatizados | ➖ | ✅ | Implementado — 2 casos E2E con Selenium WebDriver que recorren la SPA en Chrome contra el API real. Ver [Pruebas E2E](#pruebas-e2e) |
 | E3 · Pruebas backend | Pruebas de backend | 25 pruebas con datos propios y limpieza posterior | ✅ | ➖ | Implementado — 676 pruebas (647 unitarias y 29 de integración) sobre repositorios, servicios y controladores, cada una con sus propios datos y limpieza posterior. Ver [Pruebas del backend](#pruebas-del-backend) |
 
 ### Extras fuera del enunciado
@@ -177,7 +177,7 @@ Una mirada al estado actual de la aplicación, con datos de prueba.
 | Autenticación | Provisional — login de dueño, veterinario y administrador; devuelve el rol, sin token ni autorización por rol |
 | CORS | Origen permitido: `http://localhost:4200` |
 | Utilidades | Lombok |
-| Pruebas | JUnit 5, Mockito, AssertJ y MockMvc; Surefire (unitarias) y Failsafe (integración); JaCoCo con un mínimo de 80% de líneas en `service` y `controller` |
+| Pruebas | JUnit 5, Mockito, AssertJ y MockMvc; Surefire (unitarias) y Failsafe (integración); JaCoCo con un mínimo de 80% de líneas en `service` y `controller`; Selenium 4 y WebDriverManager para las pruebas E2E |
 | Build | Maven Wrapper |
 
 ### Frontend (`frontend/`)
@@ -322,6 +322,27 @@ En Windows usa `.\mvnw.cmd` en lugar de `./mvnw`. Para correr una sola clase: `.
 | Controlador | `@WebMvcTest` con MockMvc y servicios simulados: rutas, códigos HTTP, validación y JSON de error | `*ControllerTest`, `GlobalExceptionHandlerTest` |
 
 `./mvnw verify` falla si la cobertura de líneas de los paquetes `service` o `controller` baja de 80%. El reporte HTML queda en `target/site/jacoco/index.html`. Para ver el reporte sin que el mínimo detenga el build: `./mvnw verify -Djacoco.haltOnFailure=false`.
+
+### Pruebas E2E
+
+Dos casos de uso automatizados con Selenium WebDriver recorren la SPA en Chrome contra el API real (`src/test/java/io/github/pethaven/e2e/`). Cada caso arranca el backend con el perfil `test` en el puerto 8080 y reinicia el contexto antes de cada prueba (`@DirtiesContext`), por lo que parte siempre de los mismos datos mínimos que carga `DatabaseInit` (un veterinario, un administrador, un dueño con su mascota y un medicamento).
+
+| Caso | Flujo |
+|---|---|
+| `Case1Test` | El veterinario inicia sesión (falla una vez con contraseña errada), registra un dueño (se equivoca una vez con el correo) y su mascota; luego el dueño entra al portal de clientes y ve la mascota en su tarjeta |
+| `Case2Test` | El veterinario busca una mascota, abre su ficha y registra un tratamiento con un medicamento; vuelve a buscarla para verificar el historial, y el administrador comprueba en el dashboard las unidades suministradas, las ventas y la ganancia |
+
+**Requisitos:** Chrome instalado (WebDriverManager descarga el driver) y el frontend corriendo con `npm start` en `http://localhost:4200`. El navegador se abre visible; el modo *headless* está comentado en `setUp()`.
+
+```bash
+# Terminal 1: frontend
+cd frontend && npm start
+
+# Terminal 2: un caso E2E (el backend lo levanta la propia prueba)
+./mvnw test -Dtest=Case1Test
+```
+
+En Windows usa `.\mvnw.cmd`. Para localizar los elementos, las plantillas Angular tienen `id` y clases estables (`btnLogin`, `btnGuardar`, `pet-name`, `owner-document`…).
 
 ---
 
