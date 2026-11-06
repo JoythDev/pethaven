@@ -16,6 +16,9 @@ public class Administrator {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @OneToOne(cascade = CascadeType.ALL)
+    private UserEntity user;
+
     @Column(name = "name", length = 100, nullable = false)
     private String name;
 

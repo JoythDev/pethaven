@@ -22,6 +22,9 @@ public class Owner {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @OneToOne(cascade = CascadeType.ALL)
+    private UserEntity user;
+
     @Column(name = "document", length = 20, unique = true, nullable = false)
     private String document;
 
