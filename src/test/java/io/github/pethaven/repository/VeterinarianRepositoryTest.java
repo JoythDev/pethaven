@@ -80,7 +80,6 @@ public class VeterinarianRepositoryTest {
         String document = veterinarian.getDocument();
         String name = veterinarian.getName();
         String email = veterinarian.getEmail();
-        String password = veterinarian.getPassword();
         String specialty = veterinarian.getSpecialty();
 
         // Act
@@ -94,7 +93,6 @@ public class VeterinarianRepositoryTest {
         Assertions.assertThat(persistedVeterinarian.getDocument()).isEqualTo(document);
         Assertions.assertThat(persistedVeterinarian.getName()).isEqualTo(name);
         Assertions.assertThat(persistedVeterinarian.getEmail()).isEqualTo(email);
-        Assertions.assertThat(persistedVeterinarian.getPassword()).isEqualTo(password);
         Assertions.assertThat(persistedVeterinarian.getSpecialty()).isEqualTo(specialty);
         Assertions.assertThat(persistedVeterinarian.getPhotoUrl()).isNull();
         Assertions.assertThat(persistedVeterinarian.getAttentions()).isZero();
@@ -210,20 +208,6 @@ public class VeterinarianRepositoryTest {
 
         // Act
         Throwable thrownException = Assertions.catchThrowable(() -> veterinarianRepository.saveAndFlush(veterinarianWithNullEmail));
-
-        // Assert
-        Assertions.assertThat(thrownException).isInstanceOf(DataIntegrityViolationException.class);
-    }
-
-    @Test
-    public void veterinarianRepository_save_NullPassword_ThrowsDataIntegrityViolation() {
-        // Arrange
-        // La columna password es obligatoria en la base de datos.
-        Veterinarian veterinarianWithNullPassword = RepositoryTestData.veterinarian();
-        veterinarianWithNullPassword.setPassword(null);
-
-        // Act
-        Throwable thrownException = Assertions.catchThrowable(() -> veterinarianRepository.saveAndFlush(veterinarianWithNullPassword));
 
         // Assert
         Assertions.assertThat(thrownException).isInstanceOf(DataIntegrityViolationException.class);

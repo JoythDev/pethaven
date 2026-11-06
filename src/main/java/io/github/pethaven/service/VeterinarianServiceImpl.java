@@ -3,6 +3,7 @@ package io.github.pethaven.service;
 import io.github.pethaven.dto.request.VeterinarianRequest;
 import io.github.pethaven.dto.request.VeterinarianUpdateRequest;
 import io.github.pethaven.dto.response.VeterinarianResponse;
+import io.github.pethaven.entity.Role;
 import io.github.pethaven.entity.Veterinarian;
 import io.github.pethaven.exception.AccountDisabledException;
 import io.github.pethaven.exception.IllegalOperationException;
@@ -21,14 +22,17 @@ public class VeterinarianServiceImpl implements VeterinarianService {
 
     private final VeterinarianRepository veterinarianRepository;
     private final VeterinarianMapper veterinarianMapper;
+    private final UserAccountService userAccountService;
 
     @Autowired
     public VeterinarianServiceImpl(
             VeterinarianRepository veterinarianRepository,
-            VeterinarianMapper veterinarianMapper
+            VeterinarianMapper veterinarianMapper,
+            UserAccountService userAccountService
     ) {
         this.veterinarianRepository = veterinarianRepository;
         this.veterinarianMapper = veterinarianMapper;
+        this.userAccountService = userAccountService;
     }
 
     @Override
@@ -72,6 +76,8 @@ public class VeterinarianServiceImpl implements VeterinarianService {
     public VeterinarianResponse createVeterinarian(VeterinarianRequest request) {
         ensureUnique(request.document(), request.email(), null);
         Veterinarian veterinarian = veterinarianMapper.toEntity(request);
+        // El email del perfil también es el username de la cuenta de login.
+        veterinarian.setUser(userAccountService.createAccount(request.email(), request.password(), Role.VETERINARIAN));
         Veterinarian saved = veterinarianRepository.save(veterinarian);
         return veterinarianMapper.toResponse(saved);
     }
@@ -85,6 +91,7 @@ public class VeterinarianServiceImpl implements VeterinarianService {
         Veterinarian existing = getVeterinarianEntity(id);
         ensureUnique(updateRequest.document(), updateRequest.email(), id);
         veterinarianMapper.applyUpdate(updateRequest, existing);
+        userAccountService.updateAccount(existing.getUser(), updateRequest.email(), updateRequest.password());
         Veterinarian updated = veterinarianRepository.save(existing);
         return veterinarianMapper.toResponse(updated);
     }
@@ -123,7 +130,7 @@ public class VeterinarianServiceImpl implements VeterinarianService {
         if (!veterinarian.isActive()) {
             throw new AccountDisabledException();
         }
-        if (veterinarian.getPassword().equals(password)) {
+        if (userAccountService.passwordMatches(veterinarian.getUser(), password)) {
             return veterinarian;
         }
         throw new InvalidCredentialsException();

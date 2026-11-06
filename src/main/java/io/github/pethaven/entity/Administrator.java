@@ -25,7 +25,4 @@ public class Administrator {
     @Column(name = "email", length = 120, unique = true, nullable = false)
     private String email;
 
-    @Column(name = "password", length = 255, nullable = false)
-    private String password;
-
 }

@@ -4,13 +4,17 @@ import io.github.pethaven.dto.request.VeterinarianRequest;
 import io.github.pethaven.dto.request.VeterinarianUpdateRequest;
 import io.github.pethaven.dto.response.VeterinarianResponse;
 import io.github.pethaven.entity.Evolution;
+import io.github.pethaven.entity.Role;
 import io.github.pethaven.entity.Treatment;
+import io.github.pethaven.entity.UserEntity;
 import io.github.pethaven.entity.Veterinarian;
 import io.github.pethaven.exception.AccountDisabledException;
 import io.github.pethaven.exception.IllegalOperationException;
 import io.github.pethaven.exception.InvalidCredentialsException;
 import io.github.pethaven.exception.ResourceNotFoundException;
 import io.github.pethaven.mapper.VeterinarianMapper;
+import io.github.pethaven.repository.RoleRepository;
+import io.github.pethaven.repository.UserRepository;
 import io.github.pethaven.repository.VeterinarianRepository;
 import io.github.pethaven.support.RepositoryTestData;
 import org.assertj.core.api.Assertions;
@@ -22,23 +26,35 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-// Pruebas del servicio con mocks: el VeterinarianMapper es real y el repositorio es simulado, sin Spring ni base de datos.
+// Pruebas del servicio con mocks: el VeterinarianMapper y el UserAccountService son reales (con BCrypt)
+// y los repositorios son simulados, sin Spring ni base de datos.
 @ExtendWith(MockitoExtension.class)
 public class VeterinarianServiceMockTest {
 
+    // Coste bajo de BCrypt para que los tests sean rápidos; el algoritmo es el mismo.
+    private static final PasswordEncoder PASSWORD_ENCODER = new BCryptPasswordEncoder(4);
+
     @Mock
     private VeterinarianRepository veterinarianRepository;
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private RoleRepository roleRepository;
 
     private VeterinarianServiceImpl veterinarianService;
 
     @BeforeEach
     public void setUp() {
-        veterinarianService = new VeterinarianServiceImpl(veterinarianRepository, new VeterinarianMapper());
+        UserAccountService userAccountService = new UserAccountServiceImpl(userRepository, roleRepository, PASSWORD_ENCODER);
+        veterinarianService = new VeterinarianServiceImpl(veterinarianRepository, new VeterinarianMapper(), userAccountService);
     }
 
     // ---------- Helpers ----------
@@ -52,7 +68,16 @@ public class VeterinarianServiceMockTest {
         veterinarian.setEmail(email);
         veterinarian.setSpecialty(specialty);
         veterinarian.setPhotoUrl(photoUrl);
+        veterinarian.setUser(account(email, "secret-password"));
         return veterinarian;
+    }
+
+    private UserEntity account(String username, String rawPassword) {
+        UserEntity account = new UserEntity();
+        account.setUsername(username);
+        account.setPassword(PASSWORD_ENCODER.encode(rawPassword));
+        account.setRoles(new ArrayList<>(List.of(new Role(Role.VETERINARIAN))));
+        return account;
     }
 
     private VeterinarianRequest createRequest() {
@@ -243,6 +268,7 @@ public class VeterinarianServiceMockTest {
         VeterinarianRequest request = createRequest();
         Mockito.when(veterinarianRepository.existsByDocument("VET-900")).thenReturn(false);
         Mockito.when(veterinarianRepository.existsByEmail("laura.gomez@pethaven.test")).thenReturn(false);
+        Mockito.when(roleRepository.findByName(Role.VETERINARIAN)).thenReturn(Optional.of(new Role(Role.VETERINARIAN)));
         // Simula la asignación del id que hace la base de datos al guardar.
         Mockito.when(veterinarianRepository.save(ArgumentMatchers.any(Veterinarian.class)))
                 .thenAnswer(invocation -> {
@@ -266,8 +292,13 @@ public class VeterinarianServiceMockTest {
         Assertions.assertThat(saved.getDocument()).isEqualTo("VET-900");
         Assertions.assertThat(saved.getName()).isEqualTo("Dra. Laura Gómez");
         Assertions.assertThat(saved.getEmail()).isEqualTo("laura.gomez@pethaven.test");
-        Assertions.assertThat(saved.getPassword()).isEqualTo("plain-password");
         Assertions.assertThat(saved.getSpecialty()).isEqualTo("Cuidados Críticos");
+        // La cuenta de login usa el email como username y guarda la contraseña hasheada.
+        UserEntity account = saved.getUser();
+        Assertions.assertThat(account.getUsername()).isEqualTo("laura.gomez@pethaven.test");
+        Assertions.assertThat(account.getPassword()).isNotEqualTo("plain-password");
+        Assertions.assertThat(PASSWORD_ENCODER.matches("plain-password", account.getPassword())).isTrue();
+        Assertions.assertThat(account.getRoles()).extracting(Role::getName).containsExactly(Role.VETERINARIAN);
         Assertions.assertThat(saved.getPhotoUrl()).isEqualTo("https://pethaven.test/photos/laura.jpg");
         // El mapper inicializa los campos gestionados por el sistema al crear la entidad.
         Assertions.assertThat(saved.getAttentions()).isZero();
@@ -311,6 +342,22 @@ public class VeterinarianServiceMockTest {
         Mockito.verify(veterinarianRepository, Mockito.never()).save(ArgumentMatchers.any(Veterinarian.class));
     }
 
+    @Test
+    public void veterinarianService_createVeterinarian_UsernameTakenByAnotherAccount_ThrowsIllegalOperationAndDoesNotSave() {
+        // Arrange
+        // El correo está libre entre los veterinarios, pero otra cuenta (p. ej. un dueño) ya lo usa como username.
+        VeterinarianRequest request = createRequest();
+        Mockito.when(veterinarianRepository.existsByDocument("VET-900")).thenReturn(false);
+        Mockito.when(veterinarianRepository.existsByEmail("laura.gomez@pethaven.test")).thenReturn(false);
+        Mockito.when(userRepository.existsByUsername("laura.gomez@pethaven.test")).thenReturn(true);
+
+        // Act + Assert
+        Assertions.assertThatThrownBy(() -> veterinarianService.createVeterinarian(request))
+                .isInstanceOf(IllegalOperationException.class)
+                .hasMessage("Ya existe una cuenta con el usuario 'laura.gomez@pethaven.test'.");
+        Mockito.verify(veterinarianRepository, Mockito.never()).save(ArgumentMatchers.any(Veterinarian.class));
+    }
+
     // ---------- updateVeterinarian ----------
 
     @Test
@@ -319,7 +366,7 @@ public class VeterinarianServiceMockTest {
         Veterinarian existing = veterinarian(
                 1L, "VET-100", "Dra. Laura Gómez", "laura@pethaven.test", "Cuidados Críticos",
                 "https://pethaven.test/photos/laura.jpg");
-        existing.setPassword("old-password");
+        String previousHash = existing.getUser().getPassword();
         existing.setAttentions(7);
         existing.setActive(false);
         Treatment treatment = RepositoryTestData.treatment(
@@ -354,8 +401,10 @@ public class VeterinarianServiceMockTest {
         Assertions.assertThat(saved.getEmail()).isEqualTo("laura.ruiz@pethaven.test");
         Assertions.assertThat(saved.getSpecialty()).isEqualTo("Cirugía");
         Assertions.assertThat(saved.getPhotoUrl()).isEqualTo("https://pethaven.test/photos/laura-ruiz.jpg");
+        // El username de la cuenta sigue al email del perfil.
+        Assertions.assertThat(saved.getUser().getUsername()).isEqualTo("laura.ruiz@pethaven.test");
         // Sin contraseña en la petición se conserva la actual.
-        Assertions.assertThat(saved.getPassword()).isEqualTo("old-password");
+        Assertions.assertThat(saved.getUser().getPassword()).isEqualTo(previousHash);
         // El contador de atenciones y el estado laboral no forman parte del request: se conservan.
         Assertions.assertThat(saved.getAttentions()).isEqualTo(7);
         Assertions.assertThat(saved.isActive()).isFalse();
@@ -375,7 +424,6 @@ public class VeterinarianServiceMockTest {
         Veterinarian existing = veterinarian(
                 1L, "VET-100", "Dra. Laura Gómez", "laura@pethaven.test", "Cuidados Críticos",
                 "https://pethaven.test/photos/laura.jpg");
-        existing.setPassword("old-password");
         VeterinarianUpdateRequest request = new VeterinarianUpdateRequest(
                 "VET-100", "Dra. Laura Gómez", "laura@pethaven.test", "new-password", "Cuidados Críticos",
                 "https://pethaven.test/photos/laura.jpg");
@@ -391,7 +439,11 @@ public class VeterinarianServiceMockTest {
         // Assert
         ArgumentCaptor<Veterinarian> captor = ArgumentCaptor.forClass(Veterinarian.class);
         Mockito.verify(veterinarianRepository).save(captor.capture());
-        Assertions.assertThat(captor.getValue().getPassword()).isEqualTo("new-password");
+        UserEntity account = captor.getValue().getUser();
+        Assertions.assertThat(PASSWORD_ENCODER.matches("new-password", account.getPassword())).isTrue();
+        Assertions.assertThat(PASSWORD_ENCODER.matches("secret-password", account.getPassword())).isFalse();
+        // El email no cambió: no se consulta la disponibilidad del username.
+        Mockito.verify(userRepository, Mockito.never()).existsByUsername(ArgumentMatchers.anyString());
     }
 
     @Test
@@ -511,8 +563,8 @@ public class VeterinarianServiceMockTest {
     }
 
     // ---------- authenticate ----------
-    // Comportamiento provisional: la contraseña se compara en texto plano. Estos tests fijan
-    // ese comportamiento hasta que se implemente Spring Security + BCrypt + JWT.
+    // Comportamiento provisional: la contraseña se valida con BCrypt contra la cuenta del veterinario.
+    // Estos tests fijan ese comportamiento hasta que se implemente el AuthenticationProvider + JWT.
 
     @Test
     public void veterinarianService_authenticate_CorrectPassword_ReturnsVeterinarian() {
@@ -520,7 +572,6 @@ public class VeterinarianServiceMockTest {
         Veterinarian veterinarian = veterinarian(
                 1L, "VET-100", "Dra. Laura Gómez", "laura@pethaven.test", "Cuidados Críticos",
                 "https://pethaven.test/photos/laura.jpg");
-        veterinarian.setPassword("secret-password");
         veterinarian.setActive(true);
         Mockito.when(veterinarianRepository.findByEmail("laura@pethaven.test")).thenReturn(Optional.of(veterinarian));
 
@@ -537,7 +588,6 @@ public class VeterinarianServiceMockTest {
         Veterinarian veterinarian = veterinarian(
                 1L, "VET-100", "Dra. Laura Gómez", "laura@pethaven.test", "Cuidados Críticos",
                 "https://pethaven.test/photos/laura.jpg");
-        veterinarian.setPassword("secret-password");
         veterinarian.setActive(true);
         Mockito.when(veterinarianRepository.findByEmail("laura@pethaven.test")).thenReturn(Optional.of(veterinarian));
 
@@ -564,7 +614,6 @@ public class VeterinarianServiceMockTest {
         Veterinarian veterinarian = veterinarian(
                 1L, "VET-100", "Dra. Laura Gómez", "laura@pethaven.test", "Cuidados Críticos",
                 "https://pethaven.test/photos/laura.jpg");
-        veterinarian.setPassword("secret-password");
         veterinarian.setActive(false);
         Mockito.when(veterinarianRepository.findByEmail("laura@pethaven.test")).thenReturn(Optional.of(veterinarian));
 
@@ -580,7 +629,6 @@ public class VeterinarianServiceMockTest {
         Veterinarian veterinarian = veterinarian(
                 1L, "VET-100", "Dra. Laura Gómez", "laura@pethaven.test", "Cuidados Críticos",
                 "https://pethaven.test/photos/laura.jpg");
-        veterinarian.setPassword("secret-password");
         veterinarian.setActive(false);
         Mockito.when(veterinarianRepository.findByEmail("laura@pethaven.test")).thenReturn(Optional.of(veterinarian));
 

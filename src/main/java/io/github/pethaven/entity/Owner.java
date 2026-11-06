@@ -34,9 +34,6 @@ public class Owner {
     @Column(name = "email", length = 120, unique = true, nullable = false)
     private String email;
 
-    @Column(name = "password", length = 255, nullable = false)
-    private String password;
-
     @Column(name = "phone", length = 20, nullable = false)
     private String phone;
 

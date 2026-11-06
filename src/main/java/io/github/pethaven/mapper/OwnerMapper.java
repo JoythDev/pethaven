@@ -28,18 +28,15 @@ public class OwnerMapper {
             .document(request.document())
             .name(request.name())
             .email(request.email())
-            .password(request.password())
             .phone(request.phone())
             .build();
     }
 
+    /** Copia los campos de perfil; las credenciales se gestionan en UserAccountService. */
     public void applyUpdate(OwnerUpdateRequest request, Owner owner) {
         owner.setDocument(request.document());
         owner.setName(request.name());
         owner.setEmail(request.email());
         owner.setPhone(request.phone());
-        if (request.password() != null) {
-            owner.setPassword(request.password());
-        }
     }
 }

@@ -10,17 +10,22 @@ import org.springframework.stereotype.Service;
 public class AdministratorServiceImpl implements AdministratorService {
 
     private final AdministratorRepository administratorRepository;
+    private final UserAccountService userAccountService;
 
     @Autowired
-    public AdministratorServiceImpl(AdministratorRepository administratorRepository) {
+    public AdministratorServiceImpl(
+            AdministratorRepository administratorRepository,
+            UserAccountService userAccountService
+    ) {
         this.administratorRepository = administratorRepository;
+        this.userAccountService = userAccountService;
     }
 
     @Override
     public Administrator authenticate(String email, String password) {
         Administrator administrator = administratorRepository.findByEmail(email)
                 .orElseThrow(() -> new InvalidCredentialsException());
-        if (administrator.getPassword().equals(password)) {
+        if (userAccountService.passwordMatches(administrator.getUser(), password)) {
             return administrator;
         }
         throw new InvalidCredentialsException();

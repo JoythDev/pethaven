@@ -33,9 +33,6 @@ public class Veterinarian {
     @Column(name = "email", length = 120, unique = true, nullable = false)
     private String email;
 
-    @Column(name = "password", length = 255, nullable = false)
-    private String password;
-
     @Column(name = "specialty", length = 80, nullable = false)
     private String specialty;
 

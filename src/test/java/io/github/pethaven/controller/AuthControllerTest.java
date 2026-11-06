@@ -75,7 +75,6 @@ public class AuthControllerTest {
                 .document("111222333")
                 .name("Carlos Perez")
                 .email("carlos@pethaven.test")
-                .password("password123")
                 .phone("3001234567")
                 .build();
     }
@@ -86,7 +85,6 @@ public class AuthControllerTest {
                 .document("444555666")
                 .name("Laura Gomez")
                 .email("laura@pethaven.test")
-                .password("vet-pass-2026")
                 .specialty("Medicina general")
                 .build();
     }
@@ -96,7 +94,6 @@ public class AuthControllerTest {
                 .id(3L)
                 .name("Admin Principal")
                 .email("admin@pethaven.test")
-                .password("admin-pass-2026")
                 .build();
     }
 

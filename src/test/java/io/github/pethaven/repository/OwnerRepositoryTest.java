@@ -60,7 +60,6 @@ public class OwnerRepositoryTest {
         String document = owner.getDocument();
         String name = owner.getName();
         String email = owner.getEmail();
-        String password = owner.getPassword();
         String phone = owner.getPhone();
 
         // Act
@@ -74,7 +73,6 @@ public class OwnerRepositoryTest {
         Assertions.assertThat(persistedOwner.getDocument()).isEqualTo(document);
         Assertions.assertThat(persistedOwner.getName()).isEqualTo(name);
         Assertions.assertThat(persistedOwner.getEmail()).isEqualTo(email);
-        Assertions.assertThat(persistedOwner.getPassword()).isEqualTo(password);
         Assertions.assertThat(persistedOwner.getPhone()).isEqualTo(phone);
     }
 
@@ -167,20 +165,6 @@ public class OwnerRepositoryTest {
 
         // Act
         Throwable thrownException = Assertions.catchThrowable(() -> ownerRepository.saveAndFlush(ownerWithNullEmail));
-
-        // Assert
-        Assertions.assertThat(thrownException).isInstanceOf(DataIntegrityViolationException.class);
-    }
-
-    @Test
-    public void ownerRepository_save_NullPassword_ThrowsDataIntegrityViolation() {
-        // Arrange
-        // La columna password es obligatoria en la base de datos.
-        Owner ownerWithNullPassword = RepositoryTestData.owner();
-        ownerWithNullPassword.setPassword(null);
-
-        // Act
-        Throwable thrownException = Assertions.catchThrowable(() -> ownerRepository.saveAndFlush(ownerWithNullPassword));
 
         // Assert
         Assertions.assertThat(thrownException).isInstanceOf(DataIntegrityViolationException.class);
