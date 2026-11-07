@@ -6,7 +6,7 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Size;
 
 /**
- * Datos para iniciar sesión (dueño o veterinario).
+ * Datos para iniciar sesión (dueño, veterinario o administrador).
  *
  * @param email    correo electrónico (obligatorio, válido, máx. 120 caracteres)
  * @param password contraseña (obligatoria)
