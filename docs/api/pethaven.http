@@ -535,8 +535,12 @@ Accept: application/json
 ### REST · /api/auth
 ### ═══════════════════════════════════════════
 
-### Login de dueño → 200 AuthResponse (role OWNER)
-POST {{baseUrl}}/api/auth/owners/login
+# La petición de login lleva nombre (@name) para reutilizar su token en las siguientes
+# con {{login.response.body.token}} (sintaxis de REST Client / cliente HTTP de JetBrains).
+
+### Login de dueño → 200 AuthResponse (token, expiresIn 7200, role OWNER)
+# @name login
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 Accept: application/json
 
@@ -545,8 +549,22 @@ Accept: application/json
   "password": "password123"
 }
 
-### Login de dueño con password mala → 401
-POST {{baseUrl}}/api/auth/owners/login
+### Perfil del usuario autenticado con el token del login anterior → 200 AuthProfileResponse
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{login.response.body.token}}
+Accept: application/json
+
+### Perfil sin token → 401
+GET {{baseUrl}}/api/auth/me
+Accept: application/json
+
+### Perfil con un token inválido → 401
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer token-invalido
+Accept: application/json
+
+### Login con password mala → 401
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 Accept: application/json
 
@@ -555,8 +573,8 @@ Accept: application/json
   "password": "mala"
 }
 
-### Login de dueño con email desconocido → 401 (mismo mensaje, sin enumerar)
-POST {{baseUrl}}/api/auth/owners/login
+### Login con email desconocido → 401 (mismo mensaje, sin enumerar)
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 Accept: application/json
 
@@ -565,8 +583,18 @@ Accept: application/json
   "password": "password123"
 }
 
+### Login con email mal formado → 400
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "no-es-un-correo",
+  "password": "password123"
+}
+
 ### Login de veterinario → 200 AuthResponse (role VETERINARIAN)
-POST {{baseUrl}}/api/auth/veterinarians/login
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 Accept: application/json
 
@@ -575,18 +603,8 @@ Accept: application/json
   "password": "vet12345"
 }
 
-### Login de veterinario con password mala → 401
-POST {{baseUrl}}/api/auth/veterinarians/login
-Content-Type: application/json
-Accept: application/json
-
-{
-  "email": "valentina.soler@pethaven.com",
-  "password": "mala"
-}
-
-### Login de veterinario desactivado → 403
-POST {{baseUrl}}/api/auth/veterinarians/login
+### Login de veterinario desactivado con su contraseña → 403
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 Accept: application/json
 
@@ -595,24 +613,24 @@ Accept: application/json
   "password": "vet12345"
 }
 
+### Login de veterinario desactivado con password mala → 401 (el estado solo se revela con la contraseña correcta)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "julian.restrepo@pethaven.com",
+  "password": "mala"
+}
+
 ### Login de administrador → 200 AuthResponse (role ADMIN)
-POST {{baseUrl}}/api/auth/administrators/login
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 Accept: application/json
 
 {
   "email": "admin@pethaven.com",
   "password": "admin12345"
-}
-
-### Login de administrador con password mala → 401
-POST {{baseUrl}}/api/auth/administrators/login
-Content-Type: application/json
-Accept: application/json
-
-{
-  "email": "admin@pethaven.com",
-  "password": "mala"
 }
 
 ### ═══════════════════════════════════════════

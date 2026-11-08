@@ -15,7 +15,6 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Optional;
@@ -59,8 +58,9 @@ public class AuthServiceImpl implements AuthService {
                 profile.profileId(), profile.name(), profile.email(), profile.role());
     }
 
+    // Sin @Transactional a propósito: login() lo invoca desde la propia clase (sin pasar por el proxy), y
+    // ninguna lectura lo necesita: los roles se cargan EAGER y cada consulta del repositorio es transaccional.
     @Override
-    @Transactional(readOnly = true)
     public AuthProfileResponse getProfile(String username) {
         UserEntity account = userRepository.findByUsername(username)
                 .orElseThrow(() -> new IllegalStateException("No existe la cuenta autenticada '" + username + "'."));

@@ -54,13 +54,6 @@ public class UserAccountServiceImpl implements UserAccountService {
         }
     }
 
-    @Override
-    public boolean passwordMatches(UserEntity account, String rawPassword) {
-        return account != null
-                && rawPassword != null
-                && passwordEncoder.matches(rawPassword, account.getPassword());
-    }
-
     private void ensureUsernameAvailable(String username) {
         if (userRepository.existsByUsername(username)) {
             throw new IllegalOperationException("Ya existe una cuenta con el usuario '" + username + "'.");

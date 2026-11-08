@@ -20,19 +20,17 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Autenticación con Spring Security y JWT.
- * <p>
- * Se renombra a {@code AuthController} en cuanto se elimine el controlador de autenticación provisional.
+ * Autenticación con Spring Security y JWT: inicio de sesión y perfil del usuario autenticado.
  */
 @Tag(name = "Autenticación", description = "Inicio de sesión con token JWT y perfil del usuario autenticado")
 @RestController
 @RequestMapping("/api/auth")
-public class AuthController2 {
+public class AuthController {
 
     private final AuthService authService;
 
     @Autowired
-    public AuthController2(AuthService authService) {
+    public AuthController(AuthService authService) {
         this.authService = authService;
     }
 

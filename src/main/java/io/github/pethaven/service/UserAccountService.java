@@ -23,7 +23,4 @@ public interface UserAccountService {
      * @throws io.github.pethaven.exception.IllegalOperationException si el nuevo username pertenece a otra cuenta
      */
     void updateAccount(UserEntity account, String username, String rawPassword);
-
-    /** Devuelve true solo si la cuenta existe y la contraseña en texto plano coincide con su hash. */
-    boolean passwordMatches(UserEntity account, String rawPassword);
 }

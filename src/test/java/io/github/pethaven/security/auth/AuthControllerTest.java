@@ -26,9 +26,9 @@ import java.util.Optional;
 
 // Login con Spring Security (POST /api/auth/login) y perfil autenticado (GET /api/auth/me),
 // ejecutados a través de la cadena de seguridad real.
-@WebMvcTest(AuthController2.class)
+@WebMvcTest(AuthController.class)
 @WebMvcSecurityTestSupport
-public class AuthController2Test {
+public class AuthControllerTest {
 
     private static final String LOGIN_URL = "/api/auth/login";
     private static final String ME_URL = "/api/auth/me";
@@ -45,7 +45,7 @@ public class AuthController2Test {
     private AuthService authService;
 
     @Autowired
-    public AuthController2Test(MockMvc mockMvc, JwtProvider jwtProvider, UserDetailsService userDetailsService) {
+    public AuthControllerTest(MockMvc mockMvc, JwtProvider jwtProvider, UserDetailsService userDetailsService) {
         this.mockMvc = mockMvc;
         this.jwtProvider = jwtProvider;
         this.userDetailsService = userDetailsService;
@@ -171,6 +171,22 @@ public class AuthController2Test {
                         .value("Se requiere autenticación para acceder a este recurso."))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.path").value(ME_URL));
         Mockito.verifyNoInteractions(authService);
+    }
+
+    @Test
+    public void authController_me_InvalidOrExpiredToken_Returns401AndDoesNotCallService() throws Exception {
+        // Arrange
+        // El JwtProvider rechaza el token (firma inválida o expirado): la petición queda sin autenticar.
+        Mockito.when(jwtProvider.resolveUsername("expired-token")).thenReturn(Optional.empty());
+
+        // Act + Assert
+        mockMvc.perform(MockMvcRequestBuilders.get(ME_URL).header("Authorization", "Bearer expired-token"))
+                .andExpect(MockMvcResultMatchers.status().isUnauthorized())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(401))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+                        .value("Se requiere autenticación para acceder a este recurso."))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.path").value(ME_URL));
+        Mockito.verifyNoInteractions(authService, userDetailsService);
     }
 
     private void assertLoginValidationError(String body, String field, String message) throws Exception {

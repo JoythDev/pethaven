@@ -53,16 +53,6 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
-    @ExceptionHandler(InvalidCredentialsException.class)
-    public ResponseEntity<ApiErrorResponse> handleInvalidCredentials(InvalidCredentialsException ex, HttpServletRequest request) {
-        return build(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
-    }
-
-    @ExceptionHandler(AccountDisabledException.class)
-    public ResponseEntity<ApiErrorResponse> handleAccountDisabled(AccountDisabledException ex, HttpServletRequest request) {
-        return build(HttpStatus.FORBIDDEN, ex.getMessage(), request);
-    }
-
     // ---------- Seguridad (también llegan desde los filtros vía JwtAuthEntryPoint y JwtAccessDeniedHandler) ----------
 
     @ExceptionHandler(BadCredentialsException.class)

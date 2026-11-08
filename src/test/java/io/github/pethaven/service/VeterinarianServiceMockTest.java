@@ -8,9 +8,7 @@ import io.github.pethaven.entity.Role;
 import io.github.pethaven.entity.Treatment;
 import io.github.pethaven.entity.UserEntity;
 import io.github.pethaven.entity.Veterinarian;
-import io.github.pethaven.exception.AccountDisabledException;
 import io.github.pethaven.exception.IllegalOperationException;
-import io.github.pethaven.exception.InvalidCredentialsException;
 import io.github.pethaven.exception.ResourceNotFoundException;
 import io.github.pethaven.mapper.VeterinarianMapper;
 import io.github.pethaven.repository.RoleRepository;
@@ -567,82 +565,5 @@ public class VeterinarianServiceMockTest {
                 .isInstanceOf(ResourceNotFoundException.class)
                 .hasMessage("El recurso 'Veterinarian' con id: '99' no fue encontrado");
         Mockito.verify(veterinarianRepository, Mockito.never()).save(ArgumentMatchers.any(Veterinarian.class));
-    }
-
-    // ---------- authenticate ----------
-    // Comportamiento provisional: la contraseña se valida con BCrypt contra la cuenta del veterinario.
-    // Estos tests fijan ese comportamiento hasta que se implemente el AuthenticationProvider + JWT.
-
-    @Test
-    public void veterinarianService_authenticate_CorrectPassword_ReturnsVeterinarian() {
-        // Arrange
-        Veterinarian veterinarian = veterinarian(
-                1L, "VET-100", "Dra. Laura Gómez", "laura@pethaven.test", "Cuidados Críticos",
-                "https://pethaven.test/photos/laura.jpg");
-        veterinarian.setActive(true);
-        Mockito.when(veterinarianRepository.findByEmail("laura@pethaven.test")).thenReturn(Optional.of(veterinarian));
-
-        // Act
-        Veterinarian result = veterinarianService.authenticate("laura@pethaven.test", "secret-password");
-
-        // Assert
-        Assertions.assertThat(result).isSameAs(veterinarian);
-    }
-
-    @Test
-    public void veterinarianService_authenticate_WrongPassword_ThrowsInvalidCredentials() {
-        // Arrange
-        Veterinarian veterinarian = veterinarian(
-                1L, "VET-100", "Dra. Laura Gómez", "laura@pethaven.test", "Cuidados Críticos",
-                "https://pethaven.test/photos/laura.jpg");
-        veterinarian.setActive(true);
-        Mockito.when(veterinarianRepository.findByEmail("laura@pethaven.test")).thenReturn(Optional.of(veterinarian));
-
-        // Act + Assert
-        Assertions.assertThatThrownBy(() -> veterinarianService.authenticate("laura@pethaven.test", "wrong-password"))
-                .isInstanceOf(InvalidCredentialsException.class)
-                .hasMessage("Correo o contraseña incorrectos.");
-    }
-
-    @Test
-    public void veterinarianService_authenticate_UnknownEmail_ThrowsInvalidCredentials() {
-        // Arrange
-        Mockito.when(veterinarianRepository.findByEmail("nadie@pethaven.test")).thenReturn(Optional.empty());
-
-        // Act + Assert
-        Assertions.assertThatThrownBy(() -> veterinarianService.authenticate("nadie@pethaven.test", "secret-password"))
-                .isInstanceOf(InvalidCredentialsException.class)
-                .hasMessage("Correo o contraseña incorrectos.");
-    }
-
-    @Test
-    public void veterinarianService_authenticate_InactiveVeterinarianWithCorrectPassword_ThrowsAccountDisabled() {
-        // Arrange
-        Veterinarian veterinarian = veterinarian(
-                1L, "VET-100", "Dra. Laura Gómez", "laura@pethaven.test", "Cuidados Críticos",
-                "https://pethaven.test/photos/laura.jpg");
-        veterinarian.setActive(false);
-        Mockito.when(veterinarianRepository.findByEmail("laura@pethaven.test")).thenReturn(Optional.of(veterinarian));
-
-        // Act + Assert
-        Assertions.assertThatThrownBy(() -> veterinarianService.authenticate("laura@pethaven.test", "secret-password"))
-                .isInstanceOf(AccountDisabledException.class)
-                .hasMessage("La cuenta está desactivada.");
-    }
-
-    @Test
-    public void veterinarianService_authenticate_InactiveVeterinarianWithWrongPassword_ThrowsAccountDisabled() {
-        // Arrange
-        Veterinarian veterinarian = veterinarian(
-                1L, "VET-100", "Dra. Laura Gómez", "laura@pethaven.test", "Cuidados Críticos",
-                "https://pethaven.test/photos/laura.jpg");
-        veterinarian.setActive(false);
-        Mockito.when(veterinarianRepository.findByEmail("laura@pethaven.test")).thenReturn(Optional.of(veterinarian));
-
-        // Act + Assert
-        // El estado activo se comprueba antes que la contraseña.
-        Assertions.assertThatThrownBy(() -> veterinarianService.authenticate("laura@pethaven.test", "wrong-password"))
-                .isInstanceOf(AccountDisabledException.class)
-                .hasMessage("La cuenta está desactivada.");
     }
 }

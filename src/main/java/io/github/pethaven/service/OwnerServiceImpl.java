@@ -6,7 +6,6 @@ import io.github.pethaven.dto.response.OwnerResponse;
 import io.github.pethaven.entity.Owner;
 import io.github.pethaven.entity.Role;
 import io.github.pethaven.exception.IllegalOperationException;
-import io.github.pethaven.exception.InvalidCredentialsException;
 import io.github.pethaven.exception.ResourceNotFoundException;
 import io.github.pethaven.mapper.OwnerMapper;
 import io.github.pethaven.repository.OwnerRepository;
@@ -127,15 +126,5 @@ public class OwnerServiceImpl implements OwnerService {
         }
 
         ownerRepository.deleteById(id);
-    }
-
-    @Override
-    public Owner authenticate(String email, String password) {
-        Owner owner = ownerRepository.findByEmail(email)
-                .orElseThrow(() -> new InvalidCredentialsException());
-        if (userAccountService.passwordMatches(owner.getUser(), password)) {
-            return owner;
-        }
-        throw new InvalidCredentialsException();
     }
 }

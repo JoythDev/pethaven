@@ -8,7 +8,6 @@ import io.github.pethaven.entity.Pet;
 import io.github.pethaven.entity.Role;
 import io.github.pethaven.entity.UserEntity;
 import io.github.pethaven.exception.IllegalOperationException;
-import io.github.pethaven.exception.InvalidCredentialsException;
 import io.github.pethaven.exception.ResourceNotFoundException;
 import io.github.pethaven.mapper.OwnerMapper;
 import io.github.pethaven.repository.OwnerRepository;
@@ -495,45 +494,5 @@ public class OwnerServiceMockTest {
 
         // Assert
         Mockito.verify(ownerRepository).deleteById(1L);
-    }
-
-    // ---------- authenticate ----------
-    // Comportamiento provisional: la contraseña se valida con BCrypt contra la cuenta del dueño.
-    // Estos tests fijan ese comportamiento hasta que se implemente el AuthenticationProvider + JWT.
-
-    @Test
-    public void ownerService_authenticate_CorrectPassword_ReturnsOwner() {
-        // Arrange
-        Owner owner = owner(1L, "DOC-100", "Ana Torres", "ana@pethaven.test", "3001234567");
-        Mockito.when(ownerRepository.findByEmail("ana@pethaven.test")).thenReturn(Optional.of(owner));
-
-        // Act
-        Owner result = ownerService.authenticate("ana@pethaven.test", "secret-password");
-
-        // Assert
-        Assertions.assertThat(result).isSameAs(owner);
-    }
-
-    @Test
-    public void ownerService_authenticate_WrongPassword_ThrowsInvalidCredentials() {
-        // Arrange
-        Owner owner = owner(1L, "DOC-100", "Ana Torres", "ana@pethaven.test", "3001234567");
-        Mockito.when(ownerRepository.findByEmail("ana@pethaven.test")).thenReturn(Optional.of(owner));
-
-        // Act + Assert
-        Assertions.assertThatThrownBy(() -> ownerService.authenticate("ana@pethaven.test", "wrong-password"))
-                .isInstanceOf(InvalidCredentialsException.class)
-                .hasMessage("Correo o contraseña incorrectos.");
-    }
-
-    @Test
-    public void ownerService_authenticate_UnknownEmail_ThrowsInvalidCredentials() {
-        // Arrange
-        Mockito.when(ownerRepository.findByEmail("nadie@pethaven.test")).thenReturn(Optional.empty());
-
-        // Act + Assert
-        Assertions.assertThatThrownBy(() -> ownerService.authenticate("nadie@pethaven.test", "secret-password"))
-                .isInstanceOf(InvalidCredentialsException.class)
-                .hasMessage("Correo o contraseña incorrectos.");
     }
 }

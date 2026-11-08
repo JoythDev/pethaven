@@ -5,9 +5,7 @@ import io.github.pethaven.dto.request.VeterinarianUpdateRequest;
 import io.github.pethaven.dto.response.VeterinarianResponse;
 import io.github.pethaven.entity.Role;
 import io.github.pethaven.entity.Veterinarian;
-import io.github.pethaven.exception.AccountDisabledException;
 import io.github.pethaven.exception.IllegalOperationException;
-import io.github.pethaven.exception.InvalidCredentialsException;
 import io.github.pethaven.exception.ResourceNotFoundException;
 import io.github.pethaven.mapper.VeterinarianMapper;
 import io.github.pethaven.repository.VeterinarianRepository;
@@ -123,19 +121,6 @@ public class VeterinarianServiceImpl implements VeterinarianService {
         veterinarian.getUser().setEnabled(active);
         veterinarianRepository.save(veterinarian);
         return veterinarianMapper.toResponse(veterinarian);
-    }
-
-    @Override
-    public Veterinarian authenticate(String email, String password) {
-        Veterinarian veterinarian = veterinarianRepository.findByEmail(email)
-                .orElseThrow(() -> new InvalidCredentialsException());
-        if (!veterinarian.isActive()) {
-            throw new AccountDisabledException();
-        }
-        if (userAccountService.passwordMatches(veterinarian.getUser(), password)) {
-            return veterinarian;
-        }
-        throw new InvalidCredentialsException();
     }
 
 }
