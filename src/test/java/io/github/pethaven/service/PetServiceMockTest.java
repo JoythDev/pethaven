@@ -9,6 +9,8 @@ import io.github.pethaven.entity.Species;
 import io.github.pethaven.exception.ResourceNotFoundException;
 import io.github.pethaven.mapper.PetMapper;
 import io.github.pethaven.repository.PetRepository;
+import io.github.pethaven.security.ssrf.OutboundUrlPolicy;
+import io.github.pethaven.security.ssrf.PublicNetworkUrlPolicy;
 import io.github.pethaven.support.RepositoryTestData;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
@@ -24,8 +26,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicInteger;
 
 // Pruebas del servicio con mocks: el PetMapper es real, el repositorio está simulado y la descarga de fotos se sirve desde un HTTP local.
 @ExtendWith(MockitoExtension.class)
@@ -40,15 +44,24 @@ public class PetServiceMockTest {
 
     private PetServiceImpl petService;
     private HttpServer photoServer;
+    private HttpServer secondServer;
+    // La descarga de pruebas usa un HTTP local (loopback), que la política real bloquea: por defecto se permite
+    // todo y cada prueba anti-SSRF reemplaza la política.
+    private OutboundUrlPolicy outboundUrlPolicy = uri -> true;
 
     @BeforeEach
     public void setUp() {
-        petService = new PetServiceImpl(petRepository, new PetMapper(), ownerService);
+        petService = new PetServiceImpl(petRepository, new PetMapper(), ownerService,
+                uri -> outboundUrlPolicy.isAllowed(uri));
     }
 
     @AfterEach
     public void tearDown() {
         stopPhotoServer();
+        if (secondServer != null) {
+            secondServer.stop(0);
+            secondServer = null;
+        }
     }
 
     // ---------- Helpers ----------
@@ -694,5 +707,160 @@ public class PetServiceMockTest {
         // Assert
         // No hay nada escuchando en el puerto cerrado: se captura IOException.
         Assertions.assertThat(result).isEmpty();
+    }
+
+    // ---------- getPetPhoto: protección SSRF ----------
+
+    // Servidor que cuenta las peticiones recibidas y responde una redirección (Location vacío = sin cabecera)
+    // o una imagen PNG.
+    private HttpServer countingServer(AtomicInteger hits, String redirectLocation) throws IOException {
+        HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/", exchange -> {
+            hits.incrementAndGet();
+            if (redirectLocation != null) {
+                if (!redirectLocation.isEmpty()) {
+                    exchange.getResponseHeaders().set("Location", redirectLocation);
+                }
+                exchange.sendResponseHeaders(302, -1);
+                exchange.close();
+                return;
+            }
+            byte[] body = {1, 2, 3, 4};
+            exchange.getResponseHeaders().set("Content-Type", "image/png");
+            exchange.sendResponseHeaders(200, body.length);
+            try (OutputStream responseBody = exchange.getResponseBody()) {
+                responseBody.write(body);
+            }
+        });
+        server.start();
+        return server;
+    }
+
+    private static String url(HttpServer server, String path) {
+        return "http://127.0.0.1:" + server.getAddress().getPort() + path;
+    }
+
+    @Test
+    public void petService_getPetPhoto_BlockedDestination_ReturnsEmptyWithoutRequesting() throws IOException {
+        // Arrange
+        AtomicInteger hits = new AtomicInteger();
+        photoServer = countingServer(hits, null);
+        outboundUrlPolicy = uri -> false;
+        Mockito.when(petRepository.findById(1L)).thenReturn(Optional.of(petWithPhoto(url(photoServer, "/photo.png"))));
+
+        // Act
+        Optional<PetService.Photo> result = petService.getPetPhoto(1L);
+
+        // Assert
+        Assertions.assertThat(result).isEmpty();
+        Assertions.assertThat(hits).hasValue(0);
+    }
+
+    @Test
+    public void petService_getPetPhoto_RedirectToBlockedDestination_ReturnsEmptyWithoutFollowing() throws IOException {
+        // Arrange
+        // Un host permitido redirige a otro bloqueado (p. ej. una IP interna): el salto se valida y no se sigue.
+        AtomicInteger internalHits = new AtomicInteger();
+        secondServer = countingServer(internalHits, null);
+        AtomicInteger publicHits = new AtomicInteger();
+        photoServer = countingServer(publicHits, url(secondServer, "/secret.png"));
+        int allowedPort = photoServer.getAddress().getPort();
+        outboundUrlPolicy = uri -> uri.getPort() == allowedPort;
+        Mockito.when(petRepository.findById(1L)).thenReturn(Optional.of(petWithPhoto(url(photoServer, "/start"))));
+
+        // Act
+        Optional<PetService.Photo> result = petService.getPetPhoto(1L);
+
+        // Assert
+        Assertions.assertThat(result).isEmpty();
+        Assertions.assertThat(publicHits).hasValue(1);
+        Assertions.assertThat(internalHits).hasValue(0);
+    }
+
+    @Test
+    public void petService_getPetPhoto_RedirectToAllowedDestination_FollowsAndReturnsPhoto() throws IOException {
+        // Arrange
+        // Redirecciones legítimas (p. ej. http -> https o a un CDN) se siguen si el destino está permitido.
+        AtomicInteger cdnHits = new AtomicInteger();
+        secondServer = countingServer(cdnHits, null);
+        AtomicInteger originHits = new AtomicInteger();
+        photoServer = countingServer(originHits, url(secondServer, "/photo.png"));
+        Mockito.when(petRepository.findById(1L)).thenReturn(Optional.of(petWithPhoto(url(photoServer, "/start"))));
+
+        // Act
+        Optional<PetService.Photo> result = petService.getPetPhoto(1L);
+
+        // Assert
+        Assertions.assertThat(result).hasValueSatisfying(photo -> {
+            Assertions.assertThat(photo.contentType()).isEqualTo("image/png");
+            Assertions.assertThat(photo.data()).containsExactly(1, 2, 3, 4);
+        });
+        Assertions.assertThat(originHits).hasValue(1);
+        Assertions.assertThat(cdnHits).hasValue(1);
+    }
+
+    @Test
+    public void petService_getPetPhoto_RelativeRedirect_IsResolvedAgainstCurrentUrl() throws IOException {
+        // Arrange
+        AtomicInteger hits = new AtomicInteger();
+        photoServer = countingServer(hits, "/other");
+        int[] seen = new int[1];
+        outboundUrlPolicy = uri -> {
+            seen[0]++;
+            // La redirección relativa conserva host y puerto del servidor actual.
+            return uri.getHost().equals("127.0.0.1") && uri.getPort() == photoServer.getAddress().getPort();
+        };
+        Mockito.when(petRepository.findById(1L)).thenReturn(Optional.of(petWithPhoto(url(photoServer, "/start"))));
+
+        // Act
+        petService.getPetPhoto(1L);
+
+        // Assert
+        // Cada salto pasa por la política: inicial + 3 redirecciones (todas a /other) = 4 validaciones.
+        Assertions.assertThat(seen[0]).isEqualTo(4);
+    }
+
+    @Test
+    public void petService_getPetPhoto_MoreThanThreeRedirects_ReturnsEmpty() throws IOException {
+        // Arrange
+        AtomicInteger hits = new AtomicInteger();
+        photoServer = countingServer(hits, "/loop");
+        Mockito.when(petRepository.findById(1L)).thenReturn(Optional.of(petWithPhoto(url(photoServer, "/loop"))));
+
+        // Act
+        Optional<PetService.Photo> result = petService.getPetPhoto(1L);
+
+        // Assert
+        // Petición inicial + 3 redirecciones seguidas; la cuarta redirección ya no se sigue.
+        Assertions.assertThat(result).isEmpty();
+        Assertions.assertThat(hits).hasValue(4);
+    }
+
+    @Test
+    public void petService_getPetPhoto_RedirectWithoutLocation_ReturnsEmpty() throws IOException {
+        // Arrange
+        AtomicInteger hits = new AtomicInteger();
+        photoServer = countingServer(hits, "");
+        Mockito.when(petRepository.findById(1L)).thenReturn(Optional.of(petWithPhoto(url(photoServer, "/start"))));
+
+        // Act + Assert
+        Assertions.assertThat(petService.getPetPhoto(1L)).isEmpty();
+        Assertions.assertThat(hits).hasValue(1);
+    }
+
+    @Test
+    public void petService_getPetPhoto_ProductionPolicyAndLoopbackUrl_ReturnsEmptyWithoutRequesting() throws IOException {
+        // Arrange
+        // Con la política real, una foto apuntando a la propia máquina (127.0.0.1) nunca se descarga.
+        AtomicInteger hits = new AtomicInteger();
+        photoServer = countingServer(hits, null);
+        PetServiceImpl protectedService =
+                new PetServiceImpl(petRepository, new PetMapper(), ownerService, new PublicNetworkUrlPolicy());
+        Mockito.when(petRepository.findById(1L)).thenReturn(Optional.of(petWithPhoto(url(photoServer, "/photo.png"))));
+
+        // Act + Assert
+        Assertions.assertThat(protectedService.getPetPhoto(1L)).isEmpty();
+        Assertions.assertThat(hits).hasValue(0);
+        Assertions.assertThat(URI.create(url(photoServer, "/photo.png")).getHost()).isEqualTo("127.0.0.1");
     }
 }

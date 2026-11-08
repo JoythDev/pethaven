@@ -1168,8 +1168,11 @@ Descarga la foto de la mascota desde su `photoUrl` y la sirve desde el API. Exis
 
 **Respuesta** `200 OK` — la imagen, con el `Content-Type` original. Solo se aceptan JPEG, PNG, WebP, GIF o AVIF de hasta 5 MB (SVG no, porque puede contener scripts).
 
+> [!NOTE]
+> Como la URL la escribe un usuario, el servidor solo la descarga si apunta a Internet público (protección contra SSRF): esquema `http` o `https`, sin credenciales, puerto 80 o 443, y un host que resuelva únicamente a direcciones públicas. Nunca se piden direcciones internas (loopback, redes privadas, link-local como los metadatos de la nube `169.254.169.254`, CGNAT ni sus equivalentes IPv6). Se siguen hasta 3 redirecciones y cada destino se valida igual.
+
 **Errores**:
-- `404` la mascota no existe, no tiene foto, o la foto no se pudo descargar o no es un formato aceptado
+- `404` la mascota no existe, no tiene foto, la foto no se pudo descargar, no es un formato aceptado, o su URL (o una redirección) apunta a un destino no permitido
 
 ### Veterinarios (`/api/veterinarians`)
 
