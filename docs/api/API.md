@@ -161,7 +161,7 @@ curl -i http://localhost:8080/api/auth/me \
 | Eliminación | `204 No Content`, sin cuerpo |
 | Actualización | `PUT` es reemplazo total de los campos editables; los campos que no viajan en la petición se conservan |
 | Colecciones | Sin paginación, orden ni filtros genéricos: cada `GET` de colección devuelve todos los registros |
-| CORS | Solo `http://localhost:4200`, sin credenciales; expone la cabecera `Location` |
+| CORS | Solo sobre `/api/**` y para los orígenes de `app.cors.allowed-origins` (por defecto `http://localhost:4200`; variable de entorno `CORS_ALLOWED_ORIGINS`), sin credenciales; expone la cabecera `Location` |
 | Autenticación | Token JWT emitido por `POST /api/auth/login`, enviado como `Authorization: Bearer <token>` y válido 2 horas. Por ahora solo `GET /api/auth/me` lo exige; la autorización por rol del resto de la API está pendiente (ver [Autenticación](#autenticación-apiauth)) |
 | Errores | Un único formato, `ApiErrorResponse`, para cualquier fallo (ver [Errores](#errores)) |
 
@@ -1975,7 +1975,7 @@ Los duplicados se detectan antes de escribir y responden `409` con un mensaje ex
 - **Sin paginación.** Los `GET` de colección devuelven todos los registros; no hay `page`/`size` ni totales.
 - **Sin versionado.** Las rutas no llevan versión (`/api`, no `/api/v1`).
 - **Sin borrado de mascotas ni veterinarios.** Solo desactivación.
-- **CORS restringido.** Únicamente se permite el origen `http://localhost:4200`, sin credenciales; en despliegue habrá que ampliarlo.
+- **CORS restringido.** Por defecto solo se permite el origen `http://localhost:4200`, sin credenciales; en despliegue se define `CORS_ALLOWED_ORIGINS` con el dominio del frontend.
 
 > [!NOTE]
 > Las contraseñas se guardan con hash BCrypt en la cuenta de login, separadas de los perfiles, y nunca aparecen en una respuesta. Los datos de prueba usan contraseñas de ejemplo: no reutilices contraseñas reales.
@@ -1994,6 +1994,6 @@ Notas para quien contribuya al backend:
 - **Unicidad en dos capas.** Pre-chequeo en el service (`409` con mensaje explícito) y constraint única en la base como red de seguridad; el handler de `DataIntegrityViolationException` responde `409` genérico si se llega ahí.
 - **Errores centralizados.** Un `@RestControllerAdvice` traduce las excepciones propias (`ResourceNotFoundException` → `404`, `IllegalOperationException` → `409`), las de Spring Security (`BadCredentialsException` y el resto de fallos de autenticación → `401`, `DisabledException` y `AccessDeniedException` → `403`) y las de Spring (validación, parámetros, cuerpo ilegible, método no soportado, integridad) al mismo contrato. Los errores de seguridad que ocurren en la cadena de filtros, antes de llegar a un controlador, se delegan al mismo advice.
 - **Cabecera `Location`.** Se construye a partir de la petición actual, así que refleja el host, el puerto y el esquema que usó el cliente; en producción detrás de un proxy hay que revisar los encabezados reenviados.
-- **CORS.** Configurado sobre `/api/**` con los orígenes de `app.cors.allowed-origins` y `Location` como cabecera expuesta.
+- **CORS.** Lo aplica la cadena de Spring Security (`SecurityConfig`) sobre `/api/**`, con los orígenes de `app.cors.allowed-origins` (`CORS_ALLOWED_ORIGINS`), los métodos `GET`, `POST`, `PUT`, `DELETE` y `OPTIONS`, `Location` como cabecera expuesta y una caché de preflight de una hora.
 - **Swagger.** La documentación interactiva la genera springdoc a partir de las anotaciones `@Operation`/`@ApiResponse` del código, y solo incluye las rutas de `/api/**`. Este documento es la referencia mantenida a mano: si cambias un contrato, actualiza los dos.
 - **Datos de prueba.** El cargador inserta los ejemplos al arrancar y usa una semilla fija (`new Random(42)`) para repartir mascotas entre dueños y generar tratamientos. Esa relación es estable entre arranques, pero **no correlativa**: no deduzcas el dueño de una mascota por su `id`. Los `id` de cada tabla sí siguen el orden de inserción.

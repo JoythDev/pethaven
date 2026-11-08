@@ -4,6 +4,7 @@ import io.github.pethaven.security.jwt.JwtAccessDeniedHandler;
 import io.github.pethaven.security.jwt.JwtAuthEntryPoint;
 import io.github.pethaven.security.jwt.JwtFilter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,6 +12,7 @@ import org.springframework.security.authentication.AccountStatusUserDetailsCheck
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.ProviderManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
@@ -46,18 +48,33 @@ public class SecurityConfig {
         this.jwtAccessDeniedHandler = jwtAccessDeniedHandler;
     }
 
+    /**
+     * @param h2ConsoleEnabled si la consola H2 está habilitada (solo en desarrollo); con ella apagada no se
+     *                         abre ninguna excepción de acceso ni de frames para su ruta
+     * @param h2ConsolePath    ruta de la consola H2 ({@code spring.h2.console.path})
+     */
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            @Value("${spring.h2.console.enabled:false}") boolean h2ConsoleEnabled,
+            @Value("${spring.h2.console.path:/h2-console}") String h2ConsolePath
+    ) throws Exception {
+        if (h2ConsoleEnabled) {
+            // La consola H2 se dibuja en frames de su propio origen.
+            http.headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::sameOrigin));
+        }
         http
                 .csrf(AbstractHttpConfigurer::disable)
-                .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
-                .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/me").authenticated()
-                        .requestMatchers("/api/**").permitAll()
-                        .requestMatchers("/h2/**").permitAll()
-                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
-                        .anyRequest().authenticated())
-                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .authorizeHttpRequests(auth -> {
+                    auth.requestMatchers("/api/auth/me").authenticated()
+                            .requestMatchers("/api/**").permitAll()
+                            .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll();
+                    if (h2ConsoleEnabled) {
+                        auth.requestMatchers(h2ConsolePath + "/**").permitAll();
+                    }
+                    auth.anyRequest().authenticated();
+                })
+                .cors(Customizer.withDefaults())
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exception -> exception
@@ -79,21 +96,24 @@ public class SecurityConfig {
         return registration;
     }
 
+    /**
+     * CORS de la API para la SPA. Los orígenes salen de {@code app.cors.allowed-origins} (lista separada por
+     * comas). Sin credenciales: el token viaja en la cabecera {@code Authorization}, no en cookies.
+     */
     @Bean
-    public CorsConfigurationSource corsConfigurationSource() {
-
+    public CorsConfigurationSource corsConfigurationSource(
+            @Value("${app.cors.allowed-origins}") String[] allowedOrigins
+    ) {
         CorsConfiguration config = new CorsConfiguration();
-
-        config.setAllowedOrigins(List.of(
-                "http://localhost",
-                "http://localhost:4200"));
+        config.setAllowedOrigins(List.of(allowedOrigins));
         config.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-        config.setAllowCredentials(true);
+        config.setExposedHeaders(List.of("Location"));
+        config.setAllowCredentials(false);
+        config.setMaxAge(3600L);
 
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
-
+        source.registerCorsConfiguration("/api/**", config);
         return source;
     }
 
