@@ -1,6 +1,7 @@
 package io.github.pethaven.support;
 
 import io.github.pethaven.security.SecurityConfig;
+import io.github.pethaven.security.jwt.JwtAccessDeniedHandler;
 import io.github.pethaven.security.jwt.JwtAuthEntryPoint;
 import io.github.pethaven.security.jwt.JwtProvider;
 import org.springframework.context.annotation.Import;
@@ -23,7 +24,7 @@ import java.lang.annotation.Target;
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Import({SecurityConfig.class, JwtAuthEntryPoint.class})
+@Import({SecurityConfig.class, JwtAuthEntryPoint.class, JwtAccessDeniedHandler.class})
 @MockitoBean(types = {JwtProvider.class, UserDetailsService.class})
 public @interface WebMvcSecurityTestSupport {
 }

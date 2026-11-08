@@ -1,5 +1,6 @@
 package io.github.pethaven.security;
 
+import io.github.pethaven.security.jwt.JwtAccessDeniedHandler;
 import io.github.pethaven.security.jwt.JwtAuthEntryPoint;
 import io.github.pethaven.security.jwt.JwtFilter;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -28,14 +29,17 @@ public class SecurityConfig {
 
     private final JwtFilter jwtFilter;
     private final JwtAuthEntryPoint jwtAuthEntryPoint;
+    private final JwtAccessDeniedHandler jwtAccessDeniedHandler;
 
     @Autowired
     public SecurityConfig(
             JwtFilter jwtFilter,
-            JwtAuthEntryPoint jwtAuthEntryPoint
+            JwtAuthEntryPoint jwtAuthEntryPoint,
+            JwtAccessDeniedHandler jwtAccessDeniedHandler
     ) {
         this.jwtFilter = jwtFilter;
         this.jwtAuthEntryPoint = jwtAuthEntryPoint;
+        this.jwtAccessDeniedHandler = jwtAccessDeniedHandler;
     }
 
     @Bean
@@ -52,7 +56,8 @@ public class SecurityConfig {
                 .sessionManagement(session -> session
                         .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .exceptionHandling(exception -> exception
-                        .authenticationEntryPoint(jwtAuthEntryPoint))
+                        .authenticationEntryPoint(jwtAuthEntryPoint)
+                        .accessDeniedHandler(jwtAccessDeniedHandler))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
