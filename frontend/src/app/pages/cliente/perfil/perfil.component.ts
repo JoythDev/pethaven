@@ -10,6 +10,7 @@ import { ViewState, toViewState } from '../../../core/http/view-state';
 import { Owner } from '../../../models/owner.model';
 import { OwnerService } from '../../../services/owner.service';
 import { ClienteContextStore } from '../cliente-context.store';
+import { AuthService } from '../../../services/auth.service';
 
 @Component({
   selector: 'app-perfil',
@@ -22,6 +23,7 @@ export class PerfilComponent implements OnInit {
   private readonly ownerService = inject(OwnerService);
   private readonly context = inject(ClienteContextStore);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly auth = inject(AuthService);
 
   // :ownerId de la ruta padre; null mientras llega o si el id es inválido.
   private readonly ownerId = signal<number | null>(null);
@@ -60,8 +62,9 @@ export class PerfilComponent implements OnInit {
     });
   }
 
-  // La sesión del cliente no tiene autenticación real: basta con volver al login.
+  // Cierra la sesión (borra el token) y vuelve al login de dueños.
   cerrarSesion(): void {
-    this.router.navigate(['/login']);
+    this.auth.logout();
+    void this.router.navigate(['/login']);
   }
 }

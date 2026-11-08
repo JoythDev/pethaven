@@ -91,6 +91,16 @@
             }
           </div>
 
+          <!-- Aviso de sesión expirada (?expired=1) -->
+          @if (noticeMessage(); as notice) {
+            <div
+              role="status"
+              class="rounded-xl border border-olive/40 bg-olive/10 px-4 py-3 text-sm text-olive"
+            >
+              {{ notice }}
+            </div>
+          }
+
           <!-- Error general del servidor (401, 403, sin conexión) -->
           @if (errorMessage(); as message) {
             <div

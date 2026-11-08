@@ -5,6 +5,7 @@ import { parseRouteId } from '../../../core/http/route-id';
 import { AreaLayoutConfig } from '../../shared/area-layout/area-layout-config';
 import { AreaLayoutComponent } from '../../shared/area-layout/area-layout.component';
 import { ClienteContextStore } from '../cliente-context.store';
+import { AuthService } from '../../../services/auth.service';
 
 /**
  * Shell del área del cliente: configura el shell compartido con los enlaces
@@ -20,6 +21,7 @@ export class ClienteLayoutComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly context = inject(ClienteContextStore);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly auth = inject(AuthService);
 
   /** :ownerId de la ruta; null si el id es inválido. */
   private readonly ownerId = signal<number | null>(null);
@@ -44,7 +46,7 @@ export class ClienteLayoutComponent implements OnInit {
           {
             label: 'Cerrar sesión',
             icon: 'pi pi-sign-out',
-            command: () => void this.router.navigate(['/login']),
+            command: () => this.logout(),
           },
         ],
         homeLink: home,
@@ -65,13 +67,19 @@ export class ClienteLayoutComponent implements OnInit {
           {
             label: 'Cerrar sesión',
             icon: 'pi pi-sign-out',
-            command: () => void this.router.navigate(['/login']),
+            command: () => this.logout(),
           },
         ],
         skipNumericSegment: true,
       },
     };
   });
+
+  // Cierra la sesión (borra el token) y vuelve al login de dueños.
+  private logout(): void {
+    this.auth.logout();
+    void this.router.navigate(['/login']);
+  }
 
   ngOnInit(): void {
     // El param puede cambiar sin recrear el layout (misma ruta, otro dueño).

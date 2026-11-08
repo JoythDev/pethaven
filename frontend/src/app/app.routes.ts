@@ -3,6 +3,7 @@ import { LandingComponent } from './pages/landing/landing.component';
 import { LoginComponent } from './pages/auth/login/login.component';
 import { ClienteEntryComponent } from './pages/cliente/cliente-entry/cliente-entry.component';
 import { ADMIN_DRUG_AREA, DRUG_AREA_DATA_KEY, VET_DRUG_AREA } from './pages/shared/drugs/drug-area';
+import { ownerPortalGuard, roleGuard } from './core/auth/auth.guard';
 
 export const routes: Routes = [
   { path: '', component: LandingComponent },
@@ -13,6 +14,7 @@ export const routes: Routes = [
   // Panel del veterinario: layout propio sobre el shell compartido.
   {
     path: 'veterinario',
+    canActivate: [roleGuard('VETERINARIAN')],
     loadComponent: () =>
       import('./pages/veterinario/layout/veterinario-layout.component').then(
         (m) => m.VeterinarioLayoutComponent
@@ -137,9 +139,10 @@ export const routes: Routes = [
   // El login del dueño navega aquí: resuelve el id del usuario y entra a sus mascotas.
   { path: 'cliente', component: ClienteEntryComponent },
 
-  // Portal del cliente: acceso directo por id, sin guard.
+  // Portal del cliente: solo el propio dueño (su :ownerId) con sesión de rol OWNER.
   {
     path: 'cliente/:ownerId',
+    canActivate: [ownerPortalGuard],
     loadComponent: () =>
       import('./pages/cliente/cliente-layout/cliente-layout.component').then(
         (m) => m.ClienteLayoutComponent
@@ -169,6 +172,7 @@ export const routes: Routes = [
   // Panel del administrador: gestiona veterinarios, mascotas (se desactivan, no se borran) y medicamentos.
   {
     path: 'administrador',
+    canActivate: [roleGuard('ADMIN')],
     loadComponent: () =>
       import('./pages/administrador/layout/admin-layout.component').then((m) => m.AdminLayoutComponent),
     children: [
