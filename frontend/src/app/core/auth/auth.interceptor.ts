@@ -3,7 +3,7 @@ import { inject } from '@angular/core';
 import { catchError, throwError } from 'rxjs';
 import { AuthService } from '../../services/auth.service';
 import { API_BASE_URL } from '../api/api-base-url';
-import { SKIP_SESSION_EXPIRED_REDIRECT } from './auth-context';
+import { ANONYMOUS_REQUEST, SKIP_SESSION_EXPIRED_REDIRECT } from './auth-context';
 
 // Añade el token JWT a las peticiones dirigidas al API (nunca a otros hosts) y, si el API responde
 // 401 a una petición que llevaba token, da la sesión por expirada y lleva al login.
@@ -13,7 +13,7 @@ export const authInterceptor: HttpInterceptorFn = (request, next) => {
   const token = auth.token();
 
   const toApi = request.url.startsWith(`${apiUrl}/`) || request.url === apiUrl;
-  if (!token || !toApi) {
+  if (!token || !toApi || request.context.get(ANONYMOUS_REQUEST)) {
     return next(request);
   }
 

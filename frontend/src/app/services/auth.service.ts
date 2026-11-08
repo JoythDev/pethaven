@@ -1,14 +1,18 @@
 import { HttpClient, HttpContext, HttpErrorResponse } from '@angular/common/http';
 import { Injectable, computed, inject, signal } from '@angular/core';
 import { Router } from '@angular/router';
-import { Observable, firstValueFrom, map, tap } from 'rxjs';
+import { Observable, firstValueFrom, map, tap, timeout } from 'rxjs';
 import { API_BASE_URL } from '../core/api/api-base-url';
-import { SKIP_SESSION_EXPIRED_REDIRECT } from '../core/auth/auth-context';
+import { ANONYMOUS_REQUEST, SKIP_SESSION_EXPIRED_REDIRECT } from '../core/auth/auth-context';
 import { AuthProfile, AuthResponse, AuthRole, AuthSession, AuthUser, LoginRequest } from '../models/auth.model';
 
 const STORAGE_KEY = 'pethaven.session';
 // Clave de la sesión provisional anterior (sessionStorage, sin token): se elimina al arrancar.
 const LEGACY_STORAGE_KEY = 'pethaven.user';
+// Espera máxima de GET /auth/me al arrancar; si se agota, se conserva la sesión (como un error de red).
+const RESTORE_TIMEOUT_MS = 5000;
+// Mayor espera que admite setTimeout (2^31 - 1 ms, unos 24,8 días).
+const MAX_TIMER_DELAY_MS = 2_147_483_647;
 
 // Login de cada portal: a dónde se envía al usuario cuando no tiene sesión o expira.
 const LOGIN_ROUTES: Record<AuthRole, string> = {
@@ -47,7 +51,10 @@ export class AuthService {
   // POST /auth/login: 401 si las credenciales no son válidas; 403 si la contraseña es correcta
   // pero la cuenta está desactivada.
   login(request: LoginRequest): Observable<AuthUser> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/login`, request).pipe(
+    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/login`, request, {
+      // Sin el token guardado: un 401 por credenciales incorrectas no debe cerrar la sesión vigente.
+      context: new HttpContext().set(ANONYMOUS_REQUEST, true),
+    }).pipe(
       map((response) => ({
         token: response.token,
         expiresAt: Date.now() + response.expiresIn * 1000,
@@ -59,7 +66,8 @@ export class AuthService {
   }
 
   // Al arrancar la app: si hay una sesión guardada y vigente, la confirma con GET /auth/me.
-  // Un 401 (token inválido, cuenta desactivada o eliminada) la cierra; un error de red la conserva.
+  // Un 401 (token inválido, cuenta desactivada o eliminada) la cierra; un error de red o un API que no
+  // responde a tiempo la conservan.
   async restoreSession(): Promise<void> {
     const session = this._session();
     if (!session) {
@@ -67,9 +75,12 @@ export class AuthService {
     }
     try {
       const profile = await firstValueFrom(
-        this.http.get<AuthProfile>(`${this.apiUrl}/auth/me`, {
-          context: new HttpContext().set(SKIP_SESSION_EXPIRED_REDIRECT, true),
-        })
+        this.http
+          .get<AuthProfile>(`${this.apiUrl}/auth/me`, {
+            context: new HttpContext().set(SKIP_SESSION_EXPIRED_REDIRECT, true),
+          })
+          // El arranque espera esta llamada: un API que no responde no puede dejar la app en blanco.
+          .pipe(timeout(RESTORE_TIMEOUT_MS))
       );
       this.setSession({ ...session, user: toUser(profile) });
     } catch (error) {
@@ -132,13 +143,19 @@ export class AuthService {
     }
   }
 
-  // Programa el cierre de la sesión justo cuando expira el token.
+  // Programa el cierre de la sesión justo cuando expira el token. setTimeout no admite esperas mayores a
+  // MAX_TIMER_DELAY_MS (dispararía al instante), así que las largas se reprograman por tramos.
   private scheduleExpiry(): void {
     this.cancelExpiry();
     const session = this._session();
-    if (session) {
-      this.expiryTimer = setTimeout(() => this.expireSession(), Math.max(0, session.expiresAt - Date.now()));
+    if (!session) {
+      return;
     }
+    const remaining = Math.max(0, session.expiresAt - Date.now());
+    this.expiryTimer =
+      remaining > MAX_TIMER_DELAY_MS
+        ? setTimeout(() => this.scheduleExpiry(), MAX_TIMER_DELAY_MS)
+        : setTimeout(() => this.expireSession(), remaining);
   }
 
   private cancelExpiry(): void {
