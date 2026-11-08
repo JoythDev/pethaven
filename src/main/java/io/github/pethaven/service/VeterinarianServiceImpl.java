@@ -119,6 +119,8 @@ public class VeterinarianServiceImpl implements VeterinarianService {
     public VeterinarianResponse switchVeterinarianActiveStatus(Long id, boolean active) {
         Veterinarian veterinarian = getVeterinarianEntity(id);
         veterinarian.setActive(active);
+        // La cuenta de login sigue al perfil: desactivado no inicia sesión y sus tokens dejan de servir.
+        veterinarian.getUser().setEnabled(active);
         veterinarianRepository.save(veterinarian);
         return veterinarianMapper.toResponse(veterinarian);
     }

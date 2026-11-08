@@ -65,6 +65,13 @@ public class DataLoader implements CommandLineRunner {
         return userAccountService.createAccount(email, rawPassword, roleName);
     }
 
+    // Cuenta de un perfil sembrado como inactivo: debe nacer deshabilitada (Veterinarian.active == UserEntity.enabled).
+    private UserEntity disabledAccount(String email, String rawPassword, String roleName) {
+        UserEntity account = account(email, rawPassword, roleName);
+        account.setEnabled(false);
+        return account;
+    }
+
     private void savePet(Pet pet) {
         pet.setOwner(ownerPool.get(random.nextInt(ownerPool.size())));
         petRepository.save(pet);
@@ -364,7 +371,7 @@ public class DataLoader implements CommandLineRunner {
         veterinarianRepository.save(Veterinarian.builder().name("Dra. Amalia Carter").document("581736412").email("amalia.carter@pethaven.com").user(account("amalia.carter@pethaven.com", "vet12345", Role.VETERINARIAN)).specialty("Anestesiología").photoUrl("https://randomuser.me/api/portraits/women/68.jpg").build());
         veterinarianRepository.save(Veterinarian.builder().name("Dr. Miguel Ángel Torres").document("522124823").email("miguel.torres@pethaven.com").user(account("miguel.torres@pethaven.com", "vet12345", Role.VETERINARIAN)).specialty("Medicina Interna").build());
         veterinarianRepository.save(Veterinarian.builder().name("Dra. Sofía Herrera").document("192049284").email("sofia.herrera@pethaven.com").user(account("sofia.herrera@pethaven.com", "vet12345", Role.VETERINARIAN)).specialty("Dermatología").build());
-        veterinarianRepository.save(Veterinarian.builder().name("Dr. Julián Restrepo").document("102938471").email("julian.restrepo@pethaven.com").user(account("julian.restrepo@pethaven.com", "vet12345", Role.VETERINARIAN)).specialty("Odontología Veterinaria").active(false).build());
+        veterinarianRepository.save(Veterinarian.builder().name("Dr. Julián Restrepo").document("102938471").email("julian.restrepo@pethaven.com").user(disabledAccount("julian.restrepo@pethaven.com", "vet12345", Role.VETERINARIAN)).specialty("Odontología Veterinaria").active(false).build());
 
         // ==========================================
         // ==== Cargar administradores de prueba ====

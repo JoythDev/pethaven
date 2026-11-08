@@ -62,7 +62,22 @@ public class UserRepositoryTest {
         Assertions.assertThat(persisted.getId()).isEqualTo(saved.getId());
         Assertions.assertThat(persisted.getPassword()).isEqualTo("$2a$10$hashed-value");
         Assertions.assertThat(persisted.getRoles()).extracting(Role::getName).containsExactly(Role.OWNER);
+        Assertions.assertThat(persisted.isEnabled()).isTrue();
         Assertions.assertThat(userRepository.existsByUsername("ana@pethaven.test")).isTrue();
+    }
+
+    @Test
+    public void userRepository_save_DisabledAccount_PersistsDisabledState() {
+        // Arrange
+        UserEntity account = account("ana@pethaven.test");
+        account.setEnabled(false);
+
+        // Act
+        userRepository.saveAndFlush(account);
+        entityManager.clear();
+
+        // Assert
+        Assertions.assertThat(userRepository.findByUsername("ana@pethaven.test").orElseThrow().isEnabled()).isFalse();
     }
 
     @Test

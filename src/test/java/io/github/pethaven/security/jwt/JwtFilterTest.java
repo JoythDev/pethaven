@@ -3,6 +3,8 @@ package io.github.pethaven.security.jwt;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 import org.mockito.Mockito;
 import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -125,6 +127,30 @@ public class JwtFilterTest {
         Assertions.assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
         Assertions.assertThat(chain.getRequest()).isNotNull();
     }
+
+    @ParameterizedTest
+    @EnumSource(AccountState.class)
+    public void jwtFilter_ValidTokenOfLockedOrExpiredAccount_ContinuesUnauthenticated(AccountState state) throws Exception {
+        // Arrange
+        // Mismo comportamiento que la cuenta desactivada para el resto de estados que comprueba Spring Security.
+        Mockito.when(jwtProvider.resolveUsername("restricted")).thenReturn(Optional.of(EMAIL));
+        Mockito.when(userDetailsService.loadUserByUsername(EMAIL)).thenReturn(User.withUsername(EMAIL)
+                .password("{noop}irrelevant")
+                .accountLocked(state == AccountState.LOCKED)
+                .accountExpired(state == AccountState.ACCOUNT_EXPIRED)
+                .credentialsExpired(state == AccountState.CREDENTIALS_EXPIRED)
+                .authorities(new SimpleGrantedAuthority("ROLE_OWNER"))
+                .build());
+
+        // Act
+        filter.doFilter(bearer("restricted"), response, chain);
+
+        // Assert
+        Assertions.assertThat(SecurityContextHolder.getContext().getAuthentication()).isNull();
+        Assertions.assertThat(chain.getRequest()).isNotNull();
+    }
+
+    public enum AccountState { LOCKED, ACCOUNT_EXPIRED, CREDENTIALS_EXPIRED }
 
     @Test
     public void jwtFilter_ContextAlreadyAuthenticated_DoesNotReplaceIt() throws Exception {

@@ -299,6 +299,9 @@ public class VeterinarianServiceMockTest {
         Assertions.assertThat(account.getPassword()).isNotEqualTo("plain-password");
         Assertions.assertThat(PASSWORD_ENCODER.matches("plain-password", account.getPassword())).isTrue();
         Assertions.assertThat(account.getRoles()).extracting(Role::getName).containsExactly(Role.VETERINARIAN);
+        // Veterinario nuevo activo: su cuenta de login nace habilitada.
+        Assertions.assertThat(saved.isActive()).isTrue();
+        Assertions.assertThat(account.isEnabled()).isTrue();
         Assertions.assertThat(saved.getPhotoUrl()).isEqualTo("https://pethaven.test/photos/laura.jpg");
         // El mapper inicializa los campos gestionados por el sistema al crear la entidad.
         Assertions.assertThat(saved.getAttentions()).isZero();
@@ -526,6 +529,8 @@ public class VeterinarianServiceMockTest {
         Mockito.verify(veterinarianRepository).save(captor.capture());
         Assertions.assertThat(captor.getValue()).isSameAs(existing);
         Assertions.assertThat(captor.getValue().isActive()).isFalse();
+        // La cuenta de login se deshabilita con el perfil: no puede iniciar sesión y sus tokens dejan de servir.
+        Assertions.assertThat(captor.getValue().getUser().isEnabled()).isFalse();
     }
 
     @Test
@@ -535,6 +540,7 @@ public class VeterinarianServiceMockTest {
                 1L, "VET-100", "Dra. Laura Gómez", "laura@pethaven.test", "Cuidados Críticos",
                 "https://pethaven.test/photos/laura.jpg");
         existing.setActive(false);
+        existing.getUser().setEnabled(false);
         Mockito.when(veterinarianRepository.findById(1L)).thenReturn(Optional.of(existing));
         Mockito.when(veterinarianRepository.save(ArgumentMatchers.any(Veterinarian.class)))
                 .thenAnswer(invocation -> invocation.getArgument(0));
@@ -548,6 +554,7 @@ public class VeterinarianServiceMockTest {
         Mockito.verify(veterinarianRepository).save(captor.capture());
         Assertions.assertThat(captor.getValue()).isSameAs(existing);
         Assertions.assertThat(captor.getValue().isActive()).isTrue();
+        Assertions.assertThat(captor.getValue().getUser().isEnabled()).isTrue();
     }
 
     @Test

@@ -24,6 +24,13 @@ public class UserEntity {
     @Column(name = "password", length = 255, nullable = false)
     private String password;
 
+    /**
+     * Cuenta habilitada para iniciar sesión. Una cuenta deshabilitada no puede autenticarse
+     * y sus tokens vigentes dejan de ser aceptados (la cuenta se recarga en cada petición).
+     */
+    @Column(name = "enabled", nullable = false)
+    private boolean enabled = true;
+
     @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "user_roles",

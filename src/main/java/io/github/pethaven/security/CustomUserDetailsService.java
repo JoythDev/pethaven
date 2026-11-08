@@ -13,12 +13,16 @@ import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.stream.Collectors;
 
+/**
+ * Traduce la cuenta de login ({@link UserEntity}) al {@link UserDetails} de Spring Security.
+ */
 @Service
 public class CustomUserDetailsService implements UserDetailsService {
+
+    /** Prefijo que Spring Security espera en las autoridades evaluadas con {@code hasRole(...)}. */
+    private static final String ROLE_PREFIX = "ROLE_";
 
     private final UserRepository userRepository;
 
@@ -30,18 +34,18 @@ public class CustomUserDetailsService implements UserDetailsService {
     @Override
     public UserDetails loadUserByUsername(@NonNull String username) throws UsernameNotFoundException {
         UserEntity user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con nombre de usuario: " + username));  // TODO: GlobalExceptionHandler?
+                .orElseThrow(() -> new UsernameNotFoundException("Usuario no encontrado con nombre de usuario: " + username));
 
-        return new User(
-                user.getUsername(),
-                user.getPassword(),
-                getAuthorities(user.getRoles())
-        );
+        return User.withUsername(user.getUsername())
+                .password(user.getPassword())
+                .disabled(!user.isEnabled())
+                .authorities(getAuthorities(user.getRoles()))
+                .build();
     }
 
-    private Collection<GrantedAuthority> getAuthorities(List<Role> roles) {
+    private List<GrantedAuthority> getAuthorities(List<Role> roles) {
         return roles.stream()
-                .map(role -> new SimpleGrantedAuthority(role.getName()))
-                .collect(Collectors.toList());
+                .<GrantedAuthority>map(role -> new SimpleGrantedAuthority(ROLE_PREFIX + role.getName()))
+                .toList();
     }
 }
