@@ -1,5 +1,6 @@
 package io.github.pethaven.controller;
 
+import io.github.pethaven.support.WebMvcSecurityTestSupport;
 import io.github.pethaven.dto.request.TreatmentDrugRequest;
 import io.github.pethaven.dto.request.TreatmentRequest;
 import io.github.pethaven.dto.response.TreatmentDrugResponse;
@@ -31,6 +32,7 @@ import java.util.List;
 
 // Pruebas del controlador de tratamientos con mocks: solo se levanta la capa web (MockMvc), sin base de datos.
 @WebMvcTest(TreatmentController.class)
+@WebMvcSecurityTestSupport
 public class TreatmentControllerTest {
 
     // Datos válidos de la consulta, reutilizados por los casos de validación: cada caso cambia solo el campo que prueba.

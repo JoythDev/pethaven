@@ -1,5 +1,6 @@
 package io.github.pethaven.controller;
 
+import io.github.pethaven.support.WebMvcSecurityTestSupport;
 import io.github.pethaven.dto.response.AdministratorDashboardResponse;
 import io.github.pethaven.service.AdministratorDashboardService;
 import org.assertj.core.api.Assertions;
@@ -20,6 +21,7 @@ import java.util.List;
 
 // Pruebas del dashboard de administrador con mocks: solo se levanta la capa web (MockMvc), sin base de datos.
 @WebMvcTest(AdministratorDashboardController.class)
+@WebMvcSecurityTestSupport
 public class AdministratorDashboardControllerTest {
 
     private static final String DASHBOARD_PATH = "/api/administrators/dashboard";

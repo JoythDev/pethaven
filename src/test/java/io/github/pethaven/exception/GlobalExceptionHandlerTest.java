@@ -1,5 +1,7 @@
 package io.github.pethaven.exception;
 
+import io.github.pethaven.support.WebMvcSecurityTestSupport;
+
 import com.jayway.jsonpath.JsonPath;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
@@ -11,6 +13,7 @@ import jakarta.validation.constraints.Size;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.MethodParameter;
@@ -37,6 +40,8 @@ import java.util.Map;
 
 // Manejadores que ningún endpoint de negocio alcanza: un controlador de prueba lanza cada excepción.
 @WebMvcTest(controllers = GlobalExceptionHandlerTest.ThrowingController.class)
+@WebMvcSecurityTestSupport
+@AutoConfigureMockMvc(addFilters = false)
 @Import(GlobalExceptionHandlerTest.ThrowingController.class)
 public class GlobalExceptionHandlerTest {
 

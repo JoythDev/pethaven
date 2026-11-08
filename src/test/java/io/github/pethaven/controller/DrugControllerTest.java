@@ -1,5 +1,6 @@
 package io.github.pethaven.controller;
 
+import io.github.pethaven.support.WebMvcSecurityTestSupport;
 import io.github.pethaven.dto.request.DrugRequest;
 import io.github.pethaven.dto.response.DrugImportSummaryResponse;
 import io.github.pethaven.dto.response.DrugResponse;
@@ -30,6 +31,7 @@ import java.util.List;
 
 // Pruebas del controlador de medicamentos con mocks: solo se levanta la capa web (MockMvc), sin base de datos.
 @WebMvcTest(DrugController.class)
+@WebMvcSecurityTestSupport
 public class DrugControllerTest {
 
     // Medicamento válido: el precio de compra tiene dos decimales y las unidades son no negativas.

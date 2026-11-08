@@ -1,5 +1,6 @@
 package io.github.pethaven.controller;
 
+import io.github.pethaven.support.WebMvcSecurityTestSupport;
 import io.github.pethaven.entity.Administrator;
 import io.github.pethaven.entity.Owner;
 import io.github.pethaven.entity.Veterinarian;
@@ -23,6 +24,7 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 // Pruebas de los endpoints de login: servicios mockeados y AuthMapper real.
 @WebMvcTest(AuthController.class)
+@WebMvcSecurityTestSupport
 @Import(AuthMapper.class)
 public class AuthControllerTest {
 
