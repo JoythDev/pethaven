@@ -46,9 +46,6 @@ public class DataLoader implements CommandLineRunner {
     private TreatmentService treatmentService;
 
     @Autowired
-    private RoleRepository roleRepository;
-
-    @Autowired
     private UserAccountService userAccountService;
 
     private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
@@ -80,12 +77,7 @@ public class DataLoader implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
-        // ==================================
-        // ==== Cargar roles de PetHaven ====
-        // ==================================
-        roleRepository.save(new Role(Role.ADMIN));
-        roleRepository.save(new Role(Role.VETERINARIAN));
-        roleRepository.save(new Role(Role.OWNER));
+        // Los roles los crea SecuritySeeder, que se ejecuta antes que este cargador.
 
         // ==================================
         // ==== Cargar dueños de ejemplo ====
