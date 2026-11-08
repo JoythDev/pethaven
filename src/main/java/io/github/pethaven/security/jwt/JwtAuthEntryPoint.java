@@ -26,6 +26,10 @@ public class JwtAuthEntryPoint implements AuthenticationEntryPoint {
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
                          AuthenticationException authException) {
-        handlerExceptionResolver.resolveException(request, response, null, authException);
+        if (handlerExceptionResolver.resolveException(request, response, null, authException) == null) {
+            // El resolver no pudo construir el cuerpo (p. ej. el cliente no acepta JSON): se garantiza el 401.
+            // setStatus y no sendError, para no despachar a /error, que también exige autenticación.
+            response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+        }
     }
 }

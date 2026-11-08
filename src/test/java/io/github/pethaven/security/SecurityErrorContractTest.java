@@ -1,8 +1,11 @@
 package io.github.pethaven.security;
 
+import io.github.pethaven.security.jwt.JwtFilter;
 import io.github.pethaven.support.WebMvcSecurityTestSupport;
+import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpStatus;
@@ -53,6 +56,25 @@ public class SecurityErrorContractTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$.message")
                         .value("Se requiere autenticación para acceder a este recurso."))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.path").value("/test/protected"));
+    }
+
+    @Test
+    public void securityFilterChain_ProtectedPathWithNonJsonAccept_StillReturns401() throws Exception {
+        // Act + Assert
+        // El cliente no acepta JSON: el cuerpo ApiErrorResponse no se puede negociar, pero el 401 se mantiene
+        // (antes la respuesta podía terminar como un 200 vacío).
+        mockMvc.perform(MockMvcRequestBuilders.get("/test/protected")
+                        .accept(MediaType.APPLICATION_XML))
+                .andExpect(MockMvcResultMatchers.status().isUnauthorized());
+    }
+
+    @Test
+    public void jwtFilter_ServletRegistration_IsDisabledSoItOnlyRunsInsideTheSecurityChain(
+            @Autowired FilterRegistrationBean<JwtFilter> jwtFilterRegistration) {
+        // Assert
+        // Spring Boot registra cualquier Filter como filtro del servlet; esta registración lo desactiva.
+        Assertions.assertThat(jwtFilterRegistration.isEnabled()).isFalse();
+        Assertions.assertThat(jwtFilterRegistration.getFilter()).isInstanceOf(JwtFilter.class);
     }
 
     // Controlador de prueba en una ruta que la configuración de seguridad protege (anyRequest().authenticated()).

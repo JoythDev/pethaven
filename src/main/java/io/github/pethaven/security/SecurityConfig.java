@@ -4,6 +4,7 @@ import io.github.pethaven.security.jwt.JwtAccessDeniedHandler;
 import io.github.pethaven.security.jwt.JwtAuthEntryPoint;
 import io.github.pethaven.security.jwt.JwtFilter;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.security.authentication.AuthenticationManager;
@@ -61,6 +62,17 @@ public class SecurityConfig {
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    /**
+     * Spring Boot registra automáticamente todo bean {@code Filter} en el contenedor de servlets.
+     * JwtFilter solo debe ejecutarse dentro de la cadena de seguridad, así que esa registración se desactiva.
+     */
+    @Bean
+    public FilterRegistrationBean<JwtFilter> jwtFilterRegistration(JwtFilter filter) {
+        FilterRegistrationBean<JwtFilter> registration = new FilterRegistrationBean<>(filter);
+        registration.setEnabled(false);
+        return registration;
     }
 
     @Bean
