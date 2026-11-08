@@ -916,4 +916,39 @@ public class PetServiceMockTest {
         Assertions.assertThat(hits.get()).isBetween(1, 2);
         Assertions.assertThat(elapsedMillis).isLessThan(1_500);
     }
+
+    @Test
+    public void petService_getPetPhoto_BodyDrippedSlowly_IsCutByTheTimeBudget() throws IOException {
+        // Arrange
+        // Cabeceras inmediatas y cuerpo gota a gota (20 x 200 ms): el presupuesto de 500 ms también cubre el cuerpo.
+        photoServer = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        photoServer.createContext("/", exchange -> {
+            exchange.getResponseHeaders().set("Content-Type", "image/png");
+            exchange.sendResponseHeaders(200, 20);
+            try (OutputStream responseBody = exchange.getResponseBody()) {
+                for (int i = 0; i < 20; i++) {
+                    responseBody.write(1);
+                    responseBody.flush();
+                    Thread.sleep(200);
+                }
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            } catch (IOException e) {
+                // El cliente cerró la conexión al agotar el presupuesto.
+            }
+        });
+        photoServer.start();
+        PetServiceImpl service = new PetServiceImpl(petRepository, new PetMapper(), ownerService,
+                uri -> true, Duration.ofMillis(500));
+        Mockito.when(petRepository.findById(1L)).thenReturn(Optional.of(petWithPhoto(url(photoServer, "/slow.png"))));
+
+        // Act
+        long start = System.nanoTime();
+        Optional<PetService.Photo> result = service.getPetPhoto(1L);
+        long elapsedMillis = (System.nanoTime() - start) / 1_000_000;
+
+        // Assert
+        Assertions.assertThat(result).isEmpty();
+        Assertions.assertThat(elapsedMillis).isLessThan(1_500);
+    }
 }

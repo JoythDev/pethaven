@@ -23,6 +23,12 @@ import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 @Slf4j
 @Service
@@ -46,6 +52,8 @@ public class PetServiceImpl implements PetService {
             .connectTimeout(Duration.ofSeconds(5))
             .followRedirects(HttpClient.Redirect.NEVER)
             .build();
+    /** Lecturas del cuerpo con plazo: un hilo virtual por descarga. */
+    private static final ExecutorService BODY_READERS = Executors.newVirtualThreadPerTaskExecutor();
 
     /** Respuesta de un salto: estado, tipo de contenido, Location (si redirige) y cuerpo (solo con 200). */
     record FetchResult(int status, String contentType, String location, byte[] body) { }
@@ -174,6 +182,7 @@ public class PetServiceImpl implements PetService {
                 }
                 Duration remaining = Duration.ofNanos(deadline - System.nanoTime());
                 if (remaining.isNegative() || remaining.isZero()) {
+                    log.warn("Descarga de la foto de la mascota {} cancelada: se agotó el tiempo máximo ({})", id, uri.getHost());
                     return Optional.empty();
                 }
                 FetchResult response = photoFetcher.fetch(uri, remaining.compareTo(HOP_TIMEOUT) < 0 ? remaining : HOP_TIMEOUT);
@@ -184,6 +193,8 @@ public class PetServiceImpl implements PetService {
                     URI next = uri.resolve(response.location());
                     // Nunca se rebaja de https a http: la descarga quedaría expuesta en claro.
                     if ("https".equalsIgnoreCase(uri.getScheme()) && !"https".equalsIgnoreCase(next.getScheme())) {
+                        log.warn("Descarga de la foto de la mascota {} bloqueada: redirección de https a http ({})",
+                                id, next.getHost());
                         return Optional.empty();
                     }
                     uri = next;
@@ -206,16 +217,34 @@ public class PetServiceImpl implements PetService {
         }
     }
 
-    /** Un salto con el cliente HTTP real; el cuerpo solo se lee con 200 y como máximo MAX_PHOTO_BYTES + 1. */
+    /**
+     * Un salto con el cliente HTTP real, acotado por {@code timeout} de principio a fin: el timeout de la petición
+     * solo cubre la llegada de las cabeceras, así que el cuerpo (solo con 200 y como máximo MAX_PHOTO_BYTES + 1)
+     * se lee en un hilo virtual con el tiempo restante; si se agota, se cierra la conexión.
+     */
     private static FetchResult httpFetch(URI uri, Duration timeout) throws IOException, InterruptedException {
+        long deadline = System.nanoTime() + timeout.toNanos();
         HttpRequest request = HttpRequest.newBuilder(uri).timeout(timeout).GET().build();
         HttpResponse<InputStream> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofInputStream());
         try (InputStream body = response.body()) {
-            byte[] data = response.statusCode() == 200 ? body.readNBytes(MAX_PHOTO_BYTES + 1) : new byte[0];
+            byte[] data = response.statusCode() == 200 ? readWithDeadline(body, deadline) : new byte[0];
             return new FetchResult(response.statusCode(),
                     response.headers().firstValue("Content-Type").orElse(""),
                     response.headers().firstValue("Location").orElse(null),
                     data);
+        }
+    }
+
+    private static byte[] readWithDeadline(InputStream body, long deadline) throws IOException, InterruptedException {
+        Future<byte[]> read = BODY_READERS.submit(() -> body.readNBytes(MAX_PHOTO_BYTES + 1));
+        try {
+            return read.get(Math.max(0, deadline - System.nanoTime()), TimeUnit.NANOSECONDS);
+        } catch (TimeoutException e) {
+            read.cancel(true);
+            body.close();
+            throw new IOException("Tiempo agotado leyendo la foto", e);
+        } catch (ExecutionException e) {
+            throw e.getCause() instanceof IOException io ? io : new IOException(e.getCause());
         }
     }
 }
