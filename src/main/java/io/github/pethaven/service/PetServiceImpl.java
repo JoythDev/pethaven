@@ -38,12 +38,27 @@ public class PetServiceImpl implements PetService {
     private static final int MAX_PHOTO_BYTES = 5 * 1024 * 1024;
     private static final int MAX_REDIRECTS = 3;
     private static final Set<Integer> REDIRECT_STATUSES = Set.of(301, 302, 303, 307, 308);
+    private static final Duration HOP_TIMEOUT = Duration.ofSeconds(10);
+    /** Tiempo máximo de toda la descarga, redirecciones incluidas (la URL la controla un usuario). */
+    private static final Duration DOWNLOAD_BUDGET = Duration.ofSeconds(20);
     // Las redirecciones se siguen a mano para validar cada salto contra la política anti-SSRF.
-    private final HttpClient httpClient = HttpClient.newBuilder()
+    private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
             .connectTimeout(Duration.ofSeconds(5))
             .followRedirects(HttpClient.Redirect.NEVER)
             .build();
+
+    /** Respuesta de un salto: estado, tipo de contenido, Location (si redirige) y cuerpo (solo con 200). */
+    record FetchResult(int status, String contentType, String location, byte[] body) { }
+
+    /** Transporte de un salto HTTP; sustituible en pruebas (p. ej. para simular orígenes HTTPS). */
+    @FunctionalInterface
+    interface PhotoFetcher {
+        FetchResult fetch(URI uri, Duration timeout) throws IOException, InterruptedException;
+    }
+
     private final OutboundUrlPolicy outboundUrlPolicy;
+    private final Duration downloadBudget;
+    private final PhotoFetcher photoFetcher;
 
     @Autowired
     public PetServiceImpl(
@@ -52,10 +67,22 @@ public class PetServiceImpl implements PetService {
             OwnerService ownerService,
             OutboundUrlPolicy outboundUrlPolicy
     ) {
+        this(petRepository, petMapper, ownerService, outboundUrlPolicy, DOWNLOAD_BUDGET);
+    }
+
+    PetServiceImpl(PetRepository petRepository, PetMapper petMapper, OwnerService ownerService,
+                   OutboundUrlPolicy outboundUrlPolicy, Duration downloadBudget) {
+        this(petRepository, petMapper, ownerService, outboundUrlPolicy, downloadBudget, PetServiceImpl::httpFetch);
+    }
+
+    PetServiceImpl(PetRepository petRepository, PetMapper petMapper, OwnerService ownerService,
+                   OutboundUrlPolicy outboundUrlPolicy, Duration downloadBudget, PhotoFetcher photoFetcher) {
         this.petRepository = petRepository;
         this.petMapper = petMapper;
         this.ownerService = ownerService;
         this.outboundUrlPolicy = outboundUrlPolicy;
+        this.downloadBudget = downloadBudget;
+        this.photoFetcher = photoFetcher;
     }
 
     @Override
@@ -139,29 +166,35 @@ public class PetServiceImpl implements PetService {
         }
         try {
             URI uri = URI.create(url);
+            long deadline = System.nanoTime() + downloadBudget.toNanos();
             for (int redirects = 0; redirects <= MAX_REDIRECTS; redirects++) {
                 if (!outboundUrlPolicy.isAllowed(uri)) {
                     log.warn("Descarga de la foto de la mascota {} bloqueada: destino no permitido ({})", id, uri.getHost());
                     return Optional.empty();
                 }
-                HttpRequest request = HttpRequest.newBuilder(uri).timeout(Duration.ofSeconds(10)).GET().build();
-                HttpResponse<InputStream> response = httpClient.send(request, HttpResponse.BodyHandlers.ofInputStream());
-                try (InputStream body = response.body()) {
-                    if (REDIRECT_STATUSES.contains(response.statusCode())) {
-                        Optional<String> location = response.headers().firstValue("Location");
-                        if (location.isEmpty()) {
-                            return Optional.empty();
-                        }
-                        uri = uri.resolve(location.get());
-                        continue;
-                    }
-                    String type = response.headers().firstValue("Content-Type").orElse("").split(";")[0].trim().toLowerCase();
-                    if (response.statusCode() != 200 || !PHOTO_TYPES.contains(type)) {
+                Duration remaining = Duration.ofNanos(deadline - System.nanoTime());
+                if (remaining.isNegative() || remaining.isZero()) {
+                    return Optional.empty();
+                }
+                FetchResult response = photoFetcher.fetch(uri, remaining.compareTo(HOP_TIMEOUT) < 0 ? remaining : HOP_TIMEOUT);
+                if (REDIRECT_STATUSES.contains(response.status())) {
+                    if (response.location() == null || response.location().isBlank()) {
                         return Optional.empty();
                     }
-                    byte[] data = body.readNBytes(MAX_PHOTO_BYTES + 1);
-                    return data.length > MAX_PHOTO_BYTES ? Optional.empty() : Optional.of(new Photo(data, type));
+                    URI next = uri.resolve(response.location());
+                    // Nunca se rebaja de https a http: la descarga quedaría expuesta en claro.
+                    if ("https".equalsIgnoreCase(uri.getScheme()) && !"https".equalsIgnoreCase(next.getScheme())) {
+                        return Optional.empty();
+                    }
+                    uri = next;
+                    continue;
                 }
+                String type = response.contentType().split(";")[0].trim().toLowerCase();
+                if (response.status() != 200 || !PHOTO_TYPES.contains(type)) {
+                    return Optional.empty();
+                }
+                byte[] data = response.body();
+                return data.length > MAX_PHOTO_BYTES ? Optional.empty() : Optional.of(new Photo(data, type));
             }
             // Más redirecciones de las permitidas.
             return Optional.empty();
@@ -170,6 +203,19 @@ public class PetServiceImpl implements PetService {
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return Optional.empty();
+        }
+    }
+
+    /** Un salto con el cliente HTTP real; el cuerpo solo se lee con 200 y como máximo MAX_PHOTO_BYTES + 1. */
+    private static FetchResult httpFetch(URI uri, Duration timeout) throws IOException, InterruptedException {
+        HttpRequest request = HttpRequest.newBuilder(uri).timeout(timeout).GET().build();
+        HttpResponse<InputStream> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofInputStream());
+        try (InputStream body = response.body()) {
+            byte[] data = response.statusCode() == 200 ? body.readNBytes(MAX_PHOTO_BYTES + 1) : new byte[0];
+            return new FetchResult(response.statusCode(),
+                    response.headers().firstValue("Content-Type").orElse(""),
+                    response.headers().firstValue("Location").orElse(null),
+                    data);
         }
     }
 }

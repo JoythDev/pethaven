@@ -59,7 +59,15 @@ public class PublicNetworkUrlPolicyTest {
             "240.0.0.1",          // reservada 240/4
             "255.255.255.255",    // broadcast
             "::ffff:127.0.0.1",   // IPv4 escrita como IPv6
-            "::ffff:10.0.0.1"
+            "::ffff:10.0.0.1",
+            // Prefijos de traducción IPv6 -> IPv4: podrían llegar a direcciones internas con NAT64/6to4/Teredo.
+            "::7f00:1",           // IPv4-compatible (::/96) de 127.0.0.1
+            "::a00:1",            // IPv4-compatible de 10.0.0.1
+            "64:ff9b::7f00:1",    // NAT64 64:ff9b::/96 de 127.0.0.1
+            "64:ff9b::5db8:d822", // NAT64 incluso con una IPv4 pública incrustada
+            "64:ff9b:1::a00:1",   // NAT64 de uso local 64:ff9b:1::/48
+            "2002:7f00:1::1",     // 6to4 2002::/16 de 127.0.0.1
+            "2001:0:4136:e378::1" // Teredo 2001::/32
     })
     public void publicNetworkUrlPolicy_HostResolvingToNonPublicAddress_IsBlocked(String address) {
         Assertions.assertThat(allows("https://photos.test/a.png", address)).isFalse();
@@ -67,7 +75,8 @@ public class PublicNetworkUrlPolicyTest {
 
     @ParameterizedTest
     // Incluye direcciones justo fuera de los rangos bloqueados (172.16/12, 100.64/10, 198.18/15).
-    @ValueSource(strings = {PUBLIC_V4, PUBLIC_V6, "172.32.0.1", "100.128.0.1", "198.20.0.1"})
+    @ValueSource(strings = {PUBLIC_V4, PUBLIC_V6, "172.32.0.1", "100.128.0.1", "198.20.0.1",
+            "2001:4860:4860::8888", "2a00:1450:4001::1"})
     public void publicNetworkUrlPolicy_HostResolvingToPublicAddress_IsAllowed(String address) {
         Assertions.assertThat(allows("https://photos.test/a.png", address)).isTrue();
     }

@@ -27,6 +27,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -862,5 +863,57 @@ public class PetServiceMockTest {
         Assertions.assertThat(protectedService.getPetPhoto(1L)).isEmpty();
         Assertions.assertThat(hits).hasValue(0);
         Assertions.assertThat(URI.create(url(photoServer, "/photo.png")).getHost()).isEqualTo("127.0.0.1");
+    }
+
+    @Test
+    public void petService_getPetPhoto_RedirectFromHttpsToHttp_IsNotFollowed() {
+        // Arrange
+        // Rebajar de https a http expondría la descarga en claro: no se sigue (como hacía Redirect.NORMAL).
+        Mockito.when(petRepository.findById(1L)).thenReturn(Optional.of(petWithPhoto("https://photos.test/start")));
+        java.util.List<URI> validated = new java.util.ArrayList<>();
+        outboundUrlPolicy = uri -> {
+            validated.add(uri);
+            return true;
+        };
+        PetServiceImpl service = new PetServiceImpl(petRepository, new PetMapper(), ownerService,
+                uri -> outboundUrlPolicy.isAllowed(uri), Duration.ofSeconds(20),
+                (uri, timeout) -> new PetServiceImpl.FetchResult(302, "", "http://photos.test/photo.png", new byte[0]));
+
+        // Act + Assert
+        Assertions.assertThat(service.getPetPhoto(1L)).isEmpty();
+        Assertions.assertThat(validated).containsExactly(URI.create("https://photos.test/start"));
+    }
+
+    @Test
+    public void petService_getPetPhoto_TotalTimeBudgetExhausted_StopsFollowingRedirects() throws IOException {
+        // Arrange
+        // Cada salto tarda 300 ms y el presupuesto total es de 500 ms: no se agota el límite de 3 redirecciones.
+        AtomicInteger hits = new AtomicInteger();
+        photoServer = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        photoServer.createContext("/", exchange -> {
+            hits.incrementAndGet();
+            try {
+                Thread.sleep(300);
+            } catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+            exchange.getResponseHeaders().set("Location", "/next");
+            exchange.sendResponseHeaders(302, -1);
+            exchange.close();
+        });
+        photoServer.start();
+        PetServiceImpl service = new PetServiceImpl(petRepository, new PetMapper(), ownerService,
+                uri -> true, Duration.ofMillis(500));
+        Mockito.when(petRepository.findById(1L)).thenReturn(Optional.of(petWithPhoto(url(photoServer, "/start"))));
+
+        // Act
+        long start = System.nanoTime();
+        Optional<PetService.Photo> result = service.getPetPhoto(1L);
+        long elapsedMillis = (System.nanoTime() - start) / 1_000_000;
+
+        // Assert
+        Assertions.assertThat(result).isEmpty();
+        Assertions.assertThat(hits.get()).isBetween(1, 2);
+        Assertions.assertThat(elapsedMillis).isLessThan(1_500);
     }
 }

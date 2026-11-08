@@ -16,8 +16,9 @@ import java.util.Set;
  *   <li>esquema {@code http} o {@code https}, sin credenciales en la URL;</li>
  *   <li>puerto implícito, 80 o 443 (impide usar el servidor para escanear puertos);</li>
  *   <li>todas las direcciones a las que resuelve el host son públicas: se bloquean loopback, redes privadas,
- *       link-local (incluidos los metadatos de la nube, 169.254.169.254), CGNAT, multicast, rangos reservados
- *       y las direcciones IPv6 equivalentes.</li>
+ *       link-local (incluidos los metadatos de la nube, 169.254.169.254), CGNAT, multicast, rangos reservados,
+ *       las direcciones IPv6 equivalentes y los prefijos IPv6 que transportan IPv4 (IPv4-compatible, NAT64,
+ *       6to4 y Teredo).</li>
  * </ul>
  * Riesgo residual conocido: el cliente HTTP vuelve a resolver el nombre al conectar (DNS rebinding); la
  * validación de cada redirección, el límite de saltos y el filtrado del contenido limitan su impacto.
@@ -88,8 +89,25 @@ public class PublicNetworkUrlPolicy implements OutboundUrlPolicy {
                     && first < 240;                                  // 240.0.0.0/4 reservada y broadcast
         }
         if (address instanceof Inet6Address) {
-            return (b[0] & 0xFE) != 0xFC;                            // fc00::/7 direcciones locales únicas
+            return (b[0] & 0xFE) != 0xFC                             // fc00::/7 direcciones locales únicas
+                    && !isIpv4Translation(b);
         }
         return false;
+    }
+
+    /**
+     * Prefijos IPv6 que transportan una dirección IPv4 (y con NAT64, 6to4 o Teredo podrían alcanzar redes
+     * internas IPv4). Se bloquean enteros: ningún host legítimo de imágenes publica direcciones en ellos.
+     */
+    private static boolean isIpv4Translation(byte[] b) {
+        boolean first96BitsZero = true;                              // ::/96 IPv4-compatible
+        for (int i = 0; i < 12; i++) {
+            first96BitsZero &= b[i] == 0;
+        }
+        boolean nat64 = b[0] == 0x00 && b[1] == 0x64 && (b[2] & 0xFF) == 0xFF && (b[3] & 0xFF) == 0x9B
+                && b[4] == 0 && (b[5] == 0 || b[5] == 1);           // 64:ff9b::/96 y 64:ff9b:1::/48
+        boolean sixToFour = b[0] == 0x20 && b[1] == 0x02;            // 2002::/16
+        boolean teredo = b[0] == 0x20 && b[1] == 0x01 && b[2] == 0 && b[3] == 0; // 2001::/32
+        return first96BitsZero || nat64 || sixToFour || teredo;
     }
 }
