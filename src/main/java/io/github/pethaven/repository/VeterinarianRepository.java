@@ -11,6 +11,9 @@ public interface VeterinarianRepository extends JpaRepository<Veterinarian, Long
     Optional<Veterinarian> findByDocument(String document);
     Optional<Veterinarian> findByEmail(String email);
 
+    /** Perfil asociado a la cuenta de login con el username indicado. */
+    Optional<Veterinarian> findByUserUsername(String username);
+
     boolean existsByDocument(String document);
     boolean existsByEmail(String email);
     boolean existsByDocumentAndIdNot(String document, Long id);

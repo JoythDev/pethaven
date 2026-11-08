@@ -35,6 +35,11 @@ public class JwtProvider {
         this.expirationMillis = expirationMillis;
     }
 
+    /** Vigencia de los tokens emitidos, en segundos. */
+    public long getExpirationSeconds() {
+        return expirationMillis / 1000;
+    }
+
     public String generateToken(Authentication authentication) {
         long now = System.currentTimeMillis();
         return Jwts.builder()

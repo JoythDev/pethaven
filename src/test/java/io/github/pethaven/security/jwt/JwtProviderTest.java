@@ -76,6 +76,13 @@ public class JwtProviderTest {
     }
 
     @Test
+    public void jwtProvider_getExpirationSeconds_ConfiguredMillis_ReturnsSeconds() {
+        // Act + Assert
+        // El login informa la vigencia en segundos (expiresIn); la propiedad está en milisegundos.
+        Assertions.assertThat(new JwtProvider(SECRET, TWO_HOURS).getExpirationSeconds()).isEqualTo(7_200L);
+    }
+
+    @Test
     public void jwtProvider_constructor_WeakSecret_FailsFast() {
         // Arrange
         // 16 bytes (128 bits): por debajo del mínimo de 256 bits para HMAC-SHA.

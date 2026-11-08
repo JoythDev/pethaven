@@ -11,6 +11,9 @@ public interface OwnerRepository extends JpaRepository<Owner, Long> {
     Optional<Owner> findByDocument(String document);
     Optional<Owner> findByEmail(String email);
 
+    /** Perfil asociado a la cuenta de login con el username indicado. */
+    Optional<Owner> findByUserUsername(String username);
+
     boolean existsByDocument(String document);
     boolean existsByEmail(String email);
     boolean existsByDocumentAndIdNot(String document, Long id);
