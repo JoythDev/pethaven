@@ -56,6 +56,6 @@ export class VeterinarioLayoutComponent {
   // Borra la sesión guardada y vuelve al login del veterinario.
   private cerrarSesion(): void {
     this.auth.logout();
-    void this.router.navigate(['/vet/login']);
+    void this.router.navigate(['/login']);
   }
 }

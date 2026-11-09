@@ -43,6 +43,6 @@ export class VeterinarioPerfilComponent implements OnInit {
   // Borra la sesión guardada y vuelve al login del veterinario.
   cerrarSesion(): void {
     this.auth.logout();
-    this.router.navigate(['/vet/login']);
+    this.router.navigate(['/login']);
   }
 }

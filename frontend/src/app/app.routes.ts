@@ -7,9 +7,7 @@ import { ownerPortalGuard, roleGuard } from './core/auth/auth.guard';
 
 export const routes: Routes = [
   { path: '', component: LandingComponent },
-  { path: 'login', component: LoginComponent, data: { kind: 'owner' } },
-  { path: 'vet/login', component: LoginComponent, data: { kind: 'vet' } },
-  { path: 'admin/login', component: LoginComponent, data: { kind: 'admin' } },
+  { path: 'login', component: LoginComponent },
 
   // Panel del veterinario: layout propio sobre el shell compartido.
   {

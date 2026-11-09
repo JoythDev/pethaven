@@ -17,8 +17,8 @@ const MAX_TIMER_DELAY_MS = 2_147_483_647;
 // Login de cada portal: a dónde se envía al usuario cuando no tiene sesión o expira.
 const LOGIN_ROUTES: Record<AuthRole, string> = {
   OWNER: '/login',
-  VETERINARIAN: '/vet/login',
-  ADMIN: '/admin/login',
+  VETERINARIAN: '/login',
+  ADMIN: '/login',
 };
 
 // Sesión con Spring Security + JWT: inicia sesión contra el API, guarda el token en localStorage,

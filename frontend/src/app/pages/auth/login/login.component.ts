@@ -5,51 +5,7 @@ import { applyServerErrors, getErrorMessage } from '../../../core/http/http-erro
 import { AuthUser } from '../../../models/auth.model';
 import { AuthService } from '../../../services/auth.service';
 
-type LoginKind = 'owner' | 'vet' | 'admin';
-
-// Textos, imagen y destino de cada portal. El mismo componente sirve para todos.
-interface LoginConfig {
-  title: string;
-  subtitle: string;
-  image: string;
-  icon: string;
-  otherLabel: string;
-  otherLink: string;
-  otherCta: string;
-}
-
-const CONFIGS: Record<LoginKind, LoginConfig> = {
-  owner: {
-    title: 'Bienvenido de nuevo',
-    subtitle: 'Ingresa para ver el estado y el historial de tus mascotas.',
-    image: '/images/instalacion_recepcion.jpg',
-    icon: '/images/icons/paw-print-icon.svg',
-    otherLabel: '¿Eres veterinario?',
-    otherLink: '/vet/login',
-    otherCta: 'Ingresa aquí',
-  },
-  vet: {
-    title: 'Portal Veterinario',
-    subtitle: 'Accede a tus pacientes, tratamientos y reportes clínicos.',
-    image: '/images/instalacion_quirofano.jpg',
-    icon: '/images/icons/stethoscope-icon.svg',
-    otherLabel: '¿Eres dueño de una mascota?',
-    otherLink: '/login',
-    otherCta: 'Inicia sesión aquí',
-  },
-  admin: {
-    title: 'Portal Administrador',
-    subtitle: 'Gestiona veterinarios y mascotas de la clínica.',
-    image: '/images/instalacion_recepcion2.jpg',
-    icon: '/images/icons/gear-icon.svg',
-    otherLabel: '¿Eres veterinario?',
-    otherLink: '/vet/login',
-    otherCta: 'Ingresa aquí',
-  },
-};
-
-// Pantalla de inicio de sesión. Qué portal es (dueño, veterinario o administrador) se decide con
-// data.kind en app.routes.ts; el login es único y, al entrar, cada usuario va al portal de su rol.
+// Pantalla de inicio de sesión única: al entrar, cada usuario va al portal de su rol.
 @Component({
   selector: 'app-login',
   imports: [ReactiveFormsModule, RouterLink],
@@ -61,9 +17,6 @@ export class LoginComponent {
   private readonly auth = inject(AuthService);
 
   private readonly route = inject(ActivatedRoute);
-  private readonly kind: LoginKind = this.route.snapshot.data['kind'] ?? 'owner';
-
-  readonly config = CONFIGS[this.kind];
 
   readonly form = this.fb.nonNullable.group({
     email: ['', [Validators.required, Validators.email, Validators.maxLength(120)]],

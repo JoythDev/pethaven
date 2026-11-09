@@ -14,7 +14,7 @@
     >
       <!-- Columna de la imagen (solo en pantallas grandes) -->
       <div class="relative hidden lg:block">
-        <img [src]="config.image" alt="" class="absolute inset-0 h-full w-full object-cover" />
+        <img src="/images/instalacion_recepcion.jpg" alt="" class="absolute inset-0 h-full w-full object-cover" />
         <div class="absolute inset-0 bg-tertiary/55"></div>
         <div class="absolute inset-x-0 bottom-0 p-10 text-background">
           <p class="font-script text-3xl">Cuidamos a quien más quieres</p>
@@ -25,11 +25,11 @@
       <!-- Columna del formulario -->
       <div class="p-6 sm:p-10 lg:p-12 flex flex-col justify-center">
         <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary">
-          <img [src]="config.icon" alt="" class="h-7 w-7" />
+          <img src="/images/icons/paw-print-icon.svg" alt="" class="h-7 w-7" />
         </div>
 
-        <h1 class="mt-5 font-display text-3xl lg:text-4xl font-bold">{{ config.title }}</h1>
-        <p class="mt-2 text-sm lg:text-base text-text/80">{{ config.subtitle }}</p>
+        <h1 class="mt-5 font-display text-3xl lg:text-4xl font-bold">Bienvenido de nuevo</h1>
+        <p class="mt-2 text-sm lg:text-base text-text/80">Ingresa para acceder a tu portal de PetHaven.</p>
 
         <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="mt-8 flex flex-col gap-5">
           <!-- Correo -->
@@ -121,12 +121,6 @@
         </form>
 
         <p class="mt-6 text-center text-sm">
-          {{ config.otherLabel }}
-          <a [routerLink]="config.otherLink" class="font-bold text-tertiary underline-offset-4 hover:underline">
-            {{ config.otherCta }}
-          </a>
-        </p>
-        <p class="mt-2 text-center text-sm">
           <a routerLink="/" class="text-text/70 hover:opacity-75">← Volver al inicio</a>
         </p>
       </div>

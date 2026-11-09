@@ -48,6 +48,6 @@ export class AdminLayoutComponent {
 
   private cerrarSesion(): void {
     this.auth.logout();
-    void this.router.navigate(['/admin/login']);
+    void this.router.navigate(['/login']);
   }
 }
