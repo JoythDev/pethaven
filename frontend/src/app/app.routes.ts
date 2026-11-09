@@ -167,7 +167,7 @@ export const routes: Routes = [
     ],
   },
 
-  // Panel del administrador: gestiona veterinarios, mascotas (se desactivan, no se borran) y medicamentos.
+  // Panel del administrador: gestiona veterinarios y medicamentos, y consulta las mascotas.
   {
     path: 'administrador',
     canActivate: [roleGuard('ADMIN')],

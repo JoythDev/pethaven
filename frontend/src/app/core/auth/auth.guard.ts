@@ -3,8 +3,8 @@ import { CanActivateFn, Router } from '@angular/router';
 import { AuthRole } from '../../models/auth.model';
 import { AuthService } from '../../services/auth.service';
 
-// Exige una sesión con el rol del portal. Sin sesión lleva al login de ese portal (con la ruta a la
-// que volver); con otro rol, al inicio de su propio portal. Es una ayuda de navegación: la
+// Exige una sesión con el rol del portal. Sin sesión lleva al login (con la ruta a la que
+// volver); con otro rol, al inicio de su propio portal. Es una ayuda de navegación: la
 // autorización real la aplica el API.
 export function roleGuard(role: AuthRole): CanActivateFn {
   return (_route, state) => {

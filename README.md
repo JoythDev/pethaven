@@ -40,7 +40,7 @@ Hasta ahora, buena parte de la operación vivía en papel y en hojas de Excel: e
 3. La mascota queda hospitalizada mientras recibe tratamientos.
 4. Al recuperarse y ser recogida, la mascota pasa a estado **inactivo** — su historial nunca se borra.
 
-**Arquitectura actual:** el backend Spring Boot expone toda la operación como **API REST** y el frontend **Angular + PrimeNG + RxJS** consume esa API como una SPA ([ver diagrama de arquitectura](docs/architecture/Diagrama-Arquitectura.png)). Las antiguas vistas Thymeleaf ya fueron retiradas; el avance por entrega está en [Roadmap y estado del proyecto](#roadmap-y-estado-del-proyecto).
+**Arquitectura actual:** el backend Spring Boot expone toda la operación como **API REST** y el frontend **Angular + PrimeNG + RxJS** consume esa API como una SPA ([ver diagrama de arquitectura](docs/architecture/Diagrama-Arquitectura.png)). El acceso está protegido con **Spring Security**: un único login entrega un token JWT, las contraseñas se guardan con BCrypt y cada rol solo llega a sus operaciones y a sus propios recursos. Las antiguas vistas Thymeleaf ya fueron retiradas; el avance por entrega está en [Roadmap y estado del proyecto](#roadmap-y-estado-del-proyecto).
 
 ---
 
@@ -63,7 +63,7 @@ El avance se organiza según las entregas del enunciado. Cada funcionalidad indi
 |---|---|---|---|---|
 | 1 | 7 | 0 | 0 | Completada |
 | 2 | 6 | 0 | 0 | Completada |
-| 3 | 1 | 1 | 1 | En progreso |
+| 3 | 2 | 0 | 1 | En progreso |
 
 ### Entrega 1 — Features 1 a 7
 
@@ -83,7 +83,7 @@ El avance se organiza según las entregas del enunciado. Cada funcionalidad indi
 
 | Feature · AC | Funcionalidad | Detalle | Backend | Frontend | Estado |
 |---|---|---|---|---|---|
-| F08 · AC25–AC28 | Portal de administración | Acceso del administrador y CRUD de veterinarios | ✅ | ✅ | Completado — login con rol `ADMIN`, CRUD de veterinarios y gestión de mascotas; la autorización por rol y el JWT son de la Entrega 3 (F13) |
+| F08 · AC25–AC28 | Portal de administración | Acceso del administrador y CRUD de veterinarios | ✅ | ✅ | Completado — login con rol `ADMIN`, CRUD de veterinarios y consulta de mascotas; la autorización por rol y el JWT llegaron con F13 |
 | F09-A · AC29 | Dashboard de KPIs | Métricas de tratamientos, veterinarios, mascotas, ventas y ganancias | ✅ | ✅ | Completado — `GET /api/administrators/dashboard` y pantalla `/administrador/dashboard` |
 | F09-B · AC30 | Carga de medicamentos | Importación del inventario desde Excel al iniciar | ✅ | ✅ | Completado — carga inicial al arrancar y, además, importación desde el portal del administrador en `/administrador/medicamentos/import` |
 | F10 · AC31–AC32 | Tratamientos | Registrar tratamiento, descontar stock y listar mascotas tratadas por veterinario | ✅ | ✅ | Completado — registro con stock y filtro «Mis pacientes» en el listado de mascotas del veterinario |
@@ -94,9 +94,9 @@ El avance se organiza según las entregas del enunciado. Cada funcionalidad indi
 
 | Feature · AC | Funcionalidad | Detalle | Backend | Frontend | Estado |
 |---|---|---|---|---|---|
-| F13 · AC34 | Control de acceso por roles | Autorización según el rol del usuario | 🟡 | ⬜ | Parcial — los tres logins (dueño, veterinario y administrador) devuelven el rol; no hay token JWT ni guards de autorización |
+| F13 · AC34 | Control de acceso por roles | Autorización según el rol del usuario | ✅ | ✅ | Completado — Spring Security con login único, token JWT de 2 horas y contraseñas BCrypt; matriz de permisos por rol y por recurso propio (ver [Permisos](docs/api/API.md#permisos)); en la SPA, sesión en `localStorage`, interceptor del token y guards por portal |
 | E3 · Pruebas cliente | Pruebas del cliente web | Al menos 2 casos de uso automatizados | ➖ | ⬜ | Pendiente — no hay specs de cliente |
-| E3 · Pruebas backend | Pruebas de backend | 25 pruebas con datos propios y limpieza posterior | ✅ | ➖ | Implementado — 676 pruebas (647 unitarias y 29 de integración) sobre repositorios, servicios y controladores, cada una con sus propios datos y limpieza posterior. Ver [Pruebas del backend](#pruebas-del-backend) |
+| E3 · Pruebas backend | Pruebas de backend | 25 pruebas con datos propios y limpieza posterior | ✅ | ➖ | Implementado — 970 pruebas (913 unitarias y 57 de integración) sobre repositorios, servicios y controladores, cada una con sus propios datos y limpieza posterior. Ver [Pruebas del backend](#pruebas-del-backend) |
 
 ### Extras fuera del enunciado
 
@@ -111,9 +111,9 @@ Estas funcionalidades no están exigidas por el enunciado, pero ya forman parte 
 | Consulta de medicamentos por el veterinario | Listado y detalle de solo lectura del inventario, sin crear, editar, eliminar ni importar | ✅ | ✅ | Completado — `/veterinario/medicamentos` |
 | Evolución y diagnóstico por consulta | Cada tratamiento registra peso, diagnóstico, evolución (`STABLE`, `IMPROVING`, `WORSENING`) y notas; el ingreso va sin evolución | ✅ | ✅ | Completado |
 | Alta de mascotas | `POST /api/pets/{id}/discharge` deja a la mascota estable y registra el alta (`RECOVERED`) en su historia | ✅ | ✅ | Completado |
-| Historia clínica en PDF | El veterinario ve la historia clínica de la mascota y la descarga en PDF (jsPDF) | ➖ | ✅ | Completado — `/veterinario/pets/:id/historia` |
+| Historia clínica en PDF | El veterinario ve la historia clínica de la mascota y la descarga en PDF (jsPDF) | ➖ | ✅ | Completado — `/veterinario/mascotas/:id/historia` |
 | Foto de mascota vía API | `GET /api/pets/{id}/photo` sirve la foto desde el backend para poder incluirla en el PDF | ✅ | ✅ | Completado |
-| Gestión de mascotas por el administrador | Listado de mascotas con activación y desactivación desde el portal del administrador | ✅ | ✅ | Completado |
+| Consulta de mascotas por el administrador | Listado de solo lectura de las mascotas desde el portal del administrador; activarlas o desactivarlas es tarea del veterinario | ✅ | ✅ | Completado |
 
 ---
 
@@ -174,8 +174,8 @@ Una mirada al estado actual de la aplicación, con datos de prueba.
 | Base de datos | H2 en modo archivo, con consola de administración web |
 | Importación | Apache POI 5.5.1 — lectura de medicamentos desde Excel (`.xlsx`/`.xls`) |
 | Archivos | Carga multipart de hasta 10 MB (`POST /api/drugs/import`) |
-| Autenticación | Provisional — login de dueño, veterinario y administrador; devuelve el rol, sin token ni autorización por rol |
-| CORS | Origen permitido: `http://localhost:4200` |
+| Seguridad | Spring Security 7 — login único con token JWT (jjwt 0.13, 2 horas, sin refresco), contraseñas BCrypt, autorización por rol y por recurso propio (`@PreAuthorize`) |
+| CORS | Orígenes de `CORS_ALLOWED_ORIGINS` (por defecto `http://localhost:4200`), sin credenciales |
 | Utilidades | Lombok |
 | Pruebas | JUnit 5, Mockito, AssertJ y MockMvc; Surefire (unitarias) y Failsafe (integración); JaCoCo con un mínimo de 80% de líneas en `service` y `controller` |
 | Build | Maven Wrapper |
@@ -187,6 +187,7 @@ Una mirada al estado actual de la aplicación, con datos de prueba.
 | Framework | Angular 19 — componentes standalone y lazy loading |
 | UI | PrimeNG 19 con tema propio de PetHaven + Tailwind CSS 4 |
 | API | `HttpClient` + RxJS, con URL base desde `environments/` |
+| Sesión | Token JWT en `localStorage`, interceptor que lo añade a las peticiones al API, guards por rol y cierre de sesión al expirar o con un `401` |
 | Reactividad | RxJS 7.8 + signals |
 | PDF | jsPDF 4 — descarga de la historia clínica de la mascota |
 | Lenguaje | TypeScript 5.7 |
@@ -209,11 +210,11 @@ pethaven/
 │   ├── public/                    # Imágenes, íconos, videos y plantilla de Excel de medicamentos
 │   └── src/
 │       ├── app/
-│       │   ├── core/              # URL del API, errores HTTP, notificaciones y utilidades
+│       │   ├── core/              # URL del API, sesión (interceptor y guards), errores HTTP, notificaciones y utilidades
 │       │   ├── models/            # Interfaces de dominio (mascota, dueño, medicamento…)
 │       │   ├── pages/
 │       │   │   ├── landing/       # Landing page (secciones + directivas de animación)
-│       │   │   ├── auth/          # Login de dueño y veterinario
+│       │   │   ├── auth/          # Login único para los tres roles
 │       │   │   ├── cliente/       # Portal del cliente: mascotas, detalle y perfil
 │       │   │   ├── veterinario/   # Portal del veterinario: inicio, perfil, mascotas, tratamientos, historia clínica, dueños y consulta de medicamentos
 │       │   │   ├── administrador/ # Portal del administrador: dashboard de KPIs, veterinarios, mascotas y medicamentos
@@ -227,21 +228,22 @@ pethaven/
 │       └── main.ts                # Punto de entrada
 │
 ├── src/main/java/io/github/pethaven/   # Backend Spring Boot
-│   ├── config/                    # CORS y configuración de OpenAPI
+│   ├── config/                    # Configuración de OpenAPI
 │   ├── controller/                # Controladores REST (/api/**)
 │   ├── dto/                       # Requests y responses de la API
 │   ├── mapper/                    # Conversión entidad ↔ DTO
 │   ├── service/                   # Lógica de negocio e importación de Excel
 │   ├── repository/                # Repositorios Spring Data JPA (y proyecciones de los KPIs)
-│   ├── entity/                    # Entidades JPA: Owner, Pet, Species, Treatment, Evolution, TreatmentDrug, Drug, Veterinarian, Administrator
+│   ├── entity/                    # Entidades JPA: Owner, Pet, Species, Treatment, Evolution, TreatmentDrug, Drug, Veterinarian, Administrator, UserEntity (cuenta de login) y Role
 │   ├── exception/                 # Manejo global de errores
+│   ├── security/                  # Spring Security: login y JWT, matriz de permisos, comprobación de recursos propios, roles y primer administrador, protección SSRF
 │   ├── DataLoader.java            # Datos de prueba (dueños, mascotas, veterinarios, administradores y tratamientos) cargados al arrancar
 │   ├── ExcelDrugImportRunner.java # Importación de medicamentos desde Excel al arrancar
 │   └── PethavenBackendApplication.java
 │
 ├── src/main/resources/
 │   ├── data/medicamentos-veterinaria.xlsx  # Inventario importado al arrancar
-│   └── application.properties     # Configuración (datasource, JPA, H2, CORS)
+│   └── application.properties     # Configuración (datasource, JPA, H2, CORS, JWT y primer administrador)
 │
 └── pom.xml
 ```
@@ -279,6 +281,19 @@ npm start
 ```
 
 La SPA queda en **<http://localhost:4200>** y consume la API desde `http://localhost:8080/api`, así que el backend debe estar encendido. La URL base se configura en `frontend/src/environments/environment.ts` (y `environment.production.ts` para el build de producción).
+
+### Variables de entorno de seguridad
+
+En desarrollo no hace falta definir ninguna: todas tienen un valor por defecto. Fuera de desarrollo se definen siempre, porque la clave JWT por defecto está en el repositorio.
+
+| Variable | Por defecto | Uso |
+|---|---|---|
+| `JWT_SECRET` | Clave de desarrollo | Clave HMAC en Base64 (mínimo 256 bits) que firma los tokens. Cambiarla cierra todas las sesiones |
+| `JWT_EXPIRATION_MS` | `7200000` (2 horas) | Vigencia del token |
+| `CORS_ALLOWED_ORIGINS` | `http://localhost:4200` | Orígenes del frontend, separados por comas |
+| `ADMIN_EMAIL`, `ADMIN_PASSWORD`, `ADMIN_NAME` | *(vacías)*, `Administrador` | Primer administrador: se crea al arrancar solo si no existe ninguno y están definidos el correo y la contraseña |
+
+El detalle está en [Configuración de seguridad](docs/api/API.md#configuración-de-seguridad).
 
 ### Credenciales de prueba
 
@@ -320,6 +335,7 @@ En Windows usa `.\mvnw.cmd` en lugar de `./mvnw`. Para correr una sola clase: `.
 | Servicio | Unitarias con Mockito y los mappers reales | `*ServiceMockTest`, `ExcelReadingServiceTest` |
 | Servicio | Integración con `@SpringBootTest`: transacciones, stock e importación real del Excel | `*IntegrationTest` |
 | Controlador | `@WebMvcTest` con MockMvc y servicios simulados: rutas, códigos HTTP, validación y JSON de error | `*ControllerTest`, `GlobalExceptionHandlerTest` |
+| Seguridad | JWT, login, primer administrador, CORS y errores `401`/`403`; matriz de permisos por rol con `@WebMvcTest` y recursos propios contra la base real | `security/**`, `PermissionMatrixWebTest`, `OwnershipAccessIntegrationTest` |
 
 `./mvnw verify` falla si la cobertura de líneas de los paquetes `service` o `controller` baja de 80%. El reporte HTML queda en `target/site/jacoco/index.html`. Para ver el reporte sin que el mínimo detenga el build: `./mvnw verify -Djacoco.haltOnFailure=false`.
 
@@ -329,7 +345,7 @@ En Windows usa `.\mvnw.cmd` en lugar de `./mvnw`. Para correr una sola clase: `.
 
 ### Backend — API REST (`http://localhost:8080`)
 
-Los recursos viven bajo `/api/**`: `auth`, `owners`, `pets`, `veterinarians`, `drugs`, `treatments` y `administrators` (KPIs del dashboard). El contrato está en [docs/api/API.md](docs/api/API.md), hay ejemplos ejecutables en [docs/api/pethaven.http](docs/api/pethaven.http) y la documentación interactiva en `http://localhost:8080/swagger-ui.html`.
+Los recursos viven bajo `/api/**`: `auth`, `owners`, `pets`, `veterinarians`, `drugs`, `treatments` y `administrators` (KPIs del dashboard). Todos exigen el token del login (`Authorization: Bearer <token>`) salvo `POST /api/auth/login`, y cada rol tiene sus permisos ([matriz de permisos](docs/api/API.md#permisos)). El contrato está en [docs/api/API.md](docs/api/API.md), hay ejemplos ejecutables en [docs/api/pethaven.http](docs/api/pethaven.http) y la documentación interactiva en `http://localhost:8080/swagger-ui.html`.
 
 ### Frontend — SPA Angular (`http://localhost:4200`)
 
@@ -343,16 +359,16 @@ Los recursos viven bajo `/api/**`: `auth`, `owners`, `pets`, `veterinarians`, `d
 | `/cliente/:ownerId/perfil` | Perfil del cliente |
 | `/veterinario` | Inicio del portal veterinario |
 | `/veterinario/perfil` | Perfil del veterinario |
-| `/veterinario/pets` | Listado de mascotas |
-| `/veterinario/pets/add` | Registrar una mascota |
-| `/veterinario/pets/update/:id` | Editar una mascota |
-| `/veterinario/pets/:id` | Detalle de una mascota e historial de tratamientos |
-| `/veterinario/pets/:id/historia` | Historia clínica de la mascota, con descarga en PDF |
-| `/veterinario/pets/:id/treatments/add` | Registrar un tratamiento |
-| `/veterinario/owners` | Listado de dueños |
-| `/veterinario/owners/add` | Registrar un dueño |
-| `/veterinario/owners/update/:id` | Editar un dueño |
-| `/veterinario/owners/:id` | Detalle de un dueño y sus mascotas |
+| `/veterinario/mascotas` | Listado de mascotas |
+| `/veterinario/mascotas/add` | Registrar una mascota |
+| `/veterinario/mascotas/update/:id` | Editar una mascota |
+| `/veterinario/mascotas/:id` | Detalle de una mascota e historial de tratamientos |
+| `/veterinario/mascotas/:id/historia` | Historia clínica de la mascota, con descarga en PDF |
+| `/veterinario/mascotas/:id/treatments/add` | Registrar un tratamiento |
+| `/veterinario/duenos` | Listado de dueños |
+| `/veterinario/duenos/add` | Registrar un dueño |
+| `/veterinario/duenos/update/:id` | Editar un dueño |
+| `/veterinario/duenos/:id` | Detalle de un dueño y sus mascotas |
 | `/veterinario/medicamentos` | Consulta del inventario de medicamentos (solo lectura) |
 | `/veterinario/medicamentos/:id` | Detalle de un medicamento (solo lectura) |
 | `/administrador` | Portal del administrador: redirige a `/administrador/dashboard` |
@@ -360,15 +376,16 @@ Los recursos viven bajo `/api/**`: `auth`, `owners`, `pets`, `veterinarians`, `d
 | `/administrador/veterinarios` | Listado de veterinarios, con activación y desactivación |
 | `/administrador/veterinarios/add` | Registrar un veterinario |
 | `/administrador/veterinarios/update/:id` | Editar un veterinario |
-| `/administrador/mascotas` | Listado de mascotas, con activación y desactivación |
+| `/administrador/mascotas` | Listado de mascotas (solo consulta) |
 | `/administrador/medicamentos` | Inventario de medicamentos, con búsqueda y filtro por stock |
 | `/administrador/medicamentos/add` | Registrar un medicamento |
 | `/administrador/medicamentos/update/:id` | Editar un medicamento |
 | `/administrador/medicamentos/import` | Importar medicamentos desde un archivo Excel |
 | `/administrador/medicamentos/:id` | Detalle de un medicamento, con opción de eliminarlo |
 | `/dashboard` | Redirección legacy al portal veterinario |
+| `/veterinario/pets`, `/veterinario/owners`, `/veterinario/drugs` | Rutas anteriores: redirigen a `mascotas`, `duenos` y `medicamentos` |
 
-> La autenticación es provisional: la sesión se guarda en `sessionStorage` y todavía no hay token ni guards de rol; cualquier portal es accesible por URL directa hasta la Entrega 3 (F13).
+> Cada portal tiene un guard de rol: sin sesión, o con la sesión de otro rol, la SPA lleva al login o al portal propio. El dueño solo entra a su propio `:ownerId`. Aun así, quien decide es el API: un recurso ajeno responde `403` y la pantalla muestra el mensaje sin cerrar la sesión.
 
 ---
 
@@ -389,6 +406,9 @@ Los cambios se integran primero en `desarrollo`; solo cuando todo está funciona
 ## Documentación
 
 El contrato de la API REST está en [docs/api/API.md](docs/api/API.md), con ejemplos de peticiones en [docs/api/pethaven.http](docs/api/pethaven.http).
+
+> [!NOTE]
+> Los diagramas de `docs/architecture` se mantienen en Figma y **están pendientes de actualizar** con la capa de seguridad: cuentas de login (`users`), roles (`roles`, `user_roles`), Spring Security y JWT. Mientras tanto, el modelo de datos vigente es el de [API.md](docs/api/API.md#modelo-de-datos).
 
 <details>
 <summary><b>Identidad de marca</b></summary>

@@ -26,9 +26,9 @@ Referencia de la API REST de PetHaven: dueños, mascotas, veterinarios, medicame
 
 ## Visión general
 
-Esta API expone la operación de la clínica veterinaria PetHaven (hospitalización de perros y gatos): los dueños y sus mascotas, el equipo de veterinarios, el inventario de medicamentos, el historial de tratamientos y el acceso de los administradores (login y KPIs). Es una API REST con cuerpos JSON: el frontend es una SPA Angular que la consume, y **no hay renderizado en servidor**.
+Esta API expone la operación de la clínica veterinaria PetHaven (hospitalización de perros y gatos): los dueños y sus mascotas, el equipo de veterinarios, el inventario de medicamentos, el historial de tratamientos y los KPIs del administrador. Todos los roles inician sesión con el mismo login, que entrega un token JWT. Es una API REST con cuerpos JSON: el frontend es una SPA Angular que la consume, y **no hay renderizado en servidor**.
 
-El backend está construido con **Spring Boot 4.1 sobre Java 21** (Spring Web, Spring Data JPA, Bean Validation) y persiste en una base **H2 en archivo**. La documentación interactiva la genera springdoc a partir de las anotaciones del código.
+El backend está construido con **Spring Boot 4.1 sobre Java 21** (Spring Web, Spring Data JPA, Bean Validation, Spring Security con JWT y BCrypt) y persiste en una base **H2 en archivo**. La documentación interactiva la genera springdoc a partir de las anotaciones del código.
 
 ### Cómo levantar la API
 
@@ -47,7 +47,24 @@ Al arrancar, la base se crea y se puebla con datos de prueba; la API queda en el
 | Base URL | `http://localhost:8080/api` | Todas las rutas de este documento son relativas a este prefijo |
 | Swagger UI | `http://localhost:8080/swagger-ui.html` | «Try it out» habilitado; ordena operaciones por método y etiquetas alfabéticamente |
 | Consola H2 | `http://localhost:8080/h2` | Solo desarrollo. JDBC URL `jdbc:h2:file:./pethaven-database`, usuario `sa`, contraseña vacía |
-| SPA Angular | `http://localhost:4200` | Único origen permitido por CORS |
+| SPA Angular | `http://localhost:4200` | Origen permitido por CORS por defecto (ver [Configuración de seguridad](#configuración-de-seguridad)) |
+
+### Configuración de seguridad
+
+La seguridad se configura con variables de entorno. Todas tienen un valor por defecto pensado **solo para desarrollo y pruebas**; en un despliegue real se definen siempre.
+
+| Variable | Propiedad | Por defecto | Uso |
+|---|---|---|---|
+| `JWT_SECRET` | `security.jwt.secret-key` | Clave de desarrollo incluida en el repositorio | Clave HMAC en Base64 (mínimo 256 bits) con la que se firman y validan los tokens. Fuera de desarrollo es obligatoria: la clave por defecto es pública |
+| `JWT_EXPIRATION_MS` | `security.jwt.expiration-time` | `7200000` (2 horas) | Vigencia del token de acceso. No hay token de refresco |
+| `CORS_ALLOWED_ORIGINS` | `app.cors.allowed-origins` | `http://localhost:4200` | Orígenes permitidos, separados por comas |
+| `ADMIN_EMAIL` | `app.seed.admin.email` | *(vacío)* | Correo (y usuario de login) del primer administrador |
+| `ADMIN_PASSWORD` | `app.seed.admin.password` | *(vacío)* | Contraseña del primer administrador (8 a 255 caracteres) |
+| `ADMIN_NAME` | `app.seed.admin.name` | `Administrador` | Nombre del primer administrador |
+
+Al arrancar, antes que cualquier otro cargador, la aplicación crea los roles `ADMIN`, `VETERINARIAN` y `OWNER` si faltan. Si no existe ningún administrador y están definidas `ADMIN_EMAIL` y `ADMIN_PASSWORD`, crea el primero; nunca modifica uno existente. Si solo se define una de las dos, si los valores no son válidos o si el correo ya es el usuario de otra cuenta, el arranque falla con un mensaje que nunca incluye la contraseña. Sin ninguna de las dos, no se crea el administrador y queda una advertencia en el log (en desarrollo los administradores vienen de los datos de prueba).
+
+Cambiar `JWT_SECRET` invalida todos los tokens emitidos: todos los usuarios tienen que volver a iniciar sesión.
 
 ### Datos de prueba
 
@@ -71,12 +88,36 @@ Hay un segundo administrador sembrado (`laura.admin@pethaven.com`, misma contras
 
 ### Inicio rápido
 
-Los tres ejemplos siguientes están escritos para bash/zsh; en PowerShell usa `curl.exe` y comillas dobles escapadas.
+Toda la API, salvo el login, exige un token. Los ejemplos siguientes inician sesión como veterinario y usan su token; están escritos para bash/zsh (en PowerShell usa `curl.exe` y comillas dobles escapadas).
 
-**1. Listar dueños**
+**1. Iniciar sesión**
 
 ```bash
-curl http://localhost:8080/api/owners
+curl -i -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"valentina.soler@pethaven.com","password":"vet12345"}'
+```
+
+Respuesta real (`200 OK`; el token está abreviado):
+
+```json
+{
+  "token": "eyJhbGciOiJIUzUxMiJ9...",
+  "expiresIn": 7200,
+  "profileId": 1,
+  "name": "Dra. Valentina Soler",
+  "email": "valentina.soler@pethaven.com",
+  "role": "VETERINARIAN"
+}
+```
+
+El token viaja en la cabecera `Authorization` de todas las demás peticiones. Sin él, la API responde `401`; con un rol sin permiso sobre la operación, `403` (ver [Permisos](#permisos)).
+
+**2. Listar dueños**
+
+```bash
+curl http://localhost:8080/api/owners \
+  -H "Authorization: Bearer <token>"
 ```
 
 Respuesta real (`200 OK`, la lista completa trae 100 elementos; se muestran los dos primeros):
@@ -100,10 +141,11 @@ Respuesta real (`200 OK`, la lista completa trae 100 elementos; se muestran los 
 ]
 ```
 
-**2. Crear un dueño**
+**3. Crear un dueño**
 
 ```bash
 curl -i -X POST http://localhost:8080/api/owners \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"document":"990000001","name":"Nuevo Dueño","email":"nuevo.dueno@example.com","password":"password123","phone":"3000000000"}'
 ```
@@ -118,33 +160,7 @@ Content-Type: application/json
 {"id":101,"document":"990000001","name":"Nuevo Dueño","email":"nuevo.dueno@example.com","phone":"3000000000"}
 ```
 
-**3. Iniciar sesión y consultar el perfil autenticado**
-
-```bash
-curl -i -X POST http://localhost:8080/api/auth/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"john.doe@example.com","password":"password123"}'
-```
-
-Respuesta real (`200 OK`; el token está abreviado):
-
-```json
-{
-  "token": "eyJhbGciOiJIUzUxMiJ9...",
-  "expiresIn": 7200,
-  "profileId": 1,
-  "name": "John Doe",
-  "email": "john.doe@example.com",
-  "role": "OWNER"
-}
-```
-
-El token viaja en la cabecera `Authorization` de las rutas protegidas:
-
-```bash
-curl -i http://localhost:8080/api/auth/me \
-  -H "Authorization: Bearer <token>"
-```
+El nuevo dueño ya puede iniciar sesión con su correo y su contraseña, y `GET /api/auth/me` devuelve el perfil de quien tenga el token.
 
 ## Convenciones generales
 
@@ -282,14 +298,40 @@ erDiagram
     VETERINARIAN ||--o{ TREATMENT : "atiende"
     TREATMENT ||--o{ TREATMENT_DRUG : "incluye"
     DRUG ||--o{ TREATMENT_DRUG : "se administra en"
+    OWNER ||--|| USERS : "inicia sesión con"
+    VETERINARIAN ||--|| USERS : "inicia sesión con"
+    ADMINISTRATOR ||--|| USERS : "inicia sesión con"
+    USERS ||--o{ USER_ROLES : "tiene"
+    ROLES ||--o{ USER_ROLES : "se asigna en"
     ADMINISTRATOR {
         number id
         string name
         string email
     }
+    USERS {
+        number id
+        string username "único: el correo del perfil"
+        string password "hash BCrypt"
+        boolean enabled
+    }
+    ROLES {
+        number id
+        string name "único: ADMIN, VETERINARIAN u OWNER"
+    }
+    USER_ROLES {
+        number user_id
+        number role_id
+    }
 ```
 
-`ADMINISTRATOR` no se relaciona con ninguna otra entidad de negocio: es el perfil del administrador. Las credenciales de dueños, veterinarios y administradores viven en su cuenta de login (contraseña con hash BCrypt y rol), y todos inician sesión con `POST /api/auth/login`.
+`ADMINISTRATOR` no se relaciona con ninguna otra entidad de negocio: es el perfil del administrador.
+
+**Cuentas de login.** Las credenciales no viven en los perfiles sino en su cuenta (`users`), que se crea junto con el perfil y se borra con él:
+
+- `username` es el correo del perfil. Si un `PUT` cambia el correo, cambia también el usuario de login.
+- `password` guarda solo el hash BCrypt; la contraseña nunca aparece en una respuesta.
+- `enabled` refleja el estado de la cuenta. Hoy solo cambia con un veterinario: desactivarlo (`active: false`) deshabilita su cuenta, que deja de poder iniciar sesión y cuyos tokens dejan de aceptarse.
+- `roles` lo crea el arranque (`ADMIN`, `VETERINARIAN`, `OWNER`). El modelo admite varios roles por cuenta, pero la API asigna exactamente uno, el de su perfil.
 
 Semántica de borrado:
 
@@ -1968,7 +2010,7 @@ Devuelve el perfil del usuario autenticado por el token. Permite al frontend rec
 - `POST /api/treatments` exige mascota activa **y** veterinario activo, y al menos un medicamento con stock; en caso contrario responde `409` con el motivo concreto.
 - `POST /api/pets/{id}/discharge` exige un veterinario activo y una mascota con diagnóstico; no exige que la mascota esté activa.
 - `POST /api/treatments/{id}/drugs` exige que la mascota del tratamiento siga activa; si se desactivó después de crear el tratamiento, la administración falla con `409`.
-- El login de un veterinario desactivado responde `403`. El estado se evalúa antes que la contraseña, así que una cuenta desactivada responde `403` incluso con una contraseña incorrecta.
+- El login de un veterinario desactivado responde `403` solo con su contraseña correcta; con una incorrecta responde el mismo `401` que cualquier credencial inválida (ver [Autenticación](#autenticación-apiauth)). Sus tokens emitidos dejan de aceptarse en cuanto se desactiva.
 - Las búsquedas y los listados no filtran por estado: `GET /api/pets` y `GET /api/pets?search=` incluyen mascotas activas e inactivas. Lo mismo ocurre con `GET /api/owners/{id}/pets`, `GET /api/veterinarians` y los listados de tratamientos.
 
 ### Tratamientos
@@ -2009,6 +2051,7 @@ Los duplicados se detectan antes de escribir y responden `409` con un mensaje ex
 
 ### Contraseñas
 
+- Se guardan con hash BCrypt en la cuenta de login, nunca en texto plano.
 - Nunca se devuelven: `OwnerResponse`, `VeterinarianResponse` y `AuthResponse` no incluyen el campo.
 - En `PUT` son opcionales: omitir `password` o enviarlo en blanco conserva la contraseña actual.
 - Al crear, la contraseña es obligatoria y debe tener entre 8 y 255 caracteres.
@@ -2027,8 +2070,17 @@ Los duplicados se detectan antes de escribir y responden `409` con un mensaje ex
 - **Sin borrado de mascotas ni veterinarios.** Solo desactivación.
 - **CORS restringido.** Por defecto solo se permite el origen `http://localhost:4200`, sin credenciales; en despliegue se define `CORS_ALLOWED_ORIGINS` con el dominio del frontend.
 
+Seguridad:
+
+- **Sin token de refresco ni revocación.** El token dura 2 horas. Cerrar sesión borra el token del navegador, pero el servidor no lo invalida: sigue siendo válido hasta que expira. Sí se rechaza de inmediato si la cuenta se desactiva o se elimina.
+- **Token en `localStorage`.** La SPA guarda la sesión en `localStorage` (clave `pethaven.session`): sobrevive a recargas y a cerrar el navegador, pero cualquier script que se ejecute en la página puede leerla. La vigencia de 2 horas acota el daño de un token filtrado.
+- **Sin límite de intentos de login.** No hay bloqueo ni límite de frecuencia; queda para la fase de endurecimiento del roadmap.
+- **Un rol por cuenta.** Una cuenta sin perfil asociado o con un número de roles distinto de uno hace que el login responda `500`. Ninguna operación de la API crea cuentas así; solo pueden aparecer modificando la base a mano.
+- **Primer arranque concurrente.** Si dos instancias arrancan a la vez sobre una base vacía, una puede fallar al crear los roles o el primer administrador por las restricciones de unicidad. Reiniciarla basta, porque la creación es idempotente.
+- **Descarga de fotos y DNS.** La validación contra SSRF resuelve el host antes de descargar, pero el cliente HTTP lo vuelve a resolver al conectar: un DNS que cambie de respuesta entre ambas resoluciones (*DNS rebinding*) podría apuntar a una dirección interna. Fijar la IP no es viable con HTTPS en el cliente HTTP de Java.
+
 > [!NOTE]
-> Las contraseñas se guardan con hash BCrypt en la cuenta de login, separadas de los perfiles, y nunca aparecen en una respuesta. Los datos de prueba usan contraseñas de ejemplo: no reutilices contraseñas reales.
+> Los datos de prueba usan contraseñas de ejemplo y la clave JWT por defecto es pública: no reutilices contraseñas reales ni despliegues sin `JWT_SECRET`.
 
 > [!WARNING]
 > La persistencia es una base H2 en archivo local (`jdbc:h2:file:./pethaven-database`) configurada con `ddl-auto=create-drop`: **el esquema se recrea y los datos de prueba se vuelven a cargar en cada arranque**. Es una configuración exclusiva de desarrollo; la consola H2 (`/h2`) también está habilitada solo para ese uso.
@@ -2044,6 +2096,8 @@ Notas para quien contribuya al backend:
 - **Unicidad en dos capas.** Pre-chequeo en el service (`409` con mensaje explícito) y constraint única en la base como red de seguridad; el handler de `DataIntegrityViolationException` responde `409` genérico si se llega ahí.
 - **Errores centralizados.** Un `@RestControllerAdvice` traduce las excepciones propias (`ResourceNotFoundException` → `404`, `IllegalOperationException` → `409`), las de Spring Security (`BadCredentialsException` y el resto de fallos de autenticación → `401`, `DisabledException` y `AccessDeniedException` → `403`) y las de Spring (validación, parámetros, cuerpo ilegible, método no soportado, integridad) al mismo contrato. Los errores de seguridad que ocurren en la cadena de filtros, antes de llegar a un controlador, se delegan al mismo advice.
 - **Cabecera `Location`.** Se construye a partir de la petición actual, así que refleja el host, el puerto y el esquema que usó el cliente; en producción detrás de un proxy hay que revisar los encabezados reenviados.
+- **Autorización en dos capas.** `SecurityConfig.authorizeApi` decide qué roles llegan a cada operación (método y ruta) y deniega todo lo demás bajo `/api/**`: una operación nueva responde `403` hasta que se le añade su regla. Después, `@PreAuthorize` en el controlador comprueba si el recurso es del usuario con el bean `access` (`ResourceAccess`), que hace una sola consulta cruzando el recurso con el usuario de login. `PermissionMatrixWebTest` y `OwnershipAccessIntegrationTest` fijan ambas capas: al cambiar un permiso, actualiza la regla, la sección [Permisos](#permisos) y esos tests.
+- **Token JWT.** `JwtFilter` valida la firma y la expiración del token y vuelve a cargar la cuenta en cada petición, así que una cuenta desactivada o eliminada deja de pasar aunque su token no haya expirado.
 - **CORS.** Lo aplica la cadena de Spring Security (`SecurityConfig`) sobre `/api/**`, con los orígenes de `app.cors.allowed-origins` (`CORS_ALLOWED_ORIGINS`), los métodos `GET`, `POST`, `PUT`, `DELETE` y `OPTIONS`, `Location` como cabecera expuesta y una caché de preflight de una hora.
 - **Swagger.** La documentación interactiva la genera springdoc a partir de las anotaciones `@Operation`/`@ApiResponse` del código, y solo incluye las rutas de `/api/**`. Este documento es la referencia mantenida a mano: si cambias un contrato, actualiza los dos.
 - **Datos de prueba.** El cargador inserta los ejemplos al arrancar y usa una semilla fija (`new Random(42)`) para repartir mascotas entre dueños y generar tratamientos. Esa relación es estable entre arranques, pero **no correlativa**: no deduzcas el dueño de una mascota por su `id`. Los `id` de cada tabla sí siguen el orden de inserción.
