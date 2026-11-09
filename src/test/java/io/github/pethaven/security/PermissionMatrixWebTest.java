@@ -19,10 +19,13 @@ import io.github.pethaven.service.TreatmentService;
 import io.github.pethaven.service.VeterinarianService;
 import io.github.pethaven.support.WebMvcSecurityTestSupport;
 import org.assertj.core.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.mockito.ArgumentMatchers;
+import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.http.HttpMethod;
@@ -36,6 +39,7 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -85,6 +89,13 @@ public class PermissionMatrixWebTest {
     @Autowired
     public PermissionMatrixWebTest(MockMvc mockMvc) {
         this.mockMvc = mockMvc;
+    }
+
+    @BeforeEach
+    public void stubHandlersThatAnswer404WhenTheServiceFindsNothing() {
+        // Without a photo the controller answers 404, which would hide a mistyped matrix row.
+        Mockito.when(petService.getPetPhoto(ArgumentMatchers.anyLong()))
+                .thenReturn(Optional.of(new PetService.Photo(new byte[]{1}, MediaType.IMAGE_JPEG_VALUE)));
     }
 
     // Every API operation with the roles allowed to reach it (S11).
@@ -157,8 +168,9 @@ public class PermissionMatrixWebTest {
         var result = mockMvc.perform(request(method, path).with(SecurityMockMvcRequestPostProcessors.user("user").roles(role)));
 
         if (allowed) {
-            // The request got past authorization; whatever the controller answers (200, 400, 404…) is not ours.
-            Assertions.assertThat(result.andReturn().getResponse().getStatus()).isNotIn(401, 403);
+            // The request got past authorization and reached a handler (no 404/405 from a mistyped row);
+            // whatever the controller answers next (200, 400, 500 with the mocked services) is not ours.
+            Assertions.assertThat(result.andReturn().getResponse().getStatus()).isNotIn(401, 403, 404, 405);
         } else {
             result.andExpect(MockMvcResultMatchers.status().isForbidden())
                     .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(403))
@@ -171,7 +183,7 @@ public class PermissionMatrixWebTest {
     public void login_WithoutAuthentication_IsPublic() throws Exception {
         int status = mockMvc.perform(request(HttpMethod.POST, "/api/auth/login")).andReturn().getResponse().getStatus();
 
-        Assertions.assertThat(status).isNotIn(401, 403);
+        Assertions.assertThat(status).isNotIn(401, 403, 404, 405);
     }
 
     @Test
