@@ -7,8 +7,9 @@ import io.github.pethaven.repository.VeterinarianRepository;
 import org.springframework.stereotype.Component;
 
 /**
- * Ownership checks answered by the database: each one is a single query that joins the resource with the
- * user account by its login username, so no profile lookup or lazy relation is needed.
+ * Comprobaciones de propiedad resueltas por la base de datos: cada una es una sola consulta que cruza el
+ * recurso con la cuenta de usuario por su usuario de login, así que no hace falta buscar el perfil ni cargar
+ * relaciones perezosas.
  */
 @Component(ResourceAccess.BEAN_NAME)
 public class RepositoryResourceAccess implements ResourceAccess {

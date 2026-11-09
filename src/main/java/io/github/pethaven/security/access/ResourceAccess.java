@@ -1,37 +1,38 @@
 package io.github.pethaven.security.access;
 
 /**
- * Ownership checks of the permission matrix, used from {@code @PreAuthorize} expressions as the bean
- * {@code @access}. Each check receives the login username of the authenticated user
- * ({@code authentication.name}, the account e-mail) and answers whether that user is the resource's owner.
- * A resource that does not exist belongs to nobody, so the check answers {@code false}.
+ * Comprobaciones de propiedad de la matriz de permisos, usadas desde las expresiones {@code @PreAuthorize}
+ * como el bean {@code @access}. Cada comprobación recibe el usuario de login del usuario autenticado
+ * ({@code authentication.name}, el correo de la cuenta) y responde si ese usuario es el dueño del recurso.
+ * Un recurso que no existe no pertenece a nadie, así que la comprobación responde {@code false}.
  */
 public interface ResourceAccess {
 
-    /** Bean name used in the {@code @PreAuthorize} expressions. */
+    /** Nombre del bean usado en las expresiones {@code @PreAuthorize}. */
     String BEAN_NAME = "access";
 
-    /** The owner profile {@code ownerId} is the user's own. */
+    /** El perfil de dueño {@code ownerId} es el del propio usuario. */
     boolean isOwner(Long ownerId, String username);
 
     /**
-     * The owner profile {@code ownerId} is the user's own and the update keeps its current document and
-     * e-mail (an owner may not change their own identity, only staff may).
+     * El perfil de dueño {@code ownerId} es el del propio usuario y la actualización conserva su documento y
+     * correo actuales (un dueño no puede cambiar su propia identidad; solo el personal puede hacerlo).
      */
     boolean isOwnerKeepingIdentity(Long ownerId, String document, String email, String username);
 
-    /** The pet {@code petId} belongs to the user (as its owner). */
+    /** La mascota {@code petId} pertenece al usuario (como su dueño). */
     boolean ownsPet(Long petId, String username);
 
-    /** The veterinarian profile {@code veterinarianId} is the user's own. */
+    /** El perfil de veterinario {@code veterinarianId} es el del propio usuario. */
     boolean isVeterinarian(Long veterinarianId, String username);
 
     /**
-     * The veterinarian profile {@code veterinarianId} is the user's own and the update keeps its current
-     * document and e-mail (a veterinarian may not change their own identity, only an administrator may).
+     * El perfil de veterinario {@code veterinarianId} es el del propio usuario y la actualización conserva su
+     * documento y correo actuales (un veterinario no puede cambiar su propia identidad; solo un administrador
+     * puede hacerlo).
      */
     boolean isVeterinarianKeepingIdentity(Long veterinarianId, String document, String email, String username);
 
-    /** The treatment {@code treatmentId} was registered by the user (as its veterinarian). */
+    /** El tratamiento {@code treatmentId} lo registró el usuario (como su veterinario). */
     boolean authoredTreatment(Long treatmentId, String username);
 }
