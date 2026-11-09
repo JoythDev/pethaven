@@ -154,11 +154,11 @@
           <dl class="relative mt-7 divide-y divide-background/15">
             <div class="py-4 first:pt-0 last:pb-0">
               <dt class="text-sm text-background/75">Ventas acumuladas</dt>
-              <dd class="mt-1 font-display text-3xl font-bold tabular-nums text-honey sm:text-4xl">{{ formatCurrency(data.totalSales) }}</dd>
+              <dd id="totalSales" class="mt-1 font-display text-3xl font-bold tabular-nums text-honey sm:text-4xl">{{ formatCurrency(data.totalSales) }}</dd>
             </div>
             <div class="py-4 last:pb-0">
               <dt class="text-sm text-background/75">Utilidad bruta acumulada</dt>
-              <dd class="mt-1 font-display text-3xl font-bold tabular-nums sm:text-4xl">{{ formatCurrency(data.grossProfit) }}</dd>
+              <dd id="grossProfit" class="mt-1 font-display text-3xl font-bold tabular-nums sm:text-4xl">{{ formatCurrency(data.grossProfit) }}</dd>
               <dd class="mt-2 max-w-sm text-xs leading-relaxed text-background/60">Ventas menos costo de compra histórico; no descuenta otros gastos.</dd>
             </div>
           </dl>
@@ -185,9 +185,9 @@
                   </span>
                   <div class="min-w-0 flex-1">
                     <div class="flex items-baseline justify-between gap-3">
-                      <p class="truncate font-semibold text-text">{{ medication.medicationName }}</p>
+                      <p class="top-med-name truncate font-semibold text-text">{{ medication.medicationName }}</p>
                       <p class="shrink-0 tabular-nums text-sm text-text/75">
-                        <strong class="text-base text-text">{{ formatCount(medication.unitsSold) }}</strong> unidades
+                        <strong class="top-med-units text-base text-text">{{ formatCount(medication.unitsSold) }}</strong> unidades
                       </p>
                     </div>
                     <div

@@ -95,7 +95,7 @@ El avance se organiza según las entregas del enunciado. Cada funcionalidad indi
 | Feature · AC | Funcionalidad | Detalle | Backend | Frontend | Estado |
 |---|---|---|---|---|---|
 | F13 · AC34 | Control de acceso por roles | Autorización según el rol del usuario | ✅ | ✅ | Completado — Spring Security con login único, token JWT de 2 horas y contraseñas BCrypt; matriz de permisos por rol y por recurso propio (ver [Permisos](docs/api/API.md#permisos)); en la SPA, sesión en `localStorage`, interceptor del token y guards por portal |
-| E3 · Pruebas cliente | Pruebas del cliente web | Al menos 2 casos de uso automatizados | ➖ | ⬜ | Pendiente — no hay specs de cliente |
+| E3 · Pruebas cliente | Pruebas del cliente web | Al menos 2 casos de uso automatizados | ➖ | ✅ | Implementado — 2 casos E2E con Selenium WebDriver que recorren la SPA en Chrome contra el API real. Ver [Pruebas E2E](#pruebas-e2e) |
 | E3 · Pruebas backend | Pruebas de backend | 25 pruebas con datos propios y limpieza posterior | ✅ | ➖ | Implementado — 970 pruebas (913 unitarias y 57 de integración) sobre repositorios, servicios y controladores, cada una con sus propios datos y limpieza posterior. Ver [Pruebas del backend](#pruebas-del-backend) |
 
 ### Extras fuera del enunciado
@@ -177,7 +177,7 @@ Una mirada al estado actual de la aplicación, con datos de prueba.
 | Seguridad | Spring Security 7 — login único con token JWT (jjwt 0.13, 2 horas, sin refresco), contraseñas BCrypt, autorización por rol y por recurso propio (`@PreAuthorize`) |
 | CORS | Orígenes de `CORS_ALLOWED_ORIGINS` (por defecto `http://localhost:4200`), sin credenciales |
 | Utilidades | Lombok |
-| Pruebas | JUnit 5, Mockito, AssertJ y MockMvc; Surefire (unitarias) y Failsafe (integración); JaCoCo con un mínimo de 80% de líneas en `service` y `controller` |
+| Pruebas | JUnit 5, Mockito, AssertJ y MockMvc; Surefire (unitarias) y Failsafe (integración); JaCoCo con un mínimo de 80% de líneas en `service` y `controller`; Selenium 4 y WebDriverManager para las pruebas E2E |
 | Build | Maven Wrapper |
 
 ### Frontend (`frontend/`)
@@ -329,6 +329,8 @@ Las pruebas usan el perfil `test`: una base H2 en memoria que arranca vacía, si
 
 En Windows usa `.\mvnw.cmd` en lugar de `./mvnw`. Para correr una sola clase: `./mvnw test -Dtest=PetControllerTest`.
 
+Estos comandos excluyen las pruebas E2E (marcadas con `@Tag("e2e")`), así que no necesitan el frontend ni Chrome. Las E2E se ejecutan aparte con el perfil `e2e`; ver [Pruebas E2E](#pruebas-e2e).
+
 | Capa | Tipo de prueba | Clases |
 |---|---|---|
 | Repositorio | `@DataJpaTest` sobre H2 en memoria; cada prueba hace rollback | `*RepositoryTest` |
@@ -338,6 +340,31 @@ En Windows usa `.\mvnw.cmd` en lugar de `./mvnw`. Para correr una sola clase: `.
 | Seguridad | JWT, login, primer administrador, CORS y errores `401`/`403`; matriz de permisos por rol con `@WebMvcTest` y recursos propios contra la base real | `security/**`, `PermissionMatrixWebTest`, `OwnershipAccessIntegrationTest` |
 
 `./mvnw verify` falla si la cobertura de líneas de los paquetes `service` o `controller` baja de 80%. El reporte HTML queda en `target/site/jacoco/index.html`. Para ver el reporte sin que el mínimo detenga el build: `./mvnw verify -Djacoco.haltOnFailure=false`.
+
+### Pruebas E2E
+
+Dos casos de uso automatizados con Selenium WebDriver recorren la SPA en Chrome contra el API real (`src/test/java/io/github/pethaven/e2e/`). Cada caso arranca el backend con el perfil `test` en el puerto 8080 y reinicia el contexto antes de cada prueba (`@DirtiesContext`), por lo que parte siempre de los mismos datos mínimos que carga `DatabaseInit` (un veterinario, un administrador, un dueño con su mascota y un medicamento).
+
+| Caso | Flujo |
+|---|---|
+| `Case1Test` | El veterinario inicia sesión (falla una vez con contraseña errada), registra un dueño (se equivoca una vez con el correo) y su mascota; luego el dueño entra al portal de clientes y ve la mascota en su tarjeta |
+| `Case2Test` | El veterinario busca una mascota, abre su ficha y registra un tratamiento con un medicamento; vuelve a buscarla para verificar el historial, y el administrador comprueba en el dashboard las unidades suministradas, las ventas y la ganancia |
+
+**Requisitos:** Chrome instalado (WebDriverManager descarga el driver), el frontend corriendo con `npm start` en `http://localhost:4200` y el puerto 8080 libre.
+
+```bash
+# Terminal 1: frontend
+cd frontend && npm start
+
+# Terminal 2: pruebas E2E (el backend lo levanta la propia prueba)
+./mvnw test -Pe2e                        # ambos casos, con el navegador visible
+./mvnw test -Pe2e -Dtest=Case1Test       # un solo caso
+./mvnw test -Pe2e -De2e.headless=true    # sin ventana (CI), a 1920×1080
+```
+
+El perfil `e2e` ejecuta solo las clases con `@Tag("e2e")` y omite las pruebas de integración y JaCoCo: las E2E no cuentan para el mínimo de cobertura. Sin `-Pe2e`, `-Dtest=Case1Test` termina en BUILD SUCCESS sin ejecutar ninguna prueba, porque las E2E están excluidas por defecto.
+
+En Windows usa `.\mvnw.cmd`. Para localizar los elementos, las plantillas Angular tienen `id` y clases estables (`btnLogin`, `btnGuardar`, `pet-name`, `owner-document`…).
 
 ---
 

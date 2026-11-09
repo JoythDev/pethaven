@@ -130,6 +130,7 @@
             }
             @if (errorMessage(); as message) {
               <p
+                id="loginError"
                 role="alert"
                 class="flex h-full items-center rounded-xl border border-terracotta/40 bg-terracotta/10 px-4 text-sm text-terracotta"
               >
@@ -139,6 +140,7 @@
           </div>
 
           <button
+            id="btnLogin"
             type="submit"
             [disabled]="submitting()"
             class="mt-1 w-full cursor-pointer rounded-full bg-olive px-6 py-3 text-base font-bold text-background shadow-md transition hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
