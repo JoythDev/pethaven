@@ -77,6 +77,36 @@ public class SecurityErrorHandlersTest {
     }
 
     @Test
+    public void jwtAuthEntryPoint_commence_ResolverRethrowsAccessDenied_FallsBackTo401WithoutPropagating() {
+        // Arrange
+        // With method security on, Spring Security adds a resolver that rethrows any AccessDeniedException in the
+        // cause chain once GlobalExceptionHandler cannot write the body (e.g. Accept: application/xml).
+        Mockito.when(resolver.resolveException(Mockito.any(), Mockito.any(), Mockito.isNull(), Mockito.any()))
+                .thenThrow(new AccessDeniedException("Access Denied"));
+        JwtAuthEntryPoint entryPoint = new JwtAuthEntryPoint(resolver);
+
+        // Act
+        entryPoint.commence(request, response, new InsufficientAuthenticationException("Sin token"));
+
+        // Assert
+        Assertions.assertThat(response.getStatus()).isEqualTo(401);
+    }
+
+    @Test
+    public void jwtAccessDeniedHandler_handle_ResolverRethrowsAccessDenied_FallsBackTo403WithoutPropagating() {
+        // Arrange
+        Mockito.when(resolver.resolveException(Mockito.any(), Mockito.any(), Mockito.isNull(), Mockito.any()))
+                .thenThrow(new AccessDeniedException("Access Denied"));
+        JwtAccessDeniedHandler handler = new JwtAccessDeniedHandler(resolver);
+
+        // Act
+        handler.handle(request, response, new AccessDeniedException("Access Denied"));
+
+        // Assert
+        Assertions.assertThat(response.getStatus()).isEqualTo(403);
+    }
+
+    @Test
     public void jwtAccessDeniedHandler_handle_ResolverCannotHandle_FallsBackTo403() {
         // Arrange
         Mockito.when(resolver.resolveException(Mockito.any(), Mockito.any(), Mockito.isNull(), Mockito.any()))

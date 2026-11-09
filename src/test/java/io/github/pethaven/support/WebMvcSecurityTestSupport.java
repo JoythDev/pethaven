@@ -19,12 +19,13 @@ import java.lang.annotation.Target;
  * <p>
  * The slice picks up {@code JwtFilter} automatically (it is a {@code Filter} bean), so its
  * collaborators are mocked here. {@link SecurityConfig} is imported so that controller tests
- * run through the same authorization, CSRF and CORS rules as the application.
+ * run through the same authorization, CSRF and CORS rules as the application. Ownership checks
+ * ({@code @PreAuthorize} with {@code @access}) always pass here: see {@link PermitAllResourceAccess}.
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
-@Import({SecurityConfig.class, JwtAuthEntryPoint.class, JwtAccessDeniedHandler.class})
+@Import({SecurityConfig.class, JwtAuthEntryPoint.class, JwtAccessDeniedHandler.class, PermitAllResourceAccess.class})
 @MockitoBean(types = {JwtProvider.class, UserDetailsService.class})
 public @interface WebMvcSecurityTestSupport {
 }

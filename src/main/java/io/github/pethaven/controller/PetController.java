@@ -19,6 +19,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.net.URI;
 import java.util.List;
@@ -73,6 +74,7 @@ public class PetController {
             @ApiResponse(responseCode = "404", description = "No existe una mascota con ese id",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
+    @PreAuthorize("hasAnyRole('ADMIN', 'VETERINARIAN') or @access.ownsPet(#id, authentication.name)")
     @GetMapping("/{id}")
     public PetResponse getPetById(
             @Parameter(description = "Id de la mascota", example = "1") @PathVariable Long id) {
@@ -162,6 +164,7 @@ public class PetController {
             @ApiResponse(responseCode = "404", description = "No existe una mascota con ese id",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
+    @PreAuthorize("hasAnyRole('ADMIN', 'VETERINARIAN') or @access.ownsPet(#id, authentication.name)")
     @GetMapping("/{id}/treatments")
     public List<TreatmentResponse> getTreatmentsByPetId(
             @Parameter(description = "Id de la mascota", example = "1") @PathVariable Long id) {
@@ -181,6 +184,7 @@ public class PetController {
             @ApiResponse(responseCode = "200", description = "Imagen de la mascota"),
             @ApiResponse(responseCode = "404", description = "La mascota no existe, no tiene foto o no se pudo descargar")
     })
+    @PreAuthorize("hasAnyRole('ADMIN', 'VETERINARIAN') or @access.ownsPet(#id, authentication.name)")
     @GetMapping("/{id}/photo")
     public ResponseEntity<byte[]> getPetPhoto(
             @Parameter(description = "Id de la mascota", example = "1") @PathVariable Long id) {
@@ -208,6 +212,7 @@ public class PetController {
             @ApiResponse(responseCode = "409", description = "La mascota ya está estable o el veterinario está inactivo",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
+    @PreAuthorize("@access.isVeterinarian(#veterinarianId, authentication.name)")
     @PostMapping("/{id}/discharge")
     public TreatmentResponse dischargePet(
             @Parameter(description = "Id de la mascota", example = "1") @PathVariable Long id,

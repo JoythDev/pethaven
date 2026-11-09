@@ -195,6 +195,14 @@ public class PermissionMatrixWebTest {
     }
 
     @Test
+    public void deniedRole_ClientNotAcceptingJson_StillReturns403() throws Exception {
+        // The ApiErrorResponse body cannot be negotiated, but the 403 holds and no exception escapes the chain.
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/drugs").accept(MediaType.APPLICATION_XML)
+                        .with(SecurityMockMvcRequestPostProcessors.user("user").roles(O)))
+                .andExpect(MockMvcResultMatchers.status().isForbidden());
+    }
+
+    @Test
     public void unlistedApiRoute_WithoutAuthentication_Returns401() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/api/unlisted"))
                 .andExpect(MockMvcResultMatchers.status().isUnauthorized());
