@@ -93,6 +93,20 @@ public class SecurityErrorHandlersTest {
     }
 
     @Test
+    public void jwtAuthEntryPoint_commence_ResolverFailsForAnotherReason_Propagates() {
+        // Arrange
+        // Only the AccessDeniedException rethrown by method security is expected; any other resolver failure is a
+        // real fault and must surface instead of turning into a bare 401.
+        Mockito.when(resolver.resolveException(Mockito.any(), Mockito.any(), Mockito.isNull(), Mockito.any()))
+                .thenThrow(new IllegalStateException("broken handler"));
+        JwtAuthEntryPoint entryPoint = new JwtAuthEntryPoint(resolver);
+
+        // Act + Assert
+        Assertions.assertThatThrownBy(() -> entryPoint.commence(request, response, new InsufficientAuthenticationException("Sin token")))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
     public void jwtAccessDeniedHandler_handle_ResolverRethrowsAccessDenied_FallsBackTo403WithoutPropagating() {
         // Arrange
         Mockito.when(resolver.resolveException(Mockito.any(), Mockito.any(), Mockito.isNull(), Mockito.any()))
