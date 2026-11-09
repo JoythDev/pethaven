@@ -9,6 +9,7 @@ Referencia de la API REST de PetHaven: dueños, mascotas, veterinarios, medicame
 - [Visión general](#visión-general)
 - [Convenciones generales](#convenciones-generales)
 - [Errores](#errores)
+- [Permisos](#permisos)
 - [Modelo de datos](#modelo-de-datos)
 - [Esquemas](#esquemas)
 - [Endpoints](#endpoints)
@@ -162,7 +163,7 @@ curl -i http://localhost:8080/api/auth/me \
 | Actualización | `PUT` es reemplazo total de los campos editables; los campos que no viajan en la petición se conservan |
 | Colecciones | Sin paginación, orden ni filtros genéricos: cada `GET` de colección devuelve todos los registros |
 | CORS | Solo sobre `/api/**` y para los orígenes de `app.cors.allowed-origins` (por defecto `http://localhost:4200`; variable de entorno `CORS_ALLOWED_ORIGINS`), sin credenciales; expone la cabecera `Location` |
-| Autenticación | Token JWT emitido por `POST /api/auth/login`, enviado como `Authorization: Bearer <token>` y válido 2 horas. Por ahora solo `GET /api/auth/me` lo exige; la autorización por rol del resto de la API está pendiente (ver [Autenticación](#autenticación-apiauth)) |
+| Autenticación | Token JWT emitido por `POST /api/auth/login`, enviado como `Authorization: Bearer <token>` y válido 2 horas. Toda la API lo exige salvo el login; qué puede hacer cada rol está en [Permisos](#permisos) |
 | Errores | Un único formato, `ApiErrorResponse`, para cualquier fallo (ver [Errores](#errores)) |
 
 ## Errores
@@ -217,13 +218,60 @@ Todas las respuestas de error comparten el cuerpo `ApiErrorResponse`:
 | `204 No Content` | Eliminación exitosa de un dueño o de un medicamento |
 | `400 Bad Request` | Cuerpo o parámetros inválidos: validación de campos (con `errors`), parámetro obligatorio ausente, parámetro con formato inválido o JSON mal formado (por ejemplo `species` fuera del enum) |
 | `401 Unauthorized` | Credenciales inválidas en el login, o ruta protegida sin token o con un token inválido o expirado |
-| `403 Forbidden` | Login con la contraseña correcta de una cuenta desactivada (veterinario inactivo), o usuario autenticado sin permiso sobre la ruta |
+| `403 Forbidden` | Login con la contraseña correcta de una cuenta desactivada (veterinario inactivo); usuario autenticado cuyo rol no tiene la operación, o que intenta acceder a un recurso que no es suyo; o método que la API no admite sobre la ruta (ver [Permisos](#permisos)) |
 | `404 Not Found` | No existe el recurso solicitado, o la ruta no está mapeada |
-| `405 Method Not Allowed` | La ruta existe pero no admite ese método (por ejemplo `DELETE /api/pets/1`) |
 | `409 Conflict` | Regla de negocio: valor duplicado, borrado bloqueado, mascota o veterinario inactivos, stock insuficiente |
 | `413 Payload Too Large` | El archivo subido supera el tamaño máximo permitido (10 MB) |
 | `415 Unsupported Media Type` | El tipo de contenido de la petición no es `multipart/form-data` en una carga de archivos |
 | `500 Internal Server Error` | Fallo inesperado; la causa queda registrada en los logs del servidor |
+
+## Permisos
+
+Toda petición a `/api/**` necesita un token, salvo `POST /api/auth/login`. La autorización se aplica en dos capas:
+
+1. **Rol:** cada operación admite solo ciertos roles. Una operación que no aparece en la tabla está denegada para todos, incluidos los métodos que la API no implementa (`DELETE /api/pets/1`, `HEAD`, …): responden `403` con token y `401` sin él, nunca `405`.
+2. **Recurso propio:** algunas operaciones exigen además que el recurso sea del usuario autenticado. Si no lo es, o si no existe, responden `403`.
+
+| Operación | `ADMIN` | `VETERINARIAN` | `OWNER` |
+|---|---|---|---|
+| `POST /api/auth/login` | Público | Público | Público |
+| `GET /api/auth/me` | ✅ | ✅ | ✅ |
+| `GET /api/administrators/dashboard` | ✅ | — | — |
+| `GET /api/drugs`, `GET /api/drugs/{id}` | ✅ | ✅ | — |
+| `POST /api/drugs`, `POST /api/drugs/import`, `PUT /api/drugs/{id}`, `DELETE /api/drugs/{id}` | ✅ | — | — |
+| `GET /api/owners` | ✅ | ✅ | — |
+| `GET /api/owners/{id}`, `GET /api/owners/{id}/pets` | ✅ | ✅ | Solo el suyo |
+| `POST /api/owners`, `DELETE /api/owners/{id}` | — | ✅ | — |
+| `PUT /api/owners/{id}` | — | ✅ | Solo el suyo, sin cambiar `document` ni `email` |
+| `GET /api/pets` | ✅ | ✅ | — |
+| `GET /api/pets/{id}`, `GET /api/pets/{id}/treatments`, `GET /api/pets/{id}/photo` | ✅ | ✅ | Solo sus mascotas |
+| `POST /api/pets`, `PUT /api/pets/{id}`, `PUT /api/pets/{id}/active` | — | ✅ | — |
+| `POST /api/pets/{id}/discharge` | — | Solo con su propio `veterinarianId` | — |
+| `GET /api/treatments`, `GET /api/treatments/{id}`, `GET /api/treatments/{id}/drugs` | ✅ | ✅ | — |
+| `POST /api/treatments` | — | Solo con su propio `veterinarianId` | — |
+| `POST /api/treatments/{id}/drugs` | — | Solo en tratamientos que registró él | — |
+| `GET /api/veterinarians` | ✅ | — | — |
+| `GET /api/veterinarians/{id}`, `GET /api/veterinarians/{id}/treatments` | ✅ | Solo el suyo | — |
+| `POST /api/veterinarians`, `PUT /api/veterinarians/{id}/active` | ✅ | — | — |
+| `PUT /api/veterinarians/{id}` | ✅ | Solo el suyo, sin cambiar `document` ni `email` | — |
+
+- La documentación de la API (`/v3/api-docs`, `/swagger-ui.html`) es pública.
+- Un dueño consulta los tratamientos de sus mascotas solo con `GET /api/pets/{id}/treatments`.
+- Al editar su propio perfil, el dueño y el veterinario pueden cambiar el nombre, la contraseña y, el veterinario, la especialidad. Si el cuerpo trae un `document` o un `email` distinto del actual, la petición responde `403`.
+- El cuerpo se valida antes de comprobar si el recurso es propio: una petición con campos inválidos responde `400` aunque el recurso no sea del usuario.
+
+**Sin permiso** — `GET /api/owners/2` con el token de otro dueño:
+
+```json
+{
+  "timestamp": "2026-11-09T05:31:53.612Z",
+  "status": 403,
+  "error": "Forbidden",
+  "message": "No tienes permisos para acceder a este recurso.",
+  "path": "/api/owners/2",
+  "errors": {}
+}
+```
 
 ## Modelo de datos
 
@@ -1625,7 +1673,7 @@ Los indicadores mensuales usan el mes calendario anterior en `America/Bogota`. `
 }
 ```
 
-El endpoint sigue las convenciones de acceso actuales: la API aún no exige credenciales ni autorización por rol; el control de acceso queda para la Feature 13.
+Solo el administrador puede consultarlo (ver [Permisos](#permisos)).
 
 ### Tratamientos (`/api/treatments`)
 
@@ -1907,7 +1955,7 @@ Devuelve el perfil del usuario autenticado por el token. Permite al frontend rec
 ### Borrado y desactivación
 
 - **Borrado de un dueño:** elimina en cascada todas sus mascotas. Se bloquea con `409` si alguna mascota tiene tratamientos registrados, porque se perdería el historial médico.
-- **Sin borrado de mascotas ni de veterinarios:** no existe `DELETE` para esos recursos; un `DELETE` sobre sus rutas responde `405`. La forma de retirarlos es desactivarlos con `PUT .../active`.
+- **Sin borrado de mascotas ni de veterinarios:** no existe `DELETE` para esos recursos; un `DELETE` sobre sus rutas responde `403` (ver [Permisos](#permisos)). La forma de retirarlos es desactivarlos con `PUT .../active`.
 - **Medicamento con historial:** un medicamento asociado a uno o más tratamientos no se puede eliminar (`409`), porque se perdería el detalle de unidades y precios de esos tratamientos.
 
 > [!NOTE]
@@ -1974,7 +2022,6 @@ Los duplicados se detectan antes de escribir y responden `409` con un mensaje ex
 
 ## Limitaciones y roadmap
 
-- **Autorización por rol pendiente.** El login emite un JWT, pero por ahora solo `GET /api/auth/me` lo exige: el resto de la API sigue abierta, incluidos los endpoints de administración, hasta definir la matriz de permisos por rol (con dueños limitados a sus propios recursos).
 - **Sin paginación.** Los `GET` de colección devuelven todos los registros; no hay `page`/`size` ni totales.
 - **Sin versionado.** Las rutas no llevan versión (`/api`, no `/api/v1`).
 - **Sin borrado de mascotas ni veterinarios.** Solo desactivación.
