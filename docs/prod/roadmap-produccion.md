@@ -16,7 +16,7 @@ Tener Pethaven (backend y frontend) en producción y funcional, con un flujo CI/
 | Frontend | Angular 19. `environment.production.ts` apunta a `http://localhost:8080/api`. |
 | Base de datos | H2, `ddl-auto=create-drop`, consola H2 y log SQL activos. Sin migraciones. |
 | Datos | `DataLoader` (datos de ejemplo) y `ExcelDrugImportRunner` (medicamentos) se ejecutan en cada arranque, sin distinguir entorno. |
-| Seguridad | Sin Spring Security. Contraseñas en texto plano. Endpoints `/api/**` sin autenticación. |
+| Seguridad | Sin Spring Security. Contraseñas en texto plano. Endpoints `/api/**` sin autenticación. (Situación al escribir el roadmap; hoy está implementada, ver sección 7.) |
 | Infraestructura | Sin Dockerfiles, Compose, profiles ni `.github/`. |
 | Pruebas | 12 clases de test de backend (mayoría de repositorio). Tests e2e de frontend sin definir. |
 
@@ -63,11 +63,11 @@ Tener Pethaven (backend y frontend) en producción y funcional, con un flujo CI/
 | 6 | Configuración de producción del frontend | 1 |
 | 7 | Aprovisionamiento en Render y Vercel | 4, 6 |
 | 8 | Entrega continua (CD) | 5, 7 |
-| — | **Fuera del roadmap:** fase de pruebas de frontend/e2e y fase de seguridad | — |
+| — | **Fuera del roadmap:** fase de pruebas de frontend/e2e y fase de seguridad (ya implementada, ver sección 7) | — |
 | 9 | Primer despliegue a producción | 8, seguridad implementada y, si se decide, e2e en el CI |
 | 10 | Operación y endurecimiento | 9 |
 
-Las fases 1 a 8 pueden completarse antes de la seguridad. Las fases 5 y 6 pueden avanzar en paralelo una vez cumplidas sus dependencias.
+Las fases 1 a 8 no dependían de la seguridad, que ya está implementada; sus obligaciones para estas fases están en la sección 7. Las fases 5 y 6 pueden avanzar en paralelo una vez cumplidas sus dependencias.
 
 ## 6. Detalle por fase
 
