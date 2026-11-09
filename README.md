@@ -31,7 +31,7 @@ Hasta ahora, buena parte de la operación vivía en papel y en hojas de Excel: e
 |---|---|
 | **Cliente** (dueño) | Iniciar sesión, ver sus mascotas hospitalizadas en formato de tarjeta, consultar el detalle de cada una con su historial de tratamientos y revisar su perfil |
 | **Veterinario** | Iniciar sesión, registrar dueños y mascotas, llevar el historial de atenciones, administrar tratamientos con descuento de inventario, consultar el inventario de medicamentos (solo lectura), dar de alta a las mascotas y descargar su historia clínica en PDF |
-| **Administrador** | Iniciar sesión, gestionar el equipo de veterinarios (crear, editar, activar y desactivar), gestionar las mascotas (activar y desactivar), gestionar el inventario de medicamentos (crear, editar, eliminar e importar desde Excel) y analizar los KPIs del negocio: tratamientos del mes, mascotas, veterinarios, ventas, ganancias y medicamentos más usados |
+| **Administrador** | Iniciar sesión, gestionar el equipo de veterinarios (crear, editar, activar y desactivar), consultar las mascotas, gestionar el inventario de medicamentos (crear, editar, eliminar e importar desde Excel) y analizar los KPIs del negocio: tratamientos del mes, mascotas, veterinarios, ventas, ganancias y medicamentos más usados |
 
 **El flujo del negocio:**
 
@@ -290,7 +290,7 @@ Puedes iniciar sesión con cualquiera de los usuarios precargados:
 | Veterinario | `valentina.soler@pethaven.com` | `vet12345` |
 | Administrador | `admin@pethaven.com` | `admin12345` |
 
-El cliente entra a `/cliente`, el veterinario a `/veterinario` y el administrador, desde `/admin/login`, a `/administrador`. También hay un veterinario inactivo (`julian.restrepo@pethaven.com`) para probar el rechazo de cuentas desactivadas.
+Todos inician sesión en `/login` y cada uno entra al portal de su rol: el cliente a `/cliente`, el veterinario a `/veterinario` y el administrador a `/administrador`. También hay un veterinario inactivo (`julian.restrepo@pethaven.com`) para probar el rechazo de cuentas desactivadas.
 
 ### Consola de H2
 
@@ -336,9 +336,7 @@ Los recursos viven bajo `/api/**`: `auth`, `owners`, `pets`, `veterinarians`, `d
 | Ruta | Descripción |
 |---|---|
 | `/` | Landing page |
-| `/login` | Inicio de sesión de clientes |
-| `/vet/login` | Inicio de sesión de veterinarios |
-| `/admin/login` | Inicio de sesión de administradores |
+| `/login` | Inicio de sesión único: lleva a cada usuario al portal de su rol |
 | `/cliente` | Entrada del cliente: resuelve su id y lo lleva a sus mascotas |
 | `/cliente/:ownerId/mascotas` | Mascotas del cliente |
 | `/cliente/:ownerId/mascotas/:petId` | Detalle de una mascota |
