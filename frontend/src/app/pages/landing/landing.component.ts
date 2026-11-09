@@ -15,7 +15,6 @@ import { FinalCtaComponent } from './components/final-cta/final-cta.component';
 import { RevealDirective } from './directives/reveal/reveal.directive';
 import { CountersDirective } from './directives/counters/counters.directive';
 import { ParallaxDirective } from './directives/parallax/parallax.directive';
-import { PawTrailDirective } from './directives/paw-trail/paw-trail.directive';
 
 /**
  * Landing page container. Port of `templates/index.html`.
@@ -49,7 +48,6 @@ import { PawTrailDirective } from './directives/paw-trail/paw-trail.directive';
     RevealDirective,
     CountersDirective,
     ParallaxDirective,
-    PawTrailDirective
   ],
   templateUrl: './landing.component.html'
 })
