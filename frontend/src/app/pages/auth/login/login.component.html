@@ -1,6 +1,14 @@
-<div class="min-h-screen flex flex-col bg-background text-text font-body">
+<div class="relative min-h-screen flex flex-col overflow-hidden bg-background text-text font-body">
+  <!-- Blobs decorativos de fondo -->
+  <div aria-hidden="true" class="pointer-events-none absolute -left-40 top-24 w-[28rem]">
+    <div class="blob aspect-square w-full bg-secondary opacity-40"></div>
+  </div>
+  <div aria-hidden="true" class="pointer-events-none absolute -right-40 bottom-0 w-[32rem]">
+    <div class="blob blob-alt aspect-square w-full bg-honey opacity-25"></div>
+  </div>
+
   <!-- Encabezado: solo el logo, centrado -->
-  <header class="py-2 border-b border-olive/25 bg-background">
+  <header class="relative z-10 py-2 border-b border-olive/25 bg-background">
     <div class="max-w-7xl mx-auto px-5 flex justify-center">
       <a routerLink="/" class="flex items-center" aria-label="Volver al inicio">
         <img src="/images/logo-header.png" alt="PetHaven" class="h-12 lg:h-20 w-auto" />
@@ -8,15 +16,29 @@
     </div>
   </header>
 
-  <main class="flex-1 flex items-center justify-center px-5 py-10 lg:py-16">
+  <main class="relative z-10 flex-1 flex items-center justify-center px-5 py-10 lg:py-16">
     <div
-      class="w-full max-w-5xl grid lg:grid-cols-2 overflow-hidden rounded-3xl border border-olive/25 bg-white shadow-xl"
+      class="w-full max-w-5xl grid lg:grid-cols-2 overflow-hidden rounded-3xl border border-olive/25 bg-white shadow-2xl shadow-tertiary/15"
     >
       <!-- Columna de la imagen (solo en pantallas grandes) -->
       <div class="relative hidden lg:block">
         <img src="/images/instalacion_recepcion.jpg" alt="" class="absolute inset-0 h-full w-full object-cover" />
-        <div class="absolute inset-0 bg-tertiary/55"></div>
+        <div class="absolute inset-0 bg-gradient-to-t from-tertiary/90 via-tertiary/40 to-tertiary/10"></div>
         <div class="absolute inset-x-0 bottom-0 p-10 text-background">
+          <ul class="mb-6 flex flex-col gap-3 text-sm font-bold">
+            <li class="flex items-center gap-3">
+              <i class="pi pi-heart-fill flex h-9 w-9 items-center justify-center rounded-full bg-background/20 backdrop-blur-sm" aria-hidden="true"></i>
+              Historial clínico de tus mascotas
+            </li>
+            <li class="flex items-center gap-3">
+              <i class="pi pi-clock flex h-9 w-9 items-center justify-center rounded-full bg-background/20 backdrop-blur-sm" aria-hidden="true"></i>
+              Seguimiento de tratamientos
+            </li>
+            <li class="flex items-center gap-3">
+              <i class="pi pi-shield flex h-9 w-9 items-center justify-center rounded-full bg-background/20 backdrop-blur-sm" aria-hidden="true"></i>
+              Acceso seguro a tu información
+            </li>
+          </ul>
           <p class="font-script text-3xl">Cuidamos a quien más quieres</p>
           <p class="mt-2 text-sm text-background/80">PetHaven · Clínica veterinaria</p>
         </div>
@@ -24,28 +46,31 @@
 
       <!-- Columna del formulario -->
       <div class="p-6 sm:p-10 lg:p-12 flex flex-col justify-center">
-        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary">
+        <div class="flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary ring-8 ring-secondary/40">
           <img src="/images/icons/paw-print-icon.svg" alt="" class="h-7 w-7" />
         </div>
 
         <h1 class="mt-5 font-display text-3xl lg:text-4xl font-bold">Bienvenido de nuevo</h1>
         <p class="mt-2 text-sm lg:text-base text-text/80">Ingresa para acceder a tu portal de PetHaven.</p>
 
-        <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="mt-8 flex flex-col gap-5">
+        <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="mt-8 flex flex-col gap-2">
           <!-- Correo -->
           <div class="flex flex-col gap-1.5">
             <label for="email" class="text-sm font-bold">Correo electrónico</label>
-            <input
-              id="email"
-              type="email"
-              formControlName="email"
-              autocomplete="email"
-              placeholder="tucorreo@ejemplo.com"
-              class="w-full rounded-xl border border-olive/40 bg-background px-4 py-3 outline-none transition focus:border-tertiary focus:ring-2 focus:ring-olive/40"
-              [class.border-terracotta]="form.controls.email.touched && form.controls.email.invalid"
-            />
-            @if (form.controls.email.touched && form.controls.email.errors; as errors) {
-              <p class="text-sm text-terracotta">
+            <div class="relative">
+              <i class="pi pi-envelope pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-olive" aria-hidden="true"></i>
+              <input
+                id="email"
+                type="email"
+                formControlName="email"
+                autocomplete="email"
+                placeholder="tucorreo@ejemplo.com"
+                class="w-full rounded-xl border border-olive/40 bg-background py-3 pl-11 pr-4 outline-none transition focus:border-tertiary focus:ring-2 focus:ring-olive/40"
+                [class.border-terracotta]="form.controls.email.touched && form.controls.email.invalid"
+              />
+            </div>
+            <p class="min-h-5 text-sm text-terracotta">
+              @if (form.controls.email.touched && form.controls.email.errors; as errors) {
                 @if (errors['required']) {
                   Escribe tu correo.
                 } @else if (errors['email']) {
@@ -55,21 +80,22 @@
                 } @else {
                   Revisa el correo.
                 }
-              </p>
-            }
+              }
+            </p>
           </div>
 
           <!-- Contraseña -->
           <div class="flex flex-col gap-1.5">
             <label for="password" class="text-sm font-bold">Contraseña</label>
             <div class="relative">
+              <i class="pi pi-lock pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-olive" aria-hidden="true"></i>
               <input
                 id="password"
                 [type]="showPassword() ? 'text' : 'password'"
                 formControlName="password"
                 autocomplete="current-password"
                 placeholder="Tu contraseña"
-                class="w-full rounded-xl border border-olive/40 bg-background px-4 py-3 pr-24 outline-none transition focus:border-tertiary focus:ring-2 focus:ring-olive/40"
+                class="w-full rounded-xl border border-olive/40 bg-background py-3 pl-11 pr-24 outline-none transition focus:border-tertiary focus:ring-2 focus:ring-olive/40"
                 [class.border-terracotta]="form.controls.password.touched && form.controls.password.invalid"
               />
               <button
@@ -80,41 +106,42 @@
                 {{ showPassword() ? 'Ocultar' : 'Mostrar' }}
               </button>
             </div>
-            @if (form.controls.password.touched && form.controls.password.errors; as errors) {
-              <p class="text-sm text-terracotta">
+            <p class="min-h-5 text-sm text-terracotta">
+              @if (form.controls.password.touched && form.controls.password.errors; as errors) {
                 @if (errors['required']) {
                   Escribe tu contraseña.
                 } @else if (errors['server']) {
                   {{ errors['server'] }}
                 }
+              }
+            </p>
+          </div>
+
+          <!-- Espacio fijo para el aviso de sesión expirada (?expired=1) y el error general del
+               servidor (401, 403, sin conexión): al aparecer no cambia el tamaño de la tarjeta. -->
+          <div class="h-14">
+            @if (noticeMessage(); as notice) {
+              <p
+                role="status"
+                class="flex h-full items-center rounded-xl border border-olive/40 bg-olive/10 px-4 text-sm text-olive"
+              >
+                <span class="line-clamp-2">{{ notice }}</span>
+              </p>
+            }
+            @if (errorMessage(); as message) {
+              <p
+                role="alert"
+                class="flex h-full items-center rounded-xl border border-terracotta/40 bg-terracotta/10 px-4 text-sm text-terracotta"
+              >
+                <span class="line-clamp-2">{{ message }}</span>
               </p>
             }
           </div>
 
-          <!-- Aviso de sesión expirada (?expired=1) -->
-          @if (noticeMessage(); as notice) {
-            <div
-              role="status"
-              class="rounded-xl border border-olive/40 bg-olive/10 px-4 py-3 text-sm text-olive"
-            >
-              {{ notice }}
-            </div>
-          }
-
-          <!-- Error general del servidor (401, 403, sin conexión) -->
-          @if (errorMessage(); as message) {
-            <div
-              role="alert"
-              class="rounded-xl border border-terracotta/40 bg-terracotta/10 px-4 py-3 text-sm text-terracotta"
-            >
-              {{ message }}
-            </div>
-          }
-
           <button
             type="submit"
             [disabled]="submitting()"
-            class="mt-1 w-full cursor-pointer rounded-full bg-olive px-6 py-3 text-base font-bold text-background shadow-sm transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+            class="mt-1 w-full cursor-pointer rounded-full bg-olive px-6 py-3 text-base font-bold text-background shadow-md transition hover:-translate-y-0.5 hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {{ submitting() ? 'Ingresando…' : 'Iniciar sesión' }}
           </button>

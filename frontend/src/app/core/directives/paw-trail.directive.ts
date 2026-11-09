@@ -1,12 +1,11 @@
 import { AfterViewInit, Directive, OnDestroy } from '@angular/core';
 
 /**
- * Paw-print cursor trail, port of the `Paw-print cursor trail` block of
- * `static/js/script.js`.
+ * Rastro de huellas que sigue al cursor. Se aplica una sola vez en el `router-outlet` raíz, así que
+ * funciona en todas las páginas.
  *
- * Desktop pointing devices only, and never under prefers-reduced-motion. The
- * marks are appended to <body> rather than to the landing subtree because
- * `.paw-trail` is position: fixed and must not be clipped by an ancestor.
+ * Solo en dispositivos con puntero fino y nunca con prefers-reduced-motion. Las huellas se agregan
+ * a <body> porque `.paw-trail` es position: fixed y ningún ancestro debe recortarlas.
  */
 @Directive({
   selector: '[appPawTrail]'
