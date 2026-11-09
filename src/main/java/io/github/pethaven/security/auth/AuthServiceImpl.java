@@ -58,8 +58,9 @@ public class AuthServiceImpl implements AuthService {
                 profile.profileId(), profile.name(), profile.email(), profile.role());
     }
 
-    // Sin @Transactional a propósito: login() lo invoca desde la propia clase (sin pasar por el proxy), y
-    // ninguna lectura lo necesita: los roles se cargan EAGER y cada consulta del repositorio es transaccional.
+    // Sin @Transactional: ninguna lectura lo necesita. Los roles de la cuenta se cargan EAGER, así que no queda
+    // ninguna relación perezosa por inicializar fuera de la consulta del repositorio (lo prueba
+    // AuthFlowIntegrationTest con open-in-view desactivado).
     @Override
     public AuthProfileResponse getProfile(String username) {
         UserEntity account = userRepository.findByUsername(username)
