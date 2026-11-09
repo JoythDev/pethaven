@@ -30,7 +30,11 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 // Pruebas del servicio con mocks: el PetMapper es real, el repositorio está simulado y la descarga de fotos se sirve desde un HTTP local.
 @ExtendWith(MockitoExtension.class)
@@ -918,9 +922,60 @@ public class PetServiceMockTest {
     }
 
     @Test
-    public void petService_getPetPhoto_BodyDrippedSlowly_IsCutByTheTimeBudget() throws IOException {
+    public void petService_getPetPhoto_BodyDrippedSlowly_IsCutByTheTimeBudget() throws Exception {
         // Arrange
         // Cabeceras inmediatas y cuerpo gota a gota (20 x 200 ms): el presupuesto de 500 ms también cubre el cuerpo.
+        CountDownLatch aborted = startDrippingPhotoServer();
+        PetServiceImpl service = new PetServiceImpl(petRepository, new PetMapper(), ownerService,
+                uri -> true, Duration.ofMillis(500));
+        Mockito.when(petRepository.findById(1L)).thenReturn(Optional.of(petWithPhoto(url(photoServer, "/slow.png"))));
+
+        // Act
+        long start = System.nanoTime();
+        Optional<PetService.Photo> result = service.getPetPhoto(1L);
+        long elapsedMillis = (System.nanoTime() - start) / 1_000_000;
+
+        // Assert
+        Assertions.assertThat(result).isEmpty();
+        Assertions.assertThat(elapsedMillis).isLessThan(1_500);
+        // La conexión se cierra: el servidor deja de poder escribir el resto del cuerpo.
+        Assertions.assertThat(aborted.await(2, TimeUnit.SECONDS)).isTrue();
+    }
+
+    @Test
+    public void petService_getPetPhoto_InterruptedWhileReadingBody_ClosesConnectionAndKeepsInterruptFlag() throws Exception {
+        // Arrange
+        // Presupuesto amplio (10 s): la lectura termina por la interrupción del hilo, no por el tiempo.
+        CountDownLatch aborted = startDrippingPhotoServer();
+        PetServiceImpl service = new PetServiceImpl(petRepository, new PetMapper(), ownerService,
+                uri -> true, Duration.ofSeconds(10));
+        Mockito.when(petRepository.findById(1L)).thenReturn(Optional.of(petWithPhoto(url(photoServer, "/slow.png"))));
+        AtomicReference<Optional<PetService.Photo>> result = new AtomicReference<>();
+        AtomicBoolean interruptFlagKept = new AtomicBoolean();
+        Thread caller = new Thread(() -> {
+            result.set(service.getPetPhoto(1L));
+            interruptFlagKept.set(Thread.currentThread().isInterrupted());
+        });
+
+        // Act
+        caller.start();
+        Thread.sleep(300);
+        caller.interrupt();
+        caller.join(2_000);
+
+        // Assert
+        Assertions.assertThat(caller.isAlive()).isFalse();
+        Assertions.assertThat(result.get()).isEmpty();
+        Assertions.assertThat(interruptFlagKept).isTrue();
+        Assertions.assertThat(aborted.await(2, TimeUnit.SECONDS)).isTrue();
+    }
+
+    /**
+     * Servidor de fotos que envía las cabeceras al instante y el cuerpo byte a byte cada 200 ms. El latch se abre
+     * cuando el cliente cierra la conexión y la escritura falla.
+     */
+    private CountDownLatch startDrippingPhotoServer() throws IOException {
+        CountDownLatch aborted = new CountDownLatch(1);
         photoServer = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
         photoServer.createContext("/", exchange -> {
             exchange.getResponseHeaders().set("Content-Type", "image/png");
@@ -934,21 +989,10 @@ public class PetServiceMockTest {
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             } catch (IOException e) {
-                // El cliente cerró la conexión al agotar el presupuesto.
+                aborted.countDown();
             }
         });
         photoServer.start();
-        PetServiceImpl service = new PetServiceImpl(petRepository, new PetMapper(), ownerService,
-                uri -> true, Duration.ofMillis(500));
-        Mockito.when(petRepository.findById(1L)).thenReturn(Optional.of(petWithPhoto(url(photoServer, "/slow.png"))));
-
-        // Act
-        long start = System.nanoTime();
-        Optional<PetService.Photo> result = service.getPetPhoto(1L);
-        long elapsedMillis = (System.nanoTime() - start) / 1_000_000;
-
-        // Assert
-        Assertions.assertThat(result).isEmpty();
-        Assertions.assertThat(elapsedMillis).isLessThan(1_500);
+        return aborted;
     }
 }

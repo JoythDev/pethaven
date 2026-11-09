@@ -240,11 +240,13 @@ public class PetServiceImpl implements PetService {
         try {
             return read.get(Math.max(0, deadline - System.nanoTime()), TimeUnit.NANOSECONDS);
         } catch (TimeoutException e) {
-            read.cancel(true);
             body.close();
             throw new IOException("Tiempo agotado leyendo la foto", e);
         } catch (ExecutionException e) {
             throw e.getCause() instanceof IOException io ? io : new IOException(e.getCause());
+        } finally {
+            // Tiempo agotado o hilo interrumpido: el lector no sigue ocupando la conexión.
+            read.cancel(true);
         }
     }
 }
