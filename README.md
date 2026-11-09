@@ -407,8 +407,7 @@ Los cambios se integran primero en `desarrollo`; solo cuando todo está funciona
 
 El contrato de la API REST está en [docs/api/API.md](docs/api/API.md), con ejemplos de peticiones en [docs/api/pethaven.http](docs/api/pethaven.http).
 
-> [!NOTE]
-> Los diagramas de `docs/architecture` se mantienen en Figma y **están pendientes de actualizar** con la capa de seguridad: cuentas de login (`users`), roles (`roles`, `user_roles`), Spring Security y JWT. Mientras tanto, el modelo de datos vigente es el de [API.md](docs/api/API.md#modelo-de-datos).
+Los diagramas de `docs/architecture` se mantienen en Figma y se exportan aquí. Incluyen la capa de seguridad: cuentas de login (`users`), roles (`roles`, `user_roles`), Spring Security y JWT.
 
 <details>
 <summary><b>Identidad de marca</b></summary>
@@ -431,7 +430,7 @@ El contrato de la API REST está en [docs/api/API.md](docs/api/API.md), con ejem
 <details>
 <summary><b>Diagrama de arquitectura</b></summary>
 <br/>
-<img src="docs/architecture/Diagrama-Arquitectura.png" alt="Diagrama de arquitectura: SPA Angular, API REST Spring Boot en capas y sistemas externos" width="900"/>
+<img src="docs/architecture/Diagrama-Arquitectura.png" alt="Diagrama de arquitectura: SPA Angular, API REST Spring Boot en capas con Spring Security y sistemas externos" width="900"/>
 </details>
 
 <details>
