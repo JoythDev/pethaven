@@ -11,10 +11,11 @@ import { Owner } from '../../../models/owner.model';
 import { OwnerService } from '../../../services/owner.service';
 import { ClienteContextStore } from '../cliente-context.store';
 import { AuthService } from '../../../services/auth.service';
+import { StatCardComponent } from '../../shared/stat-card/stat-card.component';
 
 @Component({
   selector: 'app-perfil',
-  imports: [AvatarModule, ButtonModule, SkeletonModule],
+  imports: [StatCardComponent, AvatarModule, ButtonModule, SkeletonModule],
   templateUrl: './perfil.component.html',
 })
 export class PerfilComponent implements OnInit {

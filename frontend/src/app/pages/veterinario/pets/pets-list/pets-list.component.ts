@@ -36,6 +36,7 @@ import { ViewState, toViewState } from '../../../../core/http/view-state';
 import { normalizeText } from '../../../../core/text/normalize-text';
 import { onPhotoError as handlePhotoError } from '../../../../core/ui/photo-fallback';
 import { PetStatusTagComponent } from '../components/pet-status-tag/pet-status-tag.component';
+import { PageBannerComponent } from '../../../shared/page-banner/page-banner.component';
 
 interface SpeciesOption {
   label: string;
@@ -52,6 +53,7 @@ interface PatientFilterOption {
 @Component({
   selector: 'app-pets-list',
   imports: [
+    PageBannerComponent,
     ReactiveFormsModule,
     RouterLink,
     TableModule,

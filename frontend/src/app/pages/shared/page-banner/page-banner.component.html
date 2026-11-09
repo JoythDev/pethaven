@@ -1,0 +1,20 @@
+<header [class]="bannerClass()">
+  <span aria-hidden="true" class="absolute -right-10 -top-16 h-52 w-52 rounded-full {{ theme().circleA }}"></span>
+  <span aria-hidden="true" class="absolute right-44 -bottom-14 h-36 w-36 rounded-full {{ theme().circleB }}"></span>
+  @if (mascot()) {
+    <img [src]="mascotSrc()" alt="" [class]="mascotClass()" />
+  }
+
+  <div class="relative {{ contentClass() }}">
+    @if (eyebrow(); as eyebrow) {
+      <p class="font-script text-3xl text-tertiary">{{ eyebrow }}</p>
+    }
+    @if (title(); as title) {
+      <h1 [class]="titleClass()">{{ title }}</h1>
+    }
+    @if (subtitle(); as subtitle) {
+      <p class="mt-2 text-text/75">{{ subtitle }}</p>
+    }
+    <ng-content />
+  </div>
+</header>

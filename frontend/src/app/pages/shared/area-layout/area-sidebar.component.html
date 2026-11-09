@@ -1,27 +1,29 @@
-<div class="flex flex-col h-full p-4">
+<div class="flex h-full flex-col p-4">
   <a [routerLink]="homeLink()" class="flex items-center px-3 pt-2 pb-4" (click)="itemClicked.emit()">
     <img src="/images/logo-header.png" alt="PetHaven" class="h-10 w-auto" />
   </a>
 
-  <p class="text-xs font-bold uppercase tracking-[0.2em] text-text/50 px-3 mb-2">
+  <p class="mb-2 px-3 text-xs font-bold uppercase tracking-[0.2em] text-text/50">
     {{ sectionLabel() }}
   </p>
 
-  <nav class="flex flex-col gap-1" aria-label="Módulos del panel">
+  <nav class="flex flex-col gap-1.5" aria-label="Módulos del panel">
     @for (item of items(); track item.label) {
       @if (item.disabled) {
         <a
-          class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm text-text/40 cursor-not-allowed select-none"
+          class="flex cursor-not-allowed select-none items-center gap-3 rounded-2xl px-2 py-2 text-sm text-text/40"
           tabindex="-1"
           aria-disabled="true"
           pTooltip="Próximamente"
           tooltipPosition="right"
         >
-          @if (isPrimeIcon(item.icon)) {
-            <i [class]="item.icon + ' text-xl opacity-50'" aria-hidden="true"></i>
-          } @else {
-            <img [src]="item.icon" alt="" class="h-5 w-5 opacity-50" />
-          }
+          <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary/30">
+            @if (isPrimeIcon(item.icon)) {
+              <i [class]="item.icon + ' text-lg opacity-50'" aria-hidden="true"></i>
+            } @else {
+              <img [src]="item.icon" alt="" class="h-5 w-5 opacity-50" />
+            }
+          </span>
           <span>{{ item.label }}</span>
         </a>
       } @else if (item.link) {
@@ -30,35 +32,51 @@
           routerLinkActive
           ariaCurrentWhenActive="page"
           #rla="routerLinkActive"
-          class="flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm transition-colors"
+          class="flex items-center gap-3 rounded-2xl px-2 py-2 text-sm transition duration-200"
           [ngClass]="
             rla.isActive
-              ? 'bg-secondary/50 text-text font-bold'
-              : 'text-text/70 hover:bg-secondary/20 hover:text-text'
+              ? 'bg-honey font-bold text-text shadow-md shadow-honey/40'
+              : 'text-text/70 hover:translate-x-0.5 hover:bg-secondary/30 hover:text-text'
           "
           (click)="itemClicked.emit()"
         >
-          @if (isPrimeIcon(item.icon)) {
-            <i [class]="item.icon + ' text-xl'" aria-hidden="true"></i>
-          } @else {
-            <img [src]="item.icon" alt="" class="h-5 w-5" />
-          }
+          <span
+            class="flex h-9 w-9 items-center justify-center rounded-xl"
+            [ngClass]="rla.isActive ? 'bg-white/60' : 'bg-secondary/40'"
+          >
+            @if (isPrimeIcon(item.icon)) {
+              <i [class]="item.icon + ' text-lg'" aria-hidden="true"></i>
+            } @else {
+              <img [src]="item.icon" alt="" class="h-5 w-5" />
+            }
+          </span>
           <span>{{ item.label }}</span>
         </a>
       } @else {
         <button
           type="button"
-          class="flex w-full items-center gap-3 rounded-xl px-3 py-2.5 text-left text-sm text-text/70 transition-colors hover:bg-secondary/20 hover:text-text"
+          class="flex w-full items-center gap-3 rounded-2xl px-2 py-2 text-left text-sm text-text/70 transition duration-200 hover:translate-x-0.5 hover:bg-secondary/30 hover:text-text"
           (click)="runCommand(item)"
         >
-          @if (isPrimeIcon(item.icon)) {
-            <i [class]="item.icon + ' text-xl'" aria-hidden="true"></i>
-          } @else {
-            <img [src]="item.icon" alt="" class="h-5 w-5" />
-          }
+          <span class="flex h-9 w-9 items-center justify-center rounded-xl bg-secondary/40">
+            @if (isPrimeIcon(item.icon)) {
+              <i [class]="item.icon + ' text-lg'" aria-hidden="true"></i>
+            } @else {
+              <img [src]="item.icon" alt="" class="h-5 w-5" />
+            }
+          </span>
           <span>{{ item.label }}</span>
         </button>
       }
     }
   </nav>
+
+  <figure class="relative mt-auto overflow-hidden rounded-3xl bg-honey px-4 pb-4 pt-3 text-center">
+    <span aria-hidden="true" class="absolute -right-8 -top-8 h-28 w-28 rounded-full bg-white/30"></span>
+    <span aria-hidden="true" class="absolute -bottom-10 -left-8 h-24 w-24 rounded-full bg-terracotta/30"></span>
+    <img src="/images/illustrations/dog-mascot.svg" alt="" class="relative mx-auto h-24 w-auto animate-float" />
+    <figcaption class="relative mt-1 font-display text-sm font-bold leading-snug text-text">
+      Cuidamos a quien más quieres
+    </figcaption>
+  </figure>
 </div>

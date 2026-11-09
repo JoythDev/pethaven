@@ -15,6 +15,8 @@ export interface AreaTopbarConfig {
   subPageLabels: Record<string, Record<string, string>>;
   userName: string;
   userInitial: string;
+  /** Foto del usuario (opcional); sin ella el avatar muestra la inicial. */
+  userPhotoUrl?: string | null;
   userMenuItems: MenuItem[];
   /** Si es true, el breadcrumb ignora un segmento numérico (ids como /cliente/7/...). */
   skipNumericSegment: boolean;

@@ -1,5 +1,5 @@
 <header
-  class="sticky top-0 z-20 flex h-16 items-center gap-3 border-b border-olive/15 bg-white px-4 lg:px-6"
+  class="sticky top-3 z-20 mx-3 mt-3 flex h-16 before:absolute before:-top-3 before:-left-3 before:-right-3 before:-z-10 before:h-3 before:bg-background items-center gap-3 rounded-3xl border border-olive/15 bg-white/90 px-4 shadow-lg shadow-tertiary/10 backdrop-blur lg:px-6"
 >
   <p-button
     icon="pi pi-bars"
@@ -11,21 +11,35 @@
   />
 
   <p-breadcrumb
+    class="min-w-0"
     [model]="breadcrumbItems()"
     [home]="homeItem()"
     styleClass="border-none bg-transparent"
   />
 
-  <div class="ml-auto flex items-center gap-3">
-    <span class="hidden sm:block text-sm font-semibold text-text">{{ userName() }}</span>
+  <div class="ml-auto flex shrink-0 items-center gap-3">
+    @if (userName()) {
+      <p class="hidden font-display text-base font-bold text-text sm:block">
+        Hola, <span class="text-tertiary">{{ firstName() }}</span>
+      </p>
+    }
     <button
       type="button"
       (click)="userMenu.toggle($event)"
-      class="rounded-full focus:outline-none"
+      class="cursor-pointer rounded-full ring-2 ring-honey ring-offset-2 ring-offset-white transition hover:ring-terracotta focus-visible:outline-none focus-visible:ring-tertiary"
       aria-haspopup="true"
       aria-label="Menú de usuario"
     >
-      <p-avatar [label]="userInitial()" shape="circle" styleClass="cursor-pointer" />
+      @if (photoUrl(); as photo) {
+        <p-avatar [image]="photo" shape="circle" size="large" (onImageError)="failedPhotoUrl.set(photo)" />
+      } @else {
+        <p-avatar
+          [label]="userInitial()"
+          shape="circle"
+          size="large"
+          styleClass="bg-secondary font-display font-bold text-tertiary"
+        />
+      }
     </button>
     <p-menu #userMenu [model]="userMenuItems()" [popup]="true" appendTo="body" />
   </div>

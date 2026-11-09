@@ -6,13 +6,13 @@
   @let s = state();
 
   @if (s.status === 'loading') {
-    <div class="mt-6 rounded-3xl border border-olive/15 bg-white p-10 text-center shadow-sm">
+    <div class="mt-6 rounded-3xl border border-olive/15 bg-white p-10 text-center shadow-md">
       <i class="pi pi-spin pi-spinner text-2xl text-text/40" aria-hidden="true"></i>
       <p class="mt-3 text-text/60">Cargando mascota...</p>
     </div>
   } @else if (s.status === 'ready') {
     @let p = s.data;
-    <div class="mt-6 overflow-hidden rounded-3xl border border-olive/15 bg-white shadow-sm">
+    <div class="mt-6 overflow-hidden rounded-3xl border border-olive/10 bg-white shadow-lg">
       <img [src]="p.photoUrl" [alt]="p.name" class="h-64 w-full object-cover" />
       <div class="p-6 lg:p-8">
         <div class="mb-1 flex flex-wrap items-center gap-3">
@@ -25,33 +25,25 @@
         </div>
         <p class="mb-6 text-text/70">{{ p.species === 'DOG' ? 'Perro' : 'Gato' }} · {{ p.breed }}</p>
 
-        <dl class="grid grid-cols-1 gap-y-4 text-sm sm:grid-cols-2">
-          <div>
-            <dt class="text-text/50">Edad</dt>
-            <dd class="font-semibold text-text">{{ p.age }} años</dd>
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <div app-stat-card layout="tile" color="honey" decor="circles" label="Edad" valueClass="text-3xl">
+            {{ p.age }} <span class="text-base font-semibold">años</span>
           </div>
-          <div>
-            <dt class="text-text/50">Peso</dt>
-            <dd class="font-semibold text-text">{{ p.weight }} kg</dd>
+          <div app-stat-card layout="tile" color="sage" decor="circles" label="Peso" valueClass="text-3xl">
+            {{ p.weight }} <span class="text-base font-semibold">kg</span>
           </div>
-          <div class="sm:col-span-2">
-            <dt class="text-text/50">Dueño</dt>
-            <dd class="font-semibold">
-              <a
-                [routerLink]="['/veterinario/duenos', p.ownerId]"
-                class="text-olive transition-colors hover:text-tertiary"
-              >
-                {{ p.ownerName }}
-              </a>
-            </dd>
+          <div app-stat-card layout="tile" color="secondary" decor="circles" label="Dueño" valueClass="text-xl">
+            <a
+              [routerLink]="['/veterinario/duenos', p.ownerId]"
+              class="text-tertiary underline-offset-4 transition-colors hover:underline"
+            >
+              {{ p.ownerName }}
+            </a>
           </div>
-          <div class="sm:col-span-2">
-            <dt class="text-text/50">Diagnóstico</dt>
-            <dd class="font-semibold text-text">{{ p.disease ?? 'Ninguno' }}</dd>
-          </div>
-        </dl>
+          <div app-stat-card layout="tile" color="tertiary" decor="circles" label="Diagnóstico" [value]="p.disease ?? 'Ninguno'" valueClass="text-xl"></div>
+        </div>
 
-        <div class="mt-12 flex flex-wrap gap-3">
+        <div class="mt-8 flex flex-wrap gap-3">
           <p-button label="Editar mascota" icon="pi pi-pencil" (onClick)="editar(p.id)" />
           <p-button
             label="Historia clínica"
@@ -63,7 +55,7 @@
       </div>
     </div>
 
-    <section class="mt-6 rounded-3xl border border-olive/15 bg-white p-6 shadow-sm lg:p-8">
+    <section class="mt-6 rounded-3xl border border-olive/10 bg-white p-6 shadow-lg lg:p-8">
       <div class="flex flex-wrap items-center justify-between gap-3">
         <h2 class="font-display text-2xl font-bold text-text">Historial de tratamientos</h2>
         <p-button
@@ -81,7 +73,7 @@
       <app-treatment-history [state]="treatmentsState()" />
     </section>
   } @else if (s.status === 'error') {
-    <div class="mt-6 rounded-3xl border border-olive/15 bg-white p-10 text-center shadow-sm">
+    <div class="mt-6 rounded-3xl border border-olive/15 bg-white p-10 text-center shadow-md">
       <i class="pi pi-search text-2xl text-text/30" aria-hidden="true"></i>
       <p class="mt-3 text-text/60">{{ s.message }}</p>
       <p-button class="mt-4" label="Volver a Mascotas" [outlined]="true" (onClick)="volver()" />
