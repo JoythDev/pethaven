@@ -6,8 +6,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -25,6 +27,9 @@ public class SecurityConfigWebTest {
     // Única ruta del API abierta sin sesión en la matriz de permisos: el controlador de prueba la ocupa para
     // probar CORS sobre una respuesta exitosa.
     private static final String PUBLIC_SAMPLE_PATH = "/api/auth/login";
+    // El controlador de prueba solo existe con este perfil: el escaneo de componentes de un @SpringBootTest
+    // también lo encuentra, y su ruta pública chocaría con el AuthController real.
+    private static final String SAMPLE_PROFILE = "security-config-web-test";
 
     // ---------- CORS ----------
 
@@ -32,6 +37,7 @@ public class SecurityConfigWebTest {
     @WebMvcTest(controllers = SampleController.class)
     @WebMvcSecurityTestSupport
     @Import(SampleController.class)
+    @ActiveProfiles(SAMPLE_PROFILE)
     @TestPropertySource(properties = {
             "app.cors.allowed-origins=" + ALLOWED_ORIGIN + ",http://second.test",
             "spring.h2.console.enabled=false"
@@ -117,6 +123,7 @@ public class SecurityConfigWebTest {
     @WebMvcTest(controllers = SampleController.class)
     @WebMvcSecurityTestSupport
     @Import(SampleController.class)
+    @ActiveProfiles(SAMPLE_PROFILE)
     @TestPropertySource(properties = {"spring.h2.console.enabled=true", "spring.h2.console.path=/h2"})
     public class H2ConsoleEnabled {
 
@@ -140,6 +147,7 @@ public class SecurityConfigWebTest {
     @WebMvcTest(controllers = SampleController.class)
     @WebMvcSecurityTestSupport
     @Import(SampleController.class)
+    @ActiveProfiles(SAMPLE_PROFILE)
     @TestPropertySource(properties = {"spring.h2.console.enabled=false", "spring.h2.console.path=/h2"})
     public class H2ConsoleDisabled {
 
@@ -160,6 +168,7 @@ public class SecurityConfigWebTest {
 
     // Controlador de prueba bajo /api/**: los POST imitan una creación con cabecera Location.
     @RestController
+    @Profile(SAMPLE_PROFILE)
     public static class SampleController {
 
         @GetMapping("/api/sample")
