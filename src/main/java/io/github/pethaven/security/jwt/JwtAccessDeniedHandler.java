@@ -25,7 +25,7 @@ public class JwtAccessDeniedHandler implements AccessDeniedHandler {
     @Override
     public void handle(HttpServletRequest request, HttpServletResponse response,
                        AccessDeniedException accessDeniedException) {
-        if (handlerExceptionResolver.resolveException(request, response, null, accessDeniedException) == null) {
+        if (!SecurityErrorResponses.resolve(handlerExceptionResolver, request, response, accessDeniedException)) {
             // El resolver no pudo construir el cuerpo (p. ej. el cliente no acepta JSON): se garantiza el 403.
             response.setStatus(HttpServletResponse.SC_FORBIDDEN);
         }

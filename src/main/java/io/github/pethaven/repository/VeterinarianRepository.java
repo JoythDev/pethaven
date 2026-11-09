@@ -19,6 +19,11 @@ public interface VeterinarianRepository extends JpaRepository<Veterinarian, Long
     boolean existsByDocumentAndIdNot(String document, Long id);
     boolean existsByEmailAndIdNot(String email, Long id);
 
+    // Comprobaciones de propiedad de la matriz de permisos (ResourceAccess): el recurso cruzado con el usuario de login.
+    boolean existsByIdAndUserUsername(Long id, String username);
+
+    boolean existsByIdAndUserUsernameAndDocumentAndEmail(Long id, String username, String document, String email);
+
     long countByActiveTrue();
     long countByActiveFalse();
 }

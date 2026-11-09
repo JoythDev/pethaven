@@ -16,6 +16,9 @@ public interface TreatmentRepository extends JpaRepository<Treatment, Long> {
     List<Treatment> findByVeterinarianId(Long veterinarianId);
     boolean existsByPetOwnerId(Long ownerId);
 
+    // Comprobación de propiedad de la matriz de permisos (ResourceAccess): el tratamiento es del veterinario de login.
+    boolean existsByIdAndVeterinarianUserUsername(Long id, String username);
+
     // === Query para KPIs del dashboard de administrador ===
 
     @Query("""

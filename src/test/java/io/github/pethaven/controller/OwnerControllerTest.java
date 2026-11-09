@@ -1,6 +1,7 @@
 package io.github.pethaven.controller;
 
 import io.github.pethaven.support.WebMvcSecurityTestSupport;
+import io.github.pethaven.support.WithAnyApiRole;
 import io.github.pethaven.dto.request.OwnerRequest;
 import io.github.pethaven.dto.request.OwnerUpdateRequest;
 import io.github.pethaven.dto.response.OwnerResponse;
@@ -30,6 +31,7 @@ import java.util.List;
 // responda con la ruta, el código HTTP y el JSON correctos para cada tipo de consulta.
 @WebMvcTest(OwnerController.class)
 @WebMvcSecurityTestSupport
+@WithAnyApiRole
 public class OwnerControllerTest {
 
     private static final String VALID_CREATE_BODY = """

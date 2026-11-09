@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.security.SecurityRequirements;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -40,6 +41,8 @@ public class AuthController {
      * @param request correo electrónico y contraseña
      * @return el token de acceso y el perfil del usuario
      */
+    // Operación pública: anula el requisito global del token Bearer en la documentación.
+    @SecurityRequirements
     @Operation(summary = "Iniciar sesión",
             description = "Valida las credenciales y devuelve un token JWT junto con el perfil y el rol del usuario.")
     @ApiResponses({

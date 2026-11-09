@@ -6,8 +6,10 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -22,6 +24,12 @@ import java.net.URI;
 public class SecurityConfigWebTest {
 
     private static final String ALLOWED_ORIGIN = "http://allowed.test";
+    // Única ruta del API abierta sin sesión en la matriz de permisos: el controlador de prueba la ocupa para
+    // probar CORS sobre una respuesta exitosa.
+    private static final String PUBLIC_SAMPLE_PATH = "/api/auth/login";
+    // El controlador de prueba solo existe con este perfil: el escaneo de componentes de un @SpringBootTest
+    // también lo encuentra, y su ruta pública chocaría con el AuthController real.
+    private static final String SAMPLE_PROFILE = "security-config-web-test";
 
     // ---------- CORS ----------
 
@@ -29,6 +37,7 @@ public class SecurityConfigWebTest {
     @WebMvcTest(controllers = SampleController.class)
     @WebMvcSecurityTestSupport
     @Import(SampleController.class)
+    @ActiveProfiles(SAMPLE_PROFILE)
     @TestPropertySource(properties = {
             "app.cors.allowed-origins=" + ALLOWED_ORIGIN + ",http://second.test",
             "spring.h2.console.enabled=false"
@@ -65,9 +74,19 @@ public class SecurityConfigWebTest {
         }
 
         @Test
-        public void cors_ActualRequestFromConfiguredOrigin_ExposesLocationHeader() throws Exception {
-            mockMvc.perform(MockMvcRequestBuilders.post("/api/sample").header(HttpHeaders.ORIGIN, ALLOWED_ORIGIN))
+        public void cors_SuccessfulActualRequestFromConfiguredOrigin_ExposesLocationHeader() throws Exception {
+            mockMvc.perform(MockMvcRequestBuilders.post(PUBLIC_SAMPLE_PATH).header(HttpHeaders.ORIGIN, ALLOWED_ORIGIN))
                     .andExpect(MockMvcResultMatchers.status().isCreated())
+                    .andExpect(MockMvcResultMatchers.header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, ALLOWED_ORIGIN))
+                    .andExpect(MockMvcResultMatchers.header().string(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, "Location"));
+        }
+
+        @Test
+        public void cors_RejectedActualRequestFromConfiguredOrigin_StillCarriesCorsHeaders() throws Exception {
+            // CORS se resuelve antes que la autorización: aun con la petición rechazada (401, /api/sample no está
+            // en la matriz de permisos) la respuesta lleva las cabeceras CORS y el navegador puede leer el error.
+            mockMvc.perform(MockMvcRequestBuilders.post("/api/sample").header(HttpHeaders.ORIGIN, ALLOWED_ORIGIN))
+                    .andExpect(MockMvcResultMatchers.status().isUnauthorized())
                     .andExpect(MockMvcResultMatchers.header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, ALLOWED_ORIGIN))
                     .andExpect(MockMvcResultMatchers.header().string(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, "Location"));
         }
@@ -104,6 +123,7 @@ public class SecurityConfigWebTest {
     @WebMvcTest(controllers = SampleController.class)
     @WebMvcSecurityTestSupport
     @Import(SampleController.class)
+    @ActiveProfiles(SAMPLE_PROFILE)
     @TestPropertySource(properties = {"spring.h2.console.enabled=true", "spring.h2.console.path=/h2"})
     public class H2ConsoleEnabled {
 
@@ -127,6 +147,7 @@ public class SecurityConfigWebTest {
     @WebMvcTest(controllers = SampleController.class)
     @WebMvcSecurityTestSupport
     @Import(SampleController.class)
+    @ActiveProfiles(SAMPLE_PROFILE)
     @TestPropertySource(properties = {"spring.h2.console.enabled=false", "spring.h2.console.path=/h2"})
     public class H2ConsoleDisabled {
 
@@ -145,8 +166,9 @@ public class SecurityConfigWebTest {
         }
     }
 
-    // Controlador de prueba bajo /api/**: el POST imita una creación con cabecera Location.
+    // Controlador de prueba bajo /api/**: los POST imitan una creación con cabecera Location.
     @RestController
+    @Profile(SAMPLE_PROFILE)
     public static class SampleController {
 
         @GetMapping("/api/sample")
@@ -156,6 +178,11 @@ public class SecurityConfigWebTest {
 
         @PostMapping("/api/sample")
         public ResponseEntity<Void> create() {
+            return ResponseEntity.created(URI.create("http://localhost/api/sample/1")).build();
+        }
+
+        @PostMapping(PUBLIC_SAMPLE_PATH)
+        public ResponseEntity<Void> createPublic() {
             return ResponseEntity.created(URI.create("http://localhost/api/sample/1")).build();
         }
     }
