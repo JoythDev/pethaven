@@ -343,7 +343,7 @@ Estos comandos excluyen las pruebas E2E (marcadas con `@Tag("e2e")`), así que n
 
 ### Pruebas E2E
 
-Dos casos de uso automatizados con Selenium WebDriver recorren la SPA en Chrome contra el API real (`src/test/java/io/github/pethaven/e2e/`). Cada caso arranca el backend con el perfil `test` en el puerto 8080 y reinicia el contexto antes de cada prueba (`@DirtiesContext`), por lo que parte siempre de los mismos datos mínimos que carga `DatabaseInit` (un veterinario, un administrador, un dueño con su mascota y un medicamento).
+Dos casos de uso automatizados con Selenium WebDriver recorren la SPA en Chrome contra el API real (`src/test/java/io/github/pethaven/e2e/`). Cada caso arranca el backend con los perfiles `test` y `e2e` en el puerto 8080 y reinicia el contexto antes de cada prueba (`@DirtiesContext`), por lo que parte siempre de los mismos datos mínimos que carga `DatabaseInit` solo en el perfil `e2e` (un veterinario, un administrador, un dueño con su mascota y un medicamento, con cuentas de login cifradas con BCrypt). Todos los roles entran por el login único `/login`.
 
 | Caso | Flujo |
 |---|---|
