@@ -220,7 +220,49 @@ export const PetHavenPreset = definePreset(Aura, {
         },
       },
     },
+    datatable: {
+      headerCell: {
+        background: '#f6ece9',
+        borderColor: '#eacecb',
+        color: '#7a502a',
+        selectedBackground: '#f0d9d4',
+        selectedColor: '#7a502a',
+      },
+      columnTitle: {
+        fontWeight: '700',
+      },
+      row: {
+        hoverBackground: '#fbf6ee',
+      },
+      bodyCell: {
+        borderColor: '#f0e9dd',
+      },
+    },
+    paginator: {
+      navButton: {
+        selectedBackground: '{orange.500}',
+        selectedColor: '#261a10',
+      },
+    },
+    dialog: {
+      root: {
+        borderRadius: '1.5rem',
+      },
+    },
+    menu: {
+      root: {
+        borderRadius: '1rem',
+      },
+    },
+    select: {
+      overlay: {
+        borderRadius: '1rem',
+      },
+    },
     tag: {
+      root: {
+        fontWeight: '700',
+      },
       colorScheme: {
         light: {
           primary: { color: '{primary.800}' },
@@ -257,6 +299,9 @@ export const PetHavenPreset = definePreset(Aura, {
       },
     },
     toast: {
+      root: {
+        borderRadius: '1rem',
+      },
       colorScheme: {
         light: {
           success: { color: '{green.800}' },

@@ -21,12 +21,14 @@ import {
   getMarginPercent,
   getStockInfo,
 } from '../drug-stock';
+import { PageBannerComponent } from '../../page-banner/page-banner.component';
+import { StatCardComponent } from '../../stat-card/stat-card.component';
 
 // Detalle de un medicamento compartido por el administrador y el veterinario. Editar y
 // eliminar solo se muestran cuando la ruta lo permite (canManage).
 @Component({
   selector: 'app-drug-detail',
-  imports: [RouterLink, ButtonModule, TagModule],
+  imports: [PageBannerComponent, StatCardComponent, RouterLink, ButtonModule, TagModule],
   templateUrl: './drug-detail.component.html',
 })
 export class DrugDetailComponent implements OnInit {

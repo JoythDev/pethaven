@@ -16,10 +16,11 @@ import { parseRouteId } from '../../../../core/http/route-id';
 import { ViewState, toViewState } from '../../../../core/http/view-state';
 import { PetStatusTagComponent } from '../components/pet-status-tag/pet-status-tag.component';
 import { TreatmentHistoryComponent } from '../components/treatment-history/treatment-history.component';
+import { StatCardComponent } from '../../../shared/stat-card/stat-card.component';
 
 @Component({
   selector: 'app-pets-detail',
-  imports: [RouterLink, ButtonModule, MessageModule, TagModule, PetStatusTagComponent, TreatmentHistoryComponent],
+  imports: [StatCardComponent, RouterLink, ButtonModule, MessageModule, TagModule, PetStatusTagComponent, TreatmentHistoryComponent],
   templateUrl: './pet-detail.component.html',
 })
 export class PetsDetailComponent implements OnInit {

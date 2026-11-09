@@ -41,12 +41,14 @@ import {
   getStockInfo,
   getStockStatus,
 } from '../drug-stock';
+import { PageBannerComponent } from '../../page-banner/page-banner.component';
 
 // Listado de medicamentos compartido por el administrador (gestión completa) y el veterinario
 // (solo consulta). Qué acciones se muestran lo decide la configuración de la ruta.
 @Component({
   selector: 'app-drugs-list',
   imports: [
+    PageBannerComponent,
     ReactiveFormsModule,
     TableModule,
     ButtonModule,

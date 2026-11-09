@@ -3,11 +3,14 @@ import { toSignal } from '@angular/core/rxjs-interop';
 import { RouterLink } from '@angular/router';
 import { Observable, forkJoin, map, throwError } from 'rxjs';
 import { ViewState, toViewState } from '../../../core/http/view-state';
+import { greetingFor } from '../../../core/ui/greeting';
 import { Pet } from '../../../models/pet.model';
 import { Treatment } from '../../../models/treatment.model';
 import { AuthService } from '../../../services/auth.service';
 import { PetService } from '../../../services/pet.service';
 import { VeterinarianService } from '../../../services/veterinarian.service';
+import { PageBannerComponent } from '../../shared/page-banner/page-banner.component';
+import { StatCardComponent } from '../../shared/stat-card/stat-card.component';
 
 interface DashboardModule {
   label: string;
@@ -34,13 +37,18 @@ interface RecentTreatment {
 
 @Component({
   selector: 'app-dashboard-home',
-  imports: [RouterLink],
+  imports: [PageBannerComponent, StatCardComponent, RouterLink],
   templateUrl: './home.component.html',
 })
 export class DashboardHomeComponent {
   private readonly authService = inject(AuthService);
   private readonly petService = inject(PetService);
   private readonly veterinarianService = inject(VeterinarianService);
+
+  // Saludo con el nombre del veterinario que inició sesión; se calcula en cada ciclo de detección.
+  greeting(): string {
+    return greetingFor(this.authService.user()?.name);
+  }
 
   // Cargar los indicadores del veterinario autenticado.
   readonly dashboard = toSignal(
@@ -63,6 +71,16 @@ export class DashboardHomeComponent {
       link: '/veterinario/duenos',
     },
   ];
+
+  // Color de fondo de cada tarjeta de módulo.
+  moduleClass(index: number): string {
+    return ['bg-secondary', 'bg-honey/60'][index] ?? 'bg-white';
+  }
+
+  // Color del avatar de cada paciente reciente.
+  avatarClass(index: number): string {
+    return ['bg-honey', 'bg-sage', 'bg-secondary'][index % 3];
+  }
 
 // Obtener los datos del dashboard del veterinario autenticado.
   private loadDashboard(): Observable<DashboardStats> {

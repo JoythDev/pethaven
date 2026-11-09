@@ -1,4 +1,4 @@
-import { Component, DestroyRef, OnInit, inject, input, output, signal } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, input, output, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router } from '@angular/router';
 import { filter } from 'rxjs';
@@ -32,11 +32,22 @@ export class AreaTopbarComponent implements OnInit {
   readonly subPageLabels = input<Record<string, Record<string, string>>>(DEFAULT_SUB_PAGE_LABELS);
   readonly userName = input<string>('Admin');
   readonly userInitial = input<string>('A');
+  /** Foto del usuario; si falta o no carga, el avatar muestra la inicial. */
+  readonly userPhotoUrl = input<string | null>(null);
   readonly userMenuItems = input<MenuItem[]>(DEFAULT_USER_MENU_ITEMS);
   /** En el cliente el id del dueño va antes de la página (/cliente/7/mascotas). */
   readonly skipNumericSegment = input<boolean>(false);
 
   readonly breadcrumbItems = signal<MenuItem[]>([]);
+
+  /** URL cuya imagen no cargó; una URL distinta vuelve a intentarse. */
+  readonly failedPhotoUrl = signal<string | null>(null);
+  readonly photoUrl = computed(() => {
+    const url = this.userPhotoUrl();
+    return url && url !== this.failedPhotoUrl() ? url : null;
+  });
+  // Primer nombre sin el tratamiento (Dr., Dra., Sr., Sra.) para el saludo de la barra.
+  readonly firstName = computed(() => this.userName().trim().replace(/^(dra?|sra?|srta)\.?\s+/i, '').split(/\s+/)[0] ?? '');
 
   ngOnInit(): void {
     // Se suscribe en ngOnInit, no en el constructor, para que la suscripción se libere con la vista.

@@ -358,3 +358,37 @@ html.js .reveal.is-visible {
     transform: translate(-50%, -70%) rotate(var(--paw-rot, 0deg)) scale(0.95);
   }
 }
+
+/* --------------------------------------------------------------------------
+   Botones rellenos de PrimeNG: sombra suave y leve elevación al pasar el cursor
+   -------------------------------------------------------------------------- */
+.p-button:not(.p-button-text):not(.p-button-outlined):not(.p-button-link):not(:disabled) {
+  box-shadow: 0 8px 16px -8px rgb(122 80 42 / 0.5);
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    background 0.2s ease;
+}
+
+.p-button:not(.p-button-text):not(.p-button-outlined):not(.p-button-link):not(:disabled):hover {
+  transform: translateY(-1px);
+  box-shadow: 0 12px 20px -8px rgb(122 80 42 / 0.55);
+}
+
+/* --------------------------------------------------------------------------
+   Diálogos y toasts de PrimeNG
+   -------------------------------------------------------------------------- */
+/* El diálogo de confirmación no se estira al ancho del texto. */
+.p-confirmdialog {
+  width: min(32rem, calc(100vw - 2rem));
+}
+
+.p-dialog-title {
+  font-family: var(--font-display);
+  font-weight: 700;
+}
+
+/* Botones de contorno sobre los banners de color: fondo claro para que se lean. */
+.banner .p-button-outlined {
+  background: rgb(255 255 255 / 0.6);
+}

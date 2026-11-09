@@ -30,6 +30,7 @@ import { NotificationService } from '../../../../core/notifications/notification
 import { ViewState, toViewState } from '../../../../core/http/view-state';
 import { normalizeText } from '../../../../core/text/normalize-text';
 import { confirmOwnerDeletion } from '../owner-delete-confirmation';
+import { PageBannerComponent } from '../../../shared/page-banner/page-banner.component';
 
 // Dueño junto con la cantidad de mascotas que tiene (null si no se pudo consultar).
 interface OwnerDeletion {
@@ -40,6 +41,7 @@ interface OwnerDeletion {
 @Component({
   selector: 'app-owners-list',
   imports: [
+    PageBannerComponent,
     ReactiveFormsModule,
     TableModule,
     ButtonModule,

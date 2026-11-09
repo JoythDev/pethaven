@@ -1,17 +1,22 @@
 <div class="mx-auto max-w-7xl p-5 lg:p-8">
-  <header class="mb-8">
-    <h1 class="font-display text-3xl lg:text-4xl font-bold text-text">Mi panel veterinario</h1>
-    <p class="mt-1 text-text/70">Consulta tus pacientes, tratamientos y últimas atenciones.</p>
-  </header>
+  <app-page-banner
+    class="mb-8"
+    color="sage"
+    variant="hero"
+    mascot="dog"
+    [eyebrow]="greeting()"
+    title="Mi panel veterinario"
+    subtitle="Consulta tus pacientes, tratamientos y últimas atenciones."
+  />
 
   @let state = dashboard();
 
   @if (state.status === 'loading') {
-    <section class="mb-8 rounded-3xl border border-olive/15 bg-white p-6 text-center shadow-sm">
+    <section class="mb-8 rounded-3xl border border-olive/15 bg-white p-6 text-center shadow-md">
       <p class="text-text/60">Cargando tus indicadores...</p>
     </section>
   } @else if (state.status === 'error') {
-    <section class="mb-8 rounded-3xl border border-olive/15 bg-white p-6 text-center shadow-sm">
+    <section class="mb-8 rounded-3xl border border-olive/15 bg-white p-6 text-center shadow-md">
       <p class="text-text/60">No se pudieron cargar los indicadores.</p>
       <p class="mt-1 text-sm text-text/50">{{ state.message }}</p>
     </section>
@@ -19,50 +24,65 @@
     @let stats = state.data;
 
     <section class="mb-8 grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-4" aria-label="Indicadores del veterinario">
-      <article class="flex flex-col gap-2 rounded-3xl border border-olive/15 bg-white p-5 shadow-sm">
-        <p class="text-sm text-text/60">Mis pacientes</p>
-        <p class="font-display text-3xl font-bold text-text">{{ stats.patientCount }}</p>
-        <p class="text-xs text-text/50">Mascotas atendidas</p>
-      </article>
-
-      <article class="flex flex-col gap-2 rounded-3xl border border-olive/15 bg-white p-5 shadow-sm">
-        <p class="text-sm text-text/60">Tratamientos realizados</p>
-        <p class="font-display text-3xl font-bold text-text">{{ stats.treatmentCount }}</p>
-        <p class="text-xs text-text/50">Atenciones registradas</p>
-      </article>
-
-      <article class="flex flex-col gap-2 rounded-3xl border border-olive/15 bg-white p-5 shadow-sm">
-        <p class="text-sm text-text/60">Pacientes activos</p>
-        <p class="font-display text-3xl font-bold text-text">{{ stats.activePatientCount }}</p>
-        <p class="text-xs text-text/50">Mascotas actualmente activas</p>
-      </article>
-
-      <article class="flex flex-col gap-2 rounded-3xl border border-olive/15 bg-white p-5 shadow-sm">
-        <p class="text-sm text-text/60">Última atención</p>
-        <p class="font-display text-xl font-bold text-text">{{ stats.latestAttention ?? 'Sin atenciones' }}</p>
-        <p class="text-xs text-text/50">Tratamiento más reciente</p>
-      </article>
+      <article
+        app-stat-card
+        color="honey"
+        decor="paw"
+        icon="pi pi-heart"
+        label="Mis pacientes"
+        [value]="stats.patientCount"
+        caption="Mascotas atendidas"
+      ></article>
+      <article
+        app-stat-card
+        color="secondary"
+        decor="circles"
+        icon="pi pi-clipboard"
+        label="Tratamientos"
+        [value]="stats.treatmentCount"
+        caption="Atenciones registradas"
+      ></article>
+      <article
+        app-stat-card
+        color="terracotta"
+        decor="cross"
+        icon="pi pi-bolt"
+        label="Pacientes activos"
+        [value]="stats.activePatientCount"
+        caption="Mascotas actualmente activas"
+      ></article>
+      <article
+        app-stat-card
+        color="tertiary"
+        icon="pi pi-clock"
+        label="Última atención"
+        [value]="stats.latestAttention ?? 'Sin atenciones'"
+        valueClass="text-2xl leading-snug"
+        caption="Tratamiento más reciente"
+      ></article>
     </section>
   }
 
-  <section class="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-2" aria-label="Módulos del panel">
+  <section class="grid grid-cols-1 gap-5 sm:grid-cols-2" aria-label="Módulos del panel">
     @for (module of modules; track module.label) {
       @if (module.link) {
         <a
           [routerLink]="module.link"
-          class="group flex flex-col gap-3 rounded-3xl border border-olive/15 bg-white p-6 shadow-sm transition duration-300 hover:-translate-y-1 hover:shadow-md"
+          class="group relative flex flex-col gap-3 overflow-hidden rounded-3xl p-6 shadow-lg transition duration-300 hover:-translate-y-1 hover:shadow-xl"
+          [class]="moduleClass($index)"
         >
-          <div class="flex items-center justify-between">
-            <div class="flex h-12 w-12 items-center justify-center rounded-xl bg-secondary">
+          <span aria-hidden="true" class="absolute -bottom-12 -right-10 h-40 w-40 rounded-full bg-white/35"></span>
+          <div class="relative flex items-center justify-between">
+            <span class="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/70 ring-8 ring-white/30">
               <img [src]="module.icon" alt="" class="h-6 w-6" />
-            </div>
+            </span>
             <i
-              class="pi pi-arrow-right text-olive transition-transform group-hover:translate-x-1"
+              class="pi pi-arrow-right rounded-full bg-white/70 p-2 text-text transition-transform group-hover:translate-x-1"
               aria-hidden="true"
             ></i>
           </div>
-          <h2 class="font-display text-lg font-bold text-text">{{ module.label }}</h2>
-          <p class="text-sm text-text/70">{{ module.description }}</p>
+          <h2 class="relative font-display text-xl font-bold text-text">{{ module.label }}</h2>
+          <p class="relative max-w-sm text-sm text-text/75">{{ module.description }}</p>
         </a>
       }
     }
@@ -71,17 +91,27 @@
   @if (state.status === 'ready') {
     @let recentTreatments = state.data.recentTreatments;
 
-    <section class="mt-8 rounded-3xl border border-olive/15 bg-white p-6 shadow-sm lg:p-8">
+    <section class="mt-8 rounded-3xl border border-olive/15 bg-white p-6 shadow-md lg:p-8">
       <h2 class="font-display text-2xl font-bold text-text">Pacientes recientes</h2>
       <p class="mt-1 text-text/70">Consulta las últimas atenciones que has realizado.</p>
 
       @if (recentTreatments.length === 0) {
-        <p class="mt-6 text-text/60">Todavía no tienes atenciones registradas.</p>
+        <div class="mt-6 rounded-2xl border border-dashed border-olive/25 bg-background/60 px-5 py-8 text-center">
+          <img src="/images/illustrations/cat-mascot.svg" alt="" class="mx-auto h-24 w-auto" />
+          <p class="mt-2 text-text/60">Todavía no tienes atenciones registradas.</p>
+        </div>
       } @else {
-        <div class="mt-6 divide-y divide-olive/15">
+        <ul class="mt-6 flex flex-col gap-3">
           @for (treatment of recentTreatments; track treatment.id) {
-            <article class="flex flex-col gap-2 py-4 first:pt-0 last:pb-0 sm:flex-row sm:items-center sm:justify-between sm:gap-6">
-              <div>
+            <li class="flex flex-col gap-3 rounded-2xl bg-background/70 p-4 transition-colors hover:bg-background sm:flex-row sm:items-center sm:gap-5">
+              <span
+                class="flex h-12 w-12 shrink-0 items-center justify-center rounded-full font-display text-xl font-bold text-text shadow-sm"
+                [class]="avatarClass($index)"
+                aria-hidden="true"
+              >
+                {{ treatment.petName.charAt(0).toUpperCase() }}
+              </span>
+              <div class="min-w-0 sm:w-56 sm:shrink-0">
                 <h3 class="font-display text-lg font-bold text-text">
                   <a
                     [routerLink]="['/veterinario/mascotas', treatment.petId]"
@@ -93,12 +123,12 @@
                 </h3>
                 <p class="text-sm text-text/60">{{ treatment.date }}</p>
               </div>
-              <p class="text-sm text-text/70 sm:max-w-xl sm:text-right">
+              <p class="text-sm text-text/70 sm:flex-1 sm:text-right">
                 <span class="font-semibold text-text">Medicamentos:</span> {{ treatment.drugs }}
               </p>
-            </article>
+            </li>
           }
-        </div>
+        </ul>
       }
     </section>
   }

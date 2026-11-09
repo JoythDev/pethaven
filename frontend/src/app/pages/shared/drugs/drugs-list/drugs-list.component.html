@@ -1,24 +1,14 @@
 <div class="mx-auto max-w-7xl p-5 lg:p-8">
-  <header class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-    <div>
-      <h1 class="font-display text-3xl font-bold text-text">Medicamentos</h1>
-      <p class="mt-1 text-text/70">
-        {{
-          area.canManage
-            ? 'Gestiona el inventario de medicamentos de la clínica.'
-            : 'Consulta el inventario de medicamentos de la clínica.'
-        }}
-      </p>
-    </div>
+  <app-page-banner class="mb-6" color="sage" mascot="dog" title="Medicamentos" [subtitle]="area.canManage ? 'Gestiona el inventario de medicamentos de la clínica.' : 'Consulta el inventario de medicamentos de la clínica.'">
     @if (area.canManage) {
-      <div class="flex flex-wrap items-center gap-3">
+      <div class="mt-4 flex flex-wrap items-center gap-3">
         <p-button label="Importar Excel" icon="pi pi-file-excel" [outlined]="true" (onClick)="importar()" />
         <p-button label="Nuevo medicamento" icon="pi pi-plus" (onClick)="nuevo()" />
       </div>
     }
-  </header>
+  </app-page-banner>
 
-  <section class="overflow-hidden rounded-3xl border border-olive/15 bg-white shadow-sm">
+  <section class="overflow-hidden rounded-3xl border border-olive/10 bg-white shadow-lg">
     <div class="flex flex-col gap-3 border-b border-olive/15 p-4 lg:flex-row lg:flex-wrap lg:items-center">
       <p-iconfield class="w-full lg:max-w-xs">
         <p-inputicon class="pi pi-search" />

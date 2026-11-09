@@ -12,12 +12,14 @@ import { PetService } from '../../../services/pet.service';
 import { ViewState, toViewState } from '../../../core/http/view-state';
 import { normalizeText } from '../../../core/text/normalize-text';
 import { onPhotoError as handlePhotoError } from '../../../core/ui/photo-fallback';
+import { PageBannerComponent } from '../../shared/page-banner/page-banner.component';
 
 // Listado de solo lectura: el administrador consulta las mascotas; activarlas o desactivarlas es tarea
 // del veterinario.
 @Component({
   selector: 'app-admin-pets-list',
   imports: [
+    PageBannerComponent,
     ReactiveFormsModule,
     TableModule,
     TagModule,

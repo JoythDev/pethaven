@@ -14,6 +14,8 @@ import { parseRouteId } from '../../../../core/http/route-id';
 import { ViewState, toViewState } from '../../../../core/http/view-state';
 import { onPhotoError as handlePhotoError } from '../../../../core/ui/photo-fallback';
 import { confirmOwnerDeletion } from '../owner-delete-confirmation';
+import { PageBannerComponent } from '../../../shared/page-banner/page-banner.component';
+import { StatCardComponent } from '../../../shared/stat-card/stat-card.component';
 
 // Datos que pinta la ficha: el dueño y sus mascotas, cargados en paralelo.
 interface OwnerDetail {
@@ -23,7 +25,7 @@ interface OwnerDetail {
 
 @Component({
   selector: 'app-owners-detail',
-  imports: [RouterLink, ButtonModule, TagModule],
+  imports: [PageBannerComponent, StatCardComponent, RouterLink, ButtonModule, TagModule],
   templateUrl: './owner-detail.component.html',
 })
 export class OwnersDetailComponent implements OnInit {
