@@ -1,5 +1,6 @@
 package io.github.pethaven.security;
 
+import io.github.pethaven.entity.Role;
 import io.github.pethaven.security.jwt.JwtAccessDeniedHandler;
 import io.github.pethaven.security.jwt.JwtAuthEntryPoint;
 import io.github.pethaven.security.jwt.JwtFilter;
@@ -15,7 +16,9 @@ import org.springframework.security.authentication.dao.DaoAuthenticationProvider
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
+import org.springframework.security.config.annotation.web.configurers.AuthorizeHttpRequestsConfigurer;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.core.userdetails.UserDetailsService;
@@ -66,9 +69,8 @@ public class SecurityConfig {
         http
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> {
-                    auth.requestMatchers("/api/auth/me").authenticated()
-                            .requestMatchers("/api/**").permitAll()
-                            .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll();
+                    authorizeApi(auth);
+                    auth.requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll();
                     if (h2ConsoleEnabled) {
                         auth.requestMatchers(h2ConsolePath + "/**").permitAll();
                     }
@@ -83,6 +85,62 @@ public class SecurityConfig {
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    /**
+     * Matriz de permisos por rol (qué roles llegan a cada operación del API). Que el recurso sea del usuario
+     * ("solo el suyo") se comprueba después, en cada operación. Toda ruta de /api sin regla queda denegada.
+     */
+    private static void authorizeApi(
+            AuthorizeHttpRequestsConfigurer<HttpSecurity>.AuthorizationManagerRequestMatcherRegistry auth
+    ) {
+        final String admin = Role.ADMIN;
+        final String vet = Role.VETERINARIAN;
+        final String owner = Role.OWNER;
+
+        auth
+                // Autenticación
+                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
+
+                // Métricas del negocio
+                .requestMatchers(HttpMethod.GET, "/api/administrators/dashboard").hasRole(admin)
+
+                // Medicamentos: consulta para el personal; gestión solo del administrador
+                .requestMatchers(HttpMethod.GET, "/api/drugs", "/api/drugs/*").hasAnyRole(admin, vet)
+                .requestMatchers(HttpMethod.POST, "/api/drugs", "/api/drugs/import").hasRole(admin)
+                .requestMatchers(HttpMethod.PUT, "/api/drugs/*").hasRole(admin)
+                .requestMatchers(HttpMethod.DELETE, "/api/drugs/*").hasRole(admin)
+
+                // Dueños: gestión del veterinario; el dueño solo accede a su propio perfil
+                .requestMatchers(HttpMethod.GET, "/api/owners").hasAnyRole(admin, vet)
+                .requestMatchers(HttpMethod.GET, "/api/owners/*", "/api/owners/*/pets").hasAnyRole(admin, vet, owner)
+                .requestMatchers(HttpMethod.POST, "/api/owners").hasRole(vet)
+                .requestMatchers(HttpMethod.PUT, "/api/owners/*").hasAnyRole(vet, owner)
+                .requestMatchers(HttpMethod.DELETE, "/api/owners/*").hasRole(vet)
+
+                // Mascotas: gestión del veterinario; el dueño solo consulta las suyas
+                .requestMatchers(HttpMethod.GET, "/api/pets").hasAnyRole(admin, vet)
+                .requestMatchers(HttpMethod.GET, "/api/pets/*", "/api/pets/*/treatments", "/api/pets/*/photo")
+                .hasAnyRole(admin, vet, owner)
+                .requestMatchers(HttpMethod.POST, "/api/pets", "/api/pets/*/discharge").hasRole(vet)
+                .requestMatchers(HttpMethod.PUT, "/api/pets/*", "/api/pets/*/active").hasRole(vet)
+
+                // Tratamientos: consulta para el personal; registro solo del veterinario
+                .requestMatchers(HttpMethod.GET, "/api/treatments", "/api/treatments/*", "/api/treatments/*/drugs")
+                .hasAnyRole(admin, vet)
+                .requestMatchers(HttpMethod.POST, "/api/treatments", "/api/treatments/*/drugs").hasRole(vet)
+
+                // Veterinarios: gestión del administrador; el veterinario solo accede a su propio perfil
+                .requestMatchers(HttpMethod.GET, "/api/veterinarians").hasRole(admin)
+                .requestMatchers(HttpMethod.GET, "/api/veterinarians/*", "/api/veterinarians/*/treatments")
+                .hasAnyRole(admin, vet)
+                .requestMatchers(HttpMethod.POST, "/api/veterinarians").hasRole(admin)
+                .requestMatchers(HttpMethod.PUT, "/api/veterinarians/*").hasAnyRole(admin, vet)
+                .requestMatchers(HttpMethod.PUT, "/api/veterinarians/*/active").hasRole(admin)
+
+                // Denegado por defecto: una operación nueva no queda abierta por olvido.
+                .requestMatchers("/api/**").denyAll();
     }
 
     /**

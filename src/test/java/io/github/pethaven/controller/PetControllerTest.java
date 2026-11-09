@@ -1,6 +1,7 @@
 package io.github.pethaven.controller;
 
 import io.github.pethaven.support.WebMvcSecurityTestSupport;
+import io.github.pethaven.support.WithAnyApiRole;
 import io.github.pethaven.dto.request.PetRequest;
 import io.github.pethaven.dto.response.PetResponse;
 import io.github.pethaven.dto.response.TreatmentDrugResponse;
@@ -34,6 +35,7 @@ import java.util.Optional;
 // Pruebas del controlador de mascotas con mocks: solo se levanta la capa web (MockMvc), sin base de datos.
 @WebMvcTest(PetController.class)
 @WebMvcSecurityTestSupport
+@WithAnyApiRole
 public class PetControllerTest {
 
     // Cuerpo válido con foto: la URL debe llegar intacta al servicio.

@@ -66,8 +66,10 @@ public class SecurityConfigWebTest {
 
         @Test
         public void cors_ActualRequestFromConfiguredOrigin_ExposesLocationHeader() throws Exception {
+            // CORS se resuelve antes que la autorización: aun con la petición rechazada (401, /api/sample no está
+            // en la matriz de permisos) la respuesta lleva las cabeceras CORS y el navegador puede leer el error.
             mockMvc.perform(MockMvcRequestBuilders.post("/api/sample").header(HttpHeaders.ORIGIN, ALLOWED_ORIGIN))
-                    .andExpect(MockMvcResultMatchers.status().isCreated())
+                    .andExpect(MockMvcResultMatchers.status().isUnauthorized())
                     .andExpect(MockMvcResultMatchers.header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, ALLOWED_ORIGIN))
                     .andExpect(MockMvcResultMatchers.header().string(HttpHeaders.ACCESS_CONTROL_EXPOSE_HEADERS, "Location"));
         }
