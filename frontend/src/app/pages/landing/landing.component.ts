@@ -15,6 +15,8 @@ import { FinalCtaComponent } from './components/final-cta/final-cta.component';
 import { RevealDirective } from './directives/reveal/reveal.directive';
 import { CountersDirective } from './directives/counters/counters.directive';
 import { ParallaxDirective } from './directives/parallax/parallax.directive';
+import { SmoothAnchorsDirective } from './directives/smooth-anchors/smooth-anchors.directive';
+import { BackToTopComponent } from './components/back-to-top/back-to-top.component';
 
 /**
  * Landing page container. Port of `templates/index.html`.
@@ -48,6 +50,8 @@ import { ParallaxDirective } from './directives/parallax/parallax.directive';
     RevealDirective,
     CountersDirective,
     ParallaxDirective,
+    SmoothAnchorsDirective,
+    BackToTopComponent,
   ],
   templateUrl: './landing.component.html'
 })
