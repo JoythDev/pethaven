@@ -1,0 +1,10 @@
+.git
+target
+frontend
+docs
+graphify-out
+*.mv.db
+*.trace.db
+*.lock.db
+.idea
+.vscode
