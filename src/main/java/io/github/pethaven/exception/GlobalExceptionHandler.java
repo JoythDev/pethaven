@@ -9,6 +9,11 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationServiceException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.core.AuthenticationException;
 import org.springframework.validation.BindingResult;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
@@ -48,14 +53,34 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.CONFLICT, ex.getMessage(), request);
     }
 
-    @ExceptionHandler(InvalidCredentialsException.class)
-    public ResponseEntity<ApiErrorResponse> handleInvalidCredentials(InvalidCredentialsException ex, HttpServletRequest request) {
-        return build(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
+    // ---------- Seguridad (también llegan desde los filtros vía JwtAuthEntryPoint y JwtAccessDeniedHandler) ----------
+
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ApiErrorResponse> handleBadCredentials(BadCredentialsException ex, HttpServletRequest request) {
+        return build(HttpStatus.UNAUTHORIZED, "Correo o contraseña incorrectos.", request);
     }
 
-    @ExceptionHandler(AccountDisabledException.class)
-    public ResponseEntity<ApiErrorResponse> handleAccountDisabled(AccountDisabledException ex, HttpServletRequest request) {
-        return build(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<ApiErrorResponse> handleDisabled(DisabledException ex, HttpServletRequest request) {
+        return build(HttpStatus.FORBIDDEN, "La cuenta está desactivada.", request);
+    }
+
+    /** Fallo interno al autenticar (p. ej. base de datos no disponible): no es un error del cliente. */
+    @ExceptionHandler(AuthenticationServiceException.class)
+    public ResponseEntity<ApiErrorResponse> handleAuthenticationService(AuthenticationServiceException ex, HttpServletRequest request) {
+        log.error("Error interno de autenticación en {} {}", request.getMethod(), request.getRequestURI(), ex);
+        return build(HttpStatus.INTERNAL_SERVER_ERROR, "Ocurrió un error inesperado en el servidor.", request);
+    }
+
+    /** Resto de fallos de autenticación: petición sin token, token inválido o expirado. */
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<ApiErrorResponse> handleAuthentication(AuthenticationException ex, HttpServletRequest request) {
+        return build(HttpStatus.UNAUTHORIZED, "Se requiere autenticación para acceder a este recurso.", request);
+    }
+
+    @ExceptionHandler(AccessDeniedException.class)
+    public ResponseEntity<ApiErrorResponse> handleAccessDenied(AccessDeniedException ex, HttpServletRequest request) {
+        return build(HttpStatus.FORBIDDEN, "No tienes permisos para acceder a este recurso.", request);
     }
 
     @ExceptionHandler(InvalidExcelFormatException.class)

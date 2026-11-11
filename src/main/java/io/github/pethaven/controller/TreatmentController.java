@@ -20,6 +20,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.net.URI;
 import java.util.List;
@@ -90,6 +91,7 @@ public class TreatmentController {
             @ApiResponse(responseCode = "409", description = "La mascota o el veterinario no están activos",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
+    @PreAuthorize("@access.isVeterinarian(#request.veterinarianId(), authentication.name)")
     @PostMapping
     public ResponseEntity<TreatmentResponse> createTreatment(@Valid @RequestBody TreatmentRequest request) {
         TreatmentResponse newTreatment = treatmentService.createTreatment(request);
@@ -138,6 +140,7 @@ public class TreatmentController {
             @ApiResponse(responseCode = "409", description = "Droga repetida, sin stock o mascota inactiva",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
+    @PreAuthorize("@access.authoredTreatment(#id, authentication.name)")
     @PostMapping("/{id}/drugs")
     public ResponseEntity<TreatmentDrugResponse> createTreatmentDrug(
             @Parameter(description = "Id del tratamiento", example = "1") @PathVariable Long id,

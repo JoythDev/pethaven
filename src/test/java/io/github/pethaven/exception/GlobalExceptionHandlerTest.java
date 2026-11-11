@@ -1,5 +1,7 @@
 package io.github.pethaven.exception;
 
+import io.github.pethaven.support.WebMvcSecurityTestSupport;
+
 import com.jayway.jsonpath.JsonPath;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Valid;
@@ -11,11 +13,17 @@ import jakarta.validation.constraints.Size;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.authentication.AuthenticationServiceException;
+import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.authentication.DisabledException;
+import org.springframework.security.authentication.InsufficientAuthenticationException;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
@@ -37,6 +45,8 @@ import java.util.Map;
 
 // Manejadores que ningún endpoint de negocio alcanza: un controlador de prueba lanza cada excepción.
 @WebMvcTest(controllers = GlobalExceptionHandlerTest.ThrowingController.class)
+@WebMvcSecurityTestSupport
+@AutoConfigureMockMvc(addFilters = false)
 @Import(GlobalExceptionHandlerTest.ThrowingController.class)
 public class GlobalExceptionHandlerTest {
 
@@ -267,6 +277,75 @@ public class GlobalExceptionHandlerTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$.errors.email").value("Valor inválido"));
     }
 
+    // ---------- seguridad: autenticación y autorización ----------
+
+    @Test
+    public void globalExceptionHandler_handleBadCredentials_Returns401WithCredentialsMessage() throws Exception {
+        // Act + Assert
+        // Login con correo o contraseña incorrectos: 401, no el 500 del manejador genérico.
+        mockMvc.perform(MockMvcRequestBuilders.get("/test/errors/security/bad-credentials"))
+                .andExpect(MockMvcResultMatchers.status().isUnauthorized())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(401))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.error").value(HttpStatus.UNAUTHORIZED.getReasonPhrase()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("Correo o contraseña incorrectos."))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.path").value("/test/errors/security/bad-credentials"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errors").isEmpty());
+    }
+
+    @Test
+    public void globalExceptionHandler_handleDisabled_Returns403WithDisabledMessage() throws Exception {
+        // Act + Assert
+        // Cuenta desactivada: 403 con el mismo mensaje que el login provisional.
+        mockMvc.perform(MockMvcRequestBuilders.get("/test/errors/security/disabled"))
+                .andExpect(MockMvcResultMatchers.status().isForbidden())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(403))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.error").value(HttpStatus.FORBIDDEN.getReasonPhrase()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("La cuenta está desactivada."))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.path").value("/test/errors/security/disabled"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errors").isEmpty());
+    }
+
+    @Test
+    public void globalExceptionHandler_handleAuthentication_OtherAuthenticationException_Returns401() throws Exception {
+        // Act + Assert
+        // Cualquier otro fallo de autenticación (por ejemplo, sin token) responde 401 genérico.
+        mockMvc.perform(MockMvcRequestBuilders.get("/test/errors/security/insufficient-authentication"))
+                .andExpect(MockMvcResultMatchers.status().isUnauthorized())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(401))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.error").value(HttpStatus.UNAUTHORIZED.getReasonPhrase()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+                        .value("Se requiere autenticación para acceder a este recurso."))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.path").value("/test/errors/security/insufficient-authentication"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errors").isEmpty());
+    }
+
+    @Test
+    public void globalExceptionHandler_handleAuthenticationService_Returns500WithGenericMessage() throws Exception {
+        // Act + Assert
+        // Fallo interno al autenticar (p. ej. base de datos caída): no es culpa del cliente, responde 500.
+        mockMvc.perform(MockMvcRequestBuilders.get("/test/errors/security/authentication-service"))
+                .andExpect(MockMvcResultMatchers.status().isInternalServerError())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(500))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.error").value(HttpStatus.INTERNAL_SERVER_ERROR.getReasonPhrase()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("Ocurrió un error inesperado en el servidor."))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.path").value("/test/errors/security/authentication-service"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errors").isEmpty());
+    }
+
+    @Test
+    public void globalExceptionHandler_handleAccessDenied_Returns403WithPermissionMessage() throws Exception {
+        // Act + Assert
+        // Usuario autenticado sin permisos: 403, no el 500 del manejador genérico.
+        mockMvc.perform(MockMvcRequestBuilders.get("/test/errors/security/access-denied"))
+                .andExpect(MockMvcResultMatchers.status().isForbidden())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(403))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.error").value(HttpStatus.FORBIDDEN.getReasonPhrase()))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+                        .value("No tienes permisos para acceder a este recurso."))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.path").value("/test/errors/security/access-denied"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errors").isEmpty());
+    }
+
     // ---------- soporte de prueba ----------
 
     // MethodParameter real de un método del controlador de prueba: lo exige MethodArgumentNotValidException.
@@ -365,6 +444,31 @@ public class GlobalExceptionHandlerTest {
             BindingResult bindingResult = new MapBindingResult(Map.of(), "sample");
             bindingResult.addError(new FieldError("sample", "email", (String) null));
             throw new MethodArgumentNotValidException(referenceParameter(), bindingResult);
+        }
+
+        @GetMapping("/security/bad-credentials")
+        public void badCredentials() {
+            throw new BadCredentialsException("Bad credentials");
+        }
+
+        @GetMapping("/security/disabled")
+        public void disabled() {
+            throw new DisabledException("User is disabled");
+        }
+
+        @GetMapping("/security/insufficient-authentication")
+        public void insufficientAuthentication() {
+            throw new InsufficientAuthenticationException("Full authentication is required");
+        }
+
+        @GetMapping("/security/authentication-service")
+        public void authenticationService() {
+            throw new AuthenticationServiceException("Fallo interno de prueba.");
+        }
+
+        @GetMapping("/security/access-denied")
+        public void accessDenied() {
+            throw new AccessDeniedException("Access Denied");
         }
 
         // Método de referencia sin mapeo: solo aporta un MethodParameter real, nunca se invoca.

@@ -16,7 +16,7 @@ Tener Pethaven (backend y frontend) en producción y funcional, con un flujo CI/
 | Frontend | Angular 19. `environment.production.ts` apunta a `http://localhost:8080/api`. |
 | Base de datos | H2, `ddl-auto=create-drop`, consola H2 y log SQL activos. Sin migraciones. |
 | Datos | `DataLoader` (datos de ejemplo) y `ExcelDrugImportRunner` (medicamentos) se ejecutan en cada arranque, sin distinguir entorno. |
-| Seguridad | Sin Spring Security. Contraseñas en texto plano. Endpoints `/api/**` sin autenticación. |
+| Seguridad | Sin Spring Security. Contraseñas en texto plano. Endpoints `/api/**` sin autenticación. (Situación al escribir el roadmap; hoy está implementada, ver sección 7.) |
 | Infraestructura | Sin Dockerfiles, Compose, profiles ni `.github/`. |
 | Pruebas | 12 clases de test de backend (mayoría de repositorio). Tests e2e de frontend sin definir. |
 
@@ -63,11 +63,11 @@ Tener Pethaven (backend y frontend) en producción y funcional, con un flujo CI/
 | 6 | Configuración de producción del frontend | 1 |
 | 7 | Aprovisionamiento en Render y Vercel | 4, 6 |
 | 8 | Entrega continua (CD) | 5, 7 |
-| — | **Fuera del roadmap:** fase de pruebas de frontend/e2e y fase de seguridad | — |
+| — | **Fuera del roadmap:** fase de pruebas de frontend/e2e y fase de seguridad (ya implementada, ver sección 7) | — |
 | 9 | Primer despliegue a producción | 8, seguridad implementada y, si se decide, e2e en el CI |
 | 10 | Operación y endurecimiento | 9 |
 
-Las fases 1 a 8 pueden completarse antes de la seguridad. Las fases 5 y 6 pueden avanzar en paralelo una vez cumplidas sus dependencias.
+Las fases 1 a 8 no dependían de la seguridad, que ya está implementada; sus obligaciones para estas fases están en la sección 7. Las fases 5 y 6 pueden avanzar en paralelo una vez cumplidas sus dependencias.
 
 ## 6. Detalle por fase
 
@@ -80,6 +80,7 @@ Las fases 1 a 8 pueden completarse antes de la seguridad. Las fases 5 y 6 pueden
 - `dev` y `test`: H2, consola H2 y log SQL permitidos solo en `dev`.
 - `prod`: sin consola H2, sin log SQL, `ddl-auto=validate`, Swagger desactivado (o protegido tras la seguridad), seed de ejemplo desactivado.
 - Parametrizar por variables de entorno en `prod`: conexión a la base, `app.cors.allowed-origins` y `server.port=${PORT:8080}`.
+- Seguridad en `prod`: `security.jwt.secret-key` sin valor por defecto (que el arranque falle si falta `JWT_SECRET`; la clave por defecto actual está en el repositorio) y primer administrador desde `ADMIN_EMAIL` y `ADMIN_PASSWORD`.
 - Limitar `DataLoader` a los profiles `dev` y `test` (`@Profile`).
 - Añadir Actuator con el endpoint `/actuator/health` para los health checks.
 
@@ -96,7 +97,7 @@ Las fases 1 a 8 pueden completarse antes de la seguridad. Las fases 5 y 6 pueden
 - Usar variables separadas (host, puerto, base, usuario, contraseña) para construir la URL JDBC. Render entrega `DATABASE_URL` con formato `postgresql://`, no JDBC.
 - Definir la convención de migraciones: toda modificación de entidades que cambie el esquema incluye su migración en el mismo PR.
 
-**Nota:** la migración base debe generarse cuando el modelo de entidades esté estable. La fase de seguridad puede añadir migraciones posteriores (por ejemplo, tokens de refresco).
+**Nota:** la migración base debe generarse cuando el modelo de entidades esté estable. Debe incluir las tablas de seguridad: `users` (`username` único, `password`, `enabled` no nulo), `roles` (`name` único y no nulo), `user_roles` y la columna `user_id` de `owners`, `veterinarians` y `administrators`. Los roles y el primer administrador no van en la migración: los crea `SecuritySeeder` al arrancar. La fase de seguridad puede añadir migraciones posteriores (por ejemplo, tokens de refresco).
 
 **Criterio de cierre:** contra un Postgres local vacío, el backend con profile `prod` aplica las migraciones y valida el esquema sin errores.
 
@@ -155,7 +156,7 @@ Las fases 1 a 8 pueden completarse antes de la seguridad. Las fases 5 y 6 pueden
 **Dependencias:** Fases 4 y 6.
 
 **Desarrollar o configurar:**
-- **Render:** crear el servicio web del backend, la instancia de PostgreSQL gestionado y las variables de entorno (profile `prod`, conexión, `app.cors.allowed-origins` con el subdominio de Vercel, y el secreto JWT cuando exista). Configurar el health check (`/actuator/health`) y el despliegue por imagen o por Dockerfile según lo verificado.
+- **Render:** crear el servicio web del backend, la instancia de PostgreSQL gestionado y las variables de entorno (profile `prod`, conexión, `app.cors.allowed-origins` con el subdominio de Vercel, `JWT_SECRET`, y `ADMIN_EMAIL` y `ADMIN_PASSWORD` para el primer administrador). Mantener una sola instancia en el primer arranque: dos instancias simultáneas sobre la base vacía pueden chocar al crear los roles. Configurar el health check (`/actuator/health`) y el despliegue por imagen o por Dockerfile según lo verificado.
 - **Vercel:** crear el proyecto del frontend con la integración Git desactivada.
 - **GitHub:** crear los secretos para el CD (Deploy Hook de Render, token y IDs de proyecto de Vercel, credenciales de GHCR si el registro es privado).
 - Fijar los nombres de ambos servicios, de los que dependen las URLs y el CORS.
@@ -203,7 +204,12 @@ Las fases 1 a 8 pueden completarse antes de la seguridad. Las fases 5 y 6 pueden
 
 ## 7. Notas de integración con la fase de seguridad
 
-- La seguridad no está en este roadmap, pero condiciona las fases 7 y 9 (secreto JWT, CORS con cabecera `Authorization`).
-- Se recomienda enviar el token como cabecera `Authorization` en lugar de cookies: Vercel y Render pertenecen a sitios distintos y las cookies entre sitios añaden restricciones.
-- El login actual del frontend guarda el usuario en `sessionStorage`. La integración de JWT modificará el servicio de autenticación, los guards y los interceptores, y con ello los e2e que se hayan escrito antes.
+La seguridad ya está implementada (rama `feature/backend-security`): Spring Security con login único, token JWT de 2 horas en la cabecera `Authorization`, contraseñas BCrypt y una matriz de permisos por rol y por recurso propio. Su contrato está en [API.md](../api/API.md#permisos). Lo que condiciona a este roadmap:
+
+- **Fase 1:** `JWT_SECRET` obligatorio en `prod`; Swagger (`/v3/api-docs`, `/swagger-ui`) hoy es público, así que en `prod` se desactiva o se protege.
+- **Fase 2:** la migración base incluye las tablas de cuentas y roles (ver la nota de la fase).
+- **Fases 6 y 7:** `CORS_ALLOWED_ORIGINS` con el dominio de Vercel. El CORS ya admite la cabecera `Authorization` y no usa credenciales, porque el token viaja en esa cabecera y no en cookies (Vercel y Render son sitios distintos).
+- **Fase 9:** el punto "Spring Security, BCrypt y JWT implementados" de la checklist queda cubierto al mezclar la rama; siguen pendientes los secretos en la plataforma y Swagger en `prod`.
+- **Frontend:** la sesión se guarda en `localStorage` (clave `pethaven.session`) con un interceptor que añade el token y guards por portal. Los e2e que se escriban deben iniciar sesión por `POST /api/auth/login`.
+- **Fase 10:** límite de intentos de login, tokens de refresco o revocación y rotación de `JWT_SECRET` (cambiarla cierra todas las sesiones).
 - Cualquier cambio de esquema introducido por la seguridad se entrega como nueva migración de Flyway.

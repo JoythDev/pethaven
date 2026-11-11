@@ -5,12 +5,15 @@ import io.github.pethaven.dto.request.OwnerUpdateRequest;
 import io.github.pethaven.dto.response.OwnerResponse;
 import io.github.pethaven.entity.Owner;
 import io.github.pethaven.entity.Pet;
+import io.github.pethaven.entity.Role;
+import io.github.pethaven.entity.UserEntity;
 import io.github.pethaven.exception.IllegalOperationException;
-import io.github.pethaven.exception.InvalidCredentialsException;
 import io.github.pethaven.exception.ResourceNotFoundException;
 import io.github.pethaven.mapper.OwnerMapper;
 import io.github.pethaven.repository.OwnerRepository;
+import io.github.pethaven.repository.RoleRepository;
 import io.github.pethaven.repository.TreatmentRepository;
+import io.github.pethaven.repository.UserRepository;
 import io.github.pethaven.support.RepositoryTestData;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -21,24 +24,36 @@ import org.mockito.ArgumentMatchers;
 import org.mockito.Mock;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
-// Pruebas del servicio con mocks: el OwnerMapper es real y los repositorios son simulados, sin Spring ni base de datos.
+// Pruebas del servicio con mocks: el OwnerMapper y el UserAccountService son reales (con BCrypt)
+// y los repositorios son simulados, sin Spring ni base de datos.
 @ExtendWith(MockitoExtension.class)
 public class OwnerServiceMockTest {
+
+    // Coste bajo de BCrypt para que los tests sean rápidos; el algoritmo es el mismo.
+    private static final PasswordEncoder PASSWORD_ENCODER = new BCryptPasswordEncoder(4);
 
     @Mock
     private OwnerRepository ownerRepository;
     @Mock
     private TreatmentRepository treatmentRepository;
+    @Mock
+    private UserRepository userRepository;
+    @Mock
+    private RoleRepository roleRepository;
 
     private OwnerServiceImpl ownerService;
 
     @BeforeEach
     public void setUp() {
-        ownerService = new OwnerServiceImpl(ownerRepository, new OwnerMapper(), treatmentRepository);
+        UserAccountService userAccountService = new UserAccountServiceImpl(userRepository, roleRepository, PASSWORD_ENCODER);
+        ownerService = new OwnerServiceImpl(ownerRepository, new OwnerMapper(), treatmentRepository, userAccountService);
     }
 
     // ---------- Helpers ----------
@@ -50,7 +65,16 @@ public class OwnerServiceMockTest {
         owner.setName(name);
         owner.setEmail(email);
         owner.setPhone(phone);
+        owner.setUser(account(email, "secret-password"));
         return owner;
+    }
+
+    private UserEntity account(String username, String rawPassword) {
+        UserEntity account = new UserEntity();
+        account.setUsername(username);
+        account.setPassword(PASSWORD_ENCODER.encode(rawPassword));
+        account.setRoles(new ArrayList<>(List.of(new Role(Role.OWNER))));
+        return account;
     }
 
     private OwnerRequest createRequest() {
@@ -203,6 +227,7 @@ public class OwnerServiceMockTest {
         OwnerRequest request = createRequest();
         Mockito.when(ownerRepository.existsByDocument("DOC-900")).thenReturn(false);
         Mockito.when(ownerRepository.existsByEmail("ana.torres@pethaven.test")).thenReturn(false);
+        Mockito.when(roleRepository.findByName(Role.OWNER)).thenReturn(Optional.of(new Role(Role.OWNER)));
         // Simula la asignación del id que hace la base de datos al guardar.
         Mockito.when(ownerRepository.save(ArgumentMatchers.any(Owner.class)))
                 .thenAnswer(invocation -> {
@@ -224,8 +249,13 @@ public class OwnerServiceMockTest {
         Assertions.assertThat(saved.getDocument()).isEqualTo("DOC-900");
         Assertions.assertThat(saved.getName()).isEqualTo("Ana Torres");
         Assertions.assertThat(saved.getEmail()).isEqualTo("ana.torres@pethaven.test");
-        Assertions.assertThat(saved.getPassword()).isEqualTo("plain-password");
         Assertions.assertThat(saved.getPhone()).isEqualTo("3001234567");
+        // La cuenta de login usa el email como username y guarda la contraseña hasheada.
+        UserEntity account = saved.getUser();
+        Assertions.assertThat(account.getUsername()).isEqualTo("ana.torres@pethaven.test");
+        Assertions.assertThat(account.getPassword()).isNotEqualTo("plain-password");
+        Assertions.assertThat(PASSWORD_ENCODER.matches("plain-password", account.getPassword())).isTrue();
+        Assertions.assertThat(account.getRoles()).extracting(Role::getName).containsExactly(Role.OWNER);
 
         // La creación comprueba unicidad por documento y correo sin excluir ningún id.
         Mockito.verify(ownerRepository).existsByDocument("DOC-900");
@@ -265,13 +295,29 @@ public class OwnerServiceMockTest {
         Mockito.verify(ownerRepository, Mockito.never()).save(ArgumentMatchers.any(Owner.class));
     }
 
+    @Test
+    public void ownerService_createOwner_UsernameTakenByAnotherAccount_ThrowsIllegalOperationAndDoesNotSave() {
+        // Arrange
+        // El correo está libre entre los dueños, pero otra cuenta (p. ej. un veterinario) ya lo usa como username.
+        OwnerRequest request = createRequest();
+        Mockito.when(ownerRepository.existsByDocument("DOC-900")).thenReturn(false);
+        Mockito.when(ownerRepository.existsByEmail("ana.torres@pethaven.test")).thenReturn(false);
+        Mockito.when(userRepository.existsByUsername("ana.torres@pethaven.test")).thenReturn(true);
+
+        // Act + Assert
+        Assertions.assertThatThrownBy(() -> ownerService.createOwner(request))
+                .isInstanceOf(IllegalOperationException.class)
+                .hasMessage("Ya existe una cuenta con el usuario 'ana.torres@pethaven.test'.");
+        Mockito.verify(ownerRepository, Mockito.never()).save(ArgumentMatchers.any(Owner.class));
+    }
+
     // ---------- updateOwner ----------
 
     @Test
     public void ownerService_updateOwner_ValidRequestWithoutPassword_AppliesFieldsAndKeepsPasswordAndPets() {
         // Arrange
         Owner existing = owner(1L, "DOC-100", "Ana Torres", "ana@pethaven.test", "3001234567");
-        existing.setPassword("old-password");
+        String previousHash = existing.getUser().getPassword();
         Pet pet = RepositoryTestData.pet(existing);
         existing.getPets().add(pet);
         OwnerUpdateRequest request = new OwnerUpdateRequest(
@@ -298,8 +344,10 @@ public class OwnerServiceMockTest {
         Assertions.assertThat(saved.getName()).isEqualTo("Ana Torres Ruiz");
         Assertions.assertThat(saved.getEmail()).isEqualTo("ana.ruiz@pethaven.test");
         Assertions.assertThat(saved.getPhone()).isEqualTo("3112223344");
+        // El username de la cuenta sigue al email del perfil.
+        Assertions.assertThat(saved.getUser().getUsername()).isEqualTo("ana.ruiz@pethaven.test");
         // Sin contraseña en la petición se conserva la actual.
-        Assertions.assertThat(saved.getPassword()).isEqualTo("old-password");
+        Assertions.assertThat(saved.getUser().getPassword()).isEqualTo(previousHash);
         // Las mascotas existentes siguen asociadas a la entidad guardada.
         Assertions.assertThat(saved.getPets()).containsExactly(pet);
 
@@ -314,7 +362,6 @@ public class OwnerServiceMockTest {
     public void ownerService_updateOwner_ValidRequestWithPassword_ReplacesPassword() {
         // Arrange
         Owner existing = owner(1L, "DOC-100", "Ana Torres", "ana@pethaven.test", "3001234567");
-        existing.setPassword("old-password");
         OwnerUpdateRequest request = new OwnerUpdateRequest(
                 "DOC-100", "Ana Torres", "ana@pethaven.test", "new-password", "3001234567");
         Mockito.when(ownerRepository.findById(1L)).thenReturn(Optional.of(existing));
@@ -329,7 +376,29 @@ public class OwnerServiceMockTest {
         // Assert
         ArgumentCaptor<Owner> captor = ArgumentCaptor.forClass(Owner.class);
         Mockito.verify(ownerRepository).save(captor.capture());
-        Assertions.assertThat(captor.getValue().getPassword()).isEqualTo("new-password");
+        UserEntity account = captor.getValue().getUser();
+        Assertions.assertThat(PASSWORD_ENCODER.matches("new-password", account.getPassword())).isTrue();
+        Assertions.assertThat(PASSWORD_ENCODER.matches("secret-password", account.getPassword())).isFalse();
+        // El email no cambió: no se consulta la disponibilidad del username.
+        Mockito.verify(userRepository, Mockito.never()).existsByUsername(ArgumentMatchers.anyString());
+    }
+
+    @Test
+    public void ownerService_updateOwner_EmailTakenByAnotherAccount_ThrowsIllegalOperation() {
+        // Arrange
+        Owner existing = owner(1L, "DOC-100", "Ana Torres", "ana@pethaven.test", "3001234567");
+        OwnerUpdateRequest request = new OwnerUpdateRequest(
+                "DOC-100", "Ana Torres", "vet@pethaven.test", null, "3001234567");
+        Mockito.when(ownerRepository.findById(1L)).thenReturn(Optional.of(existing));
+        Mockito.when(ownerRepository.existsByDocumentAndIdNot("DOC-100", 1L)).thenReturn(false);
+        Mockito.when(ownerRepository.existsByEmailAndIdNot("vet@pethaven.test", 1L)).thenReturn(false);
+        Mockito.when(userRepository.existsByUsername("vet@pethaven.test")).thenReturn(true);
+
+        // Act + Assert
+        Assertions.assertThatThrownBy(() -> ownerService.updateOwner(1L, request))
+                .isInstanceOf(IllegalOperationException.class)
+                .hasMessage("Ya existe una cuenta con el usuario 'vet@pethaven.test'.");
+        Mockito.verify(ownerRepository, Mockito.never()).save(ArgumentMatchers.any(Owner.class));
     }
 
     @Test
@@ -425,47 +494,5 @@ public class OwnerServiceMockTest {
 
         // Assert
         Mockito.verify(ownerRepository).deleteById(1L);
-    }
-
-    // ---------- authenticate ----------
-    // Comportamiento provisional: la contraseña se compara en texto plano. Estos tests fijan
-    // ese comportamiento hasta que se implemente Spring Security + BCrypt + JWT.
-
-    @Test
-    public void ownerService_authenticate_CorrectPassword_ReturnsOwner() {
-        // Arrange
-        Owner owner = owner(1L, "DOC-100", "Ana Torres", "ana@pethaven.test", "3001234567");
-        owner.setPassword("secret-password");
-        Mockito.when(ownerRepository.findByEmail("ana@pethaven.test")).thenReturn(Optional.of(owner));
-
-        // Act
-        Owner result = ownerService.authenticate("ana@pethaven.test", "secret-password");
-
-        // Assert
-        Assertions.assertThat(result).isSameAs(owner);
-    }
-
-    @Test
-    public void ownerService_authenticate_WrongPassword_ThrowsInvalidCredentials() {
-        // Arrange
-        Owner owner = owner(1L, "DOC-100", "Ana Torres", "ana@pethaven.test", "3001234567");
-        owner.setPassword("secret-password");
-        Mockito.when(ownerRepository.findByEmail("ana@pethaven.test")).thenReturn(Optional.of(owner));
-
-        // Act + Assert
-        Assertions.assertThatThrownBy(() -> ownerService.authenticate("ana@pethaven.test", "wrong-password"))
-                .isInstanceOf(InvalidCredentialsException.class)
-                .hasMessage("Correo o contraseña incorrectos.");
-    }
-
-    @Test
-    public void ownerService_authenticate_UnknownEmail_ThrowsInvalidCredentials() {
-        // Arrange
-        Mockito.when(ownerRepository.findByEmail("nadie@pethaven.test")).thenReturn(Optional.empty());
-
-        // Act + Assert
-        Assertions.assertThatThrownBy(() -> ownerService.authenticate("nadie@pethaven.test", "secret-password"))
-                .isInstanceOf(InvalidCredentialsException.class)
-                .hasMessage("Correo o contraseña incorrectos.");
     }
 }

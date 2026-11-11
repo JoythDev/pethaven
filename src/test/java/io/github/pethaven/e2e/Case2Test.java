@@ -30,7 +30,7 @@ import org.springframework.test.context.ActiveProfiles;
  */
 @Tag("e2e")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "e2e"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class Case2Test {
 
@@ -68,7 +68,8 @@ public class Case2Test {
     @Test
     public void testCase2() {
         // 1. Login del veterinario.
-        driver.get(FRONT + "/vet/login");
+        // Login único para todos los roles (Spring Security + JWT); el rol decide el portal.
+        driver.get(FRONT + "/login");
         login(DatabaseInit.VET_EMAIL, DatabaseInit.VET_PASSWORD);
         wait.until(ExpectedConditions.urlContains("/veterinario"));
 
@@ -95,7 +96,7 @@ public class Case2Test {
         assertThat(drugLine).contains(DatabaseInit.DRUG_NAME).contains(UNITS + " unidades");
 
         // 4. El administrador verifica unidades suministradas, ventas y utilidad.
-        driver.get(FRONT + "/admin/login");
+        driver.get(FRONT + "/login");
         login(DatabaseInit.ADMIN_EMAIL, DatabaseInit.ADMIN_PASSWORD);
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("totalSales")));
 

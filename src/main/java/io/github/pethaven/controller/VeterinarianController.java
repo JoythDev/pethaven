@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.net.URI;
 import java.util.List;
@@ -66,6 +67,7 @@ public class VeterinarianController {
             @ApiResponse(responseCode = "404", description = "No existe un veterinario con ese id",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
+    @PreAuthorize("hasRole('ADMIN') or @access.isVeterinarian(#id, authentication.name)")
     @GetMapping("/{id}")
     public VeterinarianResponse getVeterinarianById(
             @Parameter(description = "Id del veterinario", example = "1") @PathVariable Long id) {
@@ -114,6 +116,7 @@ public class VeterinarianController {
             @ApiResponse(responseCode = "409", description = "Documento o correo pertenecen a otro veterinario",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
+    @PreAuthorize("hasRole('ADMIN') or @access.isVeterinarianKeepingIdentity(#id, #request.document(), #request.email(), authentication.name)")
     @PutMapping("/{id}")
     public VeterinarianResponse updateVeterinarian(
             @Parameter(description = "Id del veterinario", example = "1") @PathVariable Long id,
@@ -157,6 +160,7 @@ public class VeterinarianController {
             @ApiResponse(responseCode = "404", description = "No existe un veterinario con ese id",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
+    @PreAuthorize("hasRole('ADMIN') or @access.isVeterinarian(#id, authentication.name)")
     @GetMapping("/{id}/treatments")
     public List<TreatmentResponse> getTreatmentsByVeterinarianId(
             @Parameter(description = "Id del veterinario", example = "1") @PathVariable Long id) {

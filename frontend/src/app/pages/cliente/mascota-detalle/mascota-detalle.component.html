@@ -25,15 +25,19 @@
     @let pet = s.data.pet;
     @let treatments = s.data.treatments;
 
-    <section class="mt-6 rounded-3xl border border-olive/15 bg-white p-6 shadow-sm lg:p-8">
-      <div class="flex flex-col gap-6 sm:flex-row sm:items-center">
+    <section class="mt-6 overflow-hidden rounded-3xl border border-olive/10 bg-white shadow-lg">
+      <div class="relative h-24 overflow-hidden bg-honey">
+        <span aria-hidden="true" class="absolute -right-8 -top-12 h-40 w-40 rounded-full bg-white/30"></span>
+        <span aria-hidden="true" class="absolute -bottom-12 left-10 h-28 w-28 rounded-full bg-terracotta/30"></span>
+      </div>
+      <div class="relative flex flex-col gap-6 px-6 pb-6 sm:flex-row lg:px-8 lg:pb-8">
         <img
           [src]="pet.photoUrl"
           [alt]="pet.name"
-          class="h-48 w-full shrink-0 rounded-2xl bg-secondary/50 object-cover sm:h-36 sm:w-48"
+          class="-mt-12 h-48 w-full shrink-0 rounded-2xl bg-secondary object-cover shadow-md ring-4 ring-white sm:h-36 sm:w-48 sm:self-start"
           (error)="onPhotoError($event)"
         />
-        <div>
+        <div class="sm:pt-4">
           <h1 class="font-display text-3xl font-bold text-text">{{ pet.name }}</h1>
           <p class="mt-1 text-text/70">
             {{ speciesLabel(pet.species) }} · {{ pet.breed }} · {{ ageLabel(pet.age) }} ·
@@ -43,7 +47,7 @@
             <app-cliente-pet-status-tag [active]="pet.active" />
           </div>
           @if (pet.disease; as disease) {
-            <div class="mt-4 rounded-2xl border border-honey/40 bg-honey/15 p-4">
+            <div class="mt-4 rounded-2xl bg-honey/40 p-4">
               <p class="text-xs font-bold uppercase tracking-[0.15em] text-text/50">Diagnóstico</p>
               <p class="mt-1 font-semibold text-text">{{ disease }}</p>
             </div>
@@ -61,9 +65,9 @@
             <li class="flex gap-4">
               <!-- Riel del historial: el punto marca el tratamiento y la línea enlaza con el siguiente -->
               <div class="flex w-7 shrink-0 flex-col items-center">
-                <span class="mt-0.5 h-3 w-3 rounded-full border-2 border-olive bg-background" aria-hidden="true"></span>
+                <span class="mt-0.5 h-4 w-4 rounded-full border-2 border-white bg-honey shadow-sm ring-2 ring-honey/50" aria-hidden="true"></span>
                 @if (!last) {
-                  <div class="w-px flex-1 bg-olive/20" aria-hidden="true"></div>
+                  <div class="w-0.5 flex-1 rounded-full bg-honey/40" aria-hidden="true"></div>
                 }
               </div>
               <div class="min-w-0 flex-1" [class.pb-8]="!last">

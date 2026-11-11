@@ -1,13 +1,9 @@
 <div class="mx-auto max-w-7xl p-5 lg:p-8">
-  <header class="mb-6 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-    <div>
-      <h1 class="font-display text-3xl font-bold text-text">Mascotas</h1>
-      <p class="mt-1 text-text/70">Gestiona los pacientes de la clínica.</p>
-    </div>
-    <p-button label="Nueva mascota" icon="pi pi-plus" (onClick)="nueva()" />
-  </header>
+  <app-page-banner class="mb-6" color="honey" mascot="dog" title="Mascotas" subtitle="Gestiona los pacientes de la clínica.">
+    <p-button class="mt-4 inline-block" label="Nueva mascota" icon="pi pi-plus" (onClick)="nueva()" />
+  </app-page-banner>
 
-  <section class="overflow-hidden rounded-3xl border border-olive/15 bg-white shadow-sm">
+  <section class="overflow-hidden rounded-3xl border border-olive/10 bg-white shadow-lg">
     <div class="flex flex-col gap-3 border-b border-olive/15 p-4 lg:flex-row lg:items-center">
       <p-iconfield class="w-full lg:max-w-xs">
         <p-inputicon class="pi pi-search" />

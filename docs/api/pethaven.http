@@ -13,23 +13,69 @@
 @createdDrugId = 524
 
 ### ═══════════════════════════════════════════
+### Inicio de sesión por rol
+### ═══════════════════════════════════════════
+
+# Toda la API, salvo el login, exige un token. Estas tres peticiones van primero: cada una lleva
+# nombre (@name) y las demás reutilizan el token del rol que tiene permiso sobre la operación con
+# {{loginAdmin.response.body.token}}, {{loginVet.response.body.token}} o
+# {{loginOwner.response.body.token}}. El veterinario es el id 1 y el dueño es el id 1.
+
+### Login de administrador → 200 AuthResponse (role ADMIN)
+# @name loginAdmin
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "admin@pethaven.com",
+  "password": "admin12345"
+}
+
+### Login de veterinario → 200 AuthResponse (role VETERINARIAN)
+# @name loginVet
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "valentina.soler@pethaven.com",
+  "password": "vet12345"
+}
+
+### Login de dueño → 200 AuthResponse (role OWNER)
+# @name loginOwner
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "john.doe@example.com",
+  "password": "password123"
+}
+
+### ═══════════════════════════════════════════
 ### REST · /api/owners
 ### ═══════════════════════════════════════════
 
 ### Listar dueños → 200 [OwnerResponse]
 GET {{baseUrl}}/api/owners
+Authorization: Bearer {{loginVet.response.body.token}}
 Accept: application/json
 
 ### Detalle de dueño → 200 OwnerResponse
 GET {{baseUrl}}/api/owners/{{ownerId}}
+Authorization: Bearer {{loginVet.response.body.token}}
 Accept: application/json
 
 ### Detalle inexistente → 404 ApiErrorResponse
 GET {{baseUrl}}/api/owners/99999
+Authorization: Bearer {{loginVet.response.body.token}}
 Accept: application/json
 
 ### Crear dueño → 201 + cabecera Location
 POST {{baseUrl}}/api/owners
+Authorization: Bearer {{loginVet.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -43,6 +89,7 @@ Accept: application/json
 
 ### Crear duplicado (mismo documento) → 409
 POST {{baseUrl}}/api/owners
+Authorization: Bearer {{loginVet.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -56,6 +103,7 @@ Accept: application/json
 
 ### Crear inválido (campos vacíos, correo malo, password corta) → 400 + errors{}
 POST {{baseUrl}}/api/owners
+Authorization: Bearer {{loginVet.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -69,6 +117,7 @@ Accept: application/json
 
 ### Actualizar sin password (se conserva) → 200
 PUT {{baseUrl}}/api/owners/{{ownerId}}
+Authorization: Bearer {{loginVet.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -81,6 +130,7 @@ Accept: application/json
 
 ### Actualizar con password corta → 400
 PUT {{baseUrl}}/api/owners/{{ownerId}}
+Authorization: Bearer {{loginVet.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -94,6 +144,7 @@ Accept: application/json
 
 ### Eliminar el dueño creado arriba (no tiene mascotas) → 204 (409 si alguna mascota tuviera tratamientos)
 DELETE {{baseUrl}}/api/owners/{{createdOwnerId}}
+Authorization: Bearer {{loginVet.response.body.token}}
 
 ### ═══════════════════════════════════════════
 ### REST · /api/pets
@@ -101,18 +152,22 @@ DELETE {{baseUrl}}/api/owners/{{createdOwnerId}}
 
 ### Listar mascotas → 200 [PetResponse]
 GET {{baseUrl}}/api/pets
+Authorization: Bearer {{loginVet.response.body.token}}
 Accept: application/json
 
 ### Buscar por nombre (substring, sin distinguir mayúsculas) → 200 [PetResponse]
 GET {{baseUrl}}/api/pets?search=bud
+Authorization: Bearer {{loginVet.response.body.token}}
 Accept: application/json
 
 ### Detalle de mascota → 200 PetResponse
 GET {{baseUrl}}/api/pets/1
+Authorization: Bearer {{loginVet.response.body.token}}
 Accept: application/json
 
 ### Crear mascota → 201 + Location
 POST {{baseUrl}}/api/pets
+Authorization: Bearer {{loginVet.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -128,6 +183,7 @@ Accept: application/json
 
 ### Crear con dueño inexistente → 404
 POST {{baseUrl}}/api/pets
+Authorization: Bearer {{loginVet.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -142,6 +198,7 @@ Accept: application/json
 
 ### Crear inválido (validación) → 400 + errors{}
 POST {{baseUrl}}/api/pets
+Authorization: Bearer {{loginVet.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -156,6 +213,7 @@ Accept: application/json
 
 ### Especie inválida → 400 (cuerpo mal formado)
 POST {{baseUrl}}/api/pets
+Authorization: Bearer {{loginVet.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -170,6 +228,7 @@ Accept: application/json
 
 ### Actualizar (reasignar dueño) → 200
 PUT {{baseUrl}}/api/pets/1
+Authorization: Bearer {{loginVet.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -184,18 +243,22 @@ Accept: application/json
 
 ### Desactivar mascota (se va a su casa) → 200
 PUT {{baseUrl}}/api/pets/1/active?active=false
+Authorization: Bearer {{loginVet.response.body.token}}
 Accept: application/json
 
 ### Reactivar mascota (las peticiones de tratamientos de abajo la necesitan activa) → 200
 PUT {{baseUrl}}/api/pets/1/active?active=true
+Authorization: Bearer {{loginVet.response.body.token}}
 Accept: application/json
 
 ### Sin el parámetro obligatorio → 400
 PUT {{baseUrl}}/api/pets/1/active
+Authorization: Bearer {{loginVet.response.body.token}}
 Accept: application/json
 
 ### Mascotas de un dueño → 200 (404 si el dueño no existe)
 GET {{baseUrl}}/api/owners/1/pets
+Authorization: Bearer {{loginVet.response.body.token}}
 Accept: application/json
 
 ### ═══════════════════════════════════════════
@@ -204,18 +267,22 @@ Accept: application/json
 
 ### Listar veterinarios → 200 [VeterinarianResponse]
 GET {{baseUrl}}/api/veterinarians
+Authorization: Bearer {{loginAdmin.response.body.token}}
 Accept: application/json
 
 ### Detalle de veterinario → 200
 GET {{baseUrl}}/api/veterinarians/1
+Authorization: Bearer {{loginAdmin.response.body.token}}
 Accept: application/json
 
 ### Detalle inexistente → 404
 GET {{baseUrl}}/api/veterinarians/99999
+Authorization: Bearer {{loginAdmin.response.body.token}}
 Accept: application/json
 
 ### Crear veterinario → 201 + Location
 POST {{baseUrl}}/api/veterinarians
+Authorization: Bearer {{loginAdmin.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -230,6 +297,7 @@ Accept: application/json
 
 ### Crear duplicado (documento o correo) → 409
 POST {{baseUrl}}/api/veterinarians
+Authorization: Bearer {{loginAdmin.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -243,6 +311,7 @@ Accept: application/json
 
 ### Crear inválido → 400 + errors{}
 POST {{baseUrl}}/api/veterinarians
+Authorization: Bearer {{loginAdmin.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -256,6 +325,7 @@ Accept: application/json
 
 ### Actualizar sin password (se conserva) → 200
 PUT {{baseUrl}}/api/veterinarians/1
+Authorization: Bearer {{loginAdmin.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -269,14 +339,17 @@ Accept: application/json
 
 ### Desactivar veterinario → 200
 PUT {{baseUrl}}/api/veterinarians/1/active?active=false
+Authorization: Bearer {{loginAdmin.response.body.token}}
 Accept: application/json
 
 ### Reactivar veterinario (los tratamientos y el login de abajo lo necesitan activo) → 200
 PUT {{baseUrl}}/api/veterinarians/1/active?active=true
+Authorization: Bearer {{loginAdmin.response.body.token}}
 Accept: application/json
 
-### DELETE no existe en la API → 405
+### DELETE no existe en la API: fuera de la matriz de permisos → 403
 DELETE {{baseUrl}}/api/veterinarians/1
+Authorization: Bearer {{loginAdmin.response.body.token}}
 
 ### ═══════════════════════════════════════════
 ### REST · /api/drugs
@@ -284,22 +357,27 @@ DELETE {{baseUrl}}/api/veterinarians/1
 
 ### Listar medicamentos → 200 [DrugResponse]
 GET {{baseUrl}}/api/drugs
+Authorization: Bearer {{loginAdmin.response.body.token}}
 Accept: application/json
 
 ### Listar solo medicamentos con stock → 200 [DrugResponse]
 GET {{baseUrl}}/api/drugs?available=true
+Authorization: Bearer {{loginAdmin.response.body.token}}
 Accept: application/json
 
 ### Detalle de medicamento → 200
 GET {{baseUrl}}/api/drugs/1
+Authorization: Bearer {{loginAdmin.response.body.token}}
 Accept: application/json
 
 ### Detalle inexistente → 404
 GET {{baseUrl}}/api/drugs/99999
+Authorization: Bearer {{loginAdmin.response.body.token}}
 Accept: application/json
 
 ### Crear medicamento → 201 + Location
 POST {{baseUrl}}/api/drugs
+Authorization: Bearer {{loginAdmin.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -312,6 +390,7 @@ Accept: application/json
 
 ### Crear duplicado (mismo nombre) → 409
 POST {{baseUrl}}/api/drugs
+Authorization: Bearer {{loginAdmin.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -324,6 +403,7 @@ Accept: application/json
 
 ### Crear inválido → 400 + errors{}
 POST {{baseUrl}}/api/drugs
+Authorization: Bearer {{loginAdmin.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -336,6 +416,7 @@ Accept: application/json
 
 ### Importar medicamentos desde Excel → 200 DrugImportSummaryResponse
 POST {{baseUrl}}/api/drugs/import
+Authorization: Bearer {{loginAdmin.response.body.token}}
 Content-Type: multipart/form-data; boundary=WebAppBoundary
 
 --WebAppBoundary
@@ -347,6 +428,7 @@ Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet
 
 ### Actualizar (unitsSold en el body se ignora) → 200
 PUT {{baseUrl}}/api/drugs/1
+Authorization: Bearer {{loginAdmin.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -360,6 +442,7 @@ Accept: application/json
 
 ### Eliminar el medicamento creado arriba (sin tratamientos) → 204
 DELETE {{baseUrl}}/api/drugs/{{createdDrugId}}
+Authorization: Bearer {{loginAdmin.response.body.token}}
 
 ### ═══════════════════════════════════════════
 ### REST · /api/treatments
@@ -367,14 +450,18 @@ DELETE {{baseUrl}}/api/drugs/{{createdDrugId}}
 
 ### Listar tratamientos → 200 [TreatmentResponse]
 GET {{baseUrl}}/api/treatments
+Authorization: Bearer {{loginVet.response.body.token}}
 Accept: application/json
 
 ### Detalle de tratamiento → 200
 GET {{baseUrl}}/api/treatments/1
+Authorization: Bearer {{loginVet.response.body.token}}
 Accept: application/json
 
 ### Ingreso: la mascota 1 está estable, así que va sin evolución → 201 + Location
+# @name ingreso
 POST {{baseUrl}}/api/treatments
+Authorization: Bearer {{loginVet.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -390,6 +477,7 @@ Accept: application/json
 
 ### Seguimiento con medicamentos (atómico): ya hay diagnóstico, la evolución es obligatoria → 201 + Location
 POST {{baseUrl}}/api/treatments
+Authorization: Bearer {{loginVet.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -408,6 +496,7 @@ Accept: application/json
 
 ### Seguimiento sin evolución (la mascota 1 ya está en tratamiento) → 409
 POST {{baseUrl}}/api/treatments
+Authorization: Bearer {{loginVet.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -423,6 +512,7 @@ Accept: application/json
 
 ### Evolución STABLE con un diagnóstico distinto al actual → 409
 POST {{baseUrl}}/api/treatments
+Authorization: Bearer {{loginVet.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -439,6 +529,7 @@ Accept: application/json
 
 ### Evolución RECOVERED solo la usa el alta, no un tratamiento → 409
 POST {{baseUrl}}/api/treatments
+Authorization: Bearer {{loginVet.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -455,6 +546,7 @@ Accept: application/json
 
 ### Crear sin medicamentos (drugs vacío) → 400 + errors{}
 POST {{baseUrl}}/api/treatments
+Authorization: Bearer {{loginVet.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -469,6 +561,7 @@ Accept: application/json
 
 ### Crear con fecha futura → 400
 POST {{baseUrl}}/api/treatments
+Authorization: Bearer {{loginVet.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -486,10 +579,14 @@ Accept: application/json
 
 ### Medicamentos del tratamiento → 200 (404 si el tratamiento no existe)
 GET {{baseUrl}}/api/treatments/1/drugs
+Authorization: Bearer {{loginVet.response.body.token}}
 Accept: application/json
 
 ### Administrar medicamento → 201 (sin Location)
-POST {{baseUrl}}/api/treatments/1/drugs
+# Solo se administran medicamentos en tratamientos propios: se usa el ingreso registrado arriba por el
+# veterinario del token.
+POST {{baseUrl}}/api/treatments/{{ingreso.response.body.id}}/drugs
+Authorization: Bearer {{loginVet.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -499,7 +596,8 @@ Accept: application/json
 }
 
 ### Administrar duplicado → 409
-POST {{baseUrl}}/api/treatments/1/drugs
+POST {{baseUrl}}/api/treatments/{{ingreso.response.body.id}}/drugs
+Authorization: Bearer {{loginVet.response.body.token}}
 Content-Type: application/json
 Accept: application/json
 
@@ -510,33 +608,43 @@ Accept: application/json
 
 ### Historial de una mascota → 200 (404 si no existe)
 GET {{baseUrl}}/api/pets/1/treatments
+Authorization: Bearer {{loginVet.response.body.token}}
 Accept: application/json
 
 ### Dar de alta (queda estable; evolution RECOVERED y sin medicamentos) → 200 TreatmentResponse
 POST {{baseUrl}}/api/pets/1/discharge?veterinarianId=1
+Authorization: Bearer {{loginVet.response.body.token}}
 Accept: application/json
 
 ### Dar de alta otra vez (la mascota ya está estable) → 409
 POST {{baseUrl}}/api/pets/1/discharge?veterinarianId=1
+Authorization: Bearer {{loginVet.response.body.token}}
 Accept: application/json
 
 ### Alta sin veterinarianId → 400
 POST {{baseUrl}}/api/pets/1/discharge
+Authorization: Bearer {{loginVet.response.body.token}}
 Accept: application/json
 
 ### Foto de una mascota servida por el API → 200 imagen (404 si no hay o no se pudo descargar)
 GET {{baseUrl}}/api/pets/1/photo
+Authorization: Bearer {{loginVet.response.body.token}}
 
 ### Mascotas atendidas por un veterinario → 200 (404 si no existe)
 GET {{baseUrl}}/api/veterinarians/1/treatments
+Authorization: Bearer {{loginVet.response.body.token}}
 Accept: application/json
 
 ### ═══════════════════════════════════════════
 ### REST · /api/auth
 ### ═══════════════════════════════════════════
 
-### Login de dueño → 200 AuthResponse (role OWNER)
-POST {{baseUrl}}/api/auth/owners/login
+# La petición de login lleva nombre (@name) para reutilizar su token en las siguientes
+# con {{login.response.body.token}} (sintaxis de REST Client / cliente HTTP de JetBrains).
+
+### Login de dueño → 200 AuthResponse (token, expiresIn 7200, role OWNER)
+# @name login
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 Accept: application/json
 
@@ -545,8 +653,22 @@ Accept: application/json
   "password": "password123"
 }
 
-### Login de dueño con password mala → 401
-POST {{baseUrl}}/api/auth/owners/login
+### Perfil del usuario autenticado con el token del login anterior → 200 AuthProfileResponse
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer {{login.response.body.token}}
+Accept: application/json
+
+### Perfil sin token → 401
+GET {{baseUrl}}/api/auth/me
+Accept: application/json
+
+### Perfil con un token inválido → 401
+GET {{baseUrl}}/api/auth/me
+Authorization: Bearer token-invalido
+Accept: application/json
+
+### Login con password mala → 401
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 Accept: application/json
 
@@ -555,8 +677,8 @@ Accept: application/json
   "password": "mala"
 }
 
-### Login de dueño con email desconocido → 401 (mismo mensaje, sin enumerar)
-POST {{baseUrl}}/api/auth/owners/login
+### Login con email desconocido → 401 (mismo mensaje, sin enumerar)
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 Accept: application/json
 
@@ -565,8 +687,18 @@ Accept: application/json
   "password": "password123"
 }
 
+### Login con email mal formado → 400
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "no-es-un-correo",
+  "password": "password123"
+}
+
 ### Login de veterinario → 200 AuthResponse (role VETERINARIAN)
-POST {{baseUrl}}/api/auth/veterinarians/login
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 Accept: application/json
 
@@ -575,18 +707,8 @@ Accept: application/json
   "password": "vet12345"
 }
 
-### Login de veterinario con password mala → 401
-POST {{baseUrl}}/api/auth/veterinarians/login
-Content-Type: application/json
-Accept: application/json
-
-{
-  "email": "valentina.soler@pethaven.com",
-  "password": "mala"
-}
-
-### Login de veterinario desactivado → 403
-POST {{baseUrl}}/api/auth/veterinarians/login
+### Login de veterinario desactivado con su contraseña → 403
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 Accept: application/json
 
@@ -595,8 +717,18 @@ Accept: application/json
   "password": "vet12345"
 }
 
+### Login de veterinario desactivado con password mala → 401 (el estado solo se revela con la contraseña correcta)
+POST {{baseUrl}}/api/auth/login
+Content-Type: application/json
+Accept: application/json
+
+{
+  "email": "julian.restrepo@pethaven.com",
+  "password": "mala"
+}
+
 ### Login de administrador → 200 AuthResponse (role ADMIN)
-POST {{baseUrl}}/api/auth/administrators/login
+POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 Accept: application/json
 
@@ -605,20 +737,59 @@ Accept: application/json
   "password": "admin12345"
 }
 
-### Login de administrador con password mala → 401
-POST {{baseUrl}}/api/auth/administrators/login
-Content-Type: application/json
-Accept: application/json
-
-{
-  "email": "admin@pethaven.com",
-  "password": "mala"
-}
-
 ### ═══════════════════════════════════════════
 ### REST · /api/administrators
 ### ═══════════════════════════════════════════
 
 ### Dashboard resumen (mes anterior; ventas y top tres históricos) → 200 AdministratorDashboardResponse
 GET {{baseUrl}}/api/administrators/dashboard
+Authorization: Bearer {{loginAdmin.response.body.token}}
+Accept: application/json
+
+### ═══════════════════════════════════════════
+### Permisos (matriz por rol y recursos propios)
+### ═══════════════════════════════════════════
+
+### Sin token → 401
+GET {{baseUrl}}/api/owners
+Accept: application/json
+
+### Dueño consultando su propio perfil → 200 OwnerResponse
+GET {{baseUrl}}/api/owners/1
+Authorization: Bearer {{loginOwner.response.body.token}}
+Accept: application/json
+
+### Dueño consultando el perfil de otro dueño → 403
+GET {{baseUrl}}/api/owners/2
+Authorization: Bearer {{loginOwner.response.body.token}}
+Accept: application/json
+
+### Dueño listando todos los dueños (su rol no tiene acceso) → 403
+GET {{baseUrl}}/api/owners
+Authorization: Bearer {{loginOwner.response.body.token}}
+Accept: application/json
+
+### Administrador registrando una mascota (solo el veterinario puede) → 403
+POST {{baseUrl}}/api/pets
+Authorization: Bearer {{loginAdmin.response.body.token}}
+Content-Type: application/json
+Accept: application/json
+
+{
+  "name": "Sin permiso",
+  "species": "DOG",
+  "breed": "Criollo",
+  "age": 2,
+  "weight": 10.5,
+  "ownerId": 1
+}
+
+### Veterinario consultando el perfil de otro veterinario → 403
+GET {{baseUrl}}/api/veterinarians/2
+Authorization: Bearer {{loginVet.response.body.token}}
+Accept: application/json
+
+### Veterinario dando de alta a nombre de otro veterinario → 403
+POST {{baseUrl}}/api/pets/1/discharge?veterinarianId=2
+Authorization: Bearer {{loginVet.response.body.token}}
 Accept: application/json

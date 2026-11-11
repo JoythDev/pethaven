@@ -11,4 +11,7 @@ public interface PetRepository extends JpaRepository<Pet, Long> {
     List<Pet> findByOwnerId(Long ownerId);
     List<Pet> findByNameContainingIgnoreCase(String name);
     long countByActiveTrue();
+
+    // Comprobación de propiedad de la matriz de permisos (ResourceAccess): la mascota es del usuario de login.
+    boolean existsByIdAndOwnerUserUsername(Long id, String username);
 }

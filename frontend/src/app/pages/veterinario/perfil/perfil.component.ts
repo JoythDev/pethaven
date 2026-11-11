@@ -10,10 +10,11 @@ import { ViewState, toViewState } from '../../../core/http/view-state';
 import { Veterinarian } from '../../../models/veterinarian.model';
 import { AuthService } from '../../../services/auth.service';
 import { VeterinarianService } from '../../../services/veterinarian.service';
+import { StatCardComponent } from '../../shared/stat-card/stat-card.component';
 
 @Component({
   selector: 'app-veterinario-perfil',
-  imports: [RouterLink, AvatarModule, ButtonModule, SkeletonModule, TagModule],
+  imports: [StatCardComponent, RouterLink, AvatarModule, ButtonModule, SkeletonModule, TagModule],
   templateUrl: './perfil.component.html',
 })
 export class VeterinarioPerfilComponent implements OnInit {
@@ -43,6 +44,6 @@ export class VeterinarioPerfilComponent implements OnInit {
   // Borra la sesión guardada y vuelve al login del veterinario.
   cerrarSesion(): void {
     this.auth.logout();
-    this.router.navigate(['/vet/login']);
+    this.router.navigate(['/login']);
   }
 }

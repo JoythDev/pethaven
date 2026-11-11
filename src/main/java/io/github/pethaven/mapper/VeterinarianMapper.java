@@ -31,7 +31,6 @@ public class VeterinarianMapper {
             .document(request.document())
             .name(request.name())
             .email(request.email())
-            .password(request.password())
             .specialty(request.specialty())
             .photoUrl(request.photoUrl())
             .attentions(0)
@@ -39,15 +38,15 @@ public class VeterinarianMapper {
             .build();
     }
 
-    /** Copia los campos editables sobre la entidad; el estado se gestiona en el service. */
+    /**
+     * Copia los campos editables sobre la entidad; el estado se gestiona en el service
+     * y las credenciales en UserAccountService.
+     */
     public void applyUpdate(VeterinarianUpdateRequest request, Veterinarian veterinarian) {
         veterinarian.setDocument(request.document());
         veterinarian.setName(request.name());
         veterinarian.setEmail(request.email());
         veterinarian.setSpecialty(request.specialty());
         veterinarian.setPhotoUrl(request.photoUrl());
-        if (request.password() != null) {
-            veterinarian.setPassword(request.password());
-        }
     }
 }

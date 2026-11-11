@@ -18,5 +18,4 @@ public interface OwnerService {
     OwnerResponse updateOwner(Long id, OwnerUpdateRequest updateRequest);
     void deleteOwnerById(Long id);
 
-    Owner authenticate(String email, String password);
 }

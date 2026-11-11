@@ -34,7 +34,6 @@ public final class RepositoryTestData {
         return Administrator.builder()
                 .name("Administrator " + sequence)
                 .email("admin" + sequence + "@pethaven.test")
-                .password("secret-password")
                 .build();
     }
 
@@ -44,7 +43,6 @@ public final class RepositoryTestData {
                 .document("DOC-" + sequence)
                 .name("Owner " + sequence)
                 .email("owner" + sequence + "@pethaven.test")
-                .password("secret-password")
                 .phone("3001234567")
                 .build();
     }
@@ -67,7 +65,6 @@ public final class RepositoryTestData {
                 .document("VET-" + sequence)
                 .name("Veterinarian " + sequence)
                 .email("vet" + sequence + "@pethaven.test")
-                .password("secret-password")
                 .specialty("General medicine")
                 .build();
     }

@@ -19,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+import org.springframework.security.access.prepost.PreAuthorize;
 
 import java.net.URI;
 import java.util.List;
@@ -66,6 +67,7 @@ public class OwnerController {
             @ApiResponse(responseCode = "404", description = "No existe un dueño con ese id",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
+    @PreAuthorize("hasAnyRole('ADMIN', 'VETERINARIAN') or @access.isOwner(#id, authentication.name)")
     @GetMapping("/{id}")
     public OwnerResponse getOwnerById(
             @Parameter(description = "Id del dueño", example = "1") @PathVariable Long id) {
@@ -114,6 +116,7 @@ public class OwnerController {
             @ApiResponse(responseCode = "409", description = "Documento o correo pertenecen a otro dueño",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
+    @PreAuthorize("hasRole('VETERINARIAN') or @access.isOwnerKeepingIdentity(#id, #request.document(), #request.email(), authentication.name)")
     @PutMapping("/{id}")
     public OwnerResponse updateOwner(
             @Parameter(description = "Id del dueño", example = "1") @PathVariable Long id,
@@ -155,6 +158,7 @@ public class OwnerController {
             @ApiResponse(responseCode = "404", description = "No existe un dueño con ese id",
                     content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
     })
+    @PreAuthorize("hasAnyRole('ADMIN', 'VETERINARIAN') or @access.isOwner(#id, authentication.name)")
     @GetMapping("/{id}/pets")
     public List<PetResponse> getPetsByOwnerId(
             @Parameter(description = "Id del dueño", example = "1") @PathVariable Long id) {

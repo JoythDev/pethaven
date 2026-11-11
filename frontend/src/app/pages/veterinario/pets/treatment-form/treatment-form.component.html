@@ -27,13 +27,20 @@
       ← Volver a {{ pet.name }}
     </a>
 
-    <h1 class="font-display mt-4 mb-8 text-3xl font-bold text-text">Registrar Tratamiento</h1>
+    <header class="mt-4 mb-6 flex items-end justify-between gap-4">
+      <h1 class="font-display text-3xl font-bold text-text">Registrar Tratamiento</h1>
+      <img
+        [src]="pet.species === 'DOG' ? '/images/illustrations/dog-mascot.svg' : '/images/illustrations/cat-mascot.svg'"
+        alt=""
+        class="h-20 w-auto shrink-0"
+      />
+    </header>
 
-    <div class="mb-5 flex items-center gap-4 rounded-3xl border border-olive/15 bg-white p-4 shadow-sm">
+    <div class="mb-5 flex items-center gap-4 rounded-3xl border border-olive/10 bg-white p-4 shadow-md">
       <img
         [src]="pet.photoUrl"
         [alt]="pet.name"
-        class="h-14 w-14 shrink-0 rounded-full bg-secondary/50 object-cover"
+        class="h-14 w-14 shrink-0 rounded-full bg-secondary/50 object-cover ring-4 ring-honey/40"
       />
       <div class="flex flex-col leading-tight">
         <span class="flex items-center gap-2 font-bold text-text">
@@ -59,7 +66,7 @@
       <form
         [formGroup]="form"
         (ngSubmit)="guardar()"
-        class="flex flex-col gap-5 rounded-3xl border border-olive/15 bg-white p-6 shadow-sm lg:p-8"
+        class="flex flex-col gap-5 rounded-3xl border border-olive/15 bg-white p-6 shadow-md lg:p-8"
       >
         @if (s.data.veterinarian; as vet) {
           <div class="flex flex-col gap-1">
@@ -83,9 +90,11 @@
               [maxFractionDigits]="2"
               [fluid]="true"
             />
-            @if (form.controls.weight.invalid && form.controls.weight.touched) {
-              <p-message severity="error" variant="simple" size="small">Ingresa un peso entre {{ weightLimits.min }} y {{ weightLimits.max }} kg.</p-message>
-            }
+            <div class="min-h-5">
+              @if (form.controls.weight.invalid && form.controls.weight.touched) {
+                <p-message severity="error" variant="simple" size="small">Ingresa un peso entre {{ weightLimits.min }} y {{ weightLimits.max }} kg.</p-message>
+              }
+            </div>
           </div>
 
           @if (isAdmission()) {
@@ -107,11 +116,13 @@
                 placeholder="¿Cómo sigue la mascota?"
                 [fluid]="true"
               />
-              @if (form.controls.evolution.invalid && form.controls.evolution.touched) {
-                <p-message severity="error" variant="simple" size="small">Selecciona la evolución.</p-message>
-              } @else if (form.controls.evolution.value) {
-                <small class="text-text/60">La mascota quedará con este diagnóstico.</small>
-              }
+              <div class="min-h-5">
+                @if (form.controls.evolution.invalid && form.controls.evolution.touched) {
+                  <p-message severity="error" variant="simple" size="small">Selecciona la evolución.</p-message>
+                } @else if (form.controls.evolution.value) {
+                  <small class="text-text/60">La mascota quedará con este diagnóstico.</small>
+                }
+              </div>
             </div>
           }
         </div>
@@ -119,23 +130,27 @@
         <div class="flex flex-col gap-1">
           <label for="diagnosis" class="text-sm font-bold text-text">Diagnóstico</label>
           <input pInputText id="diagnosis" formControlName="diagnosis" class="w-full" />
-          @if (form.controls.diagnosis.invalid && form.controls.diagnosis.touched) {
-            <p-message severity="error" variant="simple" size="small">
-              El diagnóstico es obligatorio (máximo 200 caracteres).
-            </p-message>
-          } @else if (isAdmission()) {
-            <small class="text-text/60">La mascota quedará con este diagnóstico.</small>
-          } @else if (form.controls.diagnosis.disabled) {
-            <small class="text-text/60">Sin cambios: se mantiene el diagnóstico actual.</small>
-          }
+          <div class="min-h-5">
+            @if (form.controls.diagnosis.invalid && form.controls.diagnosis.touched) {
+              <p-message severity="error" variant="simple" size="small">
+                El diagnóstico es obligatorio (máximo 200 caracteres).
+              </p-message>
+            } @else if (isAdmission()) {
+              <small class="text-text/60">La mascota quedará con este diagnóstico.</small>
+            } @else if (form.controls.diagnosis.disabled) {
+              <small class="text-text/60">Sin cambios: se mantiene el diagnóstico actual.</small>
+            }
+          </div>
         </div>
 
         <div class="flex flex-col gap-1">
           <label for="notes" class="text-sm font-bold text-text">Observaciones (opcional)</label>
           <textarea pTextarea id="notes" formControlName="notes" rows="3" class="w-full"></textarea>
-          @if (form.controls.notes.invalid && form.controls.notes.touched) {
-            <p-message severity="error" variant="simple" size="small">Máximo 1000 caracteres.</p-message>
-          }
+          <div class="min-h-5">
+            @if (form.controls.notes.invalid && form.controls.notes.touched) {
+              <p-message severity="error" variant="simple" size="small">Máximo 1000 caracteres.</p-message>
+            }
+          </div>
         </div>
 
         <div class="flex flex-col gap-3" formArrayName="drugs">
@@ -157,7 +172,7 @@
 
             <div
               [formGroupName]="i"
-              class="grid grid-cols-1 gap-3 rounded-2xl border border-olive/10 bg-surface-50 p-4 sm:grid-cols-[1fr_9rem_auto] sm:items-start"
+              class="grid grid-cols-1 gap-3 rounded-2xl border border-olive/10 bg-honey/20 p-4 sm:grid-cols-[1fr_9rem_auto] sm:items-start"
             >
               <div class="flex flex-col gap-1">
                 <label [for]="'drug-' + i" class="text-xs font-semibold text-text/60">Medicamento</label>
@@ -174,9 +189,11 @@
                   [virtualScrollItemSize]="38"
                   [fluid]="true"
                 />
-                @if (line.controls.drugId.invalid && line.controls.drugId.touched) {
-                  <p-message severity="error" variant="simple" size="small">Selecciona un medicamento.</p-message>
-                }
+                <div class="min-h-5">
+                  @if (line.controls.drugId.invalid && line.controls.drugId.touched) {
+                    <p-message severity="error" variant="simple" size="small">Selecciona un medicamento.</p-message>
+                  }
+                </div>
               </div>
 
               <div class="flex flex-col gap-1">
@@ -189,15 +206,17 @@
                   [step]="1"
                   [fluid]="true"
                 />
-                @if (line.errors?.['exceedsStock']; as exceeds) {
-                  <p-message severity="error" variant="simple" size="small">
-                    Solo hay {{ exceeds.available }} disponibles.
-                  </p-message>
-                } @else if (line.controls.units.invalid && line.controls.units.touched) {
-                  <p-message severity="error" variant="simple" size="small">Ingresa un entero de 1 o más.</p-message>
-                } @else if (stock !== null) {
-                  <span class="text-xs text-text/50">Disponibles: {{ stock }}</span>
-                }
+                <div class="min-h-5">
+                  @if (line.errors?.['exceedsStock']; as exceeds) {
+                    <p-message severity="error" variant="simple" size="small">
+                      Solo hay {{ exceeds.available }} disponibles.
+                    </p-message>
+                  } @else if (line.controls.units.invalid && line.controls.units.touched) {
+                    <p-message severity="error" variant="simple" size="small">Ingresa un entero de 1 o más.</p-message>
+                  } @else if (stock !== null) {
+                    <span class="text-xs text-text/50">Disponibles: {{ stock }}</span>
+                  }
+                </div>
               </div>
 
               <p-button

@@ -47,7 +47,6 @@ public class AdministratorRepositoryTest {
         Administrator administrator = RepositoryTestData.administrator();
         String name = administrator.getName();
         String email = administrator.getEmail();
-        String password = administrator.getPassword();
 
         // Act
         Administrator savedAdministrator = administratorRepository.save(administrator);
@@ -59,7 +58,6 @@ public class AdministratorRepositoryTest {
         Administrator persistedAdministrator = administratorRepository.findById(savedAdministrator.getId()).orElseThrow();
         Assertions.assertThat(persistedAdministrator.getName()).isEqualTo(name);
         Assertions.assertThat(persistedAdministrator.getEmail()).isEqualTo(email);
-        Assertions.assertThat(persistedAdministrator.getPassword()).isEqualTo(password);
     }
 
     @Test
@@ -70,7 +68,6 @@ public class AdministratorRepositoryTest {
         Administrator administratorToUpdate = administratorRepository.findById(admin1.getId()).orElseThrow();
         administratorToUpdate.setName("Updated Administrator");
         administratorToUpdate.setEmail("updated.administrator@pethaven.test");
-        administratorToUpdate.setPassword("updated-secret-password");
 
         // Act
         administratorRepository.save(administratorToUpdate);
@@ -82,7 +79,6 @@ public class AdministratorRepositoryTest {
         Assertions.assertThat(persistedAdministrator.getId()).isEqualTo(admin1.getId());
         Assertions.assertThat(persistedAdministrator.getName()).isEqualTo("Updated Administrator");
         Assertions.assertThat(persistedAdministrator.getEmail()).isEqualTo("updated.administrator@pethaven.test");
-        Assertions.assertThat(persistedAdministrator.getPassword()).isEqualTo("updated-secret-password");
         Assertions.assertThat(administratorRepository.count()).isEqualTo(3L);
     }
 
@@ -129,20 +125,6 @@ public class AdministratorRepositoryTest {
     }
 
     @Test
-    public void administratorRepository_save_NullPassword_ThrowsDataIntegrityViolation() {
-        // Arrange
-        // La columna password es obligatoria en la base de datos.
-        Administrator administratorWithNullPassword = RepositoryTestData.administrator();
-        administratorWithNullPassword.setPassword(null);
-
-        // Act
-        Throwable thrownException = Assertions.catchThrowable(() -> administratorRepository.saveAndFlush(administratorWithNullPassword));
-
-        // Assert
-        Assertions.assertThat(thrownException).isInstanceOf(DataIntegrityViolationException.class);
-    }
-
-    @Test
     public void administratorRepository_findById_ExistingId_ReturnsAdministrator() {
         // Arrange
         entityManager.clear();
@@ -156,7 +138,6 @@ public class AdministratorRepositoryTest {
         Assertions.assertThat(foundAdministrator.getId()).isEqualTo(admin1.getId());
         Assertions.assertThat(foundAdministrator.getName()).isEqualTo(admin1.getName());
         Assertions.assertThat(foundAdministrator.getEmail()).isEqualTo(admin1.getEmail());
-        Assertions.assertThat(foundAdministrator.getPassword()).isEqualTo(admin1.getPassword());
     }
 
     @Test

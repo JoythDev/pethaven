@@ -7,11 +7,15 @@ import { TagModule } from 'primeng/tag';
 import { Subject, of, switchMap } from 'rxjs';
 import { parseRouteId } from '../../../core/http/route-id';
 import { ViewState, toViewState } from '../../../core/http/view-state';
+import { greetingFor } from '../../../core/ui/greeting';
 import { onPhotoError as handlePhotoError } from '../../../core/ui/photo-fallback';
 import { Pet } from '../../../models/pet.model';
+import { AuthService } from '../../../services/auth.service';
 import { PetService } from '../../../services/pet.service';
 import { ageLabel, speciesLabel } from '../shared/cliente-labels';
 import { ClientePetStatusTagComponent } from '../shared/pet-status-tag/cliente-pet-status-tag.component';
+import { PageBannerComponent } from '../../shared/page-banner/page-banner.component';
+import { StatCardComponent } from '../../shared/stat-card/stat-card.component';
 
 // Conteos de la fila de métricas del listado.
 interface PetMetrics {
@@ -22,13 +26,14 @@ interface PetMetrics {
 
 @Component({
   selector: 'app-mascotas',
-  imports: [ButtonModule, SkeletonModule, TagModule, ClientePetStatusTagComponent],
+  imports: [PageBannerComponent, StatCardComponent, ButtonModule, SkeletonModule, TagModule, ClientePetStatusTagComponent],
   templateUrl: './mascotas.component.html',
 })
 export class MascotasComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly petService = inject(PetService);
+  private readonly auth = inject(AuthService);
   private readonly destroyRef = inject(DestroyRef);
 
   // :ownerId de la ruta padre; null mientras llega o si el id es inválido.
@@ -65,6 +70,11 @@ export class MascotasComponent implements OnInit {
     };
   });
 
+  // Saludo con el nombre del dueño que inició sesión; se calcula en cada ciclo de detección.
+  greeting(): string {
+    return greetingFor(this.auth.user()?.name);
+  }
+
   // Tarjetas de esqueleto que se pintan mientras carga el listado.
   readonly loadingPlaceholders = [0, 1, 2];
 
@@ -83,6 +93,11 @@ export class MascotasComponent implements OnInit {
       this.ownerId.set(parseRouteId(params.get('ownerId')));
       this.refresh$.next();
     });
+  }
+
+  // Color de la franja superior de cada tarjeta de mascota; rota entre cuatro tonos.
+  coverClass(index: number): string {
+    return ['bg-honey', 'bg-sage', 'bg-secondary', 'bg-terracotta/70'][index % 4];
   }
 
   // Abre el detalle de la mascota dentro del área del dueño.

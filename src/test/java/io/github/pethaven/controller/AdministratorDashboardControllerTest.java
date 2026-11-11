@@ -1,5 +1,7 @@
 package io.github.pethaven.controller;
 
+import io.github.pethaven.support.WebMvcSecurityTestSupport;
+import io.github.pethaven.support.WithAnyApiRole;
 import io.github.pethaven.dto.response.AdministratorDashboardResponse;
 import io.github.pethaven.service.AdministratorDashboardService;
 import org.assertj.core.api.Assertions;
@@ -20,13 +22,14 @@ import java.util.List;
 
 // Pruebas del dashboard de administrador con mocks: solo se levanta la capa web (MockMvc), sin base de datos.
 @WebMvcTest(AdministratorDashboardController.class)
+@WebMvcSecurityTestSupport
+@WithAnyApiRole
 public class AdministratorDashboardControllerTest {
 
     private static final String DASHBOARD_PATH = "/api/administrators/dashboard";
 
     // Mensajes del handler global, copiados del código fuente.
     private static final String UNEXPECTED_ERROR_MESSAGE = "Ocurrió un error inesperado en el servidor.";
-    private static final String METHOD_NOT_ALLOWED_MESSAGE = "El método HTTP no está permitido para este recurso.";
 
     private final MockMvc mockMvc;
 
@@ -183,15 +186,14 @@ public class AdministratorDashboardControllerTest {
     // ---------- Método HTTP no permitido ----------
 
     @Test
-    public void administratorDashboardController_getDashboardSummary_PostMethod_Returns405AndDoesNotCallService()
+    public void administratorDashboardController_getDashboardSummary_PostMethod_Returns403AndDoesNotCallService()
             throws Exception {
         // Act + Assert
-        // El endpoint solo acepta GET: el POST se rechaza antes de llegar al servicio.
+        // El endpoint solo acepta GET. Un método sin regla en la matriz de permisos queda denegado por defecto,
+        // así que el POST se rechaza en la cadena de seguridad (403) antes de llegar a Spring MVC (405).
         mockMvc.perform(MockMvcRequestBuilders.post(DASHBOARD_PATH))
-                .andExpect(MockMvcResultMatchers.status().isMethodNotAllowed())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(405))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.error").value("Method Not Allowed"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(METHOD_NOT_ALLOWED_MESSAGE));
+                .andExpect(MockMvcResultMatchers.status().isForbidden())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(403));
         Mockito.verifyNoInteractions(dashboardService);
     }
 }

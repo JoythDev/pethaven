@@ -17,6 +17,5 @@ public interface VeterinarianService {
     VeterinarianResponse updateVeterinarian(Long id, VeterinarianUpdateRequest updateRequest);
     VeterinarianResponse switchVeterinarianActiveStatus(Long id, boolean active);
 
-    Veterinarian authenticate(String email, String password);
 
 }

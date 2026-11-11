@@ -16,13 +16,13 @@ public class Administrator {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
+    @OneToOne(cascade = CascadeType.ALL)
+    private UserEntity user;
+
     @Column(name = "name", length = 100, nullable = false)
     private String name;
 
     @Column(name = "email", length = 120, unique = true, nullable = false)
     private String email;
-
-    @Column(name = "password", length = 255, nullable = false)
-    private String password;
 
 }

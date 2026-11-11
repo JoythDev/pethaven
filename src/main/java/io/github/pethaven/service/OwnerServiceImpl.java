@@ -4,8 +4,8 @@ import io.github.pethaven.dto.request.OwnerRequest;
 import io.github.pethaven.dto.request.OwnerUpdateRequest;
 import io.github.pethaven.dto.response.OwnerResponse;
 import io.github.pethaven.entity.Owner;
+import io.github.pethaven.entity.Role;
 import io.github.pethaven.exception.IllegalOperationException;
-import io.github.pethaven.exception.InvalidCredentialsException;
 import io.github.pethaven.exception.ResourceNotFoundException;
 import io.github.pethaven.mapper.OwnerMapper;
 import io.github.pethaven.repository.OwnerRepository;
@@ -23,16 +23,19 @@ public class OwnerServiceImpl implements OwnerService {
     private final OwnerRepository ownerRepository;
     private final OwnerMapper ownerMapper;
     private final TreatmentRepository treatmentRepository;
+    private final UserAccountService userAccountService;
 
     @Autowired
     public OwnerServiceImpl(
             OwnerRepository ownerRepository,
             OwnerMapper ownerMapper,
-            TreatmentRepository treatmentRepository
+            TreatmentRepository treatmentRepository,
+            UserAccountService userAccountService
     ) {
         this.ownerRepository = ownerRepository;
         this.ownerMapper = ownerMapper;
         this.treatmentRepository = treatmentRepository;
+        this.userAccountService = userAccountService;
     }
 
     @Override
@@ -67,10 +70,13 @@ public class OwnerServiceImpl implements OwnerService {
         return ownerMapper.toResponse(owner);
     }
 
+    // El email del perfil también es el username de la cuenta de login.
     @Override
+    @Transactional
     public OwnerResponse createOwner(OwnerRequest request) {
         ensureUnique(request.document(), request.email(), null);
         Owner owner = ownerMapper.toEntity(request);
+        owner.setUser(userAccountService.createAccount(request.email(), request.password(), Role.OWNER));
         Owner saved = ownerRepository.save(owner);
         return ownerMapper.toResponse(saved);
     }
@@ -84,6 +90,7 @@ public class OwnerServiceImpl implements OwnerService {
         Owner existing = getOwnerEntity(id);
         ensureUnique(updateRequest.document(), updateRequest.email(), id);
         ownerMapper.applyUpdate(updateRequest, existing);
+        userAccountService.updateAccount(existing.getUser(), updateRequest.email(), updateRequest.password());
         Owner updated = ownerRepository.save(existing);
         return ownerMapper.toResponse(updated);
     }
@@ -119,15 +126,5 @@ public class OwnerServiceImpl implements OwnerService {
         }
 
         ownerRepository.deleteById(id);
-    }
-
-    @Override
-    public Owner authenticate(String email, String password) {
-        Owner owner = ownerRepository.findByEmail(email)
-                .orElseThrow(() -> new InvalidCredentialsException());
-        if (owner.getPassword().equals(password)) {
-            return owner;
-        }
-        throw new InvalidCredentialsException();
     }
 }

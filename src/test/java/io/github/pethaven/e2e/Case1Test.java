@@ -31,7 +31,7 @@ import org.springframework.test.context.ActiveProfiles;
  */
 @Tag("e2e")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
-@ActiveProfiles("test")
+@ActiveProfiles({"test", "e2e"})
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class Case1Test {
 
@@ -73,10 +73,11 @@ public class Case1Test {
     @Test
     public void testCase1() {
         // 1. Login del veterinario: primero con contraseña errada, luego correcta.
-        driver.get(FRONT + "/vet/login");
+        // Login único para todos los roles (Spring Security + JWT); el rol decide el portal.
+        driver.get(FRONT + "/login");
         login(VET_EMAIL, "incorrecta");
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("loginError")));
-        assertThat(driver.getCurrentUrl()).endsWith("/vet/login");
+        assertThat(driver.getCurrentUrl()).endsWith("/login");
 
         clearAndType(By.id("password"), VET_PASSWORD);
         driver.findElement(By.id("btnLogin")).click();

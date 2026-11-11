@@ -1,5 +1,7 @@
 package io.github.pethaven.controller;
 
+import io.github.pethaven.support.WebMvcSecurityTestSupport;
+import io.github.pethaven.support.WithAnyApiRole;
 import io.github.pethaven.dto.request.VeterinarianRequest;
 import io.github.pethaven.dto.request.VeterinarianUpdateRequest;
 import io.github.pethaven.dto.response.TreatmentResponse;
@@ -30,6 +32,8 @@ import java.util.List;
 
 // Pruebas del controlador de veterinarios con mocks: solo se levanta la capa web (MockMvc), sin base de datos.
 @WebMvcTest(VeterinarianController.class)
+@WebMvcSecurityTestSupport
+@WithAnyApiRole
 public class VeterinarianControllerTest {
 
     // Datos válidos de un veterinario: cada caso de validación cambia solo el campo que prueba.

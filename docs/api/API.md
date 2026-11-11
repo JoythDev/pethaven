@@ -1,6 +1,6 @@
 # API REST PetHaven
 
-Referencia de la API REST de PetHaven: dueños, mascotas, veterinarios, medicamentos, tratamientos, KPIs administrativos y autenticación provisional, bajo el prefijo `/api`.
+Referencia de la API REST de PetHaven: dueños, mascotas, veterinarios, medicamentos, tratamientos, KPIs administrativos y autenticación con JWT, bajo el prefijo `/api`.
 
 **Enlaces:** [README del proyecto](../../README.md) · [Swagger UI](http://localhost:8080/swagger-ui.html) · [Colección de peticiones (pethaven.http)](./pethaven.http)
 
@@ -9,6 +9,7 @@ Referencia de la API REST de PetHaven: dueños, mascotas, veterinarios, medicame
 - [Visión general](#visión-general)
 - [Convenciones generales](#convenciones-generales)
 - [Errores](#errores)
+- [Permisos](#permisos)
 - [Modelo de datos](#modelo-de-datos)
 - [Esquemas](#esquemas)
 - [Endpoints](#endpoints)
@@ -25,9 +26,9 @@ Referencia de la API REST de PetHaven: dueños, mascotas, veterinarios, medicame
 
 ## Visión general
 
-Esta API expone la operación de la clínica veterinaria PetHaven (hospitalización de perros y gatos): los dueños y sus mascotas, el equipo de veterinarios, el inventario de medicamentos, el historial de tratamientos y el acceso de los administradores (login y KPIs). Es una API REST con cuerpos JSON: el frontend es una SPA Angular que la consume, y **no hay renderizado en servidor**.
+Esta API expone la operación de la clínica veterinaria PetHaven (hospitalización de perros y gatos): los dueños y sus mascotas, el equipo de veterinarios, el inventario de medicamentos, el historial de tratamientos y los KPIs del administrador. Todos los roles inician sesión con el mismo login, que entrega un token JWT. Es una API REST con cuerpos JSON: el frontend es una SPA Angular que la consume, y **no hay renderizado en servidor**.
 
-El backend está construido con **Spring Boot 4.1 sobre Java 21** (Spring Web, Spring Data JPA, Bean Validation) y persiste en una base **H2 en archivo**. La documentación interactiva la genera springdoc a partir de las anotaciones del código.
+El backend está construido con **Spring Boot 4.1 sobre Java 21** (Spring Web, Spring Data JPA, Bean Validation, Spring Security con JWT y BCrypt) y persiste en una base **H2 en archivo**. La documentación interactiva la genera springdoc a partir de las anotaciones del código.
 
 ### Cómo levantar la API
 
@@ -46,7 +47,24 @@ Al arrancar, la base se crea y se puebla con datos de prueba; la API queda en el
 | Base URL | `http://localhost:8080/api` | Todas las rutas de este documento son relativas a este prefijo |
 | Swagger UI | `http://localhost:8080/swagger-ui.html` | «Try it out» habilitado; ordena operaciones por método y etiquetas alfabéticamente |
 | Consola H2 | `http://localhost:8080/h2` | Solo desarrollo. JDBC URL `jdbc:h2:file:./pethaven-database`, usuario `sa`, contraseña vacía |
-| SPA Angular | `http://localhost:4200` | Único origen permitido por CORS |
+| SPA Angular | `http://localhost:4200` | Origen permitido por CORS por defecto (ver [Configuración de seguridad](#configuración-de-seguridad)) |
+
+### Configuración de seguridad
+
+La seguridad se configura con variables de entorno. Todas tienen un valor por defecto pensado **solo para desarrollo y pruebas**; en un despliegue real se definen siempre.
+
+| Variable | Propiedad | Por defecto | Uso |
+|---|---|---|---|
+| `JWT_SECRET` | `security.jwt.secret-key` | Clave de desarrollo incluida en el repositorio | Clave HMAC en Base64 (mínimo 256 bits) con la que se firman y validan los tokens. Fuera de desarrollo es obligatoria: la clave por defecto es pública |
+| `JWT_EXPIRATION_MS` | `security.jwt.expiration-time` | `7200000` (2 horas) | Vigencia del token de acceso. No hay token de refresco |
+| `CORS_ALLOWED_ORIGINS` | `app.cors.allowed-origins` | `http://localhost:4200` | Orígenes permitidos, separados por comas |
+| `ADMIN_EMAIL` | `app.seed.admin.email` | *(vacío)* | Correo (y usuario de login) del primer administrador |
+| `ADMIN_PASSWORD` | `app.seed.admin.password` | *(vacío)* | Contraseña del primer administrador (8 a 255 caracteres) |
+| `ADMIN_NAME` | `app.seed.admin.name` | `Administrador` | Nombre del primer administrador |
+
+Al arrancar, antes que cualquier otro cargador, la aplicación crea los roles `ADMIN`, `VETERINARIAN` y `OWNER` si faltan. Si no existe ningún administrador y están definidas `ADMIN_EMAIL` y `ADMIN_PASSWORD`, crea el primero; nunca modifica uno existente. Si solo se define una de las dos, si los valores no son válidos o si el correo ya es el usuario de otra cuenta, el arranque falla con un mensaje que nunca incluye la contraseña. Sin ninguna de las dos, no se crea el administrador y queda una advertencia en el log (en desarrollo los administradores vienen de los datos de prueba).
+
+Cambiar `JWT_SECRET` invalida todos los tokens emitidos: todos los usuarios tienen que volver a iniciar sesión.
 
 ### Datos de prueba
 
@@ -70,12 +88,36 @@ Hay un segundo administrador sembrado (`laura.admin@pethaven.com`, misma contras
 
 ### Inicio rápido
 
-Los tres ejemplos siguientes están escritos para bash/zsh; en PowerShell usa `curl.exe` y comillas dobles escapadas.
+Toda la API, salvo el login, exige un token. Los ejemplos siguientes inician sesión como veterinario y usan su token; están escritos para bash/zsh (en PowerShell usa `curl.exe` y comillas dobles escapadas).
 
-**1. Listar dueños**
+**1. Iniciar sesión**
 
 ```bash
-curl http://localhost:8080/api/owners
+curl -i -X POST http://localhost:8080/api/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"email":"valentina.soler@pethaven.com","password":"vet12345"}'
+```
+
+Respuesta real (`200 OK`; el token está abreviado):
+
+```json
+{
+  "token": "eyJhbGciOiJIUzUxMiJ9...",
+  "expiresIn": 7200,
+  "profileId": 1,
+  "name": "Dra. Valentina Soler",
+  "email": "valentina.soler@pethaven.com",
+  "role": "VETERINARIAN"
+}
+```
+
+El token viaja en la cabecera `Authorization` de todas las demás peticiones. Sin él, la API responde `401`; con un rol sin permiso sobre la operación, `403` (ver [Permisos](#permisos)).
+
+**2. Listar dueños**
+
+```bash
+curl http://localhost:8080/api/owners \
+  -H "Authorization: Bearer <token>"
 ```
 
 Respuesta real (`200 OK`, la lista completa trae 100 elementos; se muestran los dos primeros):
@@ -99,10 +141,11 @@ Respuesta real (`200 OK`, la lista completa trae 100 elementos; se muestran los 
 ]
 ```
 
-**2. Crear un dueño**
+**3. Crear un dueño**
 
 ```bash
 curl -i -X POST http://localhost:8080/api/owners \
+  -H "Authorization: Bearer <token>" \
   -H "Content-Type: application/json" \
   -d '{"document":"990000001","name":"Nuevo Dueño","email":"nuevo.dueno@example.com","password":"password123","phone":"3000000000"}'
 ```
@@ -117,24 +160,7 @@ Content-Type: application/json
 {"id":101,"document":"990000001","name":"Nuevo Dueño","email":"nuevo.dueno@example.com","phone":"3000000000"}
 ```
 
-**3. Iniciar sesión como dueño**
-
-```bash
-curl -i -X POST http://localhost:8080/api/auth/owners/login \
-  -H "Content-Type: application/json" \
-  -d '{"email":"john.doe@example.com","password":"password123"}'
-```
-
-Respuesta real (`200 OK`):
-
-```json
-{
-  "id": 1,
-  "name": "John Doe",
-  "email": "john.doe@example.com",
-  "role": "OWNER"
-}
-```
+El nuevo dueño ya puede iniciar sesión con su correo y su contraseña, y `GET /api/auth/me` devuelve el perfil de quien tenga el token.
 
 ## Convenciones generales
 
@@ -152,8 +178,8 @@ Respuesta real (`200 OK`):
 | Eliminación | `204 No Content`, sin cuerpo |
 | Actualización | `PUT` es reemplazo total de los campos editables; los campos que no viajan en la petición se conservan |
 | Colecciones | Sin paginación, orden ni filtros genéricos: cada `GET` de colección devuelve todos los registros |
-| CORS | Solo `http://localhost:4200`, sin credenciales; expone la cabecera `Location` |
-| Autenticación | Provisional y sin token ni sesión: el resto de la API está abierta (ver [Autenticación](#autenticación-apiauth)) |
+| CORS | Solo sobre `/api/**` y para los orígenes de `app.cors.allowed-origins` (por defecto `http://localhost:4200`; variable de entorno `CORS_ALLOWED_ORIGINS`), sin credenciales; expone la cabecera `Location` |
+| Autenticación | Token JWT emitido por `POST /api/auth/login`, enviado como `Authorization: Bearer <token>` y válido 2 horas. Toda la API lo exige salvo el login; qué puede hacer cada rol está en [Permisos](#permisos) |
 | Errores | Un único formato, `ApiErrorResponse`, para cualquier fallo (ver [Errores](#errores)) |
 
 ## Errores
@@ -207,14 +233,61 @@ Todas las respuestas de error comparten el cuerpo `ApiErrorResponse`:
 | `201 Created` | Recurso creado; incluye `Location` salvo en `POST /api/treatments/{id}/drugs` |
 | `204 No Content` | Eliminación exitosa de un dueño o de un medicamento |
 | `400 Bad Request` | Cuerpo o parámetros inválidos: validación de campos (con `errors`), parámetro obligatorio ausente, parámetro con formato inválido o JSON mal formado (por ejemplo `species` fuera del enum) |
-| `401 Unauthorized` | Credenciales inválidas en el login |
-| `403 Forbidden` | Login de un veterinario cuya cuenta está desactivada |
+| `401 Unauthorized` | Credenciales inválidas en el login, o ruta protegida sin token o con un token inválido o expirado |
+| `403 Forbidden` | Login con la contraseña correcta de una cuenta desactivada (veterinario inactivo); usuario autenticado cuyo rol no tiene la operación, o que intenta acceder a un recurso que no es suyo; o método que la API no admite sobre la ruta (ver [Permisos](#permisos)) |
 | `404 Not Found` | No existe el recurso solicitado, o la ruta no está mapeada |
-| `405 Method Not Allowed` | La ruta existe pero no admite ese método (por ejemplo `DELETE /api/pets/1`) |
 | `409 Conflict` | Regla de negocio: valor duplicado, borrado bloqueado, mascota o veterinario inactivos, stock insuficiente |
 | `413 Payload Too Large` | El archivo subido supera el tamaño máximo permitido (10 MB) |
 | `415 Unsupported Media Type` | El tipo de contenido de la petición no es `multipart/form-data` en una carga de archivos |
 | `500 Internal Server Error` | Fallo inesperado; la causa queda registrada en los logs del servidor |
+
+## Permisos
+
+Toda petición a `/api/**` necesita un token, salvo `POST /api/auth/login`. La autorización se aplica en dos capas:
+
+1. **Rol:** cada operación admite solo ciertos roles. Una operación que no aparece en la tabla está denegada para todos, incluidos los métodos que la API no implementa (`DELETE /api/pets/1`, `HEAD`, …): responden `403` con token y `401` sin él, nunca `405`.
+2. **Recurso propio:** algunas operaciones exigen además que el recurso sea del usuario autenticado. Si no lo es, o si no existe, responden `403`.
+
+| Operación | `ADMIN` | `VETERINARIAN` | `OWNER` |
+|---|---|---|---|
+| `POST /api/auth/login` | Público | Público | Público |
+| `GET /api/auth/me` | ✅ | ✅ | ✅ |
+| `GET /api/administrators/dashboard` | ✅ | — | — |
+| `GET /api/drugs`, `GET /api/drugs/{id}` | ✅ | ✅ | — |
+| `POST /api/drugs`, `POST /api/drugs/import`, `PUT /api/drugs/{id}`, `DELETE /api/drugs/{id}` | ✅ | — | — |
+| `GET /api/owners` | ✅ | ✅ | — |
+| `GET /api/owners/{id}`, `GET /api/owners/{id}/pets` | ✅ | ✅ | Solo el suyo |
+| `POST /api/owners`, `DELETE /api/owners/{id}` | — | ✅ | — |
+| `PUT /api/owners/{id}` | — | ✅ | Solo el suyo, sin cambiar `document` ni `email` |
+| `GET /api/pets` | ✅ | ✅ | — |
+| `GET /api/pets/{id}`, `GET /api/pets/{id}/treatments`, `GET /api/pets/{id}/photo` | ✅ | ✅ | Solo sus mascotas |
+| `POST /api/pets`, `PUT /api/pets/{id}`, `PUT /api/pets/{id}/active` | — | ✅ | — |
+| `POST /api/pets/{id}/discharge` | — | Solo con su propio `veterinarianId` | — |
+| `GET /api/treatments`, `GET /api/treatments/{id}`, `GET /api/treatments/{id}/drugs` | ✅ | ✅ | — |
+| `POST /api/treatments` | — | Solo con su propio `veterinarianId` | — |
+| `POST /api/treatments/{id}/drugs` | — | Solo en tratamientos que registró él | — |
+| `GET /api/veterinarians` | ✅ | — | — |
+| `GET /api/veterinarians/{id}`, `GET /api/veterinarians/{id}/treatments` | ✅ | Solo el suyo | — |
+| `POST /api/veterinarians`, `PUT /api/veterinarians/{id}/active` | ✅ | — | — |
+| `PUT /api/veterinarians/{id}` | ✅ | Solo el suyo, sin cambiar `document` ni `email` | — |
+
+- La documentación de la API (`/v3/api-docs`, `/swagger-ui.html`) es pública.
+- Un dueño consulta los tratamientos de sus mascotas solo con `GET /api/pets/{id}/treatments`.
+- Al editar su propio perfil, el dueño y el veterinario pueden cambiar el nombre, la contraseña y, el veterinario, la especialidad. Si el cuerpo trae un `document` o un `email` distinto del actual, la petición responde `403`.
+- El cuerpo se valida antes de comprobar si el recurso es propio: una petición con campos inválidos responde `400` aunque el recurso no sea del usuario.
+
+**Sin permiso** — `GET /api/owners/2` con el token de otro dueño:
+
+```json
+{
+  "timestamp": "2026-11-09T05:31:53.612Z",
+  "status": 403,
+  "error": "Forbidden",
+  "message": "No tienes permisos para acceder a este recurso.",
+  "path": "/api/owners/2",
+  "errors": {}
+}
+```
 
 ## Modelo de datos
 
@@ -225,14 +298,40 @@ erDiagram
     VETERINARIAN ||--o{ TREATMENT : "atiende"
     TREATMENT ||--o{ TREATMENT_DRUG : "incluye"
     DRUG ||--o{ TREATMENT_DRUG : "se administra en"
+    OWNER ||--|| USERS : "inicia sesión con"
+    VETERINARIAN ||--|| USERS : "inicia sesión con"
+    ADMINISTRATOR ||--|| USERS : "inicia sesión con"
+    USERS ||--o{ USER_ROLES : "tiene"
+    ROLES ||--o{ USER_ROLES : "se asigna en"
     ADMINISTRATOR {
         number id
         string name
         string email
     }
+    USERS {
+        number id
+        string username "único: el correo del perfil"
+        string password "hash BCrypt"
+        boolean enabled
+    }
+    ROLES {
+        number id
+        string name "único: ADMIN, VETERINARIAN u OWNER"
+    }
+    USER_ROLES {
+        number user_id
+        number role_id
+    }
 ```
 
-`ADMINISTRATOR` no se relaciona con ninguna otra entidad: solo guarda las credenciales de acceso del administrador (`POST /api/auth/administrators/login`).
+`ADMINISTRATOR` no se relaciona con ninguna otra entidad de negocio: es el perfil del administrador.
+
+**Cuentas de login.** Las credenciales no viven en los perfiles sino en su cuenta (`users`), que se crea junto con el perfil y se borra con él:
+
+- `username` es el correo del perfil. Si un `PUT` cambia el correo, cambia también el usuario de login.
+- `password` guarda solo el hash BCrypt; la contraseña nunca aparece en una respuesta.
+- `enabled` refleja el estado de la cuenta. Hoy solo cambia con un veterinario: desactivarlo (`active: false`) deshabilita su cuenta, que deja de poder iniciar sesión y cuyos tokens dejan de aceptarse.
+- `roles` lo crea el arranque (`ADMIN`, `VETERINARIAN`, `OWNER`). El modelo admite varios roles por cuenta, pero la API asigna exactamente uno, el de su perfil.
 
 Semántica de borrado:
 
@@ -612,7 +711,7 @@ Cuerpo para `POST /api/treatments/{id}/drugs`.
 
 #### `LoginRequest`
 
-Cuerpo para los tres logins (dueño, veterinario y administrador).
+Cuerpo de `POST /api/auth/login`, el mismo para dueños, veterinarios y administradores.
 
 | Campo | Tipo | Obligatorio | Restricciones |
 |---|---|---|---|
@@ -630,14 +729,38 @@ Cuerpo para los tres logins (dueño, veterinario y administrador).
 
 | Campo | Tipo | Obligatorio | Restricciones |
 |---|---|---|---|
-| `id` | number | — | Identificador del usuario |
-| `name` | string | — | Nombre completo |
-| `email` | string | — | Correo electrónico |
+| `token` | string | — | Token de acceso JWT; se envía como `Authorization: Bearer <token>` |
+| `expiresIn` | number | — | Segundos de vigencia del token desde su emisión (`7200`) |
+| `profileId` | number | — | Id del perfil: dueño, veterinario o administrador según `role` |
+| `name` | string | — | Nombre del perfil |
+| `email` | string | — | Correo electrónico (usuario de la cuenta) |
 | `role` | string | — | `"OWNER"`, `"VETERINARIAN"` o `"ADMIN"` |
 
 ```json
 {
-  "id": 1,
+  "token": "eyJhbGciOiJIUzUxMiJ9...",
+  "expiresIn": 7200,
+  "profileId": 1,
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "role": "OWNER"
+}
+```
+
+#### `AuthProfileResponse`
+
+Perfil del usuario autenticado, sin token. Lo devuelve `GET /api/auth/me`.
+
+| Campo | Tipo | Obligatorio | Restricciones |
+|---|---|---|---|
+| `profileId` | number | — | Id del perfil: dueño, veterinario o administrador según `role` |
+| `name` | string | — | Nombre del perfil |
+| `email` | string | — | Correo electrónico (usuario de la cuenta) |
+| `role` | string | — | `"OWNER"`, `"VETERINARIAN"` o `"ADMIN"` |
+
+```json
+{
+  "profileId": 1,
   "name": "John Doe",
   "email": "john.doe@example.com",
   "role": "OWNER"
@@ -646,7 +769,7 @@ Cuerpo para los tres logins (dueño, veterinario y administrador).
 
 ## Endpoints
 
-Las 23 rutas y 35 operaciones de la API, agrupadas por recurso. Los endpoints que cruzan dos recursos se documentan en su recurso anfitrión y se referencian desde el otro.
+Las 22 rutas y 34 operaciones de la API, agrupadas por recurso. Los endpoints que cruzan dos recursos se documentan en su recurso anfitrión y se referencian desde el otro.
 
 ### Dueños (`/api/owners`)
 
@@ -1135,8 +1258,11 @@ Descarga la foto de la mascota desde su `photoUrl` y la sirve desde el API. Exis
 
 **Respuesta** `200 OK` — la imagen, con el `Content-Type` original. Solo se aceptan JPEG, PNG, WebP, GIF o AVIF de hasta 5 MB (SVG no, porque puede contener scripts).
 
+> [!NOTE]
+> Como la URL la escribe un usuario, el servidor solo la descarga si apunta a Internet público (protección contra SSRF): esquema `http` o `https`, sin credenciales, puerto 80 o 443, y un host que resuelva únicamente a direcciones públicas. Nunca se piden direcciones internas (loopback, redes privadas, link-local como los metadatos de la nube `169.254.169.254`, CGNAT, sus equivalentes IPv6 ni los prefijos IPv6 que transportan IPv4: NAT64, 6to4, Teredo e IPv4-compatible). Se siguen hasta 3 redirecciones, cada destino se valida igual y nunca se pasa de `https` a `http`. Toda la descarga (conexión, cabeceras y cuerpo de cada salto, redirecciones incluidas) tiene un límite de 20 segundos; la resolución DNS de cada salto no está acotada por ese límite.
+
 **Errores**:
-- `404` la mascota no existe, no tiene foto, o la foto no se pudo descargar o no es un formato aceptado
+- `404` la mascota no existe, no tiene foto, la foto no se pudo descargar, no es un formato aceptado, o su URL (o una redirección) apunta a un destino no permitido
 
 ### Veterinarios (`/api/veterinarians`)
 
@@ -1589,7 +1715,7 @@ Los indicadores mensuales usan el mes calendario anterior en `America/Bogota`. `
 }
 ```
 
-El endpoint sigue las convenciones de acceso actuales: la API aún no exige credenciales ni autorización por rol; el control de acceso queda para la Feature 13.
+Solo el administrador puede consultarlo (ver [Permisos](#permisos)).
 
 ### Tratamientos (`/api/treatments`)
 
@@ -1797,38 +1923,12 @@ Administra un medicamento a un tratamiento: descuenta el inventario, suma las un
 
 ### Autenticación (`/api/auth`)
 
-Los tres logins (dueño, veterinario y administrador) validan credenciales y devuelven el usuario con su rol. No emiten token ni crean sesión.
+Un único login para dueños, veterinarios y administradores: devuelve un token JWT y el perfil con su rol, que decide a qué portal entra el usuario.
 
 > [!NOTE]
-> Autenticación provisional: **no hay token ni sesión**, y el resto de los endpoints no exige credenciales; la autorización por rol y el JWT llegan con la Feature 13. Un correo desconocido y una contraseña incorrecta responden igual (`401`, mismo mensaje) para no enumerar usuarios. Las cuentas de veterinario desactivadas sí se distinguen: responden `403`. Los administradores no tienen estado activo/inactivo.
+> Un correo desconocido y una contraseña incorrecta responden igual (`401`, mismo mensaje) para no enumerar usuarios. El estado de la cuenta solo se revela con la contraseña correcta: una cuenta desactivada responde `403` únicamente si la contraseña es válida; con una contraseña incorrecta responde el mismo `401`. Hoy solo los veterinarios tienen estado activo/inactivo. El token dura 2 horas y no hay token de refresco: al expirar hay que volver a iniciar sesión. Si la cuenta se desactiva o se elimina, sus tokens dejan de aceptarse de inmediato.
 
-#### `POST /api/auth/owners/login`
-
-**Cuerpo** (`LoginRequest`):
-
-```json
-{
-  "email": "john.doe@example.com",
-  "password": "password123"
-}
-```
-
-**Respuesta** `200 OK` — `AuthResponse`:
-
-```json
-{
-  "id": 1,
-  "name": "John Doe",
-  "email": "john.doe@example.com",
-  "role": "OWNER"
-}
-```
-
-**Errores**:
-- `400` validación de campos (por ejemplo, correo con formato inválido)
-- `401` credenciales inválidas: `Correo o contraseña incorrectos.`
-
-#### `POST /api/auth/veterinarians/login`
+#### `POST /api/auth/login`
 
 **Cuerpo** (`LoginRequest`):
 
@@ -1843,63 +1943,61 @@ Los tres logins (dueño, veterinario y administrador) validan credenciales y dev
 
 ```json
 {
-  "id": 1,
+  "token": "eyJhbGciOiJIUzUxMiJ9...",
+  "expiresIn": 7200,
+  "profileId": 1,
   "name": "Dra. Valentina Soler",
   "email": "valentina.soler@pethaven.com",
   "role": "VETERINARIAN"
 }
 ```
 
-**Errores**:
-- `400` validación de campos
-- `401` credenciales inválidas: `Correo o contraseña incorrectos.`
-- `403` la cuenta está desactivada: `La cuenta está desactivada.`
+Cuentas del seed por rol: `john.doe@example.com` / `password123` (`OWNER`), `valentina.soler@pethaven.com` / `vet12345` (`VETERINARIAN`), `admin@pethaven.com` / `admin12345` (`ADMIN`).
 
-Ejemplo con una cuenta desactivada del seed (`julian.restrepo@pethaven.com`):
+**Errores**:
+- `400` validación de campos (por ejemplo, correo con formato inválido)
+- `401` correo desconocido o contraseña incorrecta: `Correo o contraseña incorrectos.`
+- `403` contraseña correcta de una cuenta desactivada: `La cuenta está desactivada.`
+
+Ejemplo con la cuenta desactivada del seed (`julian.restrepo@pethaven.com` / `vet12345`):
 
 ```json
 {
-  "timestamp": "2026-10-13T15:51:39.204Z",
+  "timestamp": "2026-11-07T15:51:39.204Z",
   "status": 403,
   "error": "Forbidden",
   "message": "La cuenta está desactivada.",
-  "path": "/api/auth/veterinarians/login",
+  "path": "/api/auth/login",
   "errors": {}
 }
 ```
 
-#### `POST /api/auth/administrators/login`
+#### `GET /api/auth/me`
 
-**Cuerpo** (`LoginRequest`):
+Devuelve el perfil del usuario autenticado por el token. Permite al frontend recuperar la sesión sin volver a pedir credenciales.
 
-```json
-{
-  "email": "admin@pethaven.com",
-  "password": "admin12345"
-}
-```
+**Cabeceras**: `Authorization: Bearer <token>` (obligatoria).
 
-**Respuesta** `200 OK` — `AuthResponse`:
+**Respuesta** `200 OK` — `AuthProfileResponse`:
 
 ```json
 {
-  "id": 1,
-  "name": "Admin Principal",
-  "email": "admin@pethaven.com",
-  "role": "ADMIN"
+  "profileId": 1,
+  "name": "John Doe",
+  "email": "john.doe@example.com",
+  "role": "OWNER"
 }
 ```
 
 **Errores**:
-- `400` validación de campos
-- `401` credenciales inválidas: `Correo o contraseña incorrectos.`
+- `401` sin token, o con un token inválido, expirado o de una cuenta desactivada o eliminada: `Se requiere autenticación para acceder a este recurso.`
 
 ## Reglas de negocio
 
 ### Borrado y desactivación
 
 - **Borrado de un dueño:** elimina en cascada todas sus mascotas. Se bloquea con `409` si alguna mascota tiene tratamientos registrados, porque se perdería el historial médico.
-- **Sin borrado de mascotas ni de veterinarios:** no existe `DELETE` para esos recursos; un `DELETE` sobre sus rutas responde `405`. La forma de retirarlos es desactivarlos con `PUT .../active`.
+- **Sin borrado de mascotas ni de veterinarios:** no existe `DELETE` para esos recursos; un `DELETE` sobre sus rutas responde `403` (ver [Permisos](#permisos)). La forma de retirarlos es desactivarlos con `PUT .../active`.
 - **Medicamento con historial:** un medicamento asociado a uno o más tratamientos no se puede eliminar (`409`), porque se perdería el detalle de unidades y precios de esos tratamientos.
 
 > [!NOTE]
@@ -1912,7 +2010,7 @@ Ejemplo con una cuenta desactivada del seed (`julian.restrepo@pethaven.com`):
 - `POST /api/treatments` exige mascota activa **y** veterinario activo, y al menos un medicamento con stock; en caso contrario responde `409` con el motivo concreto.
 - `POST /api/pets/{id}/discharge` exige un veterinario activo y una mascota con diagnóstico; no exige que la mascota esté activa.
 - `POST /api/treatments/{id}/drugs` exige que la mascota del tratamiento siga activa; si se desactivó después de crear el tratamiento, la administración falla con `409`.
-- El login de un veterinario desactivado responde `403`. El estado se evalúa antes que la contraseña, así que una cuenta desactivada responde `403` incluso con una contraseña incorrecta.
+- El login de un veterinario desactivado responde `403` solo con su contraseña correcta; con una incorrecta responde el mismo `401` que cualquier credencial inválida (ver [Autenticación](#autenticación-apiauth)). Sus tokens emitidos dejan de aceptarse en cuanto se desactiva.
 - Las búsquedas y los listados no filtran por estado: `GET /api/pets` y `GET /api/pets?search=` incluyen mascotas activas e inactivas. Lo mismo ocurre con `GET /api/owners/{id}/pets`, `GET /api/veterinarians` y los listados de tratamientos.
 
 ### Tratamientos
@@ -1953,6 +2051,7 @@ Los duplicados se detectan antes de escribir y responden `409` con un mensaje ex
 
 ### Contraseñas
 
+- Se guardan con hash BCrypt en la cuenta de login, nunca en texto plano.
 - Nunca se devuelven: `OwnerResponse`, `VeterinarianResponse` y `AuthResponse` no incluyen el campo.
 - En `PUT` son opcionales: omitir `password` o enviarlo en blanco conserva la contraseña actual.
 - Al crear, la contraseña es obligatoria y debe tener entre 8 y 255 caracteres.
@@ -1966,14 +2065,22 @@ Los duplicados se detectan antes de escribir y responden `409` con un mensaje ex
 
 ## Limitaciones y roadmap
 
-- **Autenticación provisional.** Los tres logins (dueño, veterinario y administrador) validan credenciales y devuelven el usuario con su rol (`OWNER`, `VETERINARIAN` o `ADMIN`), pero no emiten token ni crean sesión: el resto de la API está abierta, incluidos los endpoints de administración. El `401` no enumera usuarios (correo inexistente y contraseña incorrecta responden igual), aunque el `403` de veterinarios desactivados sí distingue ese caso. El control de acceso por roles y el JWT corresponden a la Feature 13.
 - **Sin paginación.** Los `GET` de colección devuelven todos los registros; no hay `page`/`size` ni totales.
 - **Sin versionado.** Las rutas no llevan versión (`/api`, no `/api/v1`).
 - **Sin borrado de mascotas ni veterinarios.** Solo desactivación.
-- **CORS restringido.** Únicamente se permite el origen `http://localhost:4200`, sin credenciales; en despliegue habrá que ampliarlo.
+- **CORS restringido.** Por defecto solo se permite el origen `http://localhost:4200`, sin credenciales; en despliegue se define `CORS_ALLOWED_ORIGINS` con el dominio del frontend.
 
-> [!WARNING]
-> Las contraseñas se almacenan en texto plano. Es una deuda declarada: el hashing (BCrypt) llegará junto con el control de acceso. No reutilices contraseñas reales en los datos de prueba.
+Seguridad:
+
+- **Sin token de refresco ni revocación.** El token dura 2 horas. Cerrar sesión borra el token del navegador, pero el servidor no lo invalida: sigue siendo válido hasta que expira. Sí se rechaza de inmediato si la cuenta se desactiva o se elimina.
+- **Token en `localStorage`.** La SPA guarda la sesión en `localStorage` (clave `pethaven.session`): sobrevive a recargas y a cerrar el navegador, pero cualquier script que se ejecute en la página puede leerla. La vigencia de 2 horas acota el daño de un token filtrado.
+- **Sin límite de intentos de login.** No hay bloqueo ni límite de frecuencia; queda para la fase de endurecimiento del roadmap.
+- **Un rol por cuenta.** Una cuenta sin perfil asociado o con un número de roles distinto de uno hace que el login responda `500`. Ninguna operación de la API crea cuentas así; solo pueden aparecer modificando la base a mano.
+- **Primer arranque concurrente.** Si dos instancias arrancan a la vez sobre una base vacía, una puede fallar al crear los roles o el primer administrador por las restricciones de unicidad. Reiniciarla basta, porque la creación es idempotente.
+- **Descarga de fotos y DNS.** La validación contra SSRF resuelve el host antes de descargar, pero el cliente HTTP lo vuelve a resolver al conectar: un DNS que cambie de respuesta entre ambas resoluciones (*DNS rebinding*) podría apuntar a una dirección interna. Fijar la IP no es viable con HTTPS en el cliente HTTP de Java.
+
+> [!NOTE]
+> Los datos de prueba usan contraseñas de ejemplo y la clave JWT por defecto es pública: no reutilices contraseñas reales ni despliegues sin `JWT_SECRET`.
 
 > [!WARNING]
 > La persistencia es una base H2 en archivo local (`jdbc:h2:file:./pethaven-database`) configurada con `ddl-auto=create-drop`: **el esquema se recrea y los datos de prueba se vuelven a cargar en cada arranque**. Es una configuración exclusiva de desarrollo; la consola H2 (`/h2`) también está habilitada solo para ese uso.
@@ -1987,8 +2094,10 @@ Notas para quien contribuya al backend:
 - **Un mapper por agregado.** Cada agregado tiene su clase `@Component` con `toResponse`, `toEntity` y `applyUpdate`. Por eso un `PUT` conserva lo que no viaja en el cuerpo (contraseña, `active`, `attentions`, `unitsSold`).
 - **Accesores de dominio.** Los services exponen métodos `getXxxEntity` que devuelven la entidad para uso interno entre services; los controllers nunca los usan.
 - **Unicidad en dos capas.** Pre-chequeo en el service (`409` con mensaje explícito) y constraint única en la base como red de seguridad; el handler de `DataIntegrityViolationException` responde `409` genérico si se llega ahí.
-- **Errores centralizados.** Un `@RestControllerAdvice` traduce las excepciones propias (`ResourceNotFoundException` → `404`, `IllegalOperationException` → `409`, `InvalidCredentialsException` → `401`, `AccountDisabledException` → `403`) y las de Spring (validación, parámetros, cuerpo ilegible, método no soportado, integridad) al mismo contrato.
+- **Errores centralizados.** Un `@RestControllerAdvice` traduce las excepciones propias (`ResourceNotFoundException` → `404`, `IllegalOperationException` → `409`), las de Spring Security (`BadCredentialsException` y el resto de fallos de autenticación → `401`, `DisabledException` y `AccessDeniedException` → `403`) y las de Spring (validación, parámetros, cuerpo ilegible, método no soportado, integridad) al mismo contrato. Los errores de seguridad que ocurren en la cadena de filtros, antes de llegar a un controlador, se delegan al mismo advice.
 - **Cabecera `Location`.** Se construye a partir de la petición actual, así que refleja el host, el puerto y el esquema que usó el cliente; en producción detrás de un proxy hay que revisar los encabezados reenviados.
-- **CORS.** Configurado sobre `/api/**` con los orígenes de `app.cors.allowed-origins` y `Location` como cabecera expuesta.
+- **Autorización en dos capas.** `SecurityConfig.authorizeApi` decide qué roles llegan a cada operación (método y ruta) y deniega todo lo demás bajo `/api/**`: una operación nueva responde `403` hasta que se le añade su regla. Después, `@PreAuthorize` en el controlador comprueba si el recurso es del usuario con el bean `access` (`ResourceAccess`), que hace una sola consulta cruzando el recurso con el usuario de login. `PermissionMatrixWebTest` y `OwnershipAccessIntegrationTest` fijan ambas capas: al cambiar un permiso, actualiza la regla, la sección [Permisos](#permisos) y esos tests.
+- **Token JWT.** `JwtFilter` valida la firma y la expiración del token y vuelve a cargar la cuenta en cada petición, así que una cuenta desactivada o eliminada deja de pasar aunque su token no haya expirado.
+- **CORS.** Lo aplica la cadena de Spring Security (`SecurityConfig`) sobre `/api/**`, con los orígenes de `app.cors.allowed-origins` (`CORS_ALLOWED_ORIGINS`), los métodos `GET`, `POST`, `PUT`, `DELETE` y `OPTIONS`, `Location` como cabecera expuesta y una caché de preflight de una hora.
 - **Swagger.** La documentación interactiva la genera springdoc a partir de las anotaciones `@Operation`/`@ApiResponse` del código, y solo incluye las rutas de `/api/**`. Este documento es la referencia mantenida a mano: si cambias un contrato, actualiza los dos.
 - **Datos de prueba.** El cargador inserta los ejemplos al arrancar y usa una semilla fija (`new Random(42)`) para repartir mascotas entre dueños y generar tratamientos. Esa relación es estable entre arranques, pero **no correlativa**: no deduzcas el dueño de una mascota por su `id`. Los `id` de cada tabla sí siguen el orden de inserción.

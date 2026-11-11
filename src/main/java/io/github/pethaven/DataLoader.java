@@ -1,20 +1,11 @@
 package io.github.pethaven;
 
-import io.github.pethaven.entity.Administrator;
-import io.github.pethaven.entity.Drug;
-import io.github.pethaven.entity.Evolution;
-import io.github.pethaven.entity.Owner;
-import io.github.pethaven.entity.Pet;
-import io.github.pethaven.entity.Species;
-import io.github.pethaven.entity.Veterinarian;
+import io.github.pethaven.entity.*;
 import io.github.pethaven.dto.request.TreatmentDrugRequest;
 import io.github.pethaven.dto.request.TreatmentRequest;
-import io.github.pethaven.repository.AdministratorRepository;
-import io.github.pethaven.repository.DrugRepository;
-import io.github.pethaven.repository.OwnerRepository;
-import io.github.pethaven.repository.PetRepository;
-import io.github.pethaven.repository.VeterinarianRepository;
+import io.github.pethaven.repository.*;
 import io.github.pethaven.service.TreatmentService;
+import io.github.pethaven.service.UserAccountService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -54,6 +45,9 @@ public class DataLoader implements CommandLineRunner {
     @Autowired
     private TreatmentService treatmentService;
 
+    @Autowired
+    private UserAccountService userAccountService;
+
     private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
 
     private final Random random = new Random(42);
@@ -63,6 +57,18 @@ public class DataLoader implements CommandLineRunner {
 
     private List<Owner> ownerPool;
 
+    // Cuenta de login de un perfil de ejemplo: username = email y contraseña hasheada con BCrypt.
+    private UserEntity account(String email, String rawPassword, String roleName) {
+        return userAccountService.createAccount(email, rawPassword, roleName);
+    }
+
+    // Cuenta de un perfil sembrado como inactivo: debe nacer deshabilitada (Veterinarian.active == UserEntity.enabled).
+    private UserEntity disabledAccount(String email, String rawPassword, String roleName) {
+        UserEntity account = account(email, rawPassword, roleName);
+        account.setEnabled(false);
+        return account;
+    }
+
     private void savePet(Pet pet) {
         pet.setOwner(ownerPool.get(random.nextInt(ownerPool.size())));
         petRepository.save(pet);
@@ -71,119 +77,121 @@ public class DataLoader implements CommandLineRunner {
     @Override
     public void run(String... args) throws Exception {
 
+        // Los roles los crea SecuritySeeder, que se ejecuta antes que este cargador.
+
         // ==================================
         // ==== Cargar dueños de ejemplo ====
         // ==================================
-        ownerRepository.save(Owner.builder().name("John Doe").document("123456789").phone("1234567890").email("john.doe@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("Jane Doe").document("987654321").phone("0987654321").email("jane.doe@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("Alice Smith").document("456789123").phone("4567891230").email("alice.smith@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("Bob Johnson").document("789123456").phone("7891234560").email("bob.johnson@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("Charlie Brown").document("321654987").phone("3216549870").email("charlie.brown@example.com").password("password123").build());
+        ownerRepository.save(Owner.builder().name("John Doe").document("123456789").phone("1234567890").email("john.doe@example.com").user(account("john.doe@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Jane Doe").document("987654321").phone("0987654321").email("jane.doe@example.com").user(account("jane.doe@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Alice Smith").document("456789123").phone("4567891230").email("alice.smith@example.com").user(account("alice.smith@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Bob Johnson").document("789123456").phone("7891234560").email("bob.johnson@example.com").user(account("bob.johnson@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Charlie Brown").document("321654987").phone("3216549870").email("charlie.brown@example.com").user(account("charlie.brown@example.com", "password123", Role.OWNER)).build());
 
-        ownerRepository.save(Owner.builder().name("María García").document("145230786").phone("612345678").email("maria.garcia@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("José Rodríguez").document("287134590").phone("623456789").email("jose.rodriguez@example.com").password("clave123").build());
-        ownerRepository.save(Owner.builder().name("Ana Martínez").document("376495821").phone("634567891").email("ana.martinez@example.com").password("mascota123").build());
-        ownerRepository.save(Owner.builder().name("Carlos López").document("461728935").phone("645678912").email("carlos.lopez@example.com").password("pass1234").build());
-        ownerRepository.save(Owner.builder().name("Laura Sánchez").document("592816374").phone("645678923").email("laura.sanchez@example.com").password("ejemplo123").build());
-        ownerRepository.save(Owner.builder().name("David Pérez").document("675834129").phone("656789012").email("david.perez@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("Carmen Fernández").document("712948365").phone("667890145").email("carmen.fernandez@example.com").password("clave123").build());
-        ownerRepository.save(Owner.builder().name("Javier Gómez").document("829415763").phone("678901256").email("javier.gomez@example.com").password("mascota123").build());
-        ownerRepository.save(Owner.builder().name("Elena Ruiz").document("846173920").phone("689012367").email("elena.ruiz@example.com").password("pass1234").build());
-        ownerRepository.save(Owner.builder().name("Miguel Torres").document("954268137").phone("691234578").email("miguel.torres@example.com").password("ejemplo123").build());
+        ownerRepository.save(Owner.builder().name("María García").document("145230786").phone("612345678").email("maria.garcia@example.com").user(account("maria.garcia@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("José Rodríguez").document("287134590").phone("623456789").email("jose.rodriguez@example.com").user(account("jose.rodriguez@example.com", "clave123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Ana Martínez").document("376495821").phone("634567891").email("ana.martinez@example.com").user(account("ana.martinez@example.com", "mascota123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Carlos López").document("461728935").phone("645678912").email("carlos.lopez@example.com").user(account("carlos.lopez@example.com", "pass1234", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Laura Sánchez").document("592816374").phone("645678923").email("laura.sanchez@example.com").user(account("laura.sanchez@example.com", "ejemplo123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("David Pérez").document("675834129").phone("656789012").email("david.perez@example.com").user(account("david.perez@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Carmen Fernández").document("712948365").phone("667890145").email("carmen.fernandez@example.com").user(account("carmen.fernandez@example.com", "clave123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Javier Gómez").document("829415763").phone("678901256").email("javier.gomez@example.com").user(account("javier.gomez@example.com", "mascota123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Elena Ruiz").document("846173920").phone("689012367").email("elena.ruiz@example.com").user(account("elena.ruiz@example.com", "pass1234", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Miguel Torres").document("954268137").phone("691234578").email("miguel.torres@example.com").user(account("miguel.torres@example.com", "ejemplo123", Role.OWNER)).build());
 
-        ownerRepository.save(Owner.builder().name("Pilar Ramírez").document("162584739").phone("602345689").email("pilar.ramirez@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("Antonio Navarro").document("273859164").phone("613456791").email("antonio.navarro@example.com").password("clave123").build());
-        ownerRepository.save(Owner.builder().name("Lucía Díaz").document("384925716").phone("624567812").email("lucia.diaz@example.com").password("mascota123").build());
-        ownerRepository.save(Owner.builder().name("Sergio Morales").document("495136827").phone("635678923").email("sergio.morales@example.com").password("pass1234").build());
-        ownerRepository.save(Owner.builder().name("Isabel Ortega").document("516247938").phone("646789014").email("isabel.ortega@example.com").password("ejemplo123").build());
-        ownerRepository.save(Owner.builder().name("Pedro Vargas").document("627358149").phone("657890125").email("pedro.vargas@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("Marta Herrera").document("738469251").phone("668901236").email("marta.herrera@example.com").password("clave123").build());
-        ownerRepository.save(Owner.builder().name("Roberto Castillo").document("849571362").phone("679012347").email("roberto.castillo@example.com").password("mascota123").build());
-        ownerRepository.save(Owner.builder().name("Rosa Jiménez").document("849572473").phone("681234458").email("rosa.jimenez@example.com").password("pass1234").build());
-        ownerRepository.save(Owner.builder().name("Alberto Mendoza").document("951683584").phone("692345569").email("alberto.mendoza@example.com").password("ejemplo123").build());
+        ownerRepository.save(Owner.builder().name("Pilar Ramírez").document("162584739").phone("602345689").email("pilar.ramirez@example.com").user(account("pilar.ramirez@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Antonio Navarro").document("273859164").phone("613456791").email("antonio.navarro@example.com").user(account("antonio.navarro@example.com", "clave123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Lucía Díaz").document("384925716").phone("624567812").email("lucia.diaz@example.com").user(account("lucia.diaz@example.com", "mascota123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Sergio Morales").document("495136827").phone("635678923").email("sergio.morales@example.com").user(account("sergio.morales@example.com", "pass1234", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Isabel Ortega").document("516247938").phone("646789014").email("isabel.ortega@example.com").user(account("isabel.ortega@example.com", "ejemplo123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Pedro Vargas").document("627358149").phone("657890125").email("pedro.vargas@example.com").user(account("pedro.vargas@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Marta Herrera").document("738469251").phone("668901236").email("marta.herrera@example.com").user(account("marta.herrera@example.com", "clave123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Roberto Castillo").document("849571362").phone("679012347").email("roberto.castillo@example.com").user(account("roberto.castillo@example.com", "mascota123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Rosa Jiménez").document("849572473").phone("681234458").email("rosa.jimenez@example.com").user(account("rosa.jimenez@example.com", "pass1234", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Alberto Mendoza").document("951683584").phone("692345569").email("alberto.mendoza@example.com").user(account("alberto.mendoza@example.com", "ejemplo123", Role.OWNER)).build());
 
-        ownerRepository.save(Owner.builder().name("Cristina Vega").document("162794695").phone("603456671").email("cristina.vega@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("Andrés Rubio").document("273815716").phone("614567782").email("andres.rubio@example.com").password("clave123").build());
-        ownerRepository.save(Owner.builder().name("Paula Castro").document("384926827").phone("625678893").email("paula.castro@example.com").password("mascota123").build());
-        ownerRepository.save(Owner.builder().name("Francisco Molina").document("495137938").phone("636789914").email("francisco.molina@example.com").password("pass1234").build());
-        ownerRepository.save(Owner.builder().name("Raquel Delgado").document("516248149").phone("647890125").email("raquel.delgado@example.com").password("ejemplo123").build());
-        ownerRepository.save(Owner.builder().name("Diego Aguilar").document("527359251").phone("658901236").email("diego.aguilar@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("Nuria Campos").document("638461362").phone("669012347").email("nuria.campos@example.com").password("clave123").build());
-        ownerRepository.save(Owner.builder().name("Álvaro Rivera").document("749572473").phone("671234458").email("alvaro.rivera@example.com").password("mascota123").build());
-        ownerRepository.save(Owner.builder().name("Beatriz Reyes").document("851683584").phone("682345569").email("beatriz.reyes@example.com").password("pass1234").build());
-        ownerRepository.save(Owner.builder().name("Manuel Cabrera").document("962794695").phone("693456671").email("manuel.cabrera@example.com").password("ejemplo123").build());
+        ownerRepository.save(Owner.builder().name("Cristina Vega").document("162794695").phone("603456671").email("cristina.vega@example.com").user(account("cristina.vega@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Andrés Rubio").document("273815716").phone("614567782").email("andres.rubio@example.com").user(account("andres.rubio@example.com", "clave123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Paula Castro").document("384926827").phone("625678893").email("paula.castro@example.com").user(account("paula.castro@example.com", "mascota123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Francisco Molina").document("495137938").phone("636789914").email("francisco.molina@example.com").user(account("francisco.molina@example.com", "pass1234", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Raquel Delgado").document("516248149").phone("647890125").email("raquel.delgado@example.com").user(account("raquel.delgado@example.com", "ejemplo123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Diego Aguilar").document("527359251").phone("658901236").email("diego.aguilar@example.com").user(account("diego.aguilar@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Nuria Campos").document("638461362").phone("669012347").email("nuria.campos@example.com").user(account("nuria.campos@example.com", "clave123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Álvaro Rivera").document("749572473").phone("671234458").email("alvaro.rivera@example.com").user(account("alvaro.rivera@example.com", "mascota123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Beatriz Reyes").document("851683584").phone("682345569").email("beatriz.reyes@example.com").user(account("beatriz.reyes@example.com", "pass1234", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Manuel Cabrera").document("962794695").phone("693456671").email("manuel.cabrera@example.com").user(account("manuel.cabrera@example.com", "ejemplo123", Role.OWNER)).build());
 
-        ownerRepository.save(Owner.builder().name("Silvia Montes").document("173815716").phone("604567782").email("silvia.montes@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("Jorge Flores").document("284926827").phone("615678893").email("jorge.flores@example.com").password("clave123").build());
-        ownerRepository.save(Owner.builder().name("Adriana Salas").document("395137938").phone("626789914").email("adriana.salas@example.com").password("mascota123").build());
-        ownerRepository.save(Owner.builder().name("Óscar Ibáñez").document("416248149").phone("637890125").email("oscar.ibanez@example.com").password("pass1234").build());
-        ownerRepository.save(Owner.builder().name("Natalia Vidal").document("538470362").phone("648901236").email("natalia.vidal@example.com").password("ejemplo123").build());
-        ownerRepository.save(Owner.builder().name("Ricardo Marín").document("648372915").phone("659012347").email("ricardo.marin@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("Gloria Sanz").document("759683026").phone("661234458").email("gloria.sanz@example.com").password("clave123").build());
-        ownerRepository.save(Owner.builder().name("Enrique Espinosa").document("861794137").phone("672345569").email("enrique.espinosa@example.com").password("mascota123").build());
-        ownerRepository.save(Owner.builder().name("Teresa Rojas").document("972815248").phone("683456671").email("teresa.rojas@example.com").password("pass1234").build());
-        ownerRepository.save(Owner.builder().name("Gabriel Cruz").document("173815717").phone("694567782").email("gabriel.cruz@example.com").password("ejemplo123").build());
+        ownerRepository.save(Owner.builder().name("Silvia Montes").document("173815716").phone("604567782").email("silvia.montes@example.com").user(account("silvia.montes@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Jorge Flores").document("284926827").phone("615678893").email("jorge.flores@example.com").user(account("jorge.flores@example.com", "clave123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Adriana Salas").document("395137938").phone("626789914").email("adriana.salas@example.com").user(account("adriana.salas@example.com", "mascota123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Óscar Ibáñez").document("416248149").phone("637890125").email("oscar.ibanez@example.com").user(account("oscar.ibanez@example.com", "pass1234", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Natalia Vidal").document("538470362").phone("648901236").email("natalia.vidal@example.com").user(account("natalia.vidal@example.com", "ejemplo123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Ricardo Marín").document("648372915").phone("659012347").email("ricardo.marin@example.com").user(account("ricardo.marin@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Gloria Sanz").document("759683026").phone("661234458").email("gloria.sanz@example.com").user(account("gloria.sanz@example.com", "clave123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Enrique Espinosa").document("861794137").phone("672345569").email("enrique.espinosa@example.com").user(account("enrique.espinosa@example.com", "mascota123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Teresa Rojas").document("972815248").phone("683456671").email("teresa.rojas@example.com").user(account("teresa.rojas@example.com", "pass1234", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Gabriel Cruz").document("173815717").phone("694567782").email("gabriel.cruz@example.com").user(account("gabriel.cruz@example.com", "ejemplo123", Role.OWNER)).build());
 
-        ownerRepository.save(Owner.builder().name("Ángela Prieto").document("284926828").phone("605678893").email("angela.prieto@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("Fernando Cano").document("395137939").phone("616789914").email("fernando.cano@example.com").password("clave123").build());
-        ownerRepository.save(Owner.builder().name("Mónica Serrano").document("416248150").phone("627890125").email("monica.serrano@example.com").password("mascota123").build());
-        ownerRepository.save(Owner.builder().name("Rubén Lozano").document("527359252").phone("638901236").email("ruben.lozano@example.com").password("pass1234").build());
-        ownerRepository.save(Owner.builder().name("Irene Blanco").document("638461363").phone("649012347").email("irene.blanco@example.com").password("ejemplo123").build());
-        ownerRepository.save(Owner.builder().name("Pablo Gallego").document("749572474").phone("651234458").email("pablo.gallego@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("Susana Ferrer").document("851683585").phone("662345569").email("susana.ferrer@example.com").password("clave123").build());
-        ownerRepository.save(Owner.builder().name("Adrián Salas").document("962794696").phone("673456671").email("adrian.salas@example.com").password("mascota123").build());
-        ownerRepository.save(Owner.builder().name("Verónica Soto").document("173815718").phone("684567782").email("veronica.soto@example.com").password("pass1234").build());
-        ownerRepository.save(Owner.builder().name("Raúl Carmona").document("284926829").phone("695678893").email("raul.carmona@example.com").password("ejemplo123").build());
+        ownerRepository.save(Owner.builder().name("Ángela Prieto").document("284926828").phone("605678893").email("angela.prieto@example.com").user(account("angela.prieto@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Fernando Cano").document("395137939").phone("616789914").email("fernando.cano@example.com").user(account("fernando.cano@example.com", "clave123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Mónica Serrano").document("416248150").phone("627890125").email("monica.serrano@example.com").user(account("monica.serrano@example.com", "mascota123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Rubén Lozano").document("527359252").phone("638901236").email("ruben.lozano@example.com").user(account("ruben.lozano@example.com", "pass1234", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Irene Blanco").document("638461363").phone("649012347").email("irene.blanco@example.com").user(account("irene.blanco@example.com", "ejemplo123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Pablo Gallego").document("749572474").phone("651234458").email("pablo.gallego@example.com").user(account("pablo.gallego@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Susana Ferrer").document("851683585").phone("662345569").email("susana.ferrer@example.com").user(account("susana.ferrer@example.com", "clave123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Adrián Salas").document("962794696").phone("673456671").email("adrian.salas@example.com").user(account("adrian.salas@example.com", "mascota123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Verónica Soto").document("173815718").phone("684567782").email("veronica.soto@example.com").user(account("veronica.soto@example.com", "pass1234", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Raúl Carmona").document("284926829").phone("695678893").email("raul.carmona@example.com").user(account("raul.carmona@example.com", "ejemplo123", Role.OWNER)).build());
 
-        ownerRepository.save(Owner.builder().name("Andrea Miranda").document("395137940").phone("606789914").email("andrea.miranda@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("Santiago Guerrero").document("416248151").phone("617890125").email("santiago.guerrero@example.com").password("clave123").build());
-        ownerRepository.save(Owner.builder().name("Noelia Aguilar").document("527359253").phone("628901236").email("noelia.aguilar@example.com").password("mascota123").build());
-        ownerRepository.save(Owner.builder().name("Iván Pardo").document("638461364").phone("639012347").email("ivan.pardo@example.com").password("pass1234").build());
-        ownerRepository.save(Owner.builder().name("Eva Soler").document("749572475").phone("641234458").email("eva.soler@example.com").password("ejemplo123").build());
-        ownerRepository.save(Owner.builder().name("Héctor Vargas").document("851683586").phone("652345569").email("hector.vargas@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("Claudia Franco").document("962794697").phone("663456671").email("claudia.franco@example.com").password("clave123").build());
-        ownerRepository.save(Owner.builder().name("Gustavo Peña").document("173815719").phone("674567782").email("gustavo.pena@example.com").password("mascota123").build());
-        ownerRepository.save(Owner.builder().name("Alba Domínguez").document("284926830").phone("685678893").email("alba.dominguez@example.com").password("pass1234").build());
-        ownerRepository.save(Owner.builder().name("Mario Bravo").document("395137941").phone("696789914").email("mario.bravo@example.com").password("ejemplo123").build());
+        ownerRepository.save(Owner.builder().name("Andrea Miranda").document("395137940").phone("606789914").email("andrea.miranda@example.com").user(account("andrea.miranda@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Santiago Guerrero").document("416248151").phone("617890125").email("santiago.guerrero@example.com").user(account("santiago.guerrero@example.com", "clave123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Noelia Aguilar").document("527359253").phone("628901236").email("noelia.aguilar@example.com").user(account("noelia.aguilar@example.com", "mascota123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Iván Pardo").document("638461364").phone("639012347").email("ivan.pardo@example.com").user(account("ivan.pardo@example.com", "pass1234", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Eva Soler").document("749572475").phone("641234458").email("eva.soler@example.com").user(account("eva.soler@example.com", "ejemplo123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Héctor Vargas").document("851683586").phone("652345569").email("hector.vargas@example.com").user(account("hector.vargas@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Claudia Franco").document("962794697").phone("663456671").email("claudia.franco@example.com").user(account("claudia.franco@example.com", "clave123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Gustavo Peña").document("173815719").phone("674567782").email("gustavo.pena@example.com").user(account("gustavo.pena@example.com", "mascota123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Alba Domínguez").document("284926830").phone("685678893").email("alba.dominguez@example.com").user(account("alba.dominguez@example.com", "pass1234", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Mario Bravo").document("395137941").phone("696789914").email("mario.bravo@example.com").user(account("mario.bravo@example.com", "ejemplo123", Role.OWNER)).build());
 
-        ownerRepository.save(Owner.builder().name("Sara Villar").document("416248152").phone("607890125").email("sara.villar@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("Emilio Fuentes").document("527359254").phone("618901236").email("emilio.fuentes@example.com").password("clave123").build());
-        ownerRepository.save(Owner.builder().name("Rocío Gallardo").document("638461365").phone("629012347").email("rocio.gallardo@example.com").password("mascota123").build());
-        ownerRepository.save(Owner.builder().name("Tomás Escobar").document("749572476").phone("631234458").email("tomas.escobar@example.com").password("pass1234").build());
-        ownerRepository.save(Owner.builder().name("Lidia Valdés").document("851683587").phone("642345569").email("lidia.valdes@example.com").password("ejemplo123").build());
-        ownerRepository.save(Owner.builder().name("Bernardo Ríos").document("962794698").phone("653456671").email("bernardo.rios@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("Sonia Acosta").document("173815720").phone("664567782").email("sonia.acosta@example.com").password("clave123").build());
-        ownerRepository.save(Owner.builder().name("Marcos Vidal").document("284926831").phone("675678893").email("marcos.vidal@example.com").password("mascota123").build());
-        ownerRepository.save(Owner.builder().name("Bruno Márquez").document("395137942").phone("686789914").email("bruno.marquez@example.com").password("pass1234").build());
-        ownerRepository.save(Owner.builder().name("Daniela Cortés").document("416248153").phone("697890125").email("daniela.cortes@example.com").password("ejemplo123").build());
+        ownerRepository.save(Owner.builder().name("Sara Villar").document("416248152").phone("607890125").email("sara.villar@example.com").user(account("sara.villar@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Emilio Fuentes").document("527359254").phone("618901236").email("emilio.fuentes@example.com").user(account("emilio.fuentes@example.com", "clave123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Rocío Gallardo").document("638461365").phone("629012347").email("rocio.gallardo@example.com").user(account("rocio.gallardo@example.com", "mascota123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Tomás Escobar").document("749572476").phone("631234458").email("tomas.escobar@example.com").user(account("tomas.escobar@example.com", "pass1234", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Lidia Valdés").document("851683587").phone("642345569").email("lidia.valdes@example.com").user(account("lidia.valdes@example.com", "ejemplo123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Bernardo Ríos").document("962794698").phone("653456671").email("bernardo.rios@example.com").user(account("bernardo.rios@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Sonia Acosta").document("173815720").phone("664567782").email("sonia.acosta@example.com").user(account("sonia.acosta@example.com", "clave123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Marcos Vidal").document("284926831").phone("675678893").email("marcos.vidal@example.com").user(account("marcos.vidal@example.com", "mascota123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Bruno Márquez").document("395137942").phone("686789914").email("bruno.marquez@example.com").user(account("bruno.marquez@example.com", "pass1234", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Daniela Cortés").document("416248153").phone("697890125").email("daniela.cortes@example.com").user(account("daniela.cortes@example.com", "ejemplo123", Role.OWNER)).build());
 
-        ownerRepository.save(Owner.builder().name("Félix Sandoval").document("527359255").phone("608901236").email("felix.sandoval@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("Elvira Méndez").document("638461366").phone("619012347").email("elvira.mendez@example.com").password("clave123").build());
-        ownerRepository.save(Owner.builder().name("Iván Peña").document("749572477").phone("621234458").email("ivan.pena@example.com").password("mascota123").build());
-        ownerRepository.save(Owner.builder().name("Sonia Gil").document("851683588").phone("632345569").email("sonia.gil@example.com").password("pass1234").build());
-        ownerRepository.save(Owner.builder().name("Ramón Expósito").document("962794699").phone("643456671").email("ramon.exposito@example.com").password("ejemplo123").build());
-        ownerRepository.save(Owner.builder().name("Carla Redondo").document("173815721").phone("654567782").email("carla.redondo@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("Julio Navas").document("284926832").phone("665678893").email("julio.navas@example.com").password("clave123").build());
-        ownerRepository.save(Owner.builder().name("Marisol Vega").document("395137943").phone("676789914").email("marisol.vega@example.com").password("mascota123").build());
-        ownerRepository.save(Owner.builder().name("Teo Camacho").document("416248154").phone("687890125").email("teo.camacho@example.com").password("pass1234").build());
-        ownerRepository.save(Owner.builder().name("Julieta Pons").document("527359256").phone("698901236").email("julieta.pons@example.com").password("ejemplo123").build());
+        ownerRepository.save(Owner.builder().name("Félix Sandoval").document("527359255").phone("608901236").email("felix.sandoval@example.com").user(account("felix.sandoval@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Elvira Méndez").document("638461366").phone("619012347").email("elvira.mendez@example.com").user(account("elvira.mendez@example.com", "clave123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Iván Peña").document("749572477").phone("621234458").email("ivan.pena@example.com").user(account("ivan.pena@example.com", "mascota123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Sonia Gil").document("851683588").phone("632345569").email("sonia.gil@example.com").user(account("sonia.gil@example.com", "pass1234", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Ramón Expósito").document("962794699").phone("643456671").email("ramon.exposito@example.com").user(account("ramon.exposito@example.com", "ejemplo123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Carla Redondo").document("173815721").phone("654567782").email("carla.redondo@example.com").user(account("carla.redondo@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Julio Navas").document("284926832").phone("665678893").email("julio.navas@example.com").user(account("julio.navas@example.com", "clave123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Marisol Vega").document("395137943").phone("676789914").email("marisol.vega@example.com").user(account("marisol.vega@example.com", "mascota123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Teo Camacho").document("416248154").phone("687890125").email("teo.camacho@example.com").user(account("teo.camacho@example.com", "pass1234", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Julieta Pons").document("527359256").phone("698901236").email("julieta.pons@example.com").user(account("julieta.pons@example.com", "ejemplo123", Role.OWNER)).build());
 
-        ownerRepository.save(Owner.builder().name("Abel Salgado").document("638461367").phone("609012347").email("abel.salgado@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("Estrella Cabrera").document("749572478").phone("611234458").email("estrella.cabrera@example.com").password("clave123").build());
-        ownerRepository.save(Owner.builder().name("Imanol Rivas").document("851683589").phone("622345569").email("imanol.rivas@example.com").password("mascota123").build());
-        ownerRepository.save(Owner.builder().name("Aroa Sáez").document("962794700").phone("633456671").email("aroa.saez@example.com").password("pass1234").build());
-        ownerRepository.save(Owner.builder().name("Germán Peralta").document("173815722").phone("644567782").email("german.peralta@example.com").password("ejemplo123").build());
-        ownerRepository.save(Owner.builder().name("Celia Bermejo").document("284926833").phone("655678893").email("celia.bermejo@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("Igor Sanz").document("395137944").phone("666789914").email("igor.sanz@example.com").password("clave123").build());
-        ownerRepository.save(Owner.builder().name("Leire Ortiz").document("416248155").phone("677890125").email("leire.ortiz@example.com").password("mascota123").build());
-        ownerRepository.save(Owner.builder().name("Ramiro Estévez").document("527359257").phone("688901236").email("ramiro.estevez@example.com").password("pass1234").build());
-        ownerRepository.save(Owner.builder().name("Yolanda Cuevas").document("638461368").phone("699901236").email("yolanda.cuevas@example.com").password("ejemplo123").build());
+        ownerRepository.save(Owner.builder().name("Abel Salgado").document("638461367").phone("609012347").email("abel.salgado@example.com").user(account("abel.salgado@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Estrella Cabrera").document("749572478").phone("611234458").email("estrella.cabrera@example.com").user(account("estrella.cabrera@example.com", "clave123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Imanol Rivas").document("851683589").phone("622345569").email("imanol.rivas@example.com").user(account("imanol.rivas@example.com", "mascota123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Aroa Sáez").document("962794700").phone("633456671").email("aroa.saez@example.com").user(account("aroa.saez@example.com", "pass1234", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Germán Peralta").document("173815722").phone("644567782").email("german.peralta@example.com").user(account("german.peralta@example.com", "ejemplo123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Celia Bermejo").document("284926833").phone("655678893").email("celia.bermejo@example.com").user(account("celia.bermejo@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Igor Sanz").document("395137944").phone("666789914").email("igor.sanz@example.com").user(account("igor.sanz@example.com", "clave123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Leire Ortiz").document("416248155").phone("677890125").email("leire.ortiz@example.com").user(account("leire.ortiz@example.com", "mascota123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Ramiro Estévez").document("527359257").phone("688901236").email("ramiro.estevez@example.com").user(account("ramiro.estevez@example.com", "pass1234", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Yolanda Cuevas").document("638461368").phone("699901236").email("yolanda.cuevas@example.com").user(account("yolanda.cuevas@example.com", "ejemplo123", Role.OWNER)).build());
 
-        ownerRepository.save(Owner.builder().name("Ismael Arias").document("749572479").phone("610234567").email("ismael.arias@example.com").password("password123").build());
-        ownerRepository.save(Owner.builder().name("Aitor Lasa").document("851683590").phone("620345678").email("aitor.lasa@example.com").password("clave123").build());
-        ownerRepository.save(Owner.builder().name("Berta Anaya").document("962794701").phone("630456789").email("berta.anaya@example.com").password("mascota123").build());
-        ownerRepository.save(Owner.builder().name("Guillermo Fuster").document("173815723").phone("640567891").email("guillermo.fuster@example.com").password("pass1234").build());
-        ownerRepository.save(Owner.builder().name("Rodrigo Alcántara").document("284926834").phone("650567892").email("rodrigo.alcantara@example.com").password("ejemplo123").build());
+        ownerRepository.save(Owner.builder().name("Ismael Arias").document("749572479").phone("610234567").email("ismael.arias@example.com").user(account("ismael.arias@example.com", "password123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Aitor Lasa").document("851683590").phone("620345678").email("aitor.lasa@example.com").user(account("aitor.lasa@example.com", "clave123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Berta Anaya").document("962794701").phone("630456789").email("berta.anaya@example.com").user(account("berta.anaya@example.com", "mascota123", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Guillermo Fuster").document("173815723").phone("640567891").email("guillermo.fuster@example.com").user(account("guillermo.fuster@example.com", "pass1234", Role.OWNER)).build());
+        ownerRepository.save(Owner.builder().name("Rodrigo Alcántara").document("284926834").phone("650567892").email("rodrigo.alcantara@example.com").user(account("rodrigo.alcantara@example.com", "ejemplo123", Role.OWNER)).build());
 
         ownerPool = ownerRepository.findAll();
 
@@ -350,18 +358,18 @@ public class DataLoader implements CommandLineRunner {
         // ========================================
         // Los primeros tres son los mismos veterinarios que aparecen en la landing de la SPA
         // (sección "Especialistas al Cuidado"), para que la app quede coherente.
-        veterinarianRepository.save(Veterinarian.builder().name("Dra. Valentina Soler").document("328146627").email("valentina.soler@pethaven.com").password("vet12345").specialty("Cuidados Críticos").photoUrl("https://randomuser.me/api/portraits/women/44.jpg").build());
-        veterinarianRepository.save(Veterinarian.builder().name("Dr. Esteban Ruiz").document("241882914").email("esteban.ruiz@pethaven.com").password("vet12345").specialty("Cirujano General").photoUrl("https://randomuser.me/api/portraits/men/32.jpg").build());
-        veterinarianRepository.save(Veterinarian.builder().name("Dra. Amalia Carter").document("581736412").email("amalia.carter@pethaven.com").password("vet12345").specialty("Anestesiología").photoUrl("https://randomuser.me/api/portraits/women/68.jpg").build());
-        veterinarianRepository.save(Veterinarian.builder().name("Dr. Miguel Ángel Torres").document("522124823").email("miguel.torres@pethaven.com").password("vet12345").specialty("Medicina Interna").build());
-        veterinarianRepository.save(Veterinarian.builder().name("Dra. Sofía Herrera").document("192049284").email("sofia.herrera@pethaven.com").password("vet12345").specialty("Dermatología").build());
-        veterinarianRepository.save(Veterinarian.builder().name("Dr. Julián Restrepo").document("102938471").email("julian.restrepo@pethaven.com").password("vet12345").specialty("Odontología Veterinaria").active(false).build());
+        veterinarianRepository.save(Veterinarian.builder().name("Dra. Valentina Soler").document("328146627").email("valentina.soler@pethaven.com").user(account("valentina.soler@pethaven.com", "vet12345", Role.VETERINARIAN)).specialty("Cuidados Críticos").photoUrl("https://randomuser.me/api/portraits/women/44.jpg").build());
+        veterinarianRepository.save(Veterinarian.builder().name("Dr. Esteban Ruiz").document("241882914").email("esteban.ruiz@pethaven.com").user(account("esteban.ruiz@pethaven.com", "vet12345", Role.VETERINARIAN)).specialty("Cirujano General").photoUrl("https://randomuser.me/api/portraits/men/32.jpg").build());
+        veterinarianRepository.save(Veterinarian.builder().name("Dra. Amalia Carter").document("581736412").email("amalia.carter@pethaven.com").user(account("amalia.carter@pethaven.com", "vet12345", Role.VETERINARIAN)).specialty("Anestesiología").photoUrl("https://randomuser.me/api/portraits/women/68.jpg").build());
+        veterinarianRepository.save(Veterinarian.builder().name("Dr. Miguel Ángel Torres").document("522124823").email("miguel.torres@pethaven.com").user(account("miguel.torres@pethaven.com", "vet12345", Role.VETERINARIAN)).specialty("Medicina Interna").build());
+        veterinarianRepository.save(Veterinarian.builder().name("Dra. Sofía Herrera").document("192049284").email("sofia.herrera@pethaven.com").user(account("sofia.herrera@pethaven.com", "vet12345", Role.VETERINARIAN)).specialty("Dermatología").build());
+        veterinarianRepository.save(Veterinarian.builder().name("Dr. Julián Restrepo").document("102938471").email("julian.restrepo@pethaven.com").user(disabledAccount("julian.restrepo@pethaven.com", "vet12345", Role.VETERINARIAN)).specialty("Odontología Veterinaria").active(false).build());
 
         // ==========================================
         // ==== Cargar administradores de prueba ====
         // ==========================================
-        administratorRepository.save(Administrator.builder().name("Admin Principal").email("admin@pethaven.com").password("admin12345").build());
-        administratorRepository.save(Administrator.builder().name("Laura Admin").email("laura.admin@pethaven.com").password("admin12345").build());
+        administratorRepository.save(Administrator.builder().name("Admin Principal").email("admin@pethaven.com").user(account("admin@pethaven.com", "admin12345", Role.ADMIN)).build());
+        administratorRepository.save(Administrator.builder().name("Laura Admin").email("laura.admin@pethaven.com").user(account("laura.admin@pethaven.com", "admin12345", Role.ADMIN)).build());
 
         // =======================================
         // ==== Cargar tratamientos de ejemplo ====

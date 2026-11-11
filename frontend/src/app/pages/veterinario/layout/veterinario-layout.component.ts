@@ -1,6 +1,9 @@
-import { Component, computed, inject } from '@angular/core';
+import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
+import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 import { Router } from '@angular/router';
+import { catchError, of } from 'rxjs';
 import { AuthService } from '../../../services/auth.service';
+import { VeterinarianService } from '../../../services/veterinarian.service';
 import {
   AreaLayoutConfig,
   DEFAULT_AREA_LAYOUT_CONFIG,
@@ -18,9 +21,28 @@ import { AreaLayoutComponent } from '../../shared/area-layout/area-layout.compon
   imports: [AreaLayoutComponent],
   templateUrl: './veterinario-layout.component.html',
 })
-export class VeterinarioLayoutComponent {
+export class VeterinarioLayoutComponent implements OnInit {
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
+  private readonly veterinarianService = inject(VeterinarianService);
+  private readonly destroyRef = inject(DestroyRef);
+
+  private readonly photoUrl = signal<string | null>(null);
+
+  // Pide al API la foto del veterinario que inició sesión; si falla, la topbar muestra la inicial.
+  ngOnInit(): void {
+    const user = this.auth.user();
+    if (user?.role !== 'VETERINARIAN') {
+      return;
+    }
+    this.veterinarianService
+      .getById(user.id)
+      .pipe(
+        catchError(() => of(null)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe((vet) => this.photoUrl.set(vet?.photoUrl ?? null));
+  }
 
   /** Config del panel con el perfil y el cierre de sesión del veterinario. */
   readonly layoutConfig = computed<AreaLayoutConfig>(() => {
@@ -41,6 +63,7 @@ export class VeterinarioLayoutComponent {
         pageLabels: { ...DEFAULT_PAGE_LABELS, perfil: 'Mi Perfil' },
         userName: vet?.name ?? '',
         userInitial: vet ? vet.name.charAt(0).toUpperCase() : '',
+        userPhotoUrl: this.photoUrl(),
         userMenuItems: [
           {
             label: 'Mi Perfil',
@@ -56,6 +79,6 @@ export class VeterinarioLayoutComponent {
   // Borra la sesión guardada y vuelve al login del veterinario.
   private cerrarSesion(): void {
     this.auth.logout();
-    void this.router.navigate(['/vet/login']);
+    void this.router.navigate(['/login']);
   }
 }
