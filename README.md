@@ -187,7 +187,7 @@ Una mirada al estado actual de la aplicación, con datos de prueba.
 | Framework | Angular 19 — componentes standalone y lazy loading |
 | UI | PrimeNG 19 con tema propio de PetHaven + Tailwind CSS 4 |
 | API | `HttpClient` + RxJS, con URL base desde `environments/` |
-| Sesión | Token JWT en `localStorage`, interceptor que lo añade a las peticiones al API, guards por rol y cierre de sesión al expirar o con un `401` |
+| Sesión | Solo el token JWT en `localStorage` (el perfil se pide con `GET /api/auth/me` en cada carga), interceptor que lo añade a las peticiones al API, guards por rol, landing y login solo sin sesión, y cierre de sesión al expirar, con un `401` o desde otra pestaña |
 | Reactividad | RxJS 7.8 + signals |
 | PDF | jsPDF 4 — descarga de la historia clínica de la mascota |
 | Lenguaje | TypeScript 5.7 |

@@ -2073,7 +2073,8 @@ Los duplicados se detectan antes de escribir y responden `409` con un mensaje ex
 Seguridad:
 
 - **Sin token de refresco ni revocación.** El token dura 2 horas. Cerrar sesión borra el token del navegador, pero el servidor no lo invalida: sigue siendo válido hasta que expira. Sí se rechaza de inmediato si la cuenta se desactiva o se elimina.
-- **Token en `localStorage`.** La SPA guarda la sesión en `localStorage` (clave `pethaven.session`): sobrevive a recargas y a cerrar el navegador, pero cualquier script que se ejecute en la página puede leerla. La vigencia de 2 horas acota el daño de un token filtrado.
+- **Token en `localStorage`.** La SPA guarda solo el token en `localStorage` (clave `pethaven.token`): sobrevive a recargas y a cerrar el navegador, pero cualquier script que se ejecute en la página puede leerlo. La vigencia de 2 horas acota el daño de un token filtrado. Los datos del usuario no se guardan: en cada carga se piden con `GET /api/auth/me` y la expiración se lee del claim `exp` del token.
+- **Cerrar sesión es local.** El API es stateless y no revoca tokens: cerrar sesión borra el token del navegador (y de las demás pestañas abiertas), pero una copia del token sigue siendo válida hasta que vence.
 - **Sin límite de intentos de login.** No hay bloqueo ni límite de frecuencia; queda para la fase de endurecimiento del roadmap.
 - **Un rol por cuenta.** Una cuenta sin perfil asociado o con un número de roles distinto de uno hace que el login responda `500`. Ninguna operación de la API crea cuentas así; solo pueden aparecer modificando la base a mano.
 - **Primer arranque concurrente.** Si dos instancias arrancan a la vez sobre una base vacía, una puede fallar al crear los roles o el primer administrador por las restricciones de unicidad. Reiniciarla basta, porque la creación es idempotente.

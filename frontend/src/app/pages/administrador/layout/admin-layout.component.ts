@@ -1,5 +1,4 @@
 import { Component, computed, inject } from '@angular/core';
-import { Router } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 import { AreaLayoutConfig } from '../../shared/area-layout/area-layout-config';
 import { AreaLayoutComponent } from '../../shared/area-layout/area-layout.component';
@@ -11,7 +10,6 @@ import { AreaLayoutComponent } from '../../shared/area-layout/area-layout.compon
   template: '<app-area-layout [layoutConfig]="layoutConfig()" />',
 })
 export class AdminLayoutComponent {
-  private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
 
   readonly layoutConfig = computed<AreaLayoutConfig>(() => {
@@ -48,6 +46,5 @@ export class AdminLayoutComponent {
 
   private cerrarSesion(): void {
     this.auth.logout();
-    void this.router.navigate(['/login']);
   }
 }

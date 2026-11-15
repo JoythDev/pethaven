@@ -78,7 +78,6 @@ export class ClienteLayoutComponent implements OnInit {
   // Cierra la sesión (borra el token) y vuelve al login de dueños.
   private logout(): void {
     this.auth.logout();
-    void this.router.navigate(['/login']);
   }
 
   ngOnInit(): void {

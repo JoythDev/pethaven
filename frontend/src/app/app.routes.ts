@@ -3,11 +3,12 @@ import { LandingComponent } from './pages/landing/landing.component';
 import { LoginComponent } from './pages/auth/login/login.component';
 import { ClienteEntryComponent } from './pages/cliente/cliente-entry/cliente-entry.component';
 import { ADMIN_DRUG_AREA, DRUG_AREA_DATA_KEY, VET_DRUG_AREA } from './pages/shared/drugs/drug-area';
-import { ownerPortalGuard, roleGuard } from './core/auth/auth.guard';
+import { guestGuard, ownerPortalGuard, roleGuard } from './core/auth/auth.guard';
 
 export const routes: Routes = [
-  { path: '', component: LandingComponent },
-  { path: 'login', component: LoginComponent },
+  // Solo sin sesión: con sesión, guestGuard lleva al portal del rol.
+  { path: '', component: LandingComponent, canActivate: [guestGuard] },
+  { path: 'login', component: LoginComponent, canActivate: [guestGuard] },
 
   // Panel del veterinario: layout propio sobre el shell compartido.
   {
