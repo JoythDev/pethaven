@@ -33,10 +33,3 @@ export interface AuthUser {
   email: string;
   role: AuthRole;
 }
-
-// Sesión guardada en localStorage: token, momento de expiración (epoch ms) y usuario.
-export interface AuthSession {
-  token: string;
-  expiresAt: number;
-  user: AuthUser;
-}

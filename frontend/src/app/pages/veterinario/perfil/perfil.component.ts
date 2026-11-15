@@ -1,6 +1,6 @@
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { Router, RouterLink } from '@angular/router';
+import { RouterLink } from '@angular/router';
 import { AvatarModule } from 'primeng/avatar';
 import { ButtonModule } from 'primeng/button';
 import { SkeletonModule } from 'primeng/skeleton';
@@ -18,7 +18,6 @@ import { StatCardComponent } from '../../shared/stat-card/stat-card.component';
   templateUrl: './perfil.component.html',
 })
 export class VeterinarioPerfilComponent implements OnInit {
-  private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
   private readonly veterinarianService = inject(VeterinarianService);
   private readonly destroyRef = inject(DestroyRef);
@@ -44,6 +43,5 @@ export class VeterinarioPerfilComponent implements OnInit {
   // Borra la sesión guardada y vuelve al login del veterinario.
   cerrarSesion(): void {
     this.auth.logout();
-    this.router.navigate(['/login']);
   }
 }

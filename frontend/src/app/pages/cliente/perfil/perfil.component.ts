@@ -1,6 +1,6 @@
 import { Component, DestroyRef, OnInit, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { AvatarModule } from 'primeng/avatar';
 import { ButtonModule } from 'primeng/button';
 import { SkeletonModule } from 'primeng/skeleton';
@@ -20,7 +20,6 @@ import { StatCardComponent } from '../../shared/stat-card/stat-card.component';
 })
 export class PerfilComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
   private readonly ownerService = inject(OwnerService);
   private readonly context = inject(ClienteContextStore);
   private readonly destroyRef = inject(DestroyRef);
@@ -66,6 +65,5 @@ export class PerfilComponent implements OnInit {
   // Cierra la sesión (borra el token) y vuelve al login de dueños.
   cerrarSesion(): void {
     this.auth.logout();
-    void this.router.navigate(['/login']);
   }
 }

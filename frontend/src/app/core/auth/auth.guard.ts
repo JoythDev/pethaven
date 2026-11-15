@@ -33,3 +33,11 @@ export const ownerPortalGuard: CanActivateFn = (route, state) => {
   const user = auth.user()!;
   return route.paramMap.get('ownerId') === String(user.id) ? true : router.parseUrl(auth.homeUrl(user));
 };
+
+// Páginas solo para visitantes (landing y login): con sesión iniciada lleva al inicio del portal
+// de su rol. La sesión ya se confirmó con el API antes del primer enrutado (restoreSession).
+export const guestGuard: CanActivateFn = () => {
+  const auth = inject(AuthService);
+  const user = auth.user();
+  return user ? inject(Router).parseUrl(auth.homeUrl(user)) : true;
+};

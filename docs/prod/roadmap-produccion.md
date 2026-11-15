@@ -210,6 +210,6 @@ La seguridad ya está implementada (rama `feature/backend-security`): Spring Sec
 - **Fase 2:** la migración base incluye las tablas de cuentas y roles (ver la nota de la fase).
 - **Fases 6 y 7:** `CORS_ALLOWED_ORIGINS` con el dominio de Vercel. El CORS ya admite la cabecera `Authorization` y no usa credenciales, porque el token viaja en esa cabecera y no en cookies (Vercel y Render son sitios distintos).
 - **Fase 9:** el punto "Spring Security, BCrypt y JWT implementados" de la checklist queda cubierto al mezclar la rama; siguen pendientes los secretos en la plataforma y Swagger en `prod`.
-- **Frontend:** la sesión se guarda en `localStorage` (clave `pethaven.session`) con un interceptor que añade el token y guards por portal. Los e2e que se escriban deben iniciar sesión por `POST /api/auth/login`.
+- **Frontend:** solo el token se guarda en `localStorage` (clave `pethaven.token`; el perfil se pide con `GET /api/auth/me` en cada carga) con un interceptor que añade el token y guards por portal. Los e2e que se escriban deben iniciar sesión por `POST /api/auth/login`.
 - **Fase 10:** límite de intentos de login, tokens de refresco o revocación y rotación de `JWT_SECRET` (cambiarla cierra todas las sesiones).
 - Cualquier cambio de esquema introducido por la seguridad se entrega como nueva migración de Flyway.
