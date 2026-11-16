@@ -1,4 +1,5 @@
 import { Species } from '../../models/pet.model';
+import { identityIndex } from '../identity/identity';
 
 export const CHARACTER_STICKERS = ['dog', 'cat', 'dachs'] as const;
 
@@ -45,8 +46,8 @@ export function stickerFrame(name: StickerName, width: number, head = false): St
 }
 
 // Sin información de pelaje, el kit se elige con el id para que sea estable.
-export function coatKitFor(id: number): CoatKit {
-  return ((Math.abs(Math.trunc(id)) % 6) + 1) as CoatKit;
+export function coatKitFor(id: number | string): CoatKit {
+  return ((identityIndex(id) % 6) + 1) as CoatKit;
 }
 
 export function speciesSticker(species: Species): CharacterSticker {

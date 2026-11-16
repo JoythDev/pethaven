@@ -4,6 +4,7 @@
   aria-label="Existencias"
   [attr.aria-valuenow]="units()"
   aria-valuemin="0"
+  [attr.aria-valuemax]="scale().max"
   [attr.aria-valuetext]="(units() | number) + ' unidades, mínimo ' + (minimum() | number)"
 >
   <span class="block h-full rounded-full {{ fillClass() }}" [style.width.%]="scale().fill"></span>

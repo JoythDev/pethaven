@@ -36,7 +36,7 @@ export class AvatarComponent {
   protected readonly showPhoto = computed(() => !!this.photoUrl() && !this.photoFailed());
   protected readonly initials = computed(() => initials(this.name()));
   protected readonly sticker = computed(() => speciesSticker(this.species()));
-  protected readonly kit = computed(() => coatKitFor(typeof this.id() === 'number' ? (this.id() as number) : 0));
+  protected readonly kit = computed(() => coatKitFor(this.id()));
 
   protected readonly hostClass = computed(
     () =>

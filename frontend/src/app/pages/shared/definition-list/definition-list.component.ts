@@ -14,7 +14,7 @@ export interface DefinitionItem {
 @Component({
   selector: 'dl[app-definition-list]',
   template: `
-    @for (item of items(); track item.term) {
+    @for (item of items(); track $index) {
       <dt>{{ item.term }}</dt>
       <dd>{{ item.value === null || item.value === '' ? 'Sin registrar' : item.value }}</dd>
     }

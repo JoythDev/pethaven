@@ -1,7 +1,8 @@
 import { DOCUMENT } from '@angular/common';
 import { Injectable, inject } from '@angular/core';
 
-const SPRITE_URL = '/images/stickers/stickers.svg';
+// Relativa al base href, por si la app se publica en una subruta.
+const SPRITE_PATH = 'images/stickers/stickers.svg';
 
 // Inserta el sprite de stickers en el documento una sola vez, la primera vez que se pinta uno.
 // Va en línea (no como <use href="archivo#id">) para que los estilos de styles.css alcancen los símbolos.
@@ -11,7 +12,7 @@ export class StickerSpriteService {
   private loading: Promise<void> | null = null;
 
   ensureLoaded(): Promise<void> {
-    this.loading ??= fetch(SPRITE_URL)
+    this.loading ??= fetch(new URL(SPRITE_PATH, this.document.baseURI))
       .then((response) => (response.ok ? response.text() : Promise.reject(new Error(String(response.status)))))
       .then((markup) => {
         const host = this.document.createElement('div');
@@ -20,8 +21,9 @@ export class StickerSpriteService {
         host.innerHTML = markup;
         this.document.body.prepend(host);
       })
-      .catch(() => {
+      .catch((error) => {
         // Los stickers son decorativos: si el sprite no carga se omiten y se reintenta en el próximo.
+        console.warn('No se pudo cargar el sprite de stickers', error);
         this.loading = null;
       });
     return this.loading;
