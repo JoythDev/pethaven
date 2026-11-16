@@ -1082,18 +1082,20 @@ A color block sets one local variable and everything inside derives from it:
 
 ### 14.4 Component structure
 
-Follows the project's atomic and container-presentational conventions.
+New components follow the conventions the frontend already has. There is no separate `shared/ui` folder and no `ph-` prefix: sections 9 to 11 use names such as `ph-card` as conceptual labels only.
 
-| Level | Location | Examples |
+| Kind | Location | Selector |
 |---|---|---|
-| Atoms | `shared/ui/` | `ph-tag`, `ph-avatar`, `ph-stock-meter`, `ph-sticker` |
-| Molecules | `shared/ui/` | `ph-card`, `ph-block`, `ph-list-item`, `ph-empty-state`, `ph-kpi` |
-| Organisms | `shared/layout/`, `shared/data/` | `ph-app-shell`, `ph-top-bar`, `ph-context-sidebar`, `ph-detail-panel`, `ph-resource-list` |
-| Pages | `pages/<role>/` | Containers that fetch data and compose organisms |
+| Shared presentational components (card, block, tag, avatar, stock meter, empty state, resource list, detail panel, shell) | `pages/shared/<name>/` | `app-<name>` |
+| Components used by one area only | `pages/<area>/.../components/<name>/` | `app-<name>` |
+| Pure functions, pipes, services without UI | `core/<topic>/` | n/a |
+| Demo-only data services | `services/demo/` | n/a |
+| Pages | `pages/<area>/` | `app-<name>` |
 
-- Presentational components take inputs and emit outputs; they do not call services.
-- Existing shared components (`page-banner`, `stat-card`, `area-layout`) are replaced by `ph-block` (hero), `ph-kpi` and `ph-app-shell`.
-- Stickers are an SVG sprite loaded once; `ph-sticker` renders `<use>` with the coat kit as CSS variables.
+- Presentational components take inputs and emit outputs; they do not call services. Pages fetch data and compose them.
+- Standalone components, signals, `input()` and `output()`, separate `.html` template files, as in the existing code.
+- Existing shared components (`page-banner`, `stat-card`, `area-layout`) are replaced by the block, KPI and shell components and removed once nothing uses them.
+- Stickers are an SVG sprite loaded once; the sticker component renders `<use>` with the coat kit as CSS variables.
 
 ### 14.5 Dependencies to add
 
