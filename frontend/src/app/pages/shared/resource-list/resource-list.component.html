@@ -1,0 +1,162 @@
+<div class="mb-3.5 flex flex-wrap items-center gap-2">
+  <div class="relative w-[260px] max-w-full @max-[679px]:w-full">
+    <svg
+      lucideSearch
+      [size]="18"
+      class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-muted"
+      aria-hidden="true"
+    ></svg>
+    <input
+      pInputText
+      type="search"
+      class="h-[38px] w-full border-[1.5px] py-0 pr-9 pl-10 [&::-webkit-search-cancel-button]:hidden @max-[679px]:h-11"
+      [attr.aria-label]="searchLabel()"
+      [placeholder]="searchPlaceholder()"
+      [value]="text()"
+      (input)="onSearchInput($any($event.target).value)"
+      (keydown.enter)="flushSearch()"
+    />
+    @if (text()) {
+      <button
+        type="button"
+        class="ph-focus absolute top-1/2 right-1.5 grid size-6 -translate-y-1/2 place-items-center rounded-check text-ink-muted transition-colors duration-[180ms] ease-out-strong hover:text-ink motion-reduce:transition-none @max-[679px]:size-8"
+        aria-label="Borrar búsqueda"
+        (click)="clearSearch()"
+      >
+        <svg lucideX [size]="16" aria-hidden="true"></svg>
+      </button>
+    }
+  </div>
+
+  <div class="flex flex-wrap items-center gap-2 empty:hidden"><ng-content select="[filters]" /></div>
+
+  @if (filtersActive()) {
+    <button pButton type="button" size="small" [text]="true" label="Quitar filtros" (click)="clearFilters.emit()"></button>
+  }
+
+  @if (!compact()) {
+    <p-selectbutton
+      class="ml-auto"
+      aria-label="Vista de la lista"
+      [options]="viewOptions"
+      optionValue="value"
+      optionLabel="label"
+      [allowEmpty]="false"
+      [ngModel]="effectiveView()"
+      (ngModelChange)="onViewChange($event)"
+    >
+      <ng-template #item let-option>
+        <span class="flex" [pTooltip]="option.label" tooltipPosition="bottom">
+          @if (option.icon === 'grid') {
+            <svg lucideLayoutGrid [size]="18" aria-hidden="true"></svg>
+          } @else {
+            <svg lucideTable [size]="18" aria-hidden="true"></svg>
+          }
+          <span class="sr-only">{{ option.label }}</span>
+        </span>
+      </ng-template>
+    </p-selectbutton>
+  }
+</div>
+
+<ng-template #pagination>
+  <nav aria-label="Paginación" class="flex flex-wrap items-center gap-x-4 gap-y-2 px-4 py-3">
+    <p class="text-[12.5px] leading-[18px] text-ink-muted tabular-nums">{{ range() }}</p>
+    <div class="ml-auto flex items-center gap-2">
+      <p-select
+        [options]="pageSizeOptions"
+        optionLabel="label"
+        optionValue="value"
+        ariaLabel="Elementos por página"
+        appendTo="body"
+        size="small"
+        styleClass="w-40 @max-[679px]:h-11"
+        [ngModel]="pageSize()"
+        (ngModelChange)="pageSizeChange.emit($event)"
+      />
+      <button
+        type="button"
+        class="ph-focus ph-icon-btn"
+        aria-label="Página anterior"
+        [disabled]="page() <= 1"
+        (click)="pageChange.emit(page() - 1)"
+      >
+        <svg lucideChevronLeft [size]="18" aria-hidden="true"></svg>
+      </button>
+      <span class="min-w-14 text-center text-sm leading-5 font-extrabold tabular-nums" aria-live="polite">
+        {{ page() }} <span class="font-medium text-ink-muted">/ {{ pageTotal() }}</span>
+      </span>
+      <button
+        type="button"
+        class="ph-focus ph-icon-btn"
+        aria-label="Página siguiente"
+        [disabled]="page() >= pageTotal()"
+        (click)="pageChange.emit(page() + 1)"
+      >
+        <svg lucideChevronRight [size]="18" aria-hidden="true"></svg>
+      </button>
+    </div>
+  </nav>
+</ng-template>
+
+@if (showSkeleton()) {
+  @if (effectiveView() === 'table') {
+    <div class="overflow-hidden rounded-box border border-line bg-card p-2">
+      @for (row of skeletonRows; track $index) {
+        <app-skeleton variant="row" [announce]="$first" />
+      }
+    </div>
+  } @else {
+    <div class="@container">
+      <div [class]="gridClass()">
+        @for (row of skeletonRows; track $index) {
+          <app-skeleton variant="media" [announce]="$first" />
+        }
+      </div>
+    </div>
+  }
+} @else if (error()) {
+  <p-message severity="error" styleClass="w-full">
+    <ng-template #icon><svg lucideCircleAlert [size]="18" aria-hidden="true"></svg></ng-template>
+    <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+      <span>{{ error() }}</span>
+      <button pButton type="button" size="small" [outlined]="true" severity="danger" label="Reintentar" (click)="retry.emit()"></button>
+    </div>
+  </p-message>
+} @else if (total() === 0) {
+  @if (!loading()) {
+    <div class="rounded-box border border-line bg-card">
+      @if (hasQuery()) {
+        <app-empty-state [title]="'Sin resultados'" [description]="noResultsText()">
+          <app-sticker sticker name="bone" [width]="96" />
+          <button action pButton type="button" [outlined]="true" severity="secondary" label="Quitar filtros" (click)="clearFilters.emit()"></button>
+        </app-empty-state>
+      } @else {
+        <app-empty-state [title]="emptyHeading()" [description]="emptyDescription()">
+          <app-sticker sticker [name]="emptySticker()" [width]="96" />
+          <div action class="contents"><ng-content select="[emptyAction]" /></div>
+        </app-empty-state>
+      }
+    </div>
+  }
+} @else if (effectiveView() === 'table') {
+  <div class="ph-resource-table overflow-hidden rounded-box border border-line bg-card">
+    <div class="overflow-x-auto">
+      @if (tableTemplate(); as template) {
+        <ng-container *ngTemplateOutlet="template; context: tableContext()" />
+      }
+    </div>
+    <div class="border-t border-line"><ng-container *ngTemplateOutlet="pagination" /></div>
+  </div>
+} @else {
+  <div class="@container">
+    <div [class]="gridClass()">
+      @if (cardTemplate(); as template) {
+        @for (item of items(); track itemId()(item)) {
+          <ng-container *ngTemplateOutlet="template; context: cardContext(item)" />
+        }
+      }
+    </div>
+  </div>
+  <div class="mt-3.5 rounded-box border border-line bg-card"><ng-container *ngTemplateOutlet="pagination" /></div>
+}

@@ -309,13 +309,16 @@ export const PetHavenPreset = definePreset(Aura, {
         },
       },
     },
+    // Tabla de datos (10.9): encabezado sin fondo, filas de 10 px, sin cebra; hover `sunken`.
+    // El tamaño del encabezado y la última fila viven en `.ph-resource-table` (styles.css).
     datatable: {
       headerCell: {
-        background: '{content.background}',
+        background: 'transparent',
         borderColor: '{content.border.color}',
         color: '{text.muted.color}',
         selectedBackground: '{highlight.background}',
         selectedColor: '{highlight.color}',
+        padding: '10px 12px',
       },
       columnTitle: {
         fontWeight: '700',
@@ -325,6 +328,7 @@ export const PetHavenPreset = definePreset(Aura, {
       },
       bodyCell: {
         borderColor: '{content.border.color}',
+        padding: '10px 12px',
       },
     },
     dialog: {
@@ -346,6 +350,42 @@ export const PetHavenPreset = definePreset(Aura, {
     select: {
       overlay: {
         borderRadius: '14px',
+      },
+    },
+    // Chip de filtro (10.3): contorno de 1.5 px (en styles.css), `ink` al seleccionarlo. El control
+    // segmentado de `p-selectbutton` lo redefine en styles.css.
+    togglebutton: {
+      root: { padding: '0', borderRadius: '12px', gap: '0.5rem', fontWeight: '700' },
+      content: { padding: '0.375rem 0.875rem', borderRadius: '12px', checkedShadow: 'none' },
+      colorScheme: {
+        light: {
+          root: {
+            background: 'transparent',
+            hoverBackground: '{content.hover.background}',
+            borderColor: '{content.border.color}',
+            color: '{text.muted.color}',
+            hoverColor: '{text.color}',
+            checkedBackground: '{text.color}',
+            checkedBorderColor: '{text.color}',
+            checkedColor: 'var(--color-ground)',
+          },
+          content: { checkedBackground: 'transparent' },
+          icon: { color: '{text.muted.color}', hoverColor: '{text.color}', checkedColor: 'var(--color-ground)' },
+        },
+        dark: {
+          root: {
+            background: 'transparent',
+            hoverBackground: '{content.hover.background}',
+            borderColor: '{content.border.color}',
+            color: '{text.muted.color}',
+            hoverColor: '{text.color}',
+            checkedBackground: '{text.color}',
+            checkedBorderColor: '{text.color}',
+            checkedColor: 'var(--color-ground)',
+          },
+          content: { checkedBackground: 'transparent' },
+          icon: { color: '{text.muted.color}', hoverColor: '{text.color}', checkedColor: 'var(--color-ground)' },
+        },
       },
     },
     // Pares suaves de estado del sistema de diseño; las variables cambian solas con .app-dark.
@@ -401,6 +441,7 @@ export const PetHavenPreset = definePreset(Aura, {
       },
     },
     message: {
+      root: { borderRadius: '14px' },
       colorScheme: {
         light: {
           success: {

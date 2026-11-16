@@ -726,3 +726,73 @@ html.js .reveal.is-visible {
     transform: none;
   }
 }
+
+/* Botones de icono deshabilitados: 45 % de opacidad y sin puntero (10.1). */
+.ph-icon-btn:disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* Tabla de recursos dentro de app-resource-list (10.9): encabezado en `caption`, filas de 44 px como
+   mínimo y sin línea bajo la última fila, porque la paginación ya lleva la suya. */
+.ph-resource-table .p-datatable {
+  font-size: 14px;
+  line-height: 20px;
+}
+.ph-resource-table .p-datatable-thead > tr > th {
+  font-size: 12.5px;
+  line-height: 18px;
+}
+.ph-resource-table .p-datatable-tbody > tr > td {
+  height: 44px;
+}
+.ph-resource-table .p-datatable-tbody > tr:last-child > td {
+  border-bottom-width: 0;
+}
+
+/* Chip de filtro (p-togglebutton, 10.3): borde de 1.5 px y 38 px de alto (44 px en compacto). */
+.p-togglebutton {
+  min-height: 38px;
+  border-width: 1.5px;
+}
+@container (max-width: 679px) {
+  .p-togglebutton {
+    min-height: 44px;
+  }
+}
+
+/* Control segmentado (p-selectbutton, 10.3): pista `sunken` de 3 px, opciones de radio 10 y la
+   seleccionada en `card` con elevación 1. Sustituye al aspecto de chip dentro del grupo. */
+.p-selectbutton {
+  gap: 2px;
+  padding: 3px;
+  border-radius: var(--radius-control);
+  background: var(--color-sunken);
+}
+.p-selectbutton .p-togglebutton {
+  min-height: 0;
+  border: 0;
+  border-radius: var(--radius-field);
+  background: transparent;
+  color: var(--color-ink-muted);
+}
+.p-selectbutton .p-togglebutton:not(.p-togglebutton-checked):hover {
+  background: transparent;
+  color: var(--color-ink);
+}
+.p-selectbutton .p-togglebutton.p-togglebutton-checked {
+  background: var(--color-card);
+  color: var(--color-ink);
+  box-shadow: 0 1px 2px rgb(0 0 0 / 0.14);
+}
+.p-selectbutton .p-togglebutton-content {
+  padding: 7px 11px;
+  border-radius: var(--radius-field);
+  background: transparent;
+  box-shadow: none;
+}
+@container (max-width: 679px) {
+  .p-selectbutton .p-togglebutton-content {
+    padding: 11px 13px;
+  }
+}

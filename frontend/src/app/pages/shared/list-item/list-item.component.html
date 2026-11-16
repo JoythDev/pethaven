@@ -1,0 +1,22 @@
+<ng-template #body>
+  <span class="flex shrink-0 empty:hidden"><ng-content select="[leading]" /></span>
+  <span class="min-w-0 flex-1">
+    <span class="block truncate text-sm leading-5 font-extrabold">{{ heading() }}</span>
+    @if (subtitle(); as text) {
+      <span class="block truncate text-[12.5px] leading-[18px] text-ink-muted">{{ text }}</span>
+    }
+  </span>
+  <span class="flex shrink-0 items-center gap-2 empty:hidden"><ng-content select="[trailing]" /></span>
+</ng-template>
+
+@if (link(); as target) {
+  <a [routerLink]="target" [class]="rowClass()" [attr.aria-current]="selected() ? 'true' : null">
+    <ng-container *ngTemplateOutlet="body" />
+  </a>
+} @else if (interactive()) {
+  <button type="button" [class]="rowClass()" [attr.aria-pressed]="selected()" (click)="activate.emit()">
+    <ng-container *ngTemplateOutlet="body" />
+  </button>
+} @else {
+  <div [class]="rowClass()"><ng-container *ngTemplateOutlet="body" /></div>
+}

@@ -1,0 +1,68 @@
+<ng-template #panel>
+  @if (selected()) {
+    <app-block kind="header" [hue]="hue()" [flush]="true">
+      <ng-content select="[avatar]" />
+      <div class="min-w-0 flex-1">
+        <h2 class="font-display text-[20px] leading-[26px] font-semibold text-balance">{{ heading() }}</h2>
+        @if (subtitle(); as text) {
+          <p class="text-[12.5px] leading-[18px] text-ink-muted">{{ text }}</p>
+        }
+      </div>
+    </app-block>
+
+    <div class="flex flex-col divide-y divide-line px-4 py-1">
+      <div class="py-3 empty:hidden"><ng-content select="[figure]" /></div>
+      <div class="py-3 empty:hidden"><ng-content select="[details]" /></div>
+      <div class="py-3 empty:hidden"><ng-content select="[history]" /></div>
+      <div class="flex flex-col gap-2 py-3">
+        <ng-content select="[actions]" />
+        @if (fullLink() !== null) {
+          <a pButton [routerLink]="fullLink()" severity="secondary" [outlined]="true" class="w-full">
+            <svg lucideArrowUpRight [size]="18" aria-hidden="true"></svg>
+            {{ fullLabel() }}
+          </a>
+        }
+      </div>
+    </div>
+  } @else {
+    <app-empty-state [title]="emptyHeading()" [description]="emptyText()">
+      <app-sticker sticker name="paw" [width]="96" />
+    </app-empty-state>
+  }
+</ng-template>
+
+@if (inline()) {
+  <div class="sticky top-0">
+    @if (loading()) {
+      <app-skeleton variant="media" />
+    } @else {
+      <aside
+        [attr.aria-label]="label()"
+        class="max-h-[calc(100dvh-98px)] overflow-y-auto rounded-box border border-line bg-card"
+      >
+        <ng-container *ngTemplateOutlet="panel" />
+      </aside>
+    }
+  </div>
+} @else {
+  <p-drawer
+    position="right"
+    [header]="label()"
+    ariaCloseLabel="Cerrar detalle"
+    [visible]="drawerVisible()"
+    (visibleChange)="open.set($event)"
+    [transitionOptions]="transition"
+    [style]="{ width: 'min(26rem, 100vw)' }"
+    styleClass="bg-ground!"
+  >
+    <ng-template #content>
+      @if (loading()) {
+        <app-skeleton variant="media" />
+      } @else {
+        <div class="overflow-hidden rounded-box border border-line bg-card">
+          <ng-container *ngTemplateOutlet="panel" />
+        </div>
+      }
+    </ng-template>
+  </p-drawer>
+}
