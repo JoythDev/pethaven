@@ -373,6 +373,15 @@ export const PetHavenPreset = definePreset(Aura, {
         },
       },
     },
+    // Barras de esqueleto en `line` y sin brillo; el pulso lo define .ph-skeleton-bar en styles.css.
+    // Aura define el fondo por esquema, así que se sustituye en ambos.
+    skeleton: {
+      root: { borderRadius: '7px' },
+      colorScheme: {
+        light: { root: { background: 'var(--color-line)', animationBackground: 'transparent' } },
+        dark: { root: { background: 'var(--color-line)', animationBackground: 'transparent' } },
+      },
+    },
     tooltip: {
       root: {
         maxWidth: '16rem',

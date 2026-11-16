@@ -778,7 +778,7 @@ Dialogs trap focus, close on Escape, and return focus to the trigger. A dialog t
 ### 10.21 Skeleton — `p-skeleton`
 
 - Skeletons replace spinners for all content loading.
-- A skeleton keeps the exact outer shape of what it stands for (card, block, row), with `surface-sunken` bars for text lines: one at 42% width and 16px for the title, then lines of 11px.
+- A skeleton keeps the exact outer shape of what it stands for (card, block, row), with `line` bars for text lines (`surface-sunken` was too faint on cards; changed by the owner during T6): one at 42% width and 16px for the title, then lines of 11px.
 - Color blocks load as `surface` cards with skeleton bars, not as colored blocks.
 - The page chrome (top bar, tabs, page title, toolbar) renders immediately; only data regions are skeletons.
 - Show the skeleton only if loading takes longer than 150ms, and keep it for at least 300ms to avoid flicker.

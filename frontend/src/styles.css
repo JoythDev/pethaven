@@ -162,6 +162,16 @@
 }
 .ph-block :focus-visible { outline-color: var(--color-on-hue); }
 
+/* Esqueletos de carga (app-skeleton): pulso de opacidad de 1 a 0.45 en 1.1 s. */
+@keyframes ph-skeleton-pulse {
+  from { opacity: 1; }
+  to { opacity: 0.45; }
+}
+.ph-skeleton-bar { animation: ph-skeleton-pulse 1.1s ease-in-out infinite alternate; }
+@media (prefers-reduced-motion: reduce) {
+  .ph-skeleton-bar { animation: none; opacity: 1; }
+}
+
 /* Stickers (public/images/stickers/stickers.svg). Clases sin anidar: <use> clona los símbolos en un
    árbol propio, así que solo heredan variables y casan selectores simples. */
 .sk {
