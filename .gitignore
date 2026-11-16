@@ -31,3 +31,6 @@ Thumbs.db
 # Archivos de workflow
 .atl
 /odd/
+
+# CodeGraph local index
+/.codegraph/
