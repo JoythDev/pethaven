@@ -108,6 +108,60 @@
 .hue-lilac { --hue: var(--color-hue-lilac); }
 .hue-peach { --hue: var(--color-hue-peach); }
 
+/* Bloques de color (app-block). Todo lo de dentro deriva del tono: texto, atenuado y divisores. */
+.ph-block {
+  background: var(--hue);
+  color: var(--color-on-hue);
+  --color-ink: var(--color-on-hue);
+  --color-ink-muted: color-mix(in srgb, var(--color-on-hue) 72%, var(--hue));
+  --color-line: color-mix(in srgb, var(--color-on-hue) 18%, var(--hue));
+}
+.ph-geo {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.ph-geo > i { position: absolute; display: block; }
+.ph-geo-circle { border-radius: 50%; background: color-mix(in srgb, #fff 34%, var(--hue)); }
+.ph-geo-quarter { right: 0; bottom: 0; border-radius: 100% 0 0 0; background: color-mix(in srgb, var(--color-on-hue) 16%, var(--hue)); }
+.ph-geo-tri {
+  width: 0;
+  height: 0;
+  border-right: 44px solid transparent;
+  border-bottom: 70px solid color-mix(in srgb, #fff 26%, var(--hue));
+  border-left: 44px solid transparent;
+}
+/* Controles sobre un tono: se invierten a on-hue; el oliva no va sobre un tono. */
+.ph-block .p-tag {
+  background: color-mix(in srgb, var(--color-on-hue) 12%, var(--hue));
+  color: var(--color-on-hue);
+}
+.ph-block .p-button {
+  background: var(--color-on-hue);
+  border-color: var(--color-on-hue);
+  color: var(--hue);
+}
+.ph-block .p-button:not(:disabled):hover {
+  background: color-mix(in srgb, var(--color-on-hue) 84%, var(--hue));
+  border-color: color-mix(in srgb, var(--color-on-hue) 84%, var(--hue));
+  color: var(--hue);
+}
+.ph-block .p-button.p-button-outlined,
+.ph-block .p-button.p-button-text {
+  background: transparent;
+  color: var(--color-on-hue);
+}
+.ph-block .p-button.p-button-outlined { border: 1.5px solid var(--color-on-hue); }
+.ph-block .p-button.p-button-text { border-color: transparent; }
+.ph-block .p-button.p-button-outlined:not(:disabled):hover,
+.ph-block .p-button.p-button-text:not(:disabled):hover {
+  background: color-mix(in srgb, var(--color-on-hue) 10%, var(--hue));
+  color: var(--color-on-hue);
+}
+.ph-block :focus-visible { outline-color: var(--color-on-hue); }
+
 /* Stickers (public/images/stickers/stickers.svg). Clases sin anidar: <use> clona los símbolos en un
    árbol propio, así que solo heredan variables y casan selectores simples. */
 .sk {
@@ -557,19 +611,23 @@ html.js .reveal.is-visible {
 }
 
 /* --------------------------------------------------------------------------
-   Botones rellenos de PrimeNG: sombra suave y leve elevación al pasar el cursor
+   Botones de PrimeNG: planos (sin sombra) y con respuesta al presionar
    -------------------------------------------------------------------------- */
-.p-button:not(.p-button-text):not(.p-button-outlined):not(.p-button-link):not(:disabled) {
-  box-shadow: 0 8px 16px -8px rgb(122 80 42 / 0.5);
+.p-button {
   transition:
-    transform 0.2s ease,
-    box-shadow 0.2s ease,
-    background 0.2s ease;
+    transform 120ms var(--ease-out-strong),
+    background 180ms var(--ease-out-strong),
+    border-color 180ms var(--ease-out-strong),
+    color 180ms var(--ease-out-strong);
 }
 
-.p-button:not(.p-button-text):not(.p-button-outlined):not(.p-button-link):not(:disabled):hover {
-  transform: translateY(-1px);
-  box-shadow: 0 12px 20px -8px rgb(122 80 42 / 0.55);
+.p-button:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .p-button { transition: none; }
+  .p-button:not(:disabled):active { transform: none; }
 }
 
 /* --------------------------------------------------------------------------

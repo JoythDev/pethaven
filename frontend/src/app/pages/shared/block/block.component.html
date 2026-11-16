@@ -1,0 +1,37 @@
+<span class="ph-geo" aria-hidden="true">
+  @switch (kind()) {
+    @case ('hero') {
+      <i class="ph-geo-circle -top-[90px] right-[120px] size-[210px]"></i>
+      <i class="ph-geo-quarter size-[170px]"></i>
+      <i class="ph-geo-tri -bottom-1.5 left-[56%]"></i>
+    }
+    @case ('kpi') {
+      <i class="ph-geo-circle -top-7 -right-7 size-24"></i>
+      <i class="ph-geo-quarter size-[70px]"></i>
+    }
+    @default {
+      <i class="ph-geo-circle -top-[34px] -right-[30px] size-[86px]"></i>
+    }
+  }
+</span>
+
+<div class="relative z-[1] flex min-w-0 flex-1" [class.flex-col]="kind() !== 'header'" [class.items-center]="kind() === 'header'" [class.gap-3]="kind() === 'header'" [class.pr-14]="kind() === 'kpi'">
+  <ng-content />
+</div>
+
+@switch (kind()) {
+  @case ('hero') {
+    <!-- Sobresale 24 px por arriba (margen -44 = padding 20 + 24) y queda a ~24 px del borde inferior. -->
+    <div class="relative z-[1] -mt-11 shrink-0 self-end @max-[679px]:hidden">
+      <ng-content select="[art]" />
+    </div>
+  }
+  @case ('kpi') {
+    <div class="absolute right-2.5 bottom-1.5 z-[1]">
+      <ng-content select="[art]" />
+    </div>
+  }
+  @default {
+    <ng-content select="[art]" />
+  }
+}
