@@ -4,9 +4,10 @@ export const IDENTITY_HUES = ['honey', 'sage', 'sky', 'rose', 'lilac', 'peach'] 
 export type IdentityHue = (typeof IDENTITY_HUES)[number];
 
 // Número estable a partir del id; lo comparten el color de identidad y el kit de pelaje.
+// Un id numérico no finito cae en 0 para que el color siga siendo válido.
 export function identityIndex(id: number | string): number {
   return typeof id === 'number'
-    ? Math.abs(Math.trunc(id))
+    ? Number.isFinite(id) ? Math.abs(Math.trunc(id)) : 0
     : [...id].reduce((sum, ch) => sum + ch.codePointAt(0)!, 0);
 }
 
