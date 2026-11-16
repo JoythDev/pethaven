@@ -313,7 +313,7 @@ Minimum pointer target is 24 by 24px on desktop and 44 by 44px on touch layouts.
 
 ## 5. Iconography
 
-- Library: **Lucide** via `lucide-angular`. PrimeIcons remains only for icons rendered internally by PrimeNG components and must not be used in application templates.
+- Library: **Lucide** via `@lucide/angular`. PrimeIcons remains only for icons rendered internally by PrimeNG components and must not be used in application templates.
 - Style: outline, `stroke-width: 1.8`, round caps and joins, `currentColor`.
 - Sizes: 18px default, 16px in `sm` controls, 13px inside tags, 24px in empty headers. No other sizes.
 - An icon next to a label is decorative (`aria-hidden="true"`). An icon-only button must have an `aria-label` and a tooltip.
@@ -1099,7 +1099,7 @@ Follows the project's atomic and container-presentational conventions.
 
 | Package | Reason |
 |---|---|
-| `lucide-angular` | Icon set (section 5) |
+| `@lucide/angular` | Icon set (section 5) |
 | `chart.js` | Required by PrimeNG `p-chart` (10.18) |
 
 ### 14.6 Theme bootstrapping
@@ -1113,7 +1113,7 @@ An inline script in `index.html` sets the `app-dark` class before Angular starts
 ### 15.1 Implementation constraints set by the owner
 
 - New code follows the architecture and patterns the frontend already uses. Code comments are short and added only when they are really needed.
-- No dependency may be added without the owner's approval. Approved so far: `lucide-angular` and `chart.js`. If another library would improve something, propose it and wait for approval.
+- No dependency may be added without the owner's approval. Approved so far: `@lucide/angular` and `chart.js`. If another library would improve something, propose it and wait for approval.
 - Build small and large reusable components so markup and logic are not repeated.
 - Design for desktop first, and give mobile layouts real attention so the experience is good there too.
 - The backend is not changed. Demo-only features get their backend later. A backend change is acceptable only if it is small and low impact, and only with the owner's approval.
