@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | v1.0, approved by the owner |
+| **Status** | v1.1, approved by the owner after the final demo review |
 | **Scope** | Authentication and the Client, Veterinarian and Administrator portals. The landing page redesign is deferred (see 9.10) |
 | **Stack** | Angular 19, PrimeNG 19 (Aura-based `PetHavenPreset`), Tailwind CSS v4, `tailwindcss-primeui` |
 | **Direction** | "Bloques" (color blocks with geometry and sticker illustrations) |
@@ -366,7 +366,7 @@ When a pet has no coat information, the kit is chosen with `id mod 6` so it stay
 | Characters | Dog (sitting, front), Cat (sitting, front), Long dog (side profile) |
 | Objects | Bone, Pill bottle, Syringe, Calendar, Paw, Heart, Food bowl, Shield, Star |
 
-The current drawings are approved in style. A final art pass is pending for proportions and details before production (see open items). New illustrations must follow 6.1 and be added to this table.
+The drawings are approved in style. The implementation includes a final art pass on proportions and details, and extends the object set with veterinary-themed stickers for the daily tips (for example: stethoscope, thermometer, bandage, shampoo bottle, toothbrush, leash, water bowl, carrier, pet bed, treat). New illustrations must follow 6.1 and be added to this table.
 
 ### 6.3 Pet photo and sticker
 
@@ -378,7 +378,7 @@ The current drawings are approved in style. A final art pass is pending for prop
 
 | Context | Size | Rule |
 |---|---|---|
-| Hero block | 180 to 290px wide | One per screen. May overflow the top edge of the block by up to 32px |
+| Hero block | 180 to 290px wide | One per screen. Overflows the top edge of the block by 16 to 32px and keeps at least 12px of clear space between its halo and the bottom edge. The halo must never touch or be cut by the bottom edge |
 | Resource card header | 96 to 130px | Centered on the identity hue |
 | KPI block | 46 to 56px object | Bottom-right corner, never overlapping the figure |
 | Empty state | 80 to 130px | Above the title |
@@ -429,6 +429,7 @@ Motion is functional and sparse. If an animation has no one-word purpose (feedba
 - Overlays enter from `opacity: 0` and `scale(0.96)` or an 10px offset, and exit faster than they enter.
 - Tabs, view switches and theme changes do not animate content.
 - Charts render without entrance animation. Data the user is reading never moves for style.
+- The sign-in illustration block is the single ambient animation in the product (see 9.11). Its elements drift no more than 12px over 8 to 12 seconds with ease-in-out, and compositions cross-fade over 600ms every 12 to 16 seconds. It pauses when the tab is hidden.
 - Skeletons pulse opacity between 1 and 0.45 over 1.1s.
 - `prefers-reduced-motion: reduce` collapses all transitions and animations to instant, including the skeleton pulse.
 
@@ -471,7 +472,10 @@ Layout responds to the width of the application container (container queries), s
 +-------------+--------------------------------------------------------+
 ```
 
-- The shell fills the viewport height. Only the content region scrolls; the top bar is sticky.
+- The shell fills the viewport height and never scrolls as a whole. It has three independent regions:
+  - The top bar is fixed at the top at all times.
+  - The contextual sidebar is fixed in place. If its content is taller than the viewport, the sidebar scrolls on its own.
+  - The content region scrolls independently of both.
 - Content uses the full available width. There is no centered max-width column in the portals.
 - Page padding: 18px horizontal, 16px top, 22px bottom (12px on `compact`).
 
@@ -488,7 +492,8 @@ Layout responds to the width of the application container (container queries), s
 - A pill container (`surface-sunken`, 4px padding, `radius-full`) holding one tab per section of the current role.
 - Tab: icon 18px plus label, `label` type, `ink-muted`, 8px by 14px padding, `radius-full`.
 - Active tab: `surface` background, `ink` text, elevation level 1. Hover: `ink` text.
-- Three to five tabs per role. A sixth section moves into a "Más" menu at the end of the group.
+- Up to seven tabs per role. Every role ends with the same two tabs, in this order: "Notificaciones", then "Perfil". An eighth section would move into a "Más" menu placed before those two.
+- When the tabs do not fit, the top bar gives up space in this order: the user name and role text collapse to the avatar (container below 1340px), then the search field narrows, then the tab group scrolls horizontally.
 - The active tab reflects the top-level section even on nested routes (for example the pet detail page keeps "Pacientes" active).
 - Keyboard: arrow keys move between tabs, Enter activates. Implemented as navigation links with `aria-current="page"`.
 
@@ -500,7 +505,8 @@ The left sidebar shows information and shortcuts related to the current section,
 - Collapsible with the `panel-left` button in the page header. The state is stored in `localStorage` under `pethaven.sidebar` and applies to all sections.
 - On `medium` and `compact` it is closed by default and opens as a drawer from the left over a scrim.
 - Content rules:
-  - At most three modules: one compact color block (key figure or primary call to action) and up to two cards.
+  - At most three contextual modules: one compact color block (key figure or primary call to action) and up to two cards.
+  - A "Notificaciones" card is always the last module, for every role. It shows the three most recent notifications with icon, title, one line of detail and relative time, and ends with a "Mostrar todo" text button that opens the Notificaciones tab. It is hidden on the Notificaciones screen itself.
   - Content must change with the section. It must not repeat a module that is visible in the main area of the same screen.
   - Every item is a shortcut: selecting a pet, opening a waiting patient, jumping to a low-stock drug.
   - If a section has nothing contextual to show, the sidebar is omitted and the content takes the full width.
@@ -540,7 +546,7 @@ Default content per role (to be refined per screen):
 
 ### 9.9 Compact layout (mobile)
 
-- Primary navigation becomes a fixed bottom tab bar: `surface` background, 1px `border` top edge, one item per section with a 20px icon above a 12px label, 56px tall plus the safe-area inset. Active item uses an `accent` pill behind icon and label with `on-accent` content.
+- Primary navigation becomes a fixed bottom tab bar: `surface` background, 1px `border` top edge, one item per section with a 20px icon above a 12px label, 56px tall plus the safe-area inset. Active item uses an `accent` pill behind icon and label with `on-accent` content. The bar shows at most five items: the first four sections and a "Más" item that opens the remaining ones (including Notificaciones and Perfil) in a bottom sheet.
 - The top bar keeps the logo mark, the sidebar button and the user avatar. Search and notifications move into the user menu.
 - All controls use the `lg` size. Tables switch to card view (see 11.1).
 - Hero stickers are hidden; geometry stays.
@@ -556,7 +562,9 @@ The landing page redesign is pending and is out of scope for this version.
 
 ### 9.11 Authentication
 
-- Two-panel layout on `expanded`: a form card (max 440px) on `ground` and a color block with geometry, one sticker and a short brand line. On `compact`, only the form.
+- Two-panel layout on `expanded`: a form (max 440px) on `ground` and a large color block. On `compact`, only the form.
+- The color block is richer than portal blocks. A composition has five to seven geometric shapes of varied kinds (circle, quarter circle, triangle, ring, rounded square), two characters and three to four small object stickers placed around them at slight rotations (up to 18 degrees). Nothing may sit behind or closer than 24px to the brand line and benefit list in the bottom-left corner.
+- The block cycles through at least three compositions that use different stickers from the library, with the slow drift and cross-fade defined in section 7. With `prefers-reduced-motion: reduce` it shows one static composition.
 - Controls use `lg` size. One primary button per screen.
 
 ---
@@ -678,7 +686,7 @@ Each entry lists the PrimeNG component to theme. "Custom" means it is built in t
 
 The right-hand panel that describes the selected row or card without leaving the list.
 
-- Span 4 beside a span 8 list on `expanded`. Sticky to the top of the content region.
+- Span 4 beside a span 8 list on `expanded`. It stays fixed at the top of the content region while the table or card grid scrolls underneath, so the detail is always visible. If the panel is taller than the region, it scrolls on its own.
 - Anatomy, top to bottom:
   1. Header color block in the identity hue: avatar or sticker, name (`title-2`), secondary line.
   2. Key figure with its status tag and meter when relevant.
@@ -743,7 +751,7 @@ Used for treatment history and activity.
 | Dialog | `p-dialog` | `surface`, `radius-xl`, 20px padding, max width 460px (forms up to 640px), `overlay` scrim. Title (`title-2`), close button, footer with secondary then primary on the right. For short, self-contained tasks |
 | Confirm dialog | `p-confirmdialog` | For destructive or irreversible actions. Title states the action and the object ("¿Eliminar a Luna?"), body states the consequence, primary button is Danger and repeats the verb |
 | Drawer | `p-drawer` | Sidebar and detail panel on smaller widths. 320 to 420px, elevation 3 |
-| Tooltip | `pTooltip` | `ink` bg, `ground` text, `caption`, `radius-sm`. Required on icon-only buttons. Never holds essential information |
+| Tooltip | `pTooltip` | `ink` bg, `ground` text, `caption`, `radius-sm`. Required on icon-only buttons. Never holds essential information. Native browser tooltips (`title` attribute) are not used anywhere; every tooltip is a `pTooltip`, including multi-line ones on chart and schedule segments |
 | Menu | `p-menu`, `p-popover` | `surface`, 1px `border`, `radius-lg`, elevation 2. Opens from its trigger |
 
 Dialogs trap focus, close on Escape, and return focus to the trigger. A dialog that needs a second step should be a page or a stepper instead.
@@ -756,6 +764,15 @@ Dialogs trap focus, close on Escape, and return focus to the trigger. A dialog t
 - The page chrome (top bar, tabs, page title, toolbar) renders immediately; only data regions are skeletons.
 - Show the skeleton only if loading takes longer than 150ms, and keep it for at least 300ms to avoid flicker.
 - A spinner is allowed only inside a button while its action is in flight.
+- Skeletons come in a small fixed set of variants, chosen by the component they stand for. Do not add more than these:
+
+| Variant | Stands for | Shape |
+|---|---|---|
+| `text` | Cards with a title and paragraphs | One 42% title bar and three to four text lines |
+| `row` | Table rows and list rows | A 32px circle, two stacked lines, and a short trailing pill |
+| `media` | Resource cards and detail panel headers | A full-width block on top, then a title bar and two lines |
+| `figure` | KPI blocks | A short label bar, a wide 28px figure bar and a short trend bar |
+| `chart` | Charts | A title bar and five bars of different heights aligned to a baseline |
 
 ### 10.22 Empty state — custom (`ph-empty-state`)
 
@@ -769,7 +786,16 @@ Dialogs trap focus, close on Escape, and return focus to the trigger. A dialog t
 - Selected: `accent-soft` background with the selection border in 4.3. Disabled: 40% opacity with strikethrough for unavailable time slots.
 - Grids use `repeat(auto-fill, minmax(128px, 1fr))`; time slots use 84px.
 
-### 10.24 Definition list — custom
+### 10.24 Demo tag — custom
+
+Marks a capability that is shown with example data and has no backend yet.
+
+- A neutral tag with a 1.5px dashed `border-strong` outline, transparent background, `ink-muted` text, label "Demo".
+- Placed after the title of the card, block, tab or page it applies to, with 8px of space before it. It must not touch the text.
+- It has a `pTooltip`: "Función en demostración: usa datos de ejemplo."
+- Removed from a feature the moment it reads real data.
+
+### 10.25 Definition list — custom
 
 - Two columns: term in `ink-muted` on the left, value in `body-strong` right-aligned. 7px row gap.
 - Used in detail panels, summaries and confirmation steps. Not for more than eight rows; beyond that, use a section with sub-headings.
@@ -823,7 +849,8 @@ Search filters as the user types (debounced 250ms). Search text, filters, sort, 
 - First row: up to four KPI blocks. Then charts (span 8) with a ranked list (span 4), then operational cards.
 - Period selector: segmented control with "Mes", "Trimestre", "Año", "Todo". "Todo" covers all recorded history and hides the comparison against a previous period.
 - Every KPI states its comparison basis once per screen ("frente al periodo anterior").
-- Daily summaries must show structure, not just counts: a segmented bar or mini timeline of the day, next appointment, and counts as supporting figures.
+- Daily summaries must show structure, not just counts: a segmented bar or mini timeline of the day, next appointment, and counts as supporting figures. Each segment has a hover and focus state (it grows slightly and its border darkens) and a `pTooltip` with the time, pet, reason, duration and owner, or "Libre" for an open slot.
+- The administrator dashboard shows every metric the dashboard API returns as a first-class element, never demoted to the sidebar: total sales, gross profit, treatments administered in the last month, treatments by medication, top three medications by units sold, active and inactive veterinarians, and total and active pets. Demo-only metrics (period comparison, occupancy, low stock) are added around them.
 
 ### 11.7 Roles and permissions in the UI
 
@@ -842,10 +869,65 @@ Search filters as the user types (debounced 250ms). Search text, filters, sort, 
 | Page failed to load | Empty-state layout with an error sticker, plain explanation and "Reintentar" |
 | Destructive action | Confirm dialog first |
 
-### 11.9 Search and filters
+### 11.9 Notifications (demo)
+
+Notifications exist in three places for every role, all fed by the same source:
+
+| Place | Shows | Ends with |
+|---|---|---|
+| Bell menu in the top bar | Three most recent: icon, title, relative time | "Mostrar todo" |
+| Last card of the contextual sidebar | Three most recent: icon, title, one line of detail, relative time | "Mostrar todo" |
+| "Notificaciones" tab | All notifications grouped by "Hoy" and "Esta semana", with unread markers, an "unread" filter and "Marcar todo como leído" | n/a |
+
+- "Mostrar todo" always opens the Notificaciones tab.
+- The bell shows a dot while there are unread notifications.
+- Content is role-specific: appointments, daily care and vaccines for clients; agenda, urgencies, stock and pending check-ups for veterinarians; inventory, sales, team and imports for administrators.
+
+### 11.10 Role-specific detail in treatments
+
+The treatment detail panel shows more as the role gains responsibility:
+
+| Role | Drugs | Totals |
+|---|---|---|
+| Client | Name only | None. Prices are never shown to clients |
+| Veterinarian | Name, units, unit sale price, line subtotal | Prescription total |
+| Administrator | Everything the veterinarian sees, plus unit purchase cost | Prescription total, purchase cost and profit |
+
+The timeline shows the six most recent treatments, then a "Mostrar N más" text button that expands the rest in place ("Mostrar menos" collapses it).
+
+### 11.11 Pet activation
+
+- A pet is activated or deactivated with a toggle switch labelled "Mascota activa", the same pattern used for veterinarians.
+- It appears in two places for veterinarians: in the detail panel, between the summary and the action buttons, and in the create/edit form as the last field before the form actions, with a one-line explanation.
+- Toggling applies immediately and confirms with a toast. Administrators and clients do not see the switch.
+
+### 11.12 Create owner, then offer a pet
+
+After "Guardar dueño" succeeds, the same dialog switches to a confirmation state: a success title and the question "¿Desea registrar una mascota para este dueño?" with two buttons. "Registrar" opens the pet form with that owner preselected. "Más tarde" closes the dialog and shows the usual success toast.
+
+### 11.13 Pet form preview
+
+The form has a live preview card beside it. With a valid photo URL it shows the photo cropped to a circle on the identity hue; otherwise it shows the species sticker. A URL that fails to load falls back to the sticker and shows an inline hint under the field.
+
+### 11.14 Drug import page
+
+Importing drugs from Excel is a page with its own URL, not a dialog. It has three numbered steps and a side column:
+
+1. "Prepara el archivo": the required headers in order, an example table with two rows, and a template download.
+2. "Sube el archivo": drop zone, chosen file name, "Cancelar" and "Importar".
+3. "Resultado": appears after the backend responds. Success shows file name, sheet name, rows read, drugs imported and blank rows skipped. Failure shows an inline danger alert with the backend message, and the row and column when provided.
+
+The side column lists the file requirements (format, size, required and unique name, numeric rules, blank rows) and what happens when a row is invalid.
+
+### 11.15 Daily tip
+
+"Consejo del día" is a color block on the client home with a Caveat kicker, a `title-1`-scale headline, one sentence and a 130px sticker, sized so the block has no dead space. The tip comes from a fixed collection; the one shown is chosen by the date, so it changes every day and is the same for the whole day. Each tip names the sticker that matches its topic.
+
+### 11.16 Search and filters
 
 - Global search in the top bar searches across resources the role can see and groups results by type.
 - List search is scoped to the list. Active filters are visible as selected chips; "Quitar filtros" appears when any is active.
+- The drug list has a price range filter in the toolbar: two numeric fields, "Precio mín." and "Precio máx.", joined by "a". When the minimum is greater than the maximum the range is ignored and an inline message says so.
 
 ---
 
@@ -887,10 +969,9 @@ Use Angular's `es-CO` locale pipes; do not format by hand.
 
 | Resource | Status | Tag variant |
 |---|---|---|
-| Pet | Al día | success |
-| Pet | En tratamiento | warning |
-| Pet | Vacuna próxima, Control pendiente | info |
-| Pet | Inactiva | neutral |
+| Pet | Estable (active, no diagnosis) | success |
+| Pet | En tratamiento (active, with a diagnosis) | warning |
+| Pet | Inactiva (deactivated) | neutral |
 | Drug | Disponible | success |
 | Drug | Stock bajo | warning |
 | Drug | Agotado | danger |
@@ -1114,9 +1195,6 @@ Proposed by the author and approved in review. They are final.
 | Item | Notes |
 |---|---|
 | Landing page redesign | Deferred. Section 9.10 will define marketing surfaces when it starts |
-| Final sticker art pass | Style approved; proportions and details to be refined, and more poses or species added if the product needs them |
 | Chart series 4 to 6 | Not contrast-tested against both surfaces |
 | Muted text on hues in dark theme | Derived value not measured |
-| Contextual sidebar content per screen | Section 9.5 gives the rules and a default per role; the exact modules per screen are defined with the final demo |
-| "Resumen del día" block | Redesign per 11.6 in the final demo |
 | Demo-only features | These ship in the UI with example data and are marked with a "Demo" tag; their backend and real implementation are pending: appointments (client booking wizard and veterinarian agenda), daily care plan, weight curve, vaccine card, minimum stock and inventory alerts, dashboard period selector with sales, profit and occupancy charts, global search and notifications. Replenishment orders and the live waiting room are out of scope |
