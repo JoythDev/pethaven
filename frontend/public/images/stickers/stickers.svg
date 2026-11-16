@@ -43,8 +43,9 @@
 <ellipse class="sk-fk" cx="141" cy="46" rx="3.5" ry="3"/>
 <circle class="sk-fk" cx="117" cy="40" r="2.6"/><circle class="sk-fh" cx="118" cy="39" r=".9"/>
 <path class="sk-o sk-l" d="M131 53c3 2 6 2 9 0"/>
+<rect class="sk-o sk-f4" x="101" y="44" width="9" height="23" rx="4.5" transform="rotate(-25 105.5 55.5)"/>
+<circle class="sk-o sk-fy" cx="112" cy="69" r="3.5"/>
 <path class="sk-o sk-f2" d="M104 30c-9 2-11 22-4 30 8-3 10-20 4-30z"/>
-<path class="sk-o sk-f4" d="M92 55l7-2 4 20-7 2z"/>
 </symbol>
 
 <!-- Objetos: lienzo de 64 unidades. -->
