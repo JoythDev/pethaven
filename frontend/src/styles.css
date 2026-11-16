@@ -19,6 +19,123 @@
   --animate-bounce-soft: bounce-soft 2s ease-in-out infinite;
 }
 
+/* Variante dark: la misma clase que usa PrimeNG (darkModeSelector en app.config.ts) */
+@custom-variant dark (&:where(.app-dark, .app-dark *));
+
+/* --------------------------------------------------------------------------
+   Sistema de diseño (docs/design/design-system.md). Acceso y portales.
+   Los tokens de arriba son los heredados que sigue usando la landing.
+   -------------------------------------------------------------------------- */
+@theme static {
+  --color-ground: #efe8da;
+  --color-card: #fffaf0;
+  --color-sunken: #f5ecdc;
+  --color-ink: #261a10;
+  --color-ink-muted: #6b5e4e;
+  --color-line: #ddd0b9;
+  --color-line-strong: #857760;
+  --color-accent: #73704b;
+  --color-accent-hover: #5c5a3b;
+  --color-on-accent: #fffaf0;
+  --color-accent-soft: #e5e2c9;
+  --color-accent-text: #5c5a3b;
+
+  --color-hue-honey: #eec56f;
+  --color-hue-sage: #a9c193;
+  --color-hue-sky: #a3c5cf;
+  --color-hue-rose: #e9b9b3;
+  --color-hue-lilac: #c6b5e2;
+  --color-hue-peach: #ecab8c;
+  --color-on-hue: #261a10;
+
+  --color-success: #6f9455;
+  --color-success-soft: #e2e6d1;
+  --color-on-success-soft: #55693d;
+  --color-warning: #d1922a;
+  --color-warning-soft: #f6e5c8;
+  --color-on-warning-soft: #845c1e;
+  --color-danger: #c9573c;
+  --color-danger-soft: #f4d9cc;
+  --color-on-danger-soft: #90422d;
+  --color-danger-solid: #b84a30;
+  --color-on-danger-solid: #ffffff;
+  --color-info: #5f8794;
+  --color-info-soft: #dfe3de;
+  --color-on-info-soft: #4b6166;
+
+  /* Radios con nombre propio para no alterar rounded-sm..xl, que usa la landing */
+  --radius-check: 7px;
+  --radius-field: 10px;
+  --radius-control: 12px;
+  --radius-row: 14px;
+  --radius-box: 20px;
+
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+.app-dark {
+  --color-ground: #0e0e0d;
+  --color-card: #1a1a18;
+  --color-sunken: #252522;
+  --color-ink: #f3efe6;
+  --color-ink-muted: #a59e92;
+  --color-line: #32312d;
+  --color-line-strong: #757368;
+  --color-accent: #cbc795;
+  --color-accent-hover: #dedaa9;
+  --color-on-accent: #1c1b10;
+  --color-accent-soft: #33321f;
+  --color-accent-text: #cbc795;
+  --color-on-hue: #1b130b;
+
+  --color-success-soft: #2d3525;
+  --color-on-success-soft: #a4b88f;
+  --color-warning-soft: #42341c;
+  --color-on-warning-soft: #dfb775;
+  --color-danger-soft: #412720;
+  --color-on-danger-soft: #da9480;
+  --color-danger-solid: #e08a73;
+  --color-on-danger-solid: #1b130b;
+  --color-info-soft: #293233;
+  --color-on-info-soft: #9ab1b5;
+}
+
+/* Scrollbars propios. La clase va en <html> mientras se muestra acceso o un portal. */
+.ph-scrollbars,
+.ph-scrollbars * {
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--color-line-strong) 60%, transparent) transparent;
+}
+
+.ph-scrollbars ::-webkit-scrollbar,
+.ph-scrollbars::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+.ph-scrollbars ::-webkit-scrollbar-track,
+.ph-scrollbars::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.ph-scrollbars ::-webkit-scrollbar-thumb,
+.ph-scrollbars::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--color-line-strong) 60%, transparent);
+  border: 3px solid transparent;
+  border-radius: 999px;
+  background-clip: padding-box;
+}
+
+.ph-scrollbars ::-webkit-scrollbar-thumb:hover,
+.ph-scrollbars::-webkit-scrollbar-thumb:hover {
+  background-color: var(--color-ink-muted);
+}
+
+.ph-scrollbars ::-webkit-scrollbar-corner,
+.ph-scrollbars::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* Fuente base de la UI */
 body {
   font-family: var(--font-body);
