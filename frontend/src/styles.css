@@ -108,6 +108,61 @@
 .hue-lilac { --hue: var(--color-hue-lilac); }
 .hue-peach { --hue: var(--color-hue-peach); }
 
+/* Stickers (public/images/stickers/stickers.svg). Clases sin anidar: <use> clona los símbolos en un
+   árbol propio, así que solo heredan variables y casan selectores simples. */
+.sk {
+  --ol: #261a10;
+  --halo: #fffaf0;
+  --c1: #e9b872;
+  --c2: #b0743c;
+  --c3: #fff1d8;
+  --c4: #73704b;
+  --c5: #eaa7a4;
+  overflow: visible;
+}
+.sk-k2 { --c1: #f1ede6; --c2: #9a958d; --c3: #ffffff; --c4: #c96f4a; }
+.sk-k3 { --c1: #c9824a; --c2: #84502a; --c3: #f3d6b0; --c4: #5f8794; }
+.sk-k4 { --c1: #5b4a3c; --c2: #33271e; --c3: #e9d5b8; --c4: #e8b04b; }
+.sk-k5 { --c1: #eaa25a; --c2: #b9682a; --c3: #fff1d8; --c4: #73704b; }
+.sk-k6 { --c1: #fff6e2; --c2: #d9a15c; --c3: #ffffff; --c4: #c96f4a; }
+.sk-o { stroke: var(--ol); stroke-width: var(--olw, 3); stroke-linejoin: round; stroke-linecap: round; }
+.sk-o2 { stroke: var(--ol); stroke-width: var(--olw2, 6); stroke-linejoin: round; stroke-linecap: round; }
+.sk-n { stroke: none; }
+.sk-l { fill: none; }
+.sk-f1 { fill: var(--c1); }
+.sk-f2 { fill: var(--c2); }
+.sk-f3 { fill: var(--c3); }
+.sk-f4 { fill: var(--c4); }
+.sk-f5 { fill: var(--c5); }
+.sk-fk { fill: var(--ol); }
+.sk-fh { fill: var(--glint, #fffaf0); }
+.sk-fw { fill: var(--water, #a3c5cf); }
+.sk-fy { fill: var(--tag, #f0c95a); }
+.sk-s2 { fill: none; stroke: var(--c2); stroke-width: 3; stroke-linecap: round; }
+.sk-w { fill: none; stroke: var(--ol); stroke-width: var(--ww, 1.6); stroke-linecap: round; }
+.sk-tl { fill: none; stroke: var(--ol); stroke-width: var(--tlw, 11); stroke-linecap: round; }
+.sk-tl2 { fill: none; stroke: var(--tc, var(--c1)); stroke-width: 5; stroke-linecap: round; }
+.sk-tb { fill: none; stroke: var(--ol); stroke-width: var(--tbw, 10); stroke-linecap: round; stroke-linejoin: round; }
+.sk-tb2 { fill: none; stroke: var(--c4); stroke-width: 4.5; stroke-linecap: round; stroke-linejoin: round; }
+/* Silueta: el mismo dibujo debajo, todo en crema y con trazos más gruesos. */
+.sk-halo {
+  --ol: var(--halo);
+  --olw: 10;
+  --olw2: 12;
+  --ww: 7;
+  --tlw: 17;
+  --tbw: 17;
+  --c1: var(--halo);
+  --c2: var(--halo);
+  --c3: var(--halo);
+  --c4: var(--halo);
+  --c5: var(--halo);
+  --glint: var(--halo);
+  --water: var(--halo);
+  --tag: var(--halo);
+  --tc: var(--halo);
+}
+
 /* Tipo micro (12/16) en etiquetas: sin esto la altura depende de la interlínea heredada. */
 .p-tag {
   line-height: 16px;

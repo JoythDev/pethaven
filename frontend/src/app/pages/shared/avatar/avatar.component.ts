@@ -1,6 +1,9 @@
 import { Component, computed, effect, input, signal } from '@angular/core';
 
 import { identityHue, initials } from '../../../core/identity/identity';
+import { coatKitFor, speciesSticker } from '../../../core/stickers/stickers';
+import { Species } from '../../../models/pet.model';
+import { StickerComponent } from '../sticker/sticker.component';
 
 export type AvatarSize = 32 | 42 | 60;
 
@@ -12,10 +15,11 @@ const SIZE_CLASS: Record<AvatarSize, string> = {
 
 /**
  * Círculo con el color de identidad del recurso. Muestra la foto si la hay y carga; si no, las
- * iniciales (personas) o el contenido proyectado (el sticker de la especie, en mascotas).
+ * iniciales (personas) o la cabeza del sticker de su especie (mascotas).
  */
 @Component({
   selector: 'app-avatar',
+  imports: [StickerComponent],
   templateUrl: './avatar.component.html',
   host: { '[class]': 'hostClass()' },
 })
@@ -23,6 +27,7 @@ export class AvatarComponent {
   readonly id = input.required<number | string>();
   readonly name = input.required<string>();
   readonly kind = input<'pet' | 'person'>('person');
+  readonly species = input<Species>(Species.DOG);
   readonly photoUrl = input<string | null>(null);
   readonly size = input<AvatarSize>(42);
 
@@ -30,6 +35,8 @@ export class AvatarComponent {
 
   protected readonly showPhoto = computed(() => !!this.photoUrl() && !this.photoFailed());
   protected readonly initials = computed(() => initials(this.name()));
+  protected readonly sticker = computed(() => speciesSticker(this.species()));
+  protected readonly kit = computed(() => coatKitFor(typeof this.id() === 'number' ? (this.id() as number) : 0));
 
   protected readonly hostClass = computed(
     () =>

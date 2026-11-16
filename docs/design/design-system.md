@@ -382,8 +382,9 @@ When a pet has no coat information, the kit is chosen with `id mod 6` so it stay
 |---|---|
 | Characters | Dog (sitting, front), Cat (sitting, front), Long dog (side profile) |
 | Objects | Bone, Pill bottle, Syringe, Calendar, Paw, Heart, Food bowl, Shield, Star |
+| Objects for daily tips | Stethoscope, Thermometer, Bandage, Shampoo bottle, Toothbrush, Leash and collar, Water bowl, Carrier, Pet bed, Treat |
 
-The drawings are approved in style. The implementation includes a final art pass on proportions and details, and extends the object set with veterinary-themed stickers for the daily tips (for example: stethoscope, thermometer, bandage, shampoo bottle, toothbrush, leash, water bowl, carrier, pet bed, treat). New illustrations must follow 6.1 and be added to this table.
+The sprite lives in `frontend/public/images/stickers/stickers.svg` (symbols `sk-<name>`); `app-sticker` renders it. The final art pass added an eye glint to the characters, a belly patch and mouth to the long dog, a halo to the tail and whiskers, and the daily-tip objects. New illustrations must follow 6.1 and be added to this table.
 
 ### 6.3 Pet photo and sticker
 

@@ -4,6 +4,6 @@
   <span aria-hidden="true">{{ initials() }}</span>
   <span class="sr-only">{{ name() }}</span>
 } @else {
-  <ng-content />
+  <app-sticker [name]="sticker()" [width]="size()" [kit]="kit()" [head]="true" />
   <span class="sr-only">{{ name() }}</span>
 }
