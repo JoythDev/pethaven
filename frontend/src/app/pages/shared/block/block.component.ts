@@ -4,6 +4,13 @@ import { IdentityHue } from '../../../core/identity/identity';
 
 export type BlockKind = 'hero' | 'kpi' | 'summary' | 'header';
 
+const ART_CLASS: Record<BlockKind, string> = {
+  hero: 'relative z-[1] -mt-11 shrink-0 self-end @max-[679px]:hidden',
+  kpi: 'absolute right-2.5 bottom-1.5 z-[1]',
+  summary: 'contents',
+  header: 'contents',
+};
+
 const KIND_CLASS: Record<BlockKind, string> = {
   hero: 'flex items-center gap-4 px-[22px] py-5 min-h-[196px]',
   kpi: 'flex flex-col p-4 min-h-[128px]',
@@ -28,6 +35,8 @@ export class BlockComponent {
   readonly kind = input<BlockKind>('summary');
   // Sin esquinas redondeadas, para la cabecera dentro de un panel o tarjeta que ya recorta.
   readonly flush = input(false);
+
+  protected readonly artClass = computed(() => ART_CLASS[this.kind()]);
 
   protected readonly hostClass = computed(
     () =>

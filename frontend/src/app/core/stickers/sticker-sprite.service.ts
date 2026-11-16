@@ -22,9 +22,9 @@ export class StickerSpriteService {
         this.document.body.prepend(host);
       })
       .catch((error) => {
-        // Los stickers son decorativos: si el sprite no carga se omiten y se reintenta en el próximo.
+        // Los stickers son decorativos: si el sprite no carga se omiten. Un solo intento por carga
+        // de página, para no repetir la petición con cada sticker de una lista.
         console.warn('No se pudo cargar el sprite de stickers', error);
-        this.loading = null;
       });
     return this.loading;
   }
