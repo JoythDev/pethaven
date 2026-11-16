@@ -100,6 +100,26 @@
   --color-on-info-soft: #9ab1b5;
 }
 
+/* Tono de identidad o de bloque: fija --hue y el contenido deriva de él (bg-(--hue)). */
+.hue-honey { --hue: var(--color-hue-honey); }
+.hue-sage { --hue: var(--color-hue-sage); }
+.hue-sky { --hue: var(--color-hue-sky); }
+.hue-rose { --hue: var(--color-hue-rose); }
+.hue-lilac { --hue: var(--color-hue-lilac); }
+.hue-peach { --hue: var(--color-hue-peach); }
+
+/* Tipo micro (12/16) en etiquetas: sin esto la altura depende de la interlínea heredada. */
+.p-tag {
+  line-height: 16px;
+}
+
+/* El preset de PrimeNG no tiene token de tipografía para el tooltip. */
+.p-tooltip .p-tooltip-text {
+  font-size: 12.5px;
+  line-height: 18px;
+  font-weight: 500;
+}
+
 /* Controles nativos en oscuro solo en acceso y portales; la landing no cambia. */
 .app-dark.ph-scrollbars {
   color-scheme: dark;

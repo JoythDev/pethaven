@@ -1,0 +1,20 @@
+<div
+  class="relative h-2 rounded-full bg-sunken"
+  role="meter"
+  aria-label="Existencias"
+  [attr.aria-valuenow]="units()"
+  aria-valuemin="0"
+  [attr.aria-valuetext]="(units() | number) + ' unidades, mínimo ' + (minimum() | number)"
+>
+  <span class="block h-full rounded-full {{ fillClass() }}" [style.width.%]="scale().fill"></span>
+  @if (minimum() > 0) {
+    <span
+      aria-hidden="true"
+      class="absolute -top-[3px] h-3.5 w-0.5 -translate-x-1/2 rounded-full bg-ink"
+      [style.left.%]="scale().tick"
+    ></span>
+  }
+</div>
+<p class="mt-1.5 text-[12.5px] leading-[18px] text-ink-muted tabular-nums" aria-hidden="true">
+  <span class="font-extrabold text-ink">{{ units() | number }}</span> uds., mín. {{ minimum() | number }}
+</p>

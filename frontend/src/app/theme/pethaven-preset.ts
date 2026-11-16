@@ -342,18 +342,47 @@ export const PetHavenPreset = definePreset(Aura, {
         borderRadius: '14px',
       },
     },
+    // Pares suaves de estado del sistema de diseño; las variables cambian solas con .app-dark.
     tag: {
       root: {
+        fontSize: '12px',
         fontWeight: '800',
+        padding: '3px 10px',
+        gap: '4px',
         borderRadius: '9999px',
+      },
+      icon: {
+        size: '13px',
       },
       colorScheme: {
         light: {
-          primary: { color: '{primary.800}' },
-          success: { color: '{green.800}' },
-          warn: { color: '{orange.900}' },
-          danger: { color: '{red.800}' },
+          primary: { background: 'var(--color-accent-soft)', color: 'var(--color-accent-text)' },
+          secondary: { background: 'var(--color-sunken)', color: 'var(--color-ink-muted)' },
+          success: { background: 'var(--color-success-soft)', color: 'var(--color-on-success-soft)' },
+          info: { background: 'var(--color-info-soft)', color: 'var(--color-on-info-soft)' },
+          warn: { background: 'var(--color-warning-soft)', color: 'var(--color-on-warning-soft)' },
+          danger: { background: 'var(--color-danger-soft)', color: 'var(--color-on-danger-soft)' },
         },
+        dark: {
+          primary: { background: 'var(--color-accent-soft)', color: 'var(--color-accent-text)' },
+          secondary: { background: 'var(--color-sunken)', color: 'var(--color-ink-muted)' },
+          success: { background: 'var(--color-success-soft)', color: 'var(--color-on-success-soft)' },
+          info: { background: 'var(--color-info-soft)', color: 'var(--color-on-info-soft)' },
+          warn: { background: 'var(--color-warning-soft)', color: 'var(--color-on-warning-soft)' },
+          danger: { background: 'var(--color-danger-soft)', color: 'var(--color-on-danger-soft)' },
+        },
+      },
+    },
+    tooltip: {
+      root: {
+        maxWidth: '16rem',
+        padding: '7px 10px',
+        borderRadius: '10px',
+        shadow: '0 12px 30px -10px rgb(0 0 0 / 0.35)',
+      },
+      colorScheme: {
+        light: { root: { background: 'var(--color-ink)', color: 'var(--color-ground)' } },
+        dark: { root: { background: 'var(--color-ink)', color: 'var(--color-ground)' } },
       },
     },
     message: {

@@ -1,0 +1,9 @@
+@if (showPhoto()) {
+  <img [src]="photoUrl()" [alt]="'Foto de ' + name()" class="absolute inset-0 size-full object-cover" (error)="onPhotoError()" />
+} @else if (kind() === 'person') {
+  <span aria-hidden="true">{{ initials() }}</span>
+  <span class="sr-only">{{ name() }}</span>
+} @else {
+  <ng-content />
+  <span class="sr-only">{{ name() }}</span>
+}

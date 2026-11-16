@@ -659,10 +659,11 @@ Each entry lists the PrimeNG component to theme. "Custom" means it is built in t
 - The hue of a block is either the identity hue of the resource it describes or, for non-resource blocks, a fixed hue assigned per block type within a screen. Adjacent blocks must use different hues.
 - KPI blocks must contain real information density: value, comparison against the previous period with direction, and where possible a sparkline or progress bar. A block with a single number and a label is not acceptable.
 
-### 10.7 Avatar — `p-avatar` (extended)
+### 10.7 Avatar — custom (`ph-avatar`)
 
 - Sizes 32, 42, 60px, circle, identity hue background.
 - Pets: photo or sticker head (6.3). People: initials in `on-hue`, weight 800 (Fraunces 600 at 60px).
+- Built as a custom component rather than `p-avatar`: it needs the identity hue, the three sizes, and a fallback from a failed photo to the sticker or initials.
 - Avatar group: overlap of 6px with a 2px `surface` ring, maximum five, then "+N".
 
 ### 10.8 List row — custom (`ph-list-item`)
@@ -755,7 +756,7 @@ Used for treatment history and activity.
 | Component | PrimeNG | Spec |
 |---|---|---|
 | Progress bar | `p-progressbar` | 8px, `radius-full`, `surface-sunken` track, `accent` fill; label beside it, not inside |
-| Stock meter | custom (`ph-stock-meter`) | 8px bar; fill `success` at or above minimum, `warning` below, `danger` at zero; a 2 by 14px `ink` tick marks the minimum threshold; the numeric value is always shown next to it |
+| Stock meter | custom (`ph-stock-meter`) | 8px bar; fill `success` at or above minimum, `warning` below, `danger` at zero; a 2 by 14px `ink` tick marks the minimum threshold; the numeric value is always shown next to it ("42 uds., mín. 20") |
 | Ring | custom SVG | 76px, 9px stroke, `accent` on `surface-sunken`, value in Fraunces at the center ("4/5") |
 | Sparkline | custom SVG | 2.2px stroke, `currentColor`, no axes; decorative, with the figure in text beside it |
 
