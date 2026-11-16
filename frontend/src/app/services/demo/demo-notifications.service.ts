@@ -1,5 +1,5 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, catchError, forkJoin, map, of, tap } from 'rxjs';
+import { Observable, catchError, defer, forkJoin, map, of, tap } from 'rxjs';
 import { generateDashboardPeriods } from '../../core/demo/dashboard-periods';
 import {
   administratorNotifications,
@@ -14,6 +14,7 @@ import { PetService } from '../pet.service';
 import { VeterinarianService } from '../veterinarian.service';
 import { DemoAppointmentsService } from './demo-appointments.service';
 import { DemoCarePlanService } from './demo-care-plan.service';
+import { dayKey } from '../../core/demo/demo-date';
 import { DEMO_NOW, demoLatency } from './demo-latency';
 
 // Demo (S14): el API no tiene notificaciones. Se generan por rol con datos reales (mascotas,
@@ -32,6 +33,8 @@ export class DemoNotificationsService {
 
   private readonly base = signal<DemoNotification[]>([]);
   private readonly readIds = signal<ReadonlySet<string>>(new Set());
+  // Usuario y día a los que pertenecen las marcas de leída; si cambian, se reinician.
+  private readKey = '';
 
   // De la más reciente a la más antigua, con la marca de leída ya aplicada.
   readonly notifications = computed(() =>
@@ -44,7 +47,15 @@ export class DemoNotificationsService {
   // Genera la lista del usuario con sesión. Si algún dato real no se puede pedir, queda vacía:
   // un aviso demo nunca debe romper la interfaz.
   refresh(): Observable<DemoNotification[]> {
-    return this.generate().pipe(
+    return defer(() => {
+      const user = this.auth.user();
+      const key = user ? `${user.role}-${user.id}-${dayKey(this.now())}` : '';
+      if (key !== this.readKey) {
+        this.readKey = key;
+        this.readIds.set(new Set());
+      }
+      return this.generate();
+    }).pipe(
       catchError(() => of([] as DemoNotification[])),
       demoLatency(),
       tap((list) => this.base.set(list)),
@@ -112,6 +123,8 @@ export class DemoNotificationsService {
             }),
           ),
         );
+      default:
+        return of([]);
     }
   }
 }

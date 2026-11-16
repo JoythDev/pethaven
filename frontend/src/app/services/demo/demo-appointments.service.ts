@@ -133,7 +133,7 @@ export class DemoAppointmentsService {
 
   private vetAppointments(vet: VetRef, pets: Pet[], date: Date): Appointment[] {
     const booked = this.bookedState().filter((a) => a.veterinarianId === vet.id);
-    return mergeBooked(appointmentsForVet(vet, pets, date, this.now()), booked);
+    return mergeBooked(appointmentsForVet(vet, pets, date, this.now()), booked, this.now());
   }
 
   private getOverview(vetId: number, from: Date, days: number): Observable<DayCount[]> {

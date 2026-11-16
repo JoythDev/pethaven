@@ -19,7 +19,7 @@ function medicationItems(pet: Pet, treatment: CareTreatment): CareDraft[] {
     const doses = 1 + seededInt(drug.drugId, `doses-${pet.id}`, 2);
     const note = DOSE_NOTES[seededInt(drug.drugId, `dose-note-${pet.id}`, DOSE_NOTES.length)];
     if (doses === 1) {
-      const time = SINGLE_DOSE_TIMES[(index + seededInt(drug.drugId, `dose-time-${pet.id}`, 3)) % 3];
+      const time = SINGLE_DOSE_TIMES[(index + seededInt(drug.drugId, `dose-time-${pet.id}`, SINGLE_DOSE_TIMES.length)) % SINGLE_DOSE_TIMES.length];
       return [{ time, title: drug.drugName, detail: `1 dosis · ${note}`, sticker: 'pill', kind: 'medication' } as CareDraft];
     }
     return ['08:00', '20:00'].map(

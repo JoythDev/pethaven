@@ -49,6 +49,6 @@ export function generateWeightCurve(pet: Pet, today: Date): WeightCurve {
     max,
     axis: axisFor(min, max),
     current: pet.weight,
-    change: pet.weight - weights[count - 2],
+    change: round1(pet.weight - weights[count - 2]),
   };
 }

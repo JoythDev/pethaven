@@ -1,5 +1,5 @@
 import { Injectable, inject } from '@angular/core';
-import { Observable, defer, map, of } from 'rxjs';
+import { Observable, defer, of } from 'rxjs';
 import { generateWeightCurve } from '../../core/demo/weight-curve';
 import { WeightCurve } from '../../models/demo/weight-curve.model';
 import { Pet } from '../../models/pet.model';

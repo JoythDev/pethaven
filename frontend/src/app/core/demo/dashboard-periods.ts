@@ -39,7 +39,8 @@ function labelsFor(id: DashboardPeriodId, today: Date): string[] {
 }
 
 // Ventas y ganancia de «Todo» son los totales reales; el resto son fracciones estables de ellos.
-// La ocupación es totalmente demo. Con ceros reales, todo queda en cero.
+// Con ventas reales en cero, ventas y ganancia quedan en cero. La ocupación es totalmente demo y
+// no depende de los totales.
 export function generateDashboardPeriods(totals: DashboardTotals, today: Date): DashboardPeriod[] {
   const next = seeded(Math.round(Math.abs(totals.totalSales) + Math.abs(totals.grossProfit)), 'dashboard');
   const yearFraction = 0.55 + next() * 0.15;

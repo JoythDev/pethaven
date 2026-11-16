@@ -98,6 +98,20 @@ function buildAppointment(
   };
 }
 
+// Fin de una cita y si cubre un instante: la misma regla para franjas, huecos libres y traslapes.
+function appointmentEnd(a: Appointment): number {
+  return a.start.getTime() + a.durationMinutes * 60_000;
+}
+
+function covers(a: Appointment, at: number): boolean {
+  return a.start.getTime() <= at && at < appointmentEnd(a);
+}
+
+// Estado de una cita agendada en la sesión según la hora actual, igual que las generadas.
+function withCurrentStatus(a: Appointment, today: Date): Appointment {
+  return { ...a, status: statusFor(a.start, a.durationMinutes, today) };
+}
+
 function firstFreeSlot(taken: boolean[], preferred: number, span: number): number {
   for (let offset = 0; offset < taken.length; offset++) {
     const index = (preferred + offset) % taken.length;
@@ -160,8 +174,7 @@ export function buildDayAgenda(date: Date, appointments: Appointment[], today: D
     .sort((a, b) => a.start.getTime() - b.start.getTime());
   const slots: AgendaSlot[] = daySlots(date).map((time) => {
     const start = atTime(date, time);
-    const appointment =
-      day.find((a) => a.start.getTime() <= start.getTime() && start.getTime() < a.start.getTime() + a.durationMinutes * 60_000) ?? null;
+    const appointment = day.find((a) => covers(a, start.getTime())) ?? null;
     return { time, start, appointment, starts: appointment !== null && appointment.start.getTime() === start.getTime() };
   });
   const completed = day.filter((a) => a.status === 'completed').length;
@@ -211,20 +224,23 @@ export function availableSlots(vet: VetRef, pets: Pet[], date: Date, today: Date
       const at = start.getTime();
       return (
         at > today.getTime() &&
-        !occupied.some((a) => a.start.getTime() <= at && at < a.start.getTime() + a.durationMinutes * 60_000) &&
+        !occupied.some((a) => covers(a, at)) &&
         !simulatedBusy(vet, key, time)
       );
     });
 }
 
-// Suma las citas agendadas en la sesión a las generadas; si se traslapan, gana la agendada.
-export function mergeBooked(generated: Appointment[], booked: Appointment[]): Appointment[] {
+// Suma las citas agendadas en la sesión a las generadas: si se traslapan con el mismo veterinario,
+// gana la agendada. El estado de las agendadas se recalcula con la hora actual.
+export function mergeBooked(generated: Appointment[], booked: Appointment[], today: Date): Appointment[] {
   const overlaps = (a: Appointment, b: Appointment): boolean =>
-    a.start.getTime() < b.start.getTime() + b.durationMinutes * 60_000 &&
-    b.start.getTime() < a.start.getTime() + a.durationMinutes * 60_000;
-  return [...generated.filter((g) => !booked.some((b) => overlaps(g, b))), ...booked].sort(
-    (a, b) => a.start.getTime() - b.start.getTime(),
-  );
+    a.veterinarianId === b.veterinarianId &&
+    a.start.getTime() < appointmentEnd(b) &&
+    b.start.getTime() < appointmentEnd(a);
+  return [
+    ...generated.filter((g) => !booked.some((b) => overlaps(g, b))),
+    ...booked.map((b) => withCurrentStatus(b, today)),
+  ].sort((a, b) => a.start.getTime() - b.start.getTime());
 }
 
 // Una cita agendada en la sesión: dura una franja y queda programada.
@@ -241,7 +257,6 @@ export function ownerAppointments(
   booked: Appointment[],
 ): OwnerAppointments {
   const own = booked.filter((a) => ownerPets.some((p) => p.id === a.petId));
-  const bookedIds = new Set(own.map((a) => a.id));
   const first = startOfDay(today);
   const generated: Appointment[] = [];
   if (vets.length && ownerPets.length) {
@@ -249,7 +264,7 @@ export function ownerAppointments(
       generated.push(...appointmentsForVets(vets, ownerPets, addDays(first, offset), today));
     }
   }
-  const all = [...generated.filter((a) => !bookedIds.has(a.id)), ...own];
+  const all = mergeBooked(generated, own, today);
   return {
     upcoming: all.filter((a) => a.status !== 'completed').sort((a, b) => a.start.getTime() - b.start.getTime()),
     past: all.filter((a) => a.status === 'completed').sort((a, b) => b.start.getTime() - a.start.getTime()),
