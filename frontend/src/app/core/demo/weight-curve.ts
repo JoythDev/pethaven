@@ -22,7 +22,7 @@ function axisFor(min: number, max: number): WeightAxis {
 }
 
 // Curva mensual que termina hoy con el peso real de la mascota. Hacia atrás parte de ese peso:
-// los adultos varían poco; los menores de dos años pesaban menos cuanto más atrás.
+// los adultos varían poco; los de un año o menos pesaban menos cuanto más atrás.
 export function generateWeightCurve(pet: Pet, today: Date): WeightCurve {
   const count = MIN_POINTS + seededInt(pet.id, 'weight-count', EXTRA_POINTS);
   const growing = pet.age <= 1;

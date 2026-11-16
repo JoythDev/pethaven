@@ -50,15 +50,26 @@ function visitSeed(petId: number, vetId: number): number {
   return petId * 1009 + vetId;
 }
 
+// Reparto de tipos de cita (percentiles acumulados de 0 a 100): 6 % urgencias; en tratamiento,
+// sobre todo controles; estables, sobre todo vacunación y consulta.
+const URGENCY_UNDER = 6;
+const TREATED_CONTROL_UNDER = 75;
+const STABLE_VACCINATION_UNDER = 45;
+const STABLE_CONSULTATION_UNDER = 85;
+
 function pickKind(pet: Pet, seed: number, key: string): AppointmentKind {
   const roll = seededInt(seed, `kind-${key}`, 100);
-  if (roll < 6) {
+  if (roll < URGENCY_UNDER) {
     return 'urgency';
   }
   if (pet.disease?.trim()) {
-    return roll < 75 ? 'control' : 'consultation';
+    return roll < TREATED_CONTROL_UNDER ? 'control' : 'consultation';
   }
-  return roll < 45 ? 'vaccination' : roll < 85 ? 'consultation' : 'control';
+  return roll < STABLE_VACCINATION_UNDER
+    ? 'vaccination'
+    : roll < STABLE_CONSULTATION_UNDER
+      ? 'consultation'
+      : 'control';
 }
 
 function statusFor(start: Date, durationMinutes: number, today: Date): AppointmentStatus {

@@ -17,7 +17,7 @@ import { SelectModule } from 'primeng/select';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TooltipModule } from 'primeng/tooltip';
 
-import { ListView, PAGE_SIZES, PageSize } from '../../../core/list/list-query';
+import { DEFAULT_PAGE_SIZE, ListView, PAGE_SIZES, PageSize } from '../../../core/list/list-query';
 import { pageCount, rangeText } from '../../../core/list/pagination';
 import { StickerName } from '../../../core/stickers/stickers';
 import { skeletonVisible } from '../../../core/ui/skeleton-timing';
@@ -102,7 +102,7 @@ export class ResourceListComponent<T> {
   /** Total de elementos que cumplen búsqueda y filtros, no solo los de la página. */
   readonly total = input.required<number>();
   readonly page = input(1);
-  readonly pageSize = input<PageSize>(12);
+  readonly pageSize = input<PageSize>(DEFAULT_PAGE_SIZE);
   readonly view = input<ListView>('cards');
   readonly searchText = input('');
   readonly searchLabel = input('Buscar');
@@ -160,14 +160,17 @@ export class ResourceListComponent<T> {
   // Texto del campo: lo que escribe la persona, antes del antirrebote.
   protected readonly text = signal('');
   private timer: ReturnType<typeof setTimeout> | undefined;
+  // Último texto emitido: si la página lo devuelve tarde, no pisa lo que la persona siguió escribiendo.
+  private lastEmitted = '';
 
   constructor() {
-    // Un cambio externo de la búsqueda (p. ej. «Quitar filtros») actualiza el campo.
+    // Solo un cambio externo de la búsqueda (p. ej. «Quitar filtros») reescribe el campo.
     effect(() => {
       const incoming = this.searchText();
       untracked(() => {
-        if (incoming !== this.text().trim()) {
+        if (incoming !== this.lastEmitted) {
           clearTimeout(this.timer);
+          this.lastEmitted = incoming;
           this.text.set(incoming);
         }
       });
@@ -178,19 +181,24 @@ export class ResourceListComponent<T> {
   protected onSearchInput(value: string): void {
     this.text.set(value);
     clearTimeout(this.timer);
-    this.timer = setTimeout(() => this.searchChange.emit(value.trim()), SEARCH_DEBOUNCE_MS);
+    this.timer = setTimeout(() => this.emitSearch(value), SEARCH_DEBOUNCE_MS);
   }
 
   /** Enter no espera al antirrebote. */
   protected flushSearch(): void {
     clearTimeout(this.timer);
-    this.searchChange.emit(this.text().trim());
+    this.emitSearch(this.text());
   }
 
   protected clearSearch(): void {
     clearTimeout(this.timer);
     this.text.set('');
-    this.searchChange.emit('');
+    this.emitSearch('');
+  }
+
+  private emitSearch(value: string): void {
+    this.lastEmitted = value.trim();
+    this.searchChange.emit(this.lastEmitted);
   }
 
   protected cardContext(item: T): ResourceCardContext<T> {

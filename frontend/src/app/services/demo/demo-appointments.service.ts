@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { Observable, defer, forkJoin, map, of, switchMap, tap, throwError } from 'rxjs';
+import { Observable, defer, finalize, forkJoin, map, of, switchMap, tap, throwError } from 'rxjs';
 import {
   appointmentsForVet,
   availableSlots,
@@ -42,6 +42,7 @@ export class DemoAppointmentsService {
   private readonly bookedState = signal<Appointment[]>([]);
   // Citas agendadas en esta sesión.
   readonly booked = this.bookedState.asReadonly();
+  private readonly pending = new Set<string>();
 
   // Agenda del veterinario en un día (usa su perfil y todas las mascotas: portal veterinario).
   getDayAgenda(vetId: number, date: Date): Observable<DayAgenda> {
@@ -91,12 +92,15 @@ export class DemoAppointmentsService {
   book(request: BookingRequest): Observable<Appointment> {
     return defer(() => {
       const appointment = bookingToAppointment(request);
-      if (this.bookedState().some((a) => a.id === appointment.id)) {
+      // Se reserva antes de la espera simulada: un doble clic no agenda dos veces la misma franja.
+      if (this.pending.has(appointment.id) || this.bookedState().some((a) => a.id === appointment.id)) {
         return throwError(() => new Error('La franja ya está ocupada'));
       }
+      this.pending.add(appointment.id);
       return of(appointment).pipe(
         demoLatency(),
         tap((created) => this.bookedState.update((list) => [...list, created])),
+        finalize(() => this.pending.delete(appointment.id)),
       );
     });
   }
