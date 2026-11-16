@@ -1,9 +1,17 @@
-import { Routes } from '@angular/router';
+import { Route, Routes } from '@angular/router';
 import { LandingComponent } from './pages/landing/landing.component';
 import { LoginComponent } from './pages/auth/login/login.component';
 import { ClienteEntryComponent } from './pages/cliente/cliente-entry/cliente-entry.component';
 import { ADMIN_DRUG_AREA, DRUG_AREA_DATA_KEY, VET_DRUG_AREA } from './pages/shared/drugs/drug-area';
 import { guestGuard, ownerPortalGuard, roleGuard } from './core/auth/auth.guard';
+
+// Sección que aún no tiene pantalla: usa el placeholder compartido con título y descripción de la ruta.
+const comingSoon = (path: string, title: string, description: string): Route => ({
+  path,
+  loadComponent: () =>
+    import('./pages/shared/coming-soon/coming-soon.component').then((m) => m.ComingSoonComponent),
+  data: { title, description },
+});
 
 export const routes: Routes = [
   // Solo sin sesión: con sesión, guestGuard lleva al portal del rol.
@@ -24,6 +32,8 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/veterinario/home/home.component').then((m) => m.DashboardHomeComponent),
       },
+      comingSoon('agenda', 'Agenda', 'Aquí verás las citas del día y de la semana de tu consulta.'),
+      comingSoon('notificaciones', 'Notificaciones', 'Aquí verás los avisos de tu consulta: citas, existencias y tratamientos.'),
       {
         path: 'perfil',
         loadComponent: () =>
@@ -147,7 +157,7 @@ export const routes: Routes = [
         (m) => m.ClienteLayoutComponent
       ),
     children: [
-      { path: '', redirectTo: 'mascotas', pathMatch: 'full' },
+      comingSoon('', 'Inicio', 'Aquí verás el resumen de tus mascotas, tu próxima cita y el consejo del día.'),
       {
         path: 'mascotas',
         loadComponent: () =>
@@ -160,6 +170,8 @@ export const routes: Routes = [
             (m) => m.MascotaDetalleComponent
           ),
       },
+      comingSoon('citas', 'Citas', 'Aquí podrás agendar y revisar las citas de tus mascotas.'),
+      comingSoon('notificaciones', 'Notificaciones', 'Aquí verás los avisos sobre tus mascotas y tus citas.'),
       {
         path: 'perfil',
         loadComponent: () =>
@@ -211,6 +223,8 @@ export const routes: Routes = [
             (m) => m.AdminPetsListComponent
           ),
       },
+      comingSoon('notificaciones', 'Notificaciones', 'Aquí verás los avisos de la clínica: existencias bajas, nuevos registros y actividad.'),
+      comingSoon('perfil', 'Perfil', 'Aquí podrás consultar los datos de tu cuenta de administrador.'),
       {
         path: 'medicamentos',
         // Gestión completa: listado, detalle, alta, edición, eliminación e importación desde Excel.

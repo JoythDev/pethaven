@@ -4,7 +4,6 @@ import localeEsCo from '@angular/common/locales/es-CO';
 import { ApplicationConfig, LOCALE_ID, inject, provideAppInitializer, provideZoneChangeDetection } from '@angular/core';
 import { provideAnimationsAsync } from '@angular/platform-browser/animations/async';
 import { provideRouter } from '@angular/router';
-import { provideLucideConfig } from '@lucide/angular';
 import { ConfirmationService, MessageService } from 'primeng/api';
 import { providePrimeNG } from 'primeng/config';
 
@@ -26,8 +25,6 @@ export const appConfig: ApplicationConfig = {
     { provide: LOCALE_ID, useValue: 'es-CO' },
     MessageService,
     ConfirmationService,
-    // Iconos del sistema de diseño: 18 px y trazo 1,8 por defecto.
-    provideLucideConfig({ size: 18, strokeWidth: 1.8 }),
     providePrimeNG({
       theme: {
         preset: PetHavenPreset,

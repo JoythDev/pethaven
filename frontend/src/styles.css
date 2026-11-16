@@ -657,3 +657,72 @@ html.js .reveal.is-visible {
 .banner .p-button-outlined {
   background: rgb(255 255 255 / 0.6);
 }
+
+/* --------------------------------------------------------------------------
+   Shell de los portales (docs/design/design-system.md, sección 9)
+   -------------------------------------------------------------------------- */
+/* Anillo de foco de 2.5 px en `accent` con 2 px de separación (13); --ph-focus-offset lo ajusta. */
+.ph-focus:focus-visible {
+  outline: 2.5px solid var(--color-accent);
+  outline-offset: var(--ph-focus-offset, 2px);
+}
+
+/* Botón de icono: 36 px, radio 12, borde de 1 px (10.1); 44 px por debajo de 680 px del contenedor. */
+.ph-icon-btn {
+  display: inline-grid;
+  flex-shrink: 0;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-control);
+  background: var(--color-card);
+  color: var(--color-ink);
+  cursor: pointer;
+  transition:
+    background 180ms var(--ease-out-strong),
+    transform 120ms var(--ease-out-strong);
+}
+
+.ph-icon-btn:hover {
+  background: var(--color-sunken);
+}
+
+.ph-icon-btn:active {
+  transform: scale(0.97);
+}
+
+@container (max-width: 679px) {
+  .ph-icon-btn {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* Título de cajones y hojas del shell en `title-2` (3.2). */
+.p-drawer-title {
+  font-family: var(--font-display);
+  font-size: 20px;
+  line-height: 26px;
+  font-weight: 600;
+}
+
+/* Región con scroll horizontal sin barra visible (grupo de pestañas, 9.4). */
+.ph-scroll-hidden,
+.ph-scrollbars .ph-scroll-hidden {
+  scrollbar-width: none;
+}
+
+.ph-scroll-hidden::-webkit-scrollbar,
+.ph-scrollbars .ph-scroll-hidden::-webkit-scrollbar {
+  display: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ph-icon-btn {
+    transition: none;
+  }
+  .ph-icon-btn:active {
+    transform: none;
+  }
+}

@@ -335,6 +335,12 @@ export const PetHavenPreset = definePreset(Aura, {
     menu: {
       root: {
         borderRadius: '14px',
+        shadow: '0 12px 30px -10px rgb(0 0 0 / 0.35)',
+      },
+    },
+    drawer: {
+      root: {
+        shadow: '0 24px 60px -20px rgb(0 0 0 / 0.45)',
       },
     },
     select: {

@@ -1,50 +1,41 @@
 import { Component, computed, inject } from '@angular/core';
 import { AuthService } from '../../../services/auth.service';
-import { AreaLayoutConfig } from '../../shared/area-layout/area-layout-config';
-import { AreaLayoutComponent } from '../../shared/area-layout/area-layout.component';
+import { ShellComponent } from '../../shared/shell/shell.component';
+import { ShellConfig, ShellTab } from '../../shared/shell/shell-tabs';
 
-/** Shell del área del administrador: reutiliza el shell compartido con sus enlaces. */
+const TABS: ShellTab[] = [
+  { label: 'Panorama', icon: 'chart-column', link: '/administrador/dashboard' },
+  { label: 'Veterinarios', icon: 'stethoscope', link: '/administrador/veterinarios' },
+  { label: 'Mascotas', icon: 'paw-print', link: '/administrador/mascotas' },
+  { label: 'Medicamentos', icon: 'package', link: '/administrador/medicamentos' },
+  { label: 'Notificaciones', icon: 'bell', link: '/administrador/notificaciones' },
+  { label: 'Perfil', icon: 'user', link: '/administrador/perfil' },
+];
+
+/** Shell del área del administrador: reutiliza el shell compartido con las pestañas del rol. */
 @Component({
   selector: 'app-admin-layout',
-  imports: [AreaLayoutComponent],
-  template: '<app-area-layout [layoutConfig]="layoutConfig()" />',
+  imports: [ShellComponent],
+  template: '<app-shell [config]="shellConfig()" (logout)="cerrarSesion()" />',
 })
 export class AdminLayoutComponent {
   private readonly auth = inject(AuthService);
 
-  readonly layoutConfig = computed<AreaLayoutConfig>(() => {
+  readonly shellConfig = computed<ShellConfig>(() => {
     const user = this.auth.user();
     const admin = user?.role === 'ADMIN' ? user : null;
-    const cerrarSesion = { label: 'Cerrar sesión', icon: 'pi pi-sign-out', command: () => this.cerrarSesion() };
 
     return {
-      sidebar: {
-        items: [
-          { label: 'Resumen', icon: 'pi pi-chart-bar', link: '/administrador/dashboard' },
-          { label: 'Veterinarios', icon: '/images/icons/stethoscope-icon.svg', link: '/administrador/veterinarios' },
-          { label: 'Mascotas', icon: '/images/icons/paw-print-icon.svg', link: '/administrador/mascotas' },
-          { label: 'Medicamentos', icon: '/images/icons/pulse-icon.svg', link: '/administrador/medicamentos' },
-          cerrarSesion,
-        ],
-        homeLink: '/administrador',
-        sectionLabel: 'Administración',
-      },
-      topbar: {
-        homeItem: { icon: 'pi pi-home', routerLink: '/administrador' },
-        pageLabels: { dashboard: 'Resumen', veterinarios: 'Veterinarios', mascotas: 'Mascotas', medicamentos: 'Medicamentos' },
-        subPageLabels: {
-          veterinarios: { add: 'Nuevo veterinario', update: 'Editar veterinario' },
-          medicamentos: { add: 'Nuevo medicamento', update: 'Editar medicamento', import: 'Importar Excel' },
-        },
-        userName: admin?.name ?? '',
-        userInitial: admin ? admin.name.charAt(0).toUpperCase() : '',
-        userMenuItems: [cerrarSesion],
-        skipNumericSegment: false,
-      },
+      tabs: TABS,
+      roleLabel: 'Administrador',
+      userName: admin?.name ?? '',
+      userId: admin?.id ?? null,
+      userPhotoUrl: null,
+      profileLink: '/administrador/perfil',
     };
   });
 
-  private cerrarSesion(): void {
+  protected cerrarSesion(): void {
     this.auth.logout();
   }
 }

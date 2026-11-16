@@ -1,0 +1,218 @@
+<div class="flex h-full flex-col bg-ground font-body text-ink">
+  @let cfg = config();
+
+  <header class="flex h-[60px] shrink-0 items-center gap-3 border-b border-line bg-card px-[18px] @max-[679px]:px-3">
+    <a [routerLink]="homeLink()" aria-label="PetHaven, ir al inicio" class="ph-focus flex shrink-0 items-center gap-2.5 rounded-control">
+      <span class="grid size-8 place-items-center rounded-full bg-accent text-on-accent">
+        <svg lucidePawPrint [size]="18" aria-hidden="true"></svg>
+      </span>
+      <span class="font-display text-[19px] leading-6 font-bold @max-[679px]:hidden">PetHaven</span>
+    </a>
+
+    @if (sidebar.hasContent() && sidebar.layout() === 'compact') {
+      <button
+        type="button"
+        class="ph-focus ph-icon-btn"
+        aria-label="Mostrar u ocultar la barra lateral"
+        pTooltip="Mostrar u ocultar la barra lateral"
+        tooltipPosition="bottom"
+        [attr.aria-expanded]="sidebar.expanded()"
+        (click)="sidebar.toggle()"
+      >
+        <svg lucidePanelLeft [size]="18" aria-hidden="true"></svg>
+      </button>
+    }
+
+    <nav aria-label="Secciones" class="min-w-0 @max-[679px]:hidden">
+      <div
+        class="ph-scroll-hidden flex gap-[3px] overflow-x-auto rounded-full bg-sunken p-1"
+        (keydown)="onTabsKeydown($event)"
+        (focusout)="onTabsFocusOut($event)"
+      >
+        @for (tab of tabs(); track tab.link; let i = $index) {
+          <a
+            [routerLink]="tab.link"
+            routerLinkActive="is-active"
+            [routerLinkActiveOptions]="{ exact: !!tab.exact }"
+            ariaCurrentWhenActive="page"
+            [attr.tabindex]="i === tabStop() ? 0 : -1"
+            (focus)="focusIndex.set(i)"
+            class="ph-focus flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] leading-[18px] font-bold whitespace-nowrap text-ink-muted transition-colors duration-[180ms] ease-out-strong [--ph-focus-offset:0px] hover:text-ink motion-reduce:transition-none [&.is-active]:bg-card [&.is-active]:text-ink [&.is-active]:shadow-[0_1px_2px_rgb(0_0_0/0.14)]"
+          >
+            <svg [lucideIcon]="icons[tab.icon]" [size]="18" aria-hidden="true"></svg>
+            {{ tab.label }}
+          </a>
+        }
+      </div>
+    </nav>
+
+    <span class="min-w-0 flex-1"></span>
+
+    <!-- En compacto el tema se cambia desde el menú de usuario (9.9). -->
+    @if (sidebar.layout() !== 'compact') {
+      <button
+        type="button"
+        class="ph-focus ph-icon-btn"
+        [attr.aria-label]="themeLabel()"
+        [pTooltip]="themeLabel()"
+        tooltipPosition="bottom"
+        (click)="theme.toggle()"
+      >
+        @if (theme.isDark()) {
+          <svg lucideSun [size]="18" aria-hidden="true"></svg>
+        } @else {
+          <svg lucideMoon [size]="18" aria-hidden="true"></svg>
+        }
+      </button>
+    }
+
+    <button
+      type="button"
+      class="ph-focus flex shrink-0 items-center gap-2.5 rounded-control p-1 text-left transition-colors duration-[180ms] ease-out-strong hover:bg-sunken motion-reduce:transition-none @max-[679px]:size-11 @max-[679px]:justify-center @max-[679px]:p-0"
+      aria-haspopup="menu"
+      [attr.aria-expanded]="menuOpen()"
+      [attr.aria-label]="'Menú de usuario, ' + (cfg.userName || cfg.roleLabel)"
+      (click)="userMenu.toggle($event)"
+    >
+      <app-avatar [id]="userKey()" [name]="cfg.userName" [photoUrl]="cfg.userPhotoUrl" [size]="32" />
+      <span class="flex flex-col pr-1.5 @max-[1339px]:hidden">
+        <span class="max-w-44 truncate text-[13px] leading-4 font-extrabold">{{ cfg.userName }}</span>
+        <span class="text-xs leading-4 text-ink-muted">{{ cfg.roleLabel }}</span>
+      </span>
+    </button>
+    <p-menu
+      #userMenu
+      [model]="menuItems()"
+      [popup]="true"
+      appendTo="body"
+      styleClass="mt-2 w-[220px]"
+      [showTransitionOptions]="transition"
+      [hideTransitionOptions]="transition"
+      (onShow)="menuOpen.set(true)"
+      (onHide)="menuOpen.set(false)"
+    >
+      <ng-template #item let-item>
+        <span class="p-menu-item-link" data-pc-section="action">
+          @switch (item.id) {
+            @case ('profile') {
+              <svg lucideUser [size]="18" aria-hidden="true"></svg>
+            }
+            @case ('theme') {
+              @if (theme.isDark()) {
+                <svg lucideSun [size]="18" aria-hidden="true"></svg>
+              } @else {
+                <svg lucideMoon [size]="18" aria-hidden="true"></svg>
+              }
+            }
+            @case ('logout') {
+              <svg lucideLogOut [size]="18" aria-hidden="true"></svg>
+            }
+          }
+          <span class="p-menu-item-label">{{ item.label }}</span>
+        </span>
+      </ng-template>
+    </p-menu>
+  </header>
+
+  <div class="flex min-h-0 flex-1">
+    @if (showColumn()) {
+      <aside aria-label="Contexto" class="flex w-[236px] shrink-0 flex-col gap-3 overflow-y-auto pt-4 pb-[22px] pl-[18px]">
+        <ng-container *ngTemplateOutlet="sidebar.template()" />
+      </aside>
+    }
+    <main class="@container min-w-0 flex-1 overflow-y-auto px-[18px] pt-4 pb-[22px] @max-[679px]:px-3">
+      <router-outlet />
+    </main>
+  </div>
+
+  <nav
+    aria-label="Secciones"
+    class="hidden shrink-0 items-stretch border-t border-line bg-card pb-[env(safe-area-inset-bottom)] @max-[679px]:flex"
+  >
+    @for (tab of bottom().visible; track tab.link) {
+      <a
+        [routerLink]="tab.link"
+        routerLinkActive="is-active"
+        [routerLinkActiveOptions]="{ exact: !!tab.exact }"
+        ariaCurrentWhenActive="page"
+        class="ph-focus group flex h-14 min-w-0 flex-1 items-center justify-center"
+      >
+        <span
+          class="flex max-w-full min-w-0 flex-col items-center rounded-full px-3 py-1 text-ink-muted transition-colors duration-[180ms] ease-out-strong motion-reduce:transition-none group-[.is-active]:bg-accent group-[.is-active]:text-on-accent"
+        >
+          <svg [lucideIcon]="icons[tab.icon]" [size]="20" aria-hidden="true"></svg>
+          <span class="max-w-full truncate text-xs leading-4 font-bold">{{ tab.label }}</span>
+        </span>
+      </a>
+    }
+    @if (bottom().overflow.length) {
+      <button
+        type="button"
+        class="ph-focus flex h-14 min-w-0 flex-1 items-center justify-center"
+        aria-haspopup="dialog"
+        [attr.aria-expanded]="moreOpen()"
+        (click)="moreOpen.set(true)"
+      >
+        <span
+          class="flex max-w-full min-w-0 flex-col items-center rounded-full px-3 py-1 transition-colors duration-[180ms] ease-out-strong motion-reduce:transition-none"
+          [class]="moreActive() ? 'bg-accent text-on-accent' : 'text-ink-muted'"
+        >
+          <svg lucideEllipsis [size]="20" aria-hidden="true"></svg>
+          <span class="max-w-full truncate text-xs leading-4 font-bold">Más</span>
+        </span>
+      </button>
+    }
+  </nav>
+
+  @if (showDrawer()) {
+    <p-drawer
+      position="left"
+      header="Contexto"
+      ariaCloseLabel="Cerrar barra lateral"
+      [visible]="sidebar.drawerOpen()"
+      (visibleChange)="sidebar.drawerOpen.set($event)"
+      [transitionOptions]="transition"
+      [style]="{ width: '17rem' }"
+      styleClass="bg-ground!"
+    >
+      <ng-template #content>
+        <div class="flex flex-col gap-3">
+          <ng-container *ngTemplateOutlet="sidebar.template()" />
+        </div>
+      </ng-template>
+    </p-drawer>
+  }
+
+  @if (bottom().overflow.length && sidebar.layout() === 'compact') {
+    <p-drawer
+      position="bottom"
+      header="Más secciones"
+      ariaCloseLabel="Cerrar"
+      [visible]="moreOpen()"
+      (visibleChange)="moreOpen.set($event)"
+      [transitionOptions]="transition"
+      [style]="{ height: 'auto', 'padding-bottom': 'env(safe-area-inset-bottom)' }"
+      styleClass="rounded-t-box!"
+    >
+      <ng-template #content>
+        <nav aria-label="Más secciones" class="flex flex-col gap-1">
+          @for (tab of bottom().overflow; track tab.link) {
+            <a
+              [routerLink]="tab.link"
+              routerLinkActive="is-active"
+              [routerLinkActiveOptions]="{ exact: !!tab.exact }"
+              ariaCurrentWhenActive="page"
+              class="ph-focus flex min-h-11 items-center gap-3 rounded-row px-3 text-sm leading-5 font-extrabold text-ink transition-colors duration-[180ms] ease-out-strong hover:bg-sunken motion-reduce:transition-none [&.is-active]:bg-accent-soft [&.is-active]:text-accent-text"
+            >
+              <svg [lucideIcon]="icons[tab.icon]" [size]="18" aria-hidden="true"></svg>
+              {{ tab.label }}
+            </a>
+          }
+        </nav>
+      </ng-template>
+    </p-drawer>
+  }
+
+  <p-toast position="top-right" styleClass="top-[72px]! @max-[679px]:left-3! @max-[679px]:right-3! @max-[679px]:w-auto!" />
+  <p-confirmdialog />
+</div>
