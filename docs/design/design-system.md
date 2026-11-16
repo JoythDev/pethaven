@@ -2,7 +2,7 @@
 
 | | |
 |---|---|
-| **Status** | v1.1, approved by the owner after the final demo review |
+| **Status** | v1.2, approved by the owner. Implementation in progress (`odd/tasks/ui-upgrade.md`) |
 | **Scope** | Authentication and the Client, Veterinarian and Administrator portals. The landing page redesign is deferred (see 9.10) |
 | **Stack** | Angular 19, PrimeNG 19 (Aura-based `PetHavenPreset`), Tailwind CSS v4, `tailwindcss-primeui` |
 | **Direction** | "Bloques" (color blocks with geometry and sticker illustrations) |
@@ -282,7 +282,24 @@ The interface is flat. Only floating surfaces cast a shadow.
 
 Drop shadows on cards and bottom-edge "volume" shadows are not part of this system.
 
-### 4.5 Control sizes
+### 4.5 Scrollbars
+
+Native scrollbars are replaced with a custom style so they match the interface in both themes.
+
+| Part | Spec |
+|---|---|
+| Size | 10px wide (vertical) and tall (horizontal), with a 3px transparent inset so the visible thumb is 4px |
+| Track | Transparent |
+| Thumb | `border-strong` at 60% opacity, fully rounded |
+| Thumb, hover | `ink-muted` |
+| Corner | Transparent |
+
+- Implemented with `scrollbar-width: thin` and `scrollbar-color` (standard), plus `::-webkit-scrollbar` rules for the finer shape.
+- Applies to every scrolling region of authentication and the portals: content region, contextual sidebar, detail panel, tables, menus, dialogs.
+- Scoped by the `ph-scrollbars` class on `<html>`, set while authentication or a portal is on screen, so the landing page keeps the native scrollbar.
+- Scrollbars are never hidden on regions that scroll; the user must be able to see that more content exists.
+
+### 4.6 Control sizes
 
 | Size | Height | Use |
 |---|---|---|
@@ -439,7 +456,7 @@ Motion is functional and sparse. If an animation has no one-word purpose (feedba
 
 - Two themes: light and dark. Both are first-class; every component and screen must be verified in both.
 - First visit follows `prefers-color-scheme`. The theme button in the top bar toggles between light and dark, and the choice is stored in `localStorage` under `pethaven.theme` (`light` or `dark`). A stored choice overrides the system preference.
-- The theme is applied as a `dark` class on `<html>` before first paint (inline script in `index.html`) to avoid a flash of the wrong theme.
+- The theme is applied as the `app-dark` class on `<html>` before first paint (inline script in `index.html`) to avoid a flash of the wrong theme. It is the class the project already configured as PrimeNG's `darkModeSelector`.
 - Dark theme is true neutral black, not tinted. Hues are the same values as in light theme and provide the color.
 - In dark theme, borders do more work than in light theme because surfaces are close in value; never remove the card border.
 - Photos and stickers are not altered by the theme.
@@ -1009,70 +1026,33 @@ Target: WCAG 2.2 level AA.
 
 ### 14.1 Tailwind tokens (`frontend/src/styles.css`)
 
-Semantic tokens are CSS custom properties exposed to Tailwind v4 through `@theme`, and redefined under `.dark`.
+Semantic tokens are CSS custom properties exposed to Tailwind v4 through a `@theme static` block (static, so every token is emitted even before a template uses it), and redefined under `.app-dark`. The dark variant is declared once: `@custom-variant dark (&:where(.app-dark, .app-dark *));`.
 
-```css
-@import "tailwindcss";
-@custom-variant dark (&:where(.dark, .dark *));
+Token names in code differ from the conceptual names in section 2 where a conceptual name would collide with an existing utility of `tailwindcss-primeui` (`border-surface`) or with Tailwind's default radius scale, which the landing page still uses.
 
-@theme {
-  --color-ground: #efe8da;
-  --color-surface: #fffaf0;
-  --color-surface-sunken: #f5ecdc;
-  --color-ink: #261a10;
-  --color-ink-muted: #6b5e4e;
-  --color-border: #ddd0b9;
-  --color-border-strong: #857760;
-  --color-accent: #73704b;
-  --color-accent-hover: #5c5a3b;
-  --color-on-accent: #fffaf0;
-  --color-accent-soft: #e5e2c9;
-  --color-accent-text: #5c5a3b;
+| Concept (sections 2 and 4) | Token | Utility examples |
+|---|---|---|
+| `ground` | `--color-ground` | `bg-ground` |
+| `surface` | `--color-card` | `bg-card` |
+| `surface-sunken` | `--color-sunken` | `bg-sunken` |
+| `ink`, `ink-muted` | `--color-ink`, `--color-ink-muted` | `text-ink`, `text-ink-muted` |
+| `border`, `border-strong` | `--color-line`, `--color-line-strong` | `border-line`, `border-line-strong` |
+| `accent`, `accent-hover`, `on-accent`, `accent-soft`, `accent-text` | `--color-accent`, `--color-accent-hover`, `--color-on-accent`, `--color-accent-soft`, `--color-accent-text` | `bg-accent`, `text-on-accent` |
+| Hues, `on-hue` | `--color-hue-honey` (and sage, sky, rose, lilac, peach), `--color-on-hue` | `bg-hue-sage`, `text-on-hue` |
+| Status base | `--color-success`, `--color-warning`, `--color-danger`, `--color-info` | `bg-success` |
+| Status soft pair | `--color-<status>-soft`, `--color-on-<status>-soft` | `bg-warning-soft text-on-warning-soft` |
+| Solid destructive | `--color-danger-solid`, `--color-on-danger-solid` | `bg-danger-solid` |
+| `radius-xs` (7px) | `--radius-check` | `rounded-check` |
+| `radius-sm` (10px) | `--radius-field` | `rounded-field` |
+| `radius-md` (12px) | `--radius-control` | `rounded-control` |
+| `radius-lg` (14px) | `--radius-row` | `rounded-row` |
+| `radius-xl` (20px) | `--radius-box` | `rounded-box` |
+| `radius-full` | Tailwind default | `rounded-full` |
+| `ease-out` | `--ease-out-strong` | `ease-out-strong` |
+| Fonts | `--font-display`, `--font-body`, `--font-script` (already in the project) | `font-display`, `font-body`, `font-script` |
 
-  --color-hue-honey: #eec56f;
-  --color-hue-sage: #a9c193;
-  --color-hue-sky: #a3c5cf;
-  --color-hue-rose: #e9b9b3;
-  --color-hue-lilac: #c6b5e2;
-  --color-hue-peach: #ecab8c;
-  --color-on-hue: #261a10;
-
-  --color-success: #6f9455;
-  --color-warning: #d1922a;
-  --color-danger: #c9573c;
-  --color-info: #5f8794;
-
-  --font-display: "Fraunces", Georgia, serif;
-  --font-sans: "Nunito Sans", system-ui, sans-serif;
-  --font-script: "Caveat", cursive;
-
-  --radius-xs: 7px;
-  --radius-sm: 10px;
-  --radius-md: 12px;
-  --radius-lg: 14px;
-  --radius-xl: 20px;
-}
-
-.dark {
-  --color-ground: #0e0e0d;
-  --color-surface: #1a1a18;
-  --color-surface-sunken: #252522;
-  --color-ink: #f3efe6;
-  --color-ink-muted: #a59e92;
-  --color-border: #32312d;
-  --color-border-strong: #757368;
-  --color-accent: #cbc795;
-  --color-accent-hover: #dedaa9;
-  --color-on-accent: #1c1b10;
-  --color-accent-soft: #33321f;
-  --color-accent-text: #cbc795;
-  --color-on-hue: #1b130b;
-}
-```
-
-- Soft status pairs are added as `--color-success-soft`, `--color-on-success-soft`, and so on, with the values in 2.5.
 - The legacy tokens (`olive`, `secondary`, `tertiary`, `honey`, `terracotta`, `sage`, `background`, `text`) and the landing animations stay in `styles.css` while the current landing uses them. They are removed only when the landing is redesigned.
-- Templates must use semantic utilities (`bg-surface`, `text-ink-muted`, `border-border`). Raw hex values and Tailwind's default palette are not allowed in templates.
+- Authentication and portal templates must use the semantic utilities above. Raw hex values, Tailwind's default palette, the legacy tokens and `rounded-sm` to `rounded-3xl` are not allowed there.
 
 ### 14.2 Hue utility
 
@@ -1095,7 +1075,8 @@ A color block sets one local variable and everything inside derives from it:
 ### 14.3 PrimeNG preset (`frontend/src/app/theme/pethaven-preset.ts`)
 
 - Keep `definePreset(Aura, ...)`. Map `semantic.primary` to the olive scale, and `semantic.colorScheme.light` / `.dark` surfaces, text and border colors to the tokens in 2.2.
-- Set `providePrimeNG({ theme: { preset: PetHavenPreset, options: { darkModeSelector: '.dark' } } })` so PrimeNG and Tailwind switch on the same class.
+- `app.config.ts` already sets `darkModeSelector: '.app-dark'`. Tailwind's `dark` variant uses the same class, so PrimeNG and Tailwind always switch together.
+- The preset's surface scale carries the neutrals: in light theme 50 is the card surface, 100 sunken, 200 border, 500 strong border, 600 muted ink and 950 ink; in dark theme 950 is the ground, 900 the card surface, 800 sunken, 700 border, 500 strong border, 400 muted ink and 50 ink.
 - Override component tokens to match section 10: border radii (4.2), control heights (4.5), 1.5px form borders, no card shadow, focus ring (2.5px, 2px offset, `accent`), toast and dialog shapes.
 - Prefer preset tokens over `::ng-deep` or global CSS overrides. Use a component's pass-through (`pt`) options for structural class changes.
 
@@ -1123,11 +1104,22 @@ Follows the project's atomic and container-presentational conventions.
 
 ### 14.6 Theme bootstrapping
 
-An inline script in `index.html` sets the `dark` class before Angular starts, from `localStorage['pethaven.theme']` or `prefers-color-scheme`. A `ThemeService` exposes the current theme as a signal, toggles the class, persists the choice and notifies charts to re-read their colors.
+An inline script in `index.html` sets the `app-dark` class before Angular starts, from `localStorage['pethaven.theme']` or `prefers-color-scheme`. A `ThemeService` exposes the current theme as a signal, toggles the class, persists the choice and notifies charts to re-read their colors.
 
 ---
 
 ## 15. Governance
+
+### 15.1 Implementation constraints set by the owner
+
+- New code follows the architecture and patterns the frontend already uses. Code comments are short and added only when they are really needed.
+- No dependency may be added without the owner's approval. Approved so far: `lucide-angular` and `chart.js`. If another library would improve something, propose it and wait for approval.
+- Build small and large reusable components so markup and logic are not repeated.
+- Design for desktop first, and give mobile layouts real attention so the experience is good there too.
+- The backend is not changed. Demo-only features get their backend later. A backend change is acceptable only if it is small and low impact, and only with the owner's approval.
+- Every screen is verified in the browser, in both themes and at the three breakpoints, with temporary test data that exercises every state (loading, empty, error, long values, edge cases).
+
+### 15.2 Process
 
 - **Adding a token:** only when an existing token cannot express the role. Add it here first, with light and dark values and measured contrast.
 - **Adding a component:** check PrimeNG first. A custom component needs an entry in section 10 with anatomy, variants and states.
