@@ -12,6 +12,15 @@
     rel="stylesheet"
   />
   <link rel="icon" type="image/png" href="images/favicon.png">
+  <!-- Aplica el tema guardado, o el del sistema, antes del primer pintado. Misma clave y clase que core/theme/theme.ts -->
+  <script>
+    try {
+      var t = localStorage.getItem('pethaven.theme');
+      if (t === 'dark' || (t !== 'light' && matchMedia('(prefers-color-scheme: dark)').matches)) {
+        document.documentElement.classList.add('app-dark');
+      }
+    } catch (e) {}
+  </script>
 </head>
 <body>
   <app-root></app-root>
