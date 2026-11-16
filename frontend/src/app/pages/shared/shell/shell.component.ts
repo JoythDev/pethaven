@@ -13,7 +13,6 @@ import {
   LucideLogOut,
   LucideMoon,
   LucidePackage,
-  LucidePanelLeft,
   LucidePawPrint,
   LucideStethoscope,
   LucideSun,
@@ -32,6 +31,7 @@ import { TooltipModule } from 'primeng/tooltip';
 import { ThemeService } from '../../../core/theme/theme.service';
 import { AvatarComponent } from '../avatar/avatar.component';
 import { ShellSidebarService } from './shell-sidebar.service';
+import { SidebarToggleComponent } from './sidebar-toggle.component';
 import { ShellConfig, ShellIconName, activeTabIndex, layoutForWidth, splitBottomTabs } from './shell-tabs';
 
 const TAB_ICONS: Record<ShellIconName, LucideIcon> = {
@@ -66,11 +66,11 @@ const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
     ToastModule,
     TooltipModule,
     AvatarComponent,
+    SidebarToggleComponent,
     LucideDynamicIcon,
     LucideEllipsis,
     LucideLogOut,
     LucideMoon,
-    LucidePanelLeft,
     LucidePawPrint,
     LucideSun,
     LucideUser,

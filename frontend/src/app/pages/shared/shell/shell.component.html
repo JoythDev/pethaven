@@ -10,17 +10,7 @@
     </a>
 
     @if (sidebar.hasContent() && sidebar.layout() === 'compact') {
-      <button
-        type="button"
-        class="ph-focus ph-icon-btn"
-        aria-label="Mostrar u ocultar la barra lateral"
-        pTooltip="Mostrar u ocultar la barra lateral"
-        tooltipPosition="bottom"
-        [attr.aria-expanded]="sidebar.expanded()"
-        (click)="sidebar.toggle()"
-      >
-        <svg lucidePanelLeft [size]="18" aria-hidden="true"></svg>
-      </button>
+      <app-sidebar-toggle />
     }
 
     <nav aria-label="Secciones" class="min-w-0 @max-[679px]:hidden">

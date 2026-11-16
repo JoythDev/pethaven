@@ -1,10 +1,10 @@
 import { Component, inject, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import { LucideChevronLeft, LucidePanelLeft } from '@lucide/angular';
-import { TooltipModule } from 'primeng/tooltip';
+import { LucideChevronLeft } from '@lucide/angular';
 
 import { DemoTagComponent } from '../demo-tag/demo-tag.component';
 import { ShellSidebarService } from '../shell/shell-sidebar.service';
+import { SidebarToggleComponent } from '../shell/sidebar-toggle.component';
 
 /**
  * Cabecera de página (9.6): título `title-1` con subtítulo, enlace de regreso opcional y acciones a
@@ -14,7 +14,7 @@ import { ShellSidebarService } from '../shell/shell-sidebar.service';
  */
 @Component({
   selector: 'app-page-header',
-  imports: [RouterLink, TooltipModule, DemoTagComponent, LucideChevronLeft, LucidePanelLeft],
+  imports: [RouterLink, DemoTagComponent, LucideChevronLeft, SidebarToggleComponent],
   templateUrl: './page-header.component.html',
   host: { class: 'mb-4 block' },
 })
