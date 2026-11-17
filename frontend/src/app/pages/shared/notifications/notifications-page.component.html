@@ -58,11 +58,11 @@
     } @else {
       <section app-card>
         @if (total() === 0) {
-          <app-empty-state [title]="'Sin notificaciones'" description="Cuando haya novedades en tu cuenta, las verás aquí.">
+          <app-empty-state heading="Sin notificaciones" description="Cuando haya novedades en tu cuenta, las verás aquí.">
             <app-sticker sticker name="star" [width]="80" />
           </app-empty-state>
         } @else {
-          <app-empty-state [title]="'Todo al día'" description="No tienes notificaciones sin leer.">
+          <app-empty-state heading="Todo al día" description="No tienes notificaciones sin leer.">
             <app-sticker sticker name="heart" [width]="80" />
           </app-empty-state>
         }

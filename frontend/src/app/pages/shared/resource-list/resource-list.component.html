@@ -127,12 +127,12 @@
   @if (!loading()) {
     <div class="rounded-box border border-line bg-card">
       @if (hasQuery()) {
-        <app-empty-state [title]="'Sin resultados'" [description]="noResultsText()">
+        <app-empty-state heading="Sin resultados" [description]="noResultsText()">
           <app-sticker sticker name="bone" [width]="96" />
           <button action pButton type="button" [outlined]="true" severity="secondary" label="Quitar filtros" (click)="clearFilters.emit()"></button>
         </app-empty-state>
       } @else {
-        <app-empty-state [title]="emptyHeading()" [description]="emptyDescription()">
+        <app-empty-state [heading]="emptyHeading()" [description]="emptyDescription()">
           <app-sticker sticker [name]="emptySticker()" [width]="96" />
           <div action class="contents"><ng-content select="[emptyAction]" /></div>
         </app-empty-state>
