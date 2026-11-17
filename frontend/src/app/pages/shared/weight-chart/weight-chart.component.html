@@ -1,0 +1,45 @@
+<div class="mb-2 flex flex-wrap items-baseline gap-x-3 gap-y-0.5" aria-live="polite">
+  <span class="font-display text-[28px] leading-7 font-semibold tracking-[-0.01em] tabular-nums">{{ current() }} <span class="text-base">kg</span></span>
+  <span class="text-[12.5px] leading-[18px] text-ink-muted">{{ caption() }}</span>
+</div>
+
+@if (showTable()) {
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm leading-5">
+      <caption class="sr-only">{{ summary() }}</caption>
+      <thead>
+        <tr class="border-b border-line text-left text-[12.5px] text-ink-muted">
+          <th scope="col" class="py-1.5 pr-3 font-bold">Fecha</th>
+          <th scope="col" class="py-1.5 text-right font-bold">Peso</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows(); track $index) {
+          <tr class="border-b border-line last:border-0">
+            <td class="py-1.5 pr-3">{{ row.date }}</td>
+            <td class="py-1.5 text-right font-extrabold tabular-nums">{{ row.weight }} kg</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+} @else {
+  <p-chart
+    type="line"
+    height="220px"
+    [data]="data()"
+    [options]="options()"
+    [ariaLabel]="summary()"
+    (onDataSelect)="select($event)"
+  />
+}
+
+<div class="mt-2 flex justify-end">
+  <p-button
+    [text]="true"
+    size="small"
+    [label]="showTable() ? 'Ver como gráfico' : 'Ver como tabla'"
+    [attr.aria-pressed]="showTable()"
+    (onClick)="showTable.set(!showTable())"
+  />
+</div>

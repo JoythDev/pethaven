@@ -1,7 +1,7 @@
 import { formatDate } from '@angular/common';
 import { jsPDF } from 'jspdf';
 import { evolutionLabel } from '../../../../models/treatment.model';
-import type { ClinicalHistory } from './clinical-history.component';
+import type { ClinicalHistory } from '../../../../core/pet-detail/pet-detail';
 
 const MARGIN = 15;
 const PAGE_WIDTH = 210; // A4 en mm

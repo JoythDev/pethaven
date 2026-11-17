@@ -1,4 +1,5 @@
-import { Route, Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { Route, Router, Routes } from '@angular/router';
 import { LandingComponent } from './pages/landing/landing.component';
 import { ClienteEntryComponent } from './pages/cliente/cliente-entry/cliente-entry.component';
 import { ADMIN_DRUG_AREA, DRUG_AREA_DATA_KEY, VET_DRUG_AREA } from './pages/shared/drugs/drug-area';
@@ -84,12 +85,13 @@ export const routes: Routes = [
                 (m) => m.PetsFormComponent
               ),
           },
+          // La historia clínica ahora es una pestaña de la ficha; el enlace anterior sigue funcionando.
           {
             path: ':id/historia',
-            loadComponent: () =>
-              import('./pages/veterinario/pets/clinical-history/clinical-history.component').then(
-                (m) => m.ClinicalHistoryComponent
-              ),
+            redirectTo: ({ params }) =>
+              inject(Router).createUrlTree(['/veterinario/mascotas', params['id']], {
+                queryParams: { pestana: 'historia' },
+              }),
           },
           {
             path: ':id/treatments/add',
