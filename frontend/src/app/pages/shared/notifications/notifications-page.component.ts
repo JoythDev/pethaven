@@ -18,6 +18,7 @@ import { PageHeaderComponent } from '../page-header/page-header.component';
 import { ShellSidebarService } from '../shell/shell-sidebar.service';
 import { SkeletonComponent } from '../skeleton/skeleton.component';
 import { StickerComponent } from '../sticker/sticker.component';
+import { AuthRole } from '../../../models/auth.model';
 import { AuthService } from '../../../services/auth.service';
 import { injectNotificationClock } from './notification-icons';
 import { NotificationItemComponent } from './notification-item.component';
@@ -27,7 +28,7 @@ type NotificationFilter = 'all' | 'unread';
 const GROUPS: readonly NotificationGroup[] = ['Hoy', 'Esta semana'];
 
 // Lo que avisa cada rol (11.9); las preferencias llegarán con el perfil.
-const TOPICS: Record<string, DefinitionItem[]> = {
+const TOPICS: Record<AuthRole, DefinitionItem[]> = {
   OWNER: [
     { term: 'Citas', value: 'Activado' },
     { term: 'Cuidados del día', value: 'Activado' },
@@ -76,7 +77,7 @@ export class NotificationsPageComponent implements OnInit {
   private readonly feedback = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
   private readonly layout = inject(ShellSidebarService).layout;
-  private readonly role = inject(AuthService).user;
+  private readonly user = inject(AuthService).user;
 
   protected readonly filter = signal<NotificationFilter>('all');
   private readonly loading = signal(true);
@@ -88,7 +89,10 @@ export class NotificationsPageComponent implements OnInit {
   protected readonly unread = this.notifications.unreadCount;
   protected readonly total = computed(() => this.notifications.notifications().length);
   protected readonly subtitle = computed(() => (this.unread() > 0 ? `${this.unread()} sin leer` : 'Todo al día'));
-  protected readonly topics = computed(() => TOPICS[this.role()?.role ?? ''] ?? []);
+  protected readonly topics = computed(() => {
+    const role = this.user()?.role;
+    return role ? TOPICS[role] : [];
+  });
 
   protected readonly groups = computed(() => {
     const onlyUnread = this.filter() === 'unread';
@@ -102,7 +106,8 @@ export class NotificationsPageComponent implements OnInit {
     this.notifications
       .refresh()
       .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe({ complete: () => this.loading.set(false) });
+      // Si falla, la lista queda vacía en vez de dejar el esqueleto fijo.
+      .subscribe({ complete: () => this.loading.set(false), error: () => this.loading.set(false) });
   }
 
   protected setFilter(filter: NotificationFilter): void {

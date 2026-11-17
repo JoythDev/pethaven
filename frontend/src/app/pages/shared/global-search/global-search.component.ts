@@ -204,8 +204,11 @@ export class GlobalSearchComponent {
         }
         break;
       case 'Enter': {
-        // Intro justo después de teclear no espera a la pausa.
-        this.flushDebounce();
+        // Intro justo después de teclear no espera a la pausa; si la consulta cambió, la lista es
+        // nueva y se abre su primer resultado, no el índice de la lista anterior.
+        if (this.flushDebounce()) {
+          this.active.set(0);
+        }
         const entry = this.flat()[this.active()];
         if (entry) {
           event.preventDefault();
@@ -240,9 +243,12 @@ export class GlobalSearchComponent {
     this.input()?.nativeElement.blur();
   }
 
-  private flushDebounce(): void {
+  /** Aplica de inmediato la consulta pendiente; devuelve true si cambió. */
+  private flushDebounce(): boolean {
     clearTimeout(this.debounceTimer);
+    const changed = this.debounced() !== this.query();
     this.debounced.set(this.query());
+    return changed;
   }
 
   private close(restoreFocus: boolean): void {

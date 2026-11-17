@@ -109,7 +109,7 @@ export class GlobalSearchService {
             done({ pets: pets ?? [], owners: owners ?? [], drugs: drugs ?? [] }, [pets, owners, drugs]),
           ),
         );
-      default:
+      case 'ADMIN':
         return forkJoin([
           safe(this.veterinarians.getAll()),
           safe(this.pets.getAll()),
