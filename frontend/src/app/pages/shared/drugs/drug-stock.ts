@@ -46,14 +46,15 @@ const currencyFormatter = new Intl.NumberFormat('es-CO', {
   style: 'currency',
   currency: 'COP',
   minimumFractionDigits: 0,
-  maximumFractionDigits: 2,
+  maximumFractionDigits: 0,
 });
 
 const integerFormatter = new Intl.NumberFormat('es-CO');
 
 const percentFormatter = new Intl.NumberFormat('es-CO', { maximumFractionDigits: 1 });
 
-export const formatCurrency = (value: number): string => currencyFormatter.format(value);
+// «$14.500» (12.2): sin decimales y sin espacio tras el signo.
+export const formatCurrency = (value: number): string => currencyFormatter.format(value).replace(/^\$\s/u, '$');
 
 export const formatUnits = (value: number): string => integerFormatter.format(value);
 

@@ -4,10 +4,10 @@
 export type Evolution = 'STABLE' | 'IMPROVING' | 'WORSENING' | 'RECOVERED';
 
 export const EVOLUTION_LABELS: Record<Evolution, string> = {
-  STABLE: 'Sin cambios',
+  STABLE: 'Estable',
   IMPROVING: 'Mejorando',
   WORSENING: 'Empeorando',
-  RECOVERED: 'Alta (estable)',
+  RECOVERED: 'Recuperado',
 };
 
 export const evolutionLabel = (evolution: Evolution | null): string =>

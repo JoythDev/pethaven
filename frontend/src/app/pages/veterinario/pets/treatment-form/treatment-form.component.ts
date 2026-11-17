@@ -224,7 +224,7 @@ export class TreatmentFormComponent implements OnInit {
         }
       });
 
-    // "Sin cambios" significa que sigue con el mismo diagnóstico: se fija el actual y se bloquea.
+    // "Estable" significa que sigue con el mismo diagnóstico: se fija el actual y se bloquea.
     this.form.controls.evolution.valueChanges
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe((evolution) => {

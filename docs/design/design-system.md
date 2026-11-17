@@ -994,6 +994,7 @@ Use Angular's `es-CO` locale pipes; do not format by hand.
 | Drug | Disponible | success |
 | Drug | Stock bajo | warning |
 | Drug | Agotado | danger |
+| Treatment | Ingreso (first record, no evolution yet) | neutral |
 | Treatment | Mejorando | info |
 | Treatment | Estable | neutral |
 | Treatment | Empeorando | danger |
