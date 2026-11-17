@@ -1,0 +1,88 @@
+/* Franjas del día (11.6): crecen un poco y oscurecen el borde con hover y con foco. */
+.seg {
+  position: relative;
+  display: block;
+  height: 28px;
+  margin-inline: 1.5px;
+  border: 1.5px solid color-mix(in srgb, var(--color-on-hue) 50%, transparent);
+  border-radius: var(--radius-check);
+  background: var(--hue);
+  cursor: default;
+  transition:
+    transform 120ms var(--ease-out-strong),
+    border-color 120ms var(--ease-out-strong);
+  --ph-focus-offset: 1px;
+}
+
+.seg:hover,
+.seg:focus-visible {
+  z-index: 2;
+  border-color: var(--color-on-hue);
+  transform: scaleY(1.3);
+}
+
+/* Sobre un tono el anillo de foco va en on-hue (13). */
+.seg:focus-visible {
+  outline-color: var(--color-on-hue);
+}
+
+/* Franja libre: hueca y punteada. Si ya pasó, se apaga más. */
+.seg-free {
+  background: transparent;
+  border-style: dashed;
+  border-color: color-mix(in srgb, var(--color-on-hue) 38%, transparent);
+}
+
+.seg-past {
+  opacity: 0.55;
+}
+
+/* Cita ya atendida: más tenue, vuelve a toda su fuerza al apuntarla. */
+.seg-done {
+  opacity: 0.6;
+}
+
+.seg-done:hover,
+.seg-done:focus-visible,
+.seg-past:hover,
+.seg-past:focus-visible {
+  opacity: 1;
+}
+
+/* Indicador de «ahora»: línea fina que sobresale de la barra, con un punto arriba. */
+.now {
+  position: absolute;
+  top: -5px;
+  bottom: -5px;
+  z-index: 3;
+  width: 2px;
+  margin-left: -1px;
+  border-radius: 1px;
+  background: var(--color-on-hue);
+  pointer-events: none;
+}
+
+.now::before {
+  content: '';
+  position: absolute;
+  top: -3px;
+  left: 50%;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--color-on-hue);
+  transform: translateX(-50%);
+}
+
+.tick {
+  position: absolute;
+  top: 0;
+  padding-left: 4px;
+  border-left: 1px solid color-mix(in srgb, var(--color-on-hue) 45%, transparent);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .seg {
+    transition: none;
+  }
+}

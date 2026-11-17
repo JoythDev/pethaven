@@ -14,7 +14,7 @@ const ART_CLASS: Record<BlockKind, string> = {
 const KIND_CLASS: Record<BlockKind, string> = {
   hero: 'flex items-center gap-4 px-[22px] py-5 min-h-[196px]',
   kpi: 'flex flex-col p-4 min-h-[128px]',
-  summary: 'block p-4',
+  summary: 'flex flex-col p-4',
   header: 'flex items-end gap-3 p-4 min-h-[118px]',
 };
 

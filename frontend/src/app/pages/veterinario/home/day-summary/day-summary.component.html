@@ -1,0 +1,94 @@
+@let t = timeline();
+
+<app-block hue="sky" kind="summary" class="h-full">
+  <div class="flex items-center">
+    <h2 class="font-display text-[17px] leading-[22px] font-semibold text-balance">
+      Resumen del día<app-demo-tag />
+    </h2>
+    <span class="ml-auto pl-2 text-[12.5px] leading-[18px] font-bold whitespace-nowrap text-ink-muted first-letter:uppercase">
+      {{ date() | date: 'EEE d MMM' }}
+    </span>
+  </div>
+
+  @if (t.closed) {
+    <div class="mt-4 flex items-center gap-3">
+      <app-sticker name="calendar" [width]="76" />
+      <div class="min-w-0">
+        <p class="font-display text-[17px] leading-[22px] font-semibold">La clínica no atiende hoy.</p>
+        <p class="mt-0.5 text-[12.5px] leading-[18px] text-ink-muted">Atendemos de lunes a sábado.</p>
+      </div>
+    </div>
+  } @else {
+    <div class="relative mt-4">
+      <div
+        role="group"
+        class="grid"
+        [attr.aria-label]="t.summary"
+        [style.grid-template-columns]="'repeat(' + slotCount() + ', minmax(0, 1fr))'"
+      >
+        @for (segment of t.segments; track segment.time) {
+          <span
+            role="img"
+            tabindex="0"
+            [class]="segmentClass(segment)"
+            [style.grid-column]="'span ' + segment.span"
+            [attr.aria-label]="segment.label"
+            [pTooltip]="segment.tooltip"
+            tooltipPosition="top"
+            tooltipEvent="both"
+          ></span>
+        }
+      </div>
+      @if (t.nowPercent !== null) {
+        <span class="now" aria-hidden="true" [style.left.%]="t.nowPercent"></span>
+      }
+    </div>
+
+    <div class="relative mt-2 h-4 text-xs leading-4 font-bold text-ink-muted tabular-nums" aria-hidden="true">
+      @for (tick of t.ticks; track tick.label) {
+        <span class="tick" [style.left.%]="tick.percent">{{ tick.label }}</span>
+      }
+    </div>
+
+    <div class="mt-4 mb-4 flex items-center gap-3 rounded-row bg-[color-mix(in_srgb,var(--color-on-hue)_12%,var(--hue))] p-3">
+      @if (t.upNext; as next) {
+        <app-avatar
+          [id]="next.appointment.petId"
+          [name]="next.appointment.petName"
+          kind="pet"
+          [species]="next.appointment.species"
+          [size]="42"
+        />
+        <div class="min-w-0 flex-1">
+          <p class="text-[12.5px] leading-[18px] font-extrabold">Sigue · {{ next.relative }}</p>
+          <p class="truncate text-sm leading-5 font-extrabold">{{ next.time }} · {{ next.appointment.petName }}</p>
+          <p class="truncate text-[12.5px] leading-[18px] text-ink-muted">
+            {{ next.appointment.reason }} · {{ next.appointment.ownerName }}
+          </p>
+        </div>
+      } @else {
+        <app-sticker name="calendar" [width]="52" />
+        <div class="min-w-0 flex-1">
+          @if (t.figures.total > 0) {
+            <p class="text-sm leading-5 font-extrabold">Terminaste las citas de hoy</p>
+            <p class="text-[12.5px] leading-[18px] text-ink-muted">
+              Atendiste {{ t.figures.total }} {{ t.figures.total === 1 ? 'cita' : 'citas' }}.
+            </p>
+          } @else {
+            <p class="text-sm leading-5 font-extrabold">No hay citas para hoy</p>
+            <p class="text-[12.5px] leading-[18px] text-ink-muted">Cuando agenden una, aparecerá aquí.</p>
+          }
+        </div>
+      }
+    </div>
+
+    <div class="mt-auto grid grid-cols-3 border-t border-line pt-3">
+      @for (figure of figures(); track figure.label) {
+        <div class="flex min-w-0 flex-col px-3 first:pl-0 not-first:border-l not-first:border-line">
+          <span class="font-display text-[28px] leading-7 font-semibold tabular-nums">{{ figure.value }}</span>
+          <span class="mt-0.5 text-[12.5px] leading-[18px] text-ink-muted">{{ figure.label }}</span>
+        </div>
+      }
+    </div>
+  }
+</app-block>
