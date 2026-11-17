@@ -733,6 +733,43 @@ html.js .reveal.is-visible {
   pointer-events: none;
 }
 
+/* Popover del shell (campana y búsqueda, 10.20): `card` con borde de 1 px, radio 14 y elevación 2 (4.4).
+   Siempre está en el DOM y se muestra con data-open: entra en 180 ms desde opacidad 0, escala 0,96 y
+   un desplazamiento de 6 px, y sale en 120 ms (7). Cerrado queda invisible y fuera del orden de tabulación.
+   La posición (absolute o fixed) y el ancho los pone quien lo usa. */
+.ph-popover {
+  border: 1px solid var(--color-line);
+  border-radius: var(--radius-row);
+  background: var(--color-card);
+  color: var(--color-ink);
+  box-shadow: 0 12px 30px -10px rgb(0 0 0 / 0.35);
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-6px) scale(0.96);
+  transform-origin: top right;
+  transition:
+    opacity 120ms var(--ease-out-strong),
+    transform 120ms var(--ease-out-strong),
+    visibility 0s linear 120ms;
+}
+.ph-popover[data-open='true'] {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+  transition:
+    opacity 180ms var(--ease-out-strong),
+    transform 180ms var(--ease-out-strong),
+    visibility 0s;
+}
+@media (prefers-reduced-motion: reduce) {
+  .ph-popover,
+  .ph-popover[data-open='true'] {
+    transition: none;
+  }
+}
+
 /* Tabla de recursos dentro de app-resource-list (10.9): encabezado en `caption`, filas de 44 px como
    mínimo y sin línea bajo la última fila, porque la paginación ya lleva la suya. */
 .ph-resource-table .p-datatable {

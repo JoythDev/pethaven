@@ -13,6 +13,13 @@ const comingSoon = (path: string, title: string, description: string): Route => 
   data: { title, description },
 });
 
+// Pestaña Notificaciones: una sola pantalla para los tres roles; el contenido sale de la sesión.
+const notificationsRoute = (): Route => ({
+  path: 'notificaciones',
+  loadComponent: () =>
+    import('./pages/shared/notifications/notifications-page.component').then((m) => m.NotificationsPageComponent),
+});
+
 export const routes: Routes = [
   // Solo sin sesión: con sesión, guestGuard lleva al portal del rol.
   { path: '', component: LandingComponent, canActivate: [guestGuard] },
@@ -33,7 +40,7 @@ export const routes: Routes = [
           import('./pages/veterinario/home/home.component').then((m) => m.DashboardHomeComponent),
       },
       comingSoon('agenda', 'Agenda', 'Aquí verás las citas del día y de la semana de tu consulta.'),
-      comingSoon('notificaciones', 'Notificaciones', 'Aquí verás los avisos de tu consulta: citas, existencias y tratamientos.'),
+      notificationsRoute(),
       {
         path: 'perfil',
         loadComponent: () =>
@@ -171,7 +178,7 @@ export const routes: Routes = [
           ),
       },
       comingSoon('citas', 'Citas', 'Aquí podrás agendar y revisar las citas de tus mascotas.'),
-      comingSoon('notificaciones', 'Notificaciones', 'Aquí verás los avisos sobre tus mascotas y tus citas.'),
+      notificationsRoute(),
       {
         path: 'perfil',
         loadComponent: () =>
@@ -223,7 +230,7 @@ export const routes: Routes = [
             (m) => m.AdminPetsListComponent
           ),
       },
-      comingSoon('notificaciones', 'Notificaciones', 'Aquí verás los avisos de la clínica: existencias bajas, nuevos registros y actividad.'),
+      notificationsRoute(),
       comingSoon('perfil', 'Perfil', 'Aquí podrás consultar los datos de tu cuenta de administrador.'),
       {
         path: 'medicamentos',

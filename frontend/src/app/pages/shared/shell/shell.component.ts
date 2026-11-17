@@ -1,6 +1,6 @@
 import { DOCUMENT, NgTemplateOutlet } from '@angular/common';
-import { Component, ElementRef, OnDestroy, OnInit, computed, effect, inject, input, output, signal } from '@angular/core';
-import { toSignal } from '@angular/core/rxjs-interop';
+import { Component, DestroyRef, ElementRef, OnDestroy, OnInit, computed, effect, inject, input, output, signal, viewChild } from '@angular/core';
+import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { NavigationEnd, Router, RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import {
   LucideBell,
@@ -14,6 +14,7 @@ import {
   LucideMoon,
   LucidePackage,
   LucidePawPrint,
+  LucideSearch,
   LucideStethoscope,
   LucideSun,
   LucideUser,
@@ -29,7 +30,12 @@ import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 
 import { ThemeService } from '../../../core/theme/theme.service';
+import { DemoNotificationsService } from '../../../services/demo/demo-notifications.service';
 import { AvatarComponent } from '../avatar/avatar.component';
+import { GlobalSearchComponent } from '../global-search/global-search.component';
+import { GlobalSearchService } from '../global-search/global-search.service';
+import { NotificationsBellComponent } from '../notifications/notifications-bell.component';
+import { NotificationsCardComponent } from '../notifications/notifications-card.component';
 import { ShellSidebarService } from './shell-sidebar.service';
 import { SidebarToggleComponent } from './sidebar-toggle.component';
 import { ShellConfig, ShellIconName, activeTabIndex, layoutForWidth, splitBottomTabs } from './shell-tabs';
@@ -66,12 +72,17 @@ const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
     ToastModule,
     TooltipModule,
     AvatarComponent,
+    GlobalSearchComponent,
+    NotificationsBellComponent,
+    NotificationsCardComponent,
     SidebarToggleComponent,
+    LucideBell,
     LucideDynamicIcon,
     LucideEllipsis,
     LucideLogOut,
     LucideMoon,
     LucidePawPrint,
+    LucideSearch,
     LucideSun,
     LucideUser,
   ],
@@ -87,6 +98,9 @@ export class ShellComponent implements OnInit, OnDestroy {
 
   protected readonly theme = inject(ThemeService);
   protected readonly sidebar = inject(ShellSidebarService);
+  protected readonly notifications = inject(DemoNotificationsService);
+  private readonly search = inject(GlobalSearchService);
+  private readonly destroyRef = inject(DestroyRef);
   private readonly router = inject(Router);
   private readonly document = inject(DOCUMENT);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
@@ -120,6 +134,15 @@ export class ShellComponent implements OnInit, OnDestroy {
   protected readonly focusIndex = signal<number | null>(null);
   protected readonly tabStop = computed(() => this.focusIndex() ?? Math.max(this.activeIndex(), 0));
 
+  /** Pestaña Notificaciones del rol (la del icono de campana) y si la pantalla actual es esa. */
+  protected readonly notificationsLink = computed(() => this.tabs().find((tab) => tab.icon === 'bell')?.link ?? null);
+  private readonly onNotifications = computed(() => this.tabs()[this.activeIndex()]?.icon === 'bell');
+  // El bloque «Notificaciones» cierra la barra lateral (9.5), salvo en su propia pantalla. Solo se suma
+  // a una barra que la página ya aporta: sin módulos propios, la barra se omite (decisión del usuario).
+  protected readonly showNotificationsCard = computed(
+    () => this.notificationsLink() !== null && !this.onNotifications(),
+  );
+
   protected readonly showColumn = computed(
     () => this.sidebar.layout() === 'expanded' && this.sidebar.hasContent() && !this.sidebar.collapsed(),
   );
@@ -133,7 +156,29 @@ export class ShellComponent implements OnInit, OnDestroy {
   );
   protected readonly userKey = computed(() => this.config().userId ?? this.config().userName);
 
+  protected readonly userButton = viewChild<ElementRef<HTMLButtonElement>>('userButton');
+
   protected readonly menuItems = computed<MenuItem[]>(() => [
+    // En compacto la búsqueda y las notificaciones viven en el menú de usuario (9.9).
+    ...(this.sidebar.layout() === 'compact'
+      ? [
+          {
+            id: 'search',
+            label: 'Buscar',
+            command: () => this.search.openOverlay(this.userButton()?.nativeElement ?? null),
+          },
+          {
+            id: 'notifications',
+            label: 'Notificaciones',
+            command: () => {
+              const link = this.notificationsLink();
+              if (link) {
+                void this.router.navigateByUrl(link);
+              }
+            },
+          },
+        ]
+      : []),
     { id: 'profile', label: 'Perfil', command: () => void this.router.navigateByUrl(this.config().profileLink) },
     {
       id: 'theme',
@@ -163,6 +208,9 @@ export class ShellComponent implements OnInit, OnDestroy {
   }
 
   ngOnInit(): void {
+    // Los avisos demo se generan al entrar al portal; la pantalla de notificaciones los vuelve a pedir.
+    this.notifications.refresh().pipe(takeUntilDestroyed(this.destroyRef)).subscribe();
+
     // Scrollbars propios mientras haya un portal en pantalla (4.5).
     this.document.documentElement.classList.add('ph-scrollbars');
 

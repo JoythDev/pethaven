@@ -1,0 +1,136 @@
+<ng-template #field>
+  <div class="relative">
+    <svg
+      lucideSearch
+      [size]="18"
+      class="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-ink-muted"
+      aria-hidden="true"
+    ></svg>
+    <input
+      #input
+      pInputText
+      type="text"
+      role="combobox"
+      autocomplete="off"
+      spellcheck="false"
+      aria-label="Buscar en PetHaven"
+      aria-autocomplete="list"
+      aria-haspopup="listbox"
+      class="h-9 w-full border-[1.5px] py-0 pr-3 pl-10 @max-[679px]:h-11"
+      placeholder="Buscar en PetHaven"
+      [attr.aria-expanded]="open()"
+      [attr.aria-controls]="listboxId"
+      [attr.aria-activedescendant]="activeId()"
+      [value]="query()"
+      (input)="onInput($any($event.target).value)"
+      (focus)="onFocus()"
+      (click)="onFocus()"
+      (keydown)="onKeydown($event)"
+    />
+  </div>
+</ng-template>
+
+<ng-template #results>
+  <div class="sr-only" role="status" aria-live="polite">{{ liveText() }}</div>
+  <div
+    [id]="listboxId"
+    [attr.role]="hasResults() ? 'listbox' : null"
+    [attr.aria-label]="hasResults() ? 'Resultados de búsqueda' : null"
+  >
+    @if (search.status() === 'loading' && !hasResults()) {
+      <p class="px-2.5 py-3 text-sm leading-5 text-ink-muted">Buscando…</p>
+    } @else if (search.status() === 'error') {
+      <p class="px-2.5 py-3 text-sm leading-5 text-ink-muted">
+        No pudimos cargar los datos para buscar. Vuelve a enfocar el campo para reintentar.
+      </p>
+    } @else if (!shownQuery()) {
+      <p class="px-2.5 py-3 text-sm leading-5 text-ink-muted">
+        {{ query().trim() ? 'Buscando…' : 'Escribe para buscar en PetHaven.' }}
+      </p>
+    } @else if (!hasResults()) {
+      <p class="px-2.5 py-3 text-sm leading-5 text-ink-muted">Sin resultados para «{{ shownQuery() }}»</p>
+    } @else {
+      @for (group of rows(); track group.kind) {
+        <div role="group" [attr.aria-labelledby]="'global-search-group-' + group.kind" class="mb-1 last:mb-0">
+          <div
+            role="presentation"
+            [id]="'global-search-group-' + group.kind"
+            class="px-2.5 pt-2 pb-1 text-xs leading-4 font-extrabold text-ink-muted"
+          >
+            {{ group.label }}
+          </div>
+          @for (item of group.items; track item.entry.id) {
+            <div
+              role="option"
+              [id]="optionId(item.index)"
+              [attr.aria-selected]="item.index === active()"
+              [class]="optionClass(item.index)"
+              (click)="select(item.entry)"
+              (mouseenter)="active.set(item.index)"
+            >
+              @if (item.entry.kind === 'drug') {
+                <span [class]="hue(item.entry) + ' grid size-8 shrink-0 place-items-center rounded-full bg-(--hue)'">
+                  <app-sticker name="pill" [width]="20" />
+                </span>
+              } @else {
+                <app-avatar
+                  [id]="item.entry.id"
+                  [name]="item.entry.label"
+                  [kind]="item.entry.kind === 'pet' ? 'pet' : 'person'"
+                  [species]="item.entry.species ?? dog"
+                  [photoUrl]="item.entry.photoUrl ?? null"
+                  [size]="32"
+                />
+              }
+              <span class="min-w-0 flex-1">
+                <span class="block truncate text-sm leading-5 font-extrabold">{{ item.entry.label }}</span>
+                @if (item.entry.detail) {
+                  <span class="block truncate text-[12.5px] leading-[18px] text-ink-muted">{{ item.entry.detail }}</span>
+                }
+              </span>
+            </div>
+          }
+        </div>
+      }
+    }
+  </div>
+</ng-template>
+
+<div class="contents" [appPopoverDismiss]="open()" (dismissed)="dismiss($event)">
+  @if (inline()) {
+    <ng-container *ngTemplateOutlet="field" />
+    <div
+      class="ph-popover absolute top-[calc(100%+8px)] right-0 max-h-[min(420px,70dvh)] w-[330px] overflow-y-auto p-2"
+      [attr.data-open]="open()"
+    >
+      <ng-container *ngTemplateOutlet="results" />
+    </div>
+  } @else {
+    @if (layout() === 'medium') {
+      <button
+        #trigger
+        type="button"
+        class="ph-focus ph-icon-btn"
+        aria-label="Buscar en PetHaven"
+        aria-haspopup="dialog"
+        [attr.aria-expanded]="search.overlayOpen()"
+        pTooltip="Buscar en PetHaven"
+        tooltipPosition="bottom"
+        (click)="toggleOverlay()"
+      >
+        <svg lucideSearch [size]="18" aria-hidden="true"></svg>
+      </button>
+    }
+    <div
+      role="dialog"
+      aria-label="Búsqueda global"
+      [class]="'ph-popover ' + overlayClass()"
+      [attr.data-open]="open()"
+    >
+      <ng-container *ngTemplateOutlet="field" />
+      <div class="mt-2 max-h-[min(420px,60dvh)] overflow-y-auto">
+        <ng-container *ngTemplateOutlet="results" />
+      </div>
+    </div>
+  }
+</div>
