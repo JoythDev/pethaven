@@ -1,173 +1,213 @@
-<div class="mx-auto max-w-7xl p-5 lg:p-8">
-  <app-page-banner class="mb-6" color="honey" mascot="dog" title="Mascotas" subtitle="Gestiona los pacientes de la clínica.">
-    <p-button class="mt-4 inline-block" label="Nueva mascota" icon="pi pi-plus" (onClick)="nueva()" />
-  </app-page-banner>
+<app-page-header heading="Mascotas" [subtitle]="subtitle()">
+  <a actions pButton size="small" routerLink="/veterinario/mascotas/add">
+    <svg lucidePlus [size]="18" aria-hidden="true"></svg>
+    <span class="p-button-label">Nueva mascota</span>
+  </a>
+</app-page-header>
 
-  <section class="overflow-hidden rounded-3xl border border-olive/10 bg-white shadow-lg">
-    <div class="flex flex-col gap-3 border-b border-olive/15 p-4 lg:flex-row lg:items-center">
-      <p-iconfield class="w-full lg:max-w-xs">
-        <p-inputicon class="pi pi-search" />
-        <input
-          pInputText
-          id="searchPets"
-          placeholder="Buscar por nombre o raza"
-          class="w-full"
-          [formControl]="searchControl"
-        />
-      </p-iconfield>
-
-      <p-select
-        [options]="speciesOptions"
-        optionLabel="label"
-        optionValue="value"
-        placeholder="Especie"
-        [showClear]="true"
-        [formControl]="speciesControl"
-        styleClass="w-full lg:w-48"
+<!-- Lista de 8 columnas y panel de 4 mientras el detalle es una columna fija; por debajo de 1080 px es un cajón. -->
+<div class="grid grid-cols-12 items-start gap-[14px]">
+  <app-resource-list
+    [items]="pageItems()"
+    [total]="total()"
+    [page]="page()"
+    [pageSize]="query().pageSize"
+    [view]="query().view"
+    [searchText]="query().search"
+    searchLabel="Buscar mascotas"
+    searchPlaceholder="Buscar por nombre, raza o dueño"
+    [loading]="loading()"
+    [error]="error()"
+    [filtersActive]="filtersActive()"
+    [selectedId]="selectedId()"
+    emptyHeading="Aún no hay mascotas"
+    emptyDescription="Registra la primera mascota para verla aquí con su ficha y su historia clínica."
+    (searchChange)="update(withSearch(query(), $event))"
+    (viewChange)="onView($event)"
+    (pageChange)="update(withPage(query(), $event))"
+    (pageSizeChange)="update(withPageSize(query(), $event))"
+    (itemSelect)="select($event)"
+    (clearFilters)="update(clearAll(query()))"
+    (retry)="retry()"
+  >
+    <div filters class="flex flex-wrap items-center gap-2" role="group" aria-label="Filtros de mascotas">
+      <p-togglebutton
+        onLabel="Activas"
+        offLabel="Activas"
+        [ngModel]="query().filters['estado'] === activeFilter"
+        (ngModelChange)="toggleFilter('estado', activeFilter)"
       />
-
-      <p-select
-        [options]="patientFilterOptions"
-        optionLabel="label"
-        optionValue="value"
-        [formControl]="patientFilterControl"
-        [loading]="patientFilterLoading()"
-        styleClass="w-full lg:w-52"
+      <p-togglebutton
+        onLabel="Inactivas"
+        offLabel="Inactivas"
+        [ngModel]="query().filters['estado'] === inactiveFilter"
+        (ngModelChange)="toggleFilter('estado', inactiveFilter)"
+      />
+      <p-togglebutton
+        onLabel="Perros"
+        offLabel="Perros"
+        [ngModel]="query().filters['especie'] === dog"
+        (ngModelChange)="toggleFilter('especie', dog)"
+      />
+      <p-togglebutton
+        onLabel="Gatos"
+        offLabel="Gatos"
+        [ngModel]="query().filters['especie'] === cat"
+        (ngModelChange)="toggleFilter('especie', cat)"
+      />
+      <p-togglebutton
+        onLabel="Mis pacientes"
+        offLabel="Mis pacientes"
+        [ngModel]="!!query().filters['mios']"
+        (ngModelChange)="toggleFilter('mios', '1')"
       />
     </div>
 
-    @if (patientFilterError(); as error) {
-      <p class="border-b border-olive/15 px-4 py-2 text-sm text-red-700">{{ error }}</p>
-    }
+    <a emptyAction pButton size="small" routerLink="/veterinario/mascotas/add">
+      <svg lucidePlus [size]="18" aria-hidden="true"></svg>
+      <span class="p-button-label">Nueva mascota</span>
+    </a>
 
-    @let state = pets();
-
-    @if (state.status === 'error') {
-      <div class="flex flex-col items-center gap-3 py-10 text-center">
-        <i class="pi pi-exclamation-triangle text-2xl text-text/30" aria-hidden="true"></i>
-        <p class="text-text/60">No se pudieron cargar las mascotas.</p>
-        <p class="text-sm text-text/50">{{ state.message }}</p>
-      </div>
-    } @else {
-      <p-table
-        #dt
-        [value]="filteredPets()"
-        [loading]="state.status === 'loading' || patientFilterLoading()"
-        dataKey="id"
-        [paginator]="true"
-        [rows]="10"
-        [rowsPerPageOptions]="[10, 20, 50]"
-        [showCurrentPageReport]="true"
-        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} mascotas"
-        [sortField]="'name'"
-        [sortOrder]="1"
+    <ng-template #card let-pet let-selected="selected" let-select="select">
+      <app-resource-card
+        [id]="pet.id"
+        [heading]="pet.name"
+        [subtitle]="pet.breed + ' · ' + pet.ownerName"
+        [photoUrl]="pet.photoUrl"
+        [selected]="selected"
+        (activate)="select()"
       >
-        <ng-template pTemplate="header">
+        <app-sticker art [name]="sticker(pet)" [width]="96" [kit]="kit(pet)" />
+        <p-tag status [value]="status(pet).label" [severity]="status(pet).severity" />
+        <span facts class="text-ink-muted tabular-nums">{{ ageLabel(pet.age) }} · {{ pet.weight | number: '1.0-1' }} kg</span>
+      </app-resource-card>
+    </ng-template>
+
+    <ng-template #table let-items let-selectedId="selectedId" let-select="select">
+      <p-table [value]="items">
+        <ng-template #header>
           <tr>
-            <th pSortableColumn="name">Paciente <p-sortIcon field="name" /></th>
-            <th pSortableColumn="species">Especie <p-sortIcon field="species" /></th>
-            <th pSortableColumn="age">Edad <p-sortIcon field="age" /></th>
-            <th pSortableColumn="weight">Peso <p-sortIcon field="weight" /></th>
-            <th>Dueño</th>
-            <th pSortableColumn="disease">Estado <p-sortIcon field="disease" /></th>
-            <th pSortableColumn="active">Activa <p-sortIcon field="active" /></th>
-            <th>Acciones</th>
+            <th app-sort-header field="name" [sort]="query().sort" (sortChange)="onSort($event)">Mascota</th>
+            <th app-sort-header field="species" [sort]="query().sort" (sortChange)="onSort($event)">Especie</th>
+            <th app-sort-header field="owner" [sort]="query().sort" (sortChange)="onSort($event)">Dueño</th>
+            <th app-sort-header field="age" align="end" [sort]="query().sort" (sortChange)="onSort($event)">Edad</th>
+            <th app-sort-header field="weight" align="end" [sort]="query().sort" (sortChange)="onSort($event)">Peso</th>
+            <th app-sort-header field="status" [sort]="query().sort" (sortChange)="onSort($event)">Estado</th>
           </tr>
         </ng-template>
-
-        <ng-template pTemplate="body" let-pet>
-          <tr [class.opacity-60]="!pet.active">
+        <ng-template #body let-pet>
+          <tr [appSelectableRow]="pet.id === selectedId" (rowActivate)="select(pet.id)">
             <td>
               <div class="flex items-center gap-3">
-                <img
-                  [src]="pet.photoUrl"
-                  [alt]="pet.name"
-                  class="h-10 w-10 shrink-0 rounded-full bg-secondary/50 object-cover"
-                  (error)="onPhotoError($event)"
-                />
-                <div class="flex flex-col leading-tight">
-                  <span class="pet-row-name font-bold text-text">{{ pet.name }}</span>
-                  <span class="text-xs text-text/60">{{ pet.breed }}</span>
-                </div>
+                <app-avatar [id]="pet.id" [name]="pet.name" kind="pet" [species]="pet.species" [photoUrl]="pet.photoUrl" [size]="32" />
+                <span class="font-extrabold text-ink">{{ pet.name }}</span>
               </div>
             </td>
             <td>
-              <span class="inline-flex items-center gap-2">
-                <img
-                  [src]="pet.species === 'DOG' ? '/images/icons/dog-icon.svg' : '/images/icons/cat-icon.svg'"
-                  alt=""
-                  class="h-5 w-5"
-                />
-                <span class="text-sm">{{ pet.species === 'DOG' ? 'Perro' : 'Gato' }}</span>
-              </span>
+              <div class="font-extrabold text-ink">{{ speciesLabel(pet.species) }}</div>
+              <div class="text-[12.5px] leading-[18px] text-ink-muted">{{ pet.breed }}</div>
             </td>
-            <td class="text-sm">{{ pet.age }} años</td>
-            <td class="text-sm">{{ pet.weight }} kg</td>
-            <td>
-              <a
-                [routerLink]="['/veterinario/duenos', pet.ownerId]"
-                class="text-sm text-olive transition-colors hover:text-tertiary"
-              >
-                {{ pet.ownerName }}
-              </a>
-            </td>
-            <td><app-pet-status-tag [pet]="pet" /></td>
-            <td>
-              <p-tag
-                [value]="pet.active ? 'Activa' : 'Inactiva'"
-                [severity]="pet.active ? 'success' : 'secondary'"
-              />
-            </td>
-            <td>
-              <div class="flex items-center gap-1">
-                <p-button
-                  class="btn-detail"
-                  icon="pi pi-eye"
-                  severity="secondary"
-                  [text]="true"
-                  [rounded]="true"
-                  ariaLabel="Ver ficha"
-                  pTooltip="Ver ficha"
-                  tooltipPosition="top"
-                  (onClick)="ver(pet)"
-                />
-                <p-button
-                  icon="pi pi-pencil"
-                  severity="secondary"
-                  [text]="true"
-                  [rounded]="true"
-                  ariaLabel="Editar"
-                  pTooltip="Editar"
-                  tooltipPosition="top"
-                  (onClick)="editar(pet)"
-                />
-                <p-button
-                  [icon]="pet.active ? 'pi pi-ban' : 'pi pi-check-circle'"
-                  [severity]="pet.active ? 'danger' : 'success'"
-                  [text]="true"
-                  [rounded]="true"
-                  [ariaLabel]="pet.active ? 'Desactivar' : 'Activar'"
-                  [pTooltip]="pet.active ? 'Desactivar' : 'Activar'"
-                  tooltipPosition="top"
-                  (onClick)="cambiarEstado(pet)"
-                />
-              </div>
-            </td>
-          </tr>
-        </ng-template>
-
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="8">
-              <div class="flex flex-col items-center gap-3 py-10 text-center">
-                <i class="pi pi-search text-2xl text-text/30" aria-hidden="true"></i>
-                <p class="text-text/60">No se encontraron mascotas.</p>
-                <p-button label="Nueva mascota" icon="pi pi-plus" [outlined]="true" (onClick)="nueva()" />
-              </div>
-            </td>
+            <td>{{ pet.ownerName }}</td>
+            <td class="text-right tabular-nums">{{ ageLabel(pet.age) }}</td>
+            <td class="text-right tabular-nums">{{ pet.weight | number: '1.0-1' }} kg</td>
+            <td><p-tag [value]="status(pet).label" [severity]="status(pet).severity" /></td>
           </tr>
         </ng-template>
       </p-table>
-    }
-  </section>
+    </ng-template>
+  </app-resource-list>
+
+  <app-detail-panel
+    label="Detalle de la mascota"
+    emptyHeading="Elige una mascota"
+    emptyText="Selecciona una fila o una tarjeta para ver aquí su detalle."
+    [selected]="!!current()"
+    [loading]="loading()"
+    [hue]="currentHue()"
+    [heading]="current()?.name ?? ''"
+    [subtitle]="current() ? speciesLabel(current()!.species) + ' · ' + current()!.breed : null"
+    [fullLink]="current() ? ['/veterinario/mascotas', current()!.id] : null"
+    [(open)]="panelOpen"
+  >
+    @let pet = current();
+    <app-avatar
+      avatar
+      [id]="pet?.id ?? 0"
+      [name]="pet?.name ?? ''"
+      kind="pet"
+      [species]="pet?.species ?? dog"
+      [photoUrl]="pet?.photoUrl ?? null"
+      [size]="60"
+    />
+
+    <div figure class="flex items-center justify-between gap-3">
+      @if (pet) {
+        <p-tag [value]="status(pet).label" [severity]="status(pet).severity" />
+        <span class="text-[12.5px] leading-[18px] text-ink-muted tabular-nums">Mascota n.º {{ pet.id }}</span>
+      }
+    </div>
+
+    <div details class="flex flex-col gap-3">
+      @if (pet) {
+        <dl app-definition-list>
+          <dt>Edad</dt>
+          <dd>{{ ageLabel(pet.age) }}</dd>
+          <dt>Peso</dt>
+          <dd>{{ pet.weight | number: '1.0-1' }} kg</dd>
+          <dt>Dueño</dt>
+          <dd>
+            <a
+              class="ph-focus rounded-check underline underline-offset-2 hover:text-accent"
+              [routerLink]="['/veterinario/duenos', pet.ownerId]"
+              >{{ pet.ownerName }}</a
+            >
+          </dd>
+          <dt>Diagnóstico</dt>
+          <dd>{{ pet.disease || 'Sin diagnóstico' }}</dd>
+          <dt>Último tratamiento</dt>
+          <dd>
+            @if (lastTreatment(); as treatment) {
+              {{ treatment.date | date: 'd MMM y' }}
+            } @else if (treatmentsReady()) {
+              Sin tratamientos
+            } @else if (treatmentsFailed()) {
+              No disponible
+            } @else if (treatmentsSkeleton()) {
+              <p-skeleton class="ml-auto block w-24" height="14px" borderRadius="999px" animation="none" styleClass="ph-skeleton-bar" />
+            }
+          </dd>
+        </dl>
+      }
+    </div>
+
+    <!-- Entre el resumen y las acciones (11.11); la ranura del historial es la que deja ese lugar. -->
+    <div history>
+      @if (pet) {
+        <app-pet-active-switch [pet]="pet" (changed)="onPetChanged($event)" />
+      }
+    </div>
+
+    <div actions class="contents">
+      @if (pet) {
+        @if (pet.active) {
+          <a pButton class="w-full" [routerLink]="['/veterinario/mascotas', pet.id, 'treatments', 'add']">
+            <svg lucideStethoscope [size]="18" aria-hidden="true"></svg>
+            <span class="p-button-label">Nuevo tratamiento</span>
+          </a>
+        } @else {
+          <button pButton type="button" class="w-full" [disabled]="true" aria-describedby="treatment-blocked">
+            <svg lucideStethoscope [size]="18" aria-hidden="true"></svg>
+            <span class="p-button-label">Nuevo tratamiento</span>
+          </button>
+          <p id="treatment-blocked" class="text-[12.5px] leading-[18px] text-ink-muted">
+            {{ pet.name }} está inactiva y no admite tratamientos nuevos. Actívala para registrar uno.
+          </p>
+        }
+        <a pButton class="w-full" severity="secondary" [outlined]="true" [routerLink]="['/veterinario/mascotas/update', pet.id]">
+          <svg lucidePencil [size]="18" aria-hidden="true"></svg>
+          <span class="p-button-label">Editar</span>
+        </a>
+      }
+    </div>
+  </app-detail-panel>
 </div>

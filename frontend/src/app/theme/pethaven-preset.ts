@@ -388,6 +388,11 @@ export const PetHavenPreset = definePreset(Aura, {
         },
       },
     },
+    // Interruptor (10.3): pista de 40 por 23 px y pieza de 17 px; activado usa el acento (`primary`).
+    toggleswitch: {
+      root: { width: '40px', height: '23px', gap: '3px' },
+      handle: { size: '17px' },
+    },
     // Pares suaves de estado del sistema de diseño; las variables cambian solas con .app-dark.
     tag: {
       root: {

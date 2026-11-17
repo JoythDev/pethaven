@@ -1,290 +1,299 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
-import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { Router, RouterLink } from '@angular/router';
-import { ConfirmationService } from 'primeng/api';
+import { DatePipe, DecimalPipe } from '@angular/common';
+import { Component, computed, effect, inject, signal, untracked } from '@angular/core';
+import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { LucidePencil, LucidePlus, LucideStethoscope } from '@lucide/angular';
 import { ButtonModule } from 'primeng/button';
-import { IconFieldModule } from 'primeng/iconfield';
-import { InputIconModule } from 'primeng/inputicon';
-import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
-import { Table, TableModule } from 'primeng/table';
+import { SkeletonModule } from 'primeng/skeleton';
+import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-import { TooltipModule } from 'primeng/tooltip';
+import { ToggleButtonModule } from 'primeng/togglebutton';
+import { Subject, map, of, switchMap } from 'rxjs';
+
+import { ViewState, toViewState } from '../../../../core/http/view-state';
+import { identityHue } from '../../../../core/identity/identity';
 import {
-  EMPTY,
-  Subject,
-  catchError,
-  concatMap,
-  debounceTime,
-  distinctUntilChanged,
-  map,
-  merge,
-  of,
-  share,
-  startWith,
-  switchMap,
-  tap,
-} from 'rxjs';
+  ListQuery,
+  ListQueryConfig,
+  ListSort,
+  ListView,
+  clearAll,
+  parseListQuery,
+  serializeListQuery,
+  withFilter,
+  withPage,
+  withPageSize,
+  withSearch,
+  withSort,
+  withView,
+} from '../../../../core/list/list-query';
+import { sortItems } from '../../../../core/list/list-sort';
+import { clampPage, paginate } from '../../../../core/list/pagination';
+import { readViewPreference, writeViewPreference } from '../../../../core/list/view-preference';
+import { NotificationService } from '../../../../core/notifications/notification.service';
+import {
+  PET_FILTER_KEYS,
+  PET_SORT_ACCESSORS,
+  PET_STATUS_FILTERS,
+  ageLabel,
+  lastTreatment,
+  patientsCountLabel,
+  petMatches,
+  replacePet,
+  speciesLabel,
+} from '../../../../core/pets-list/pets-list';
+import { petStatus } from '../../../../core/status/pet-status';
+import { coatKitFor, speciesSticker } from '../../../../core/stickers/stickers';
+import { skeletonVisible } from '../../../../core/ui/skeleton-timing';
 import { Pet, Species } from '../../../../models/pet.model';
 import { Treatment } from '../../../../models/treatment.model';
 import { AuthService } from '../../../../services/auth.service';
 import { PetService } from '../../../../services/pet.service';
+import { TreatmentService } from '../../../../services/treatment.service';
 import { VeterinarianService } from '../../../../services/veterinarian.service';
-import { NotificationService } from '../../../../core/notifications/notification.service';
-import { ViewState, toViewState } from '../../../../core/http/view-state';
-import { normalizeText } from '../../../../core/text/normalize-text';
-import { onPhotoError as handlePhotoError } from '../../../../core/ui/photo-fallback';
-import { PetStatusTagComponent } from '../components/pet-status-tag/pet-status-tag.component';
-import { PageBannerComponent } from '../../../shared/page-banner/page-banner.component';
+import { AvatarComponent } from '../../../shared/avatar/avatar.component';
+import { DefinitionListComponent } from '../../../shared/definition-list/definition-list.component';
+import { DetailPanelComponent } from '../../../shared/detail-panel/detail-panel.component';
+import { PageHeaderComponent } from '../../../shared/page-header/page-header.component';
+import { PetActiveSwitchComponent } from '../../../shared/pet-active-switch/pet-active-switch.component';
+import { ResourceCardComponent } from '../../../shared/resource-card/resource-card.component';
+import { ResourceListComponent } from '../../../shared/resource-list/resource-list.component';
+import { SelectableRowDirective } from '../../../shared/resource-list/selectable-row.directive';
+import { SortHeaderComponent } from '../../../shared/resource-list/sort-header.component';
+import { ShellSidebarService } from '../../../shared/shell/shell-sidebar.service';
+import { StickerComponent } from '../../../shared/sticker/sticker.component';
 
-interface SpeciesOption {
-  label: string;
-  value: Species;
-}
+const VIEW_RESOURCE = 'mascotas';
+const LOAD_ERROR = 'No pudimos cargar las mascotas. Revisa tu conexión e inténtalo de nuevo.';
+const LOADING = { status: 'loading' } as const;
 
-type PatientFilter = 'all' | 'mine';
+const CONFIG: ListQueryConfig = {
+  filterKeys: PET_FILTER_KEYS,
+  sortFields: Object.keys(PET_SORT_ACCESSORS),
+  defaultSort: { field: 'name', direction: 'asc' },
+  defaultView: readViewPreference(VIEW_RESOURCE, 'cards'),
+};
 
-interface PatientFilterOption {
-  label: string;
-  value: PatientFilter;
-}
-
+/**
+ * Mascotas del veterinario (11.1): lista en tarjetas o tabla con búsqueda, chips de filtro, orden y
+ * paginación en la URL, y panel de detalle con el interruptor «Mascota activa» (11.11). Sin barra
+ * lateral contextual: la lista no aporta módulos propios (9.5). Cambiar el estado actualiza la
+ * mascota en su sitio, sin recargar.
+ */
 @Component({
   selector: 'app-pets-list',
   imports: [
-    PageBannerComponent,
-    ReactiveFormsModule,
+    DatePipe,
+    DecimalPipe,
+    FormsModule,
     RouterLink,
-    TableModule,
     ButtonModule,
+    SkeletonModule,
+    TableModule,
     TagModule,
-    TooltipModule,
-    IconFieldModule,
-    InputIconModule,
-    InputTextModule,
-    SelectModule,
-    PetStatusTagComponent,
+    ToggleButtonModule,
+    LucidePencil,
+    LucidePlus,
+    LucideStethoscope,
+    AvatarComponent,
+    DefinitionListComponent,
+    DetailPanelComponent,
+    PageHeaderComponent,
+    PetActiveSwitchComponent,
+    ResourceCardComponent,
+    ResourceListComponent,
+    SelectableRowDirective,
+    SortHeaderComponent,
+    StickerComponent,
   ],
   templateUrl: './pets-list.component.html',
 })
-export class PetsListComponent implements OnInit {
-  private readonly petService = inject(PetService);
-  private readonly veterinarianService = inject(VeterinarianService);
-  private readonly authService = inject(AuthService);
+export class PetsListComponent {
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
-  private readonly confirmationService = inject(ConfirmationService);
+  private readonly petService = inject(PetService);
+  private readonly treatmentService = inject(TreatmentService);
+  private readonly veterinarianService = inject(VeterinarianService);
+  private readonly auth = inject(AuthService);
   private readonly notifications = inject(NotificationService);
-  private readonly destroyRef = inject(DestroyRef);
+  private readonly shell = inject(ShellSidebarService);
 
-  private readonly table = viewChild<Table>('dt');
+  protected readonly dog = Species.DOG;
+  protected readonly cat = Species.CAT;
+  protected readonly activeFilter = PET_STATUS_FILTERS.active;
+  protected readonly inactiveFilter = PET_STATUS_FILTERS.inactive;
+  protected readonly panelOpen = signal(false);
+  protected readonly selectedId = signal<number | null>(null);
 
-  readonly searchControl = new FormControl('', { nonNullable: true });
-  readonly speciesControl = new FormControl<Species | null>(null);
-  readonly patientFilterControl = new FormControl<PatientFilter>('all', { nonNullable: true });
+  protected readonly state = signal<ViewState<Pet[]>>(LOADING);
+  private readonly reload$ = new Subject<void>();
 
-  readonly speciesOptions: SpeciesOption[] = [
-    { label: 'Perro', value: Species.DOG },
-    { label: 'Gato', value: Species.CAT },
-  ];
+  // Pacientes del veterinario (para «Mis pacientes»); se piden una vez, la primera vez que se usa el chip.
+  private readonly patientIds = signal<ReadonlySet<number> | null>(null);
+  private readonly patientsLoading = signal(false);
 
-  readonly patientFilterOptions: PatientFilterOption[] = [
-    { label: 'Todas las mascotas', value: 'all' },
-    { label: 'Mis pacientes', value: 'mine' },
-  ];
-
-  // Cada emisión pide al API la lista de mascotas otra vez (carga inicial y recargas).
-  private readonly refresh$ = new Subject<void>();
-
-  // Cada emisión es una mascota a la que se le debe invertir su estado activo.
-  private readonly toggleActive$ = new Subject<Pet>();
-
-  // Últimas mascotas cargadas. Se conservan durante una recarga para que la tabla no se vacíe.
-  private readonly lastPets = signal<Pet[]>([]);
-
-  // IDs de las mascotas que ya atendió el veterinario autenticado.
-  private readonly patientIds = signal<Set<number> | null>(null);
-  readonly patientFilterLoading = signal(false);
-  readonly patientFilterError = signal<string | null>(null);
-
-  // Estado de la lista. Cada refresh$ pide las mascotas otra vez y switchMap cancela la petición
-  // anterior si llega otra. toViewState va dentro de switchMap para que cada petición empiece en
-  // 'loading' y termine en 'ready' o 'error'. tap guarda los datos listos y vacía la lista si falla.
-  // Aquí no se llama al API: eso ocurre al emitir refresh$.
-  readonly pets = toSignal(
-    this.refresh$.pipe(
-      switchMap(() =>
-        this.petService.getAll().pipe(
-          toViewState<Pet[]>(),
-          tap((state) => {
-            if (state.status === 'ready') {
-              this.lastPets.set(state.data);
-            } else if (state.status === 'error') {
-              this.lastPets.set([]);
-            }
-          }),
-        ),
+  protected readonly query = toSignal(
+    this.route.queryParams.pipe(
+      map((params) =>
+        parseListQuery(new URLSearchParams(Object.entries(params).map(([key, value]) => [key, String(value)])), CONFIG),
       ),
     ),
-    { initialValue: { status: 'loading' } as ViewState<Pet[]> },
+    { initialValue: parseListQuery(new URLSearchParams(), CONFIG) },
   );
 
-  // Espera 250 ms sin teclear, normaliza el texto y descarta repeticiones antes de filtrar.
-  // share() evita que el reset de página y el filtro creen cada uno su propia cadena de debounce.
-  private readonly searchTerm$ = this.searchControl.valueChanges.pipe(
-    debounceTime(250),
-    map((term) => normalizeText(term)),
-    distinctUntilChanged(),
-    share(),
-  );
-
-  private readonly species$ = this.speciesControl.valueChanges;
-  private readonly patientFilter$ = this.patientFilterControl.valueChanges.pipe(
-    distinctUntilChanged(),
-    share(),
-  );
-
-  // Último texto buscado (normalizado), última especie elegida y pacientes para filtrar las mascotas,
-  // como signals para el filtro.
-  readonly searchTerm = toSignal(this.searchTerm$.pipe(startWith('')), { initialValue: '' });
-  readonly species = toSignal(this.species$.pipe(startWith(null)), { initialValue: null });
-  readonly patientFilter = toSignal(this.patientFilter$.pipe(startWith<PatientFilter>('all')), {
-    initialValue: 'all' as PatientFilter,
+  protected readonly pets = computed(() => {
+    const state = this.state();
+    return state.status === 'ready' ? state.data : [];
   });
+  private readonly mineActive = computed(() => !!this.query().filters['mios']);
 
-  // Lista visible: últimas mascotas cargadas filtradas por búsqueda, especie y pacientes del veterinario.
-  // No depende del estado de carga, así la tabla no se vacía mientras recarga.
-  readonly filteredPets = computed<Pet[]>(() => {
-    const term = this.searchTerm();
-    const species = this.species();
-    const patientFilter = this.patientFilter();
-    const patientIds = this.patientIds();
-    return this.lastPets().filter((pet) => this.matches(pet, term, species, patientFilter, patientIds));
+  private readonly filtered = computed(() => {
+    const { search, filters } = this.query();
+    const patientIds = this.mineActive() ? (this.patientIds() ?? new Set<number>()) : null;
+    const criteria = { search, species: filters['especie'] ?? '', status: filters['estado'] ?? '', patientIds };
+    return this.pets().filter((pet) => petMatches(pet, criteria));
   });
+  protected readonly total = computed(() => this.filtered().length);
+  protected readonly page = computed(() => clampPage(this.query().page, this.total(), this.query().pageSize));
+  protected readonly pageItems = computed(() =>
+    paginate(sortItems(this.filtered(), this.query().sort, PET_SORT_ACCESSORS), this.page(), this.query().pageSize),
+  );
 
-  // Ícono de respaldo si la foto no carga. Se expone con este nombre para el binding de la plantilla.
-  readonly onPhotoError = handlePhotoError;
+  protected readonly loading = computed(() => this.state().status === 'loading' || this.patientsLoading());
+  protected readonly error = computed(() => (this.state().status === 'error' ? LOAD_ERROR : null));
+  protected readonly filtersActive = computed(() => Object.keys(this.query().filters).length > 0);
+  protected readonly subtitle = computed(() =>
+    this.state().status === 'ready' ? patientsCountLabel(this.pets().length) : null,
+  );
 
-  ngOnInit(): void {
-    // Llama a goToFirstPage cuando cambia cualquiera de los filtros.
-    merge(this.searchTerm$, this.species$, this.patientFilter$)
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.goToFirstPage());
+  protected readonly current = computed(() => this.pets().find((p) => p.id === this.selectedId()) ?? null);
+  protected readonly currentHue = computed(() => identityHue(this.current()?.id ?? 0));
 
-    // Obtener las mascotas tratadas por el veterinario autenticado.
-    this.patientFilter$
+  // Último tratamiento real de la mascota elegida; cada selección pide el suyo y cancela el anterior.
+  private readonly treatments = toSignal(
+    toObservable(this.selectedId).pipe(
+      switchMap((id) =>
+        id === null
+          ? of<ViewState<Treatment[]>>(LOADING)
+          : this.treatmentService.getByPetId(id).pipe(toViewState<Treatment[]>()),
+      ),
+    ),
+    { initialValue: LOADING as ViewState<Treatment[]> },
+  );
+  protected readonly treatmentsFailed = computed(() => this.treatments().status === 'error');
+  protected readonly lastTreatment = computed(() => {
+    const state = this.treatments();
+    return state.status === 'ready' ? lastTreatment(state.data) : null;
+  });
+  protected readonly treatmentsReady = computed(() => this.treatments().status === 'ready');
+  protected readonly treatmentsSkeleton = skeletonVisible(computed(() => this.treatments().status === 'loading'));
+
+  protected readonly speciesLabel = speciesLabel;
+  protected readonly ageLabel = ageLabel;
+  protected readonly withSearch = withSearch;
+  protected readonly withPage = withPage;
+  protected readonly withPageSize = withPageSize;
+  protected readonly clearAll = clearAll;
+
+  constructor() {
+    this.reload$
       .pipe(
-        startWith<PatientFilter>('all'),
-        switchMap((filter) => {
-          if (filter === 'all') {
-            this.patientFilterLoading.set(false);
-            this.patientFilterError.set(null);
-            return of<Set<number> | null>(null);
-          }
-
-          const user = this.authService.user();
-          if (!user || user.role !== 'VETERINARIAN') {
-            this.patientFilterError.set('Inicia sesión como veterinario para ver tus pacientes.');
-            return of(new Set<number>());
-          }
-
-          this.patientFilterLoading.set(true);
-          this.patientFilterError.set(null);
-          return this.veterinarianService.getTreatmentsByVeterinarianId(user.id).pipe(
-            map((treatments: Treatment[]) => new Set(treatments.map((treatment) => treatment.petId))),
-            catchError((error: unknown) => {
-              this.notifications.error('No se pudieron cargar tus pacientes', error);
-              this.patientFilterError.set('No se pudieron cargar tus pacientes.');
-              return of(new Set<number>());
-            }),
-            tap(() => this.patientFilterLoading.set(false)),
-          );
-        }),
-        takeUntilDestroyed(this.destroyRef),
+        switchMap(() => this.petService.getAll().pipe(toViewState<Pet[]>())),
+        takeUntilDestroyed(),
       )
-      .subscribe((ids) => this.patientIds.set(ids));
+      .subscribe((state) => this.state.set(state));
+    this.reload$.next();
 
-    // concatMap atiende los cambios de estado de uno en uno y en el orden en que se pidieron.
-    // Cuando termina con éxito recarga la lista; si falla avisa y sigue escuchando.
-    this.toggleActive$
-      .pipe(
-        concatMap((pet) =>
-          this.petService.setActive(pet.id, !pet.active).pipe(
-            tap((updated) =>
-              this.notifications.success(
-                updated.active ? 'Mascota activada' : 'Mascota desactivada',
-                `${updated.name} ahora está ${updated.active ? 'activa' : 'inactiva'}.`,
-              ),
-            ),
-            catchError((error: unknown) => {
-              this.notifications.error('No se pudo cambiar el estado de la mascota', error);
-              return EMPTY;
-            }),
-          ),
-        ),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe(() => this.refresh$.next());
+    // La página se corrige en la URL cuando la lista encoge.
+    effect(() => {
+      const query = this.query();
+      if (this.state().status === 'ready' && query.page !== this.page()) {
+        this.update(withPage(query, this.page()));
+      }
+    });
 
-    // Los pipelines ya están conectados; ahora sí se dispara la carga inicial.
-    this.refresh$.next();
-  }
+    // En la columna fija se selecciona la primera mascota al cargar (10.13); en cajón no, para no abrirlo solo.
+    effect(() => {
+      if (this.shell.layout() === 'expanded' && this.selectedId() === null && this.pageItems().length) {
+        this.selectedId.set(this.pageItems()[0].id);
+      }
+    });
 
-  nueva(): void {
-    this.router.navigate(['/veterinario/mascotas/add']);
-  }
-
-  ver(pet: Pet): void {
-    this.router.navigate(['/veterinario/mascotas', pet.id]);
-  }
-
-  editar(pet: Pet): void {
-    this.router.navigate(['/veterinario/mascotas/update', pet.id]);
-  }
-
-  // Pide confirmación y, si el usuario acepta, envía la mascota a toggleActive$.
-  // El API no permite borrar mascotas: solo se activan o desactivan y conservan su historial.
-  cambiarEstado(pet: Pet): void {
-    const desactivar = pet.active;
-    this.confirmationService.confirm({
-      header: desactivar ? 'Desactivar mascota' : 'Activar mascota',
-      message: desactivar
-        ? `¿Seguro que quieres desactivar a ${pet.name}? Las mascotas no se eliminan: quedan inactivas y conservan su historial.`
-        : `¿Seguro que quieres activar de nuevo a ${pet.name}?`,
-      icon: 'pi pi-exclamation-triangle',
-      acceptLabel: desactivar ? 'Desactivar' : 'Activar',
-      rejectLabel: 'Cancelar',
-      acceptButtonStyleClass: desactivar ? 'p-button-danger' : undefined,
-      rejectButtonStyleClass: 'p-button-text',
-      accept: () => this.toggleActive$.next(pet),
+    // «Mis pacientes» necesita los tratamientos del veterinario: se piden la primera vez que se activa.
+    effect(() => {
+      if (this.mineActive()) {
+        untracked(() => this.loadPatients());
+      }
     });
   }
 
-  // Aplica pacientes, especie y búsqueda sobre la misma lista.
-  private matches(
-    pet: Pet,
-    term: string,
-    species: Species | null,
-    patientFilter: PatientFilter,
-    patientIds: Set<number> | null,
-  ): boolean {
-    if (patientFilter === 'mine' && !patientIds?.has(pet.id)) {
-      return false;
-    }
-    if (species && pet.species !== species) {
-      return false;
-    }
-    if (!term) {
-      return true;
-    }
-    return normalizeText(pet.name).includes(term) || normalizeText(pet.breed).includes(term);
+  protected retry(): void {
+    this.state.set(LOADING);
+    this.reload$.next();
   }
 
-  // Lleva la tabla de PrimeNG a la primera página.
-  private goToFirstPage(): void {
-    const table = this.table();
-    if (table) {
-      table.first = 0;
+  protected status(pet: Pet) {
+    return petStatus(pet);
+  }
+
+  protected sticker(pet: Pet) {
+    return speciesSticker(pet.species);
+  }
+
+  protected kit(pet: Pet) {
+    return coatKitFor(pet.id);
+  }
+
+  protected select(id: number | string): void {
+    this.selectedId.set(id as number);
+    this.panelOpen.set(true);
+  }
+
+  protected update(query: ListQuery): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: serializeListQuery(query, CONFIG),
+      replaceUrl: true,
+    });
+  }
+
+  protected onSort(sort: ListSort): void {
+    this.update(withSort(this.query(), sort));
+  }
+
+  protected onView(view: ListView): void {
+    writeViewPreference(VIEW_RESOURCE, view);
+    this.update(withView(this.query(), view));
+  }
+
+  // Un chip activo se quita al volver a pulsarlo; en especie y estado, elegir otro valor reemplaza el anterior.
+  protected toggleFilter(key: string, value: string): void {
+    const active = this.query().filters[key] === value;
+    this.update(withFilter(this.query(), key, active ? '' : value));
+  }
+
+  /** El interruptor guardó el estado: la mascota se reemplaza en la lista y el panel la sigue por id. */
+  protected onPetChanged(updated: Pet): void {
+    this.state.update((s) => (s.status === 'ready' ? { status: 'ready', data: replacePet(s.data, updated) } : s));
+  }
+
+  private loadPatients(): void {
+    const user = this.auth.user();
+    if (this.patientIds() !== null || this.patientsLoading() || !user || user.role !== 'VETERINARIAN') {
+      return;
     }
+    this.patientsLoading.set(true);
+    this.veterinarianService.getTreatmentsByVeterinarianId(user.id).subscribe({
+      next: (treatments) => {
+        this.patientIds.set(new Set(treatments.map((t) => t.petId)));
+        this.patientsLoading.set(false);
+      },
+      error: (error: unknown) => {
+        this.patientsLoading.set(false);
+        this.notifications.error('No se pudieron cargar tus pacientes', error);
+        this.update(withFilter(this.query(), 'mios', ''));
+      },
+    });
   }
 }
