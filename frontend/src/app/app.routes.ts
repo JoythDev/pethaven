@@ -43,7 +43,11 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./pages/veterinario/home/home.component').then((m) => m.DashboardHomeComponent),
       },
-      comingSoon('agenda', 'Agenda', 'Aquí verás las citas del día y de la semana de tu consulta.'),
+      {
+        path: 'agenda',
+        loadComponent: () =>
+          import('./pages/veterinario/agenda/agenda.component').then((m) => m.AgendaComponent),
+      },
       notificationsRoute(),
       {
         path: 'perfil',

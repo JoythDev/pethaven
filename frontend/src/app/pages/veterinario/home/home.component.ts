@@ -19,6 +19,7 @@ import {
   firstName,
   heroCopy,
   longDateEs,
+  WeekSummary,
   recentPatients,
   remainingAppointments,
   weekSummary,
@@ -33,19 +34,19 @@ import { DemoStockMinimumService } from '../../../services/demo/demo-stock-minim
 import { PetService } from '../../../services/pet.service';
 import { VeterinarianService } from '../../../services/veterinarian.service';
 import { AvatarComponent } from '../../shared/avatar/avatar.component';
-import { BlockComponent } from '../../shared/block/block.component';
 import { CardComponent } from '../../shared/card/card.component';
+import { DaySummaryComponent } from '../../shared/day-summary/day-summary.component';
 import { DemoTagComponent } from '../../shared/demo-tag/demo-tag.component';
 import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
 import { HeroComponent } from '../../shared/hero/hero.component';
+import { InlineErrorComponent } from '../../shared/inline-error/inline-error.component';
 import { ListItemComponent } from '../../shared/list-item/list-item.component';
 import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
 import { ShellSidebarDirective } from '../../shared/shell/shell-sidebar.directive';
 import { SkeletonComponent } from '../../shared/skeleton/skeleton.component';
 import { StickerComponent } from '../../shared/sticker/sticker.component';
 import { StockMeterComponent } from '../../shared/stock-meter/stock-meter.component';
-import { DaySummaryComponent } from './day-summary/day-summary.component';
-import { InlineErrorComponent } from './inline-error.component';
+import { WeekSummaryComponent } from '../../shared/week-summary/week-summary.component';
 
 // Datos reales del veterinario: pacientes recientes y las mascotas que puede atender.
 interface RealData {
@@ -75,7 +76,6 @@ const STOCK_LIMIT = 5;
     LucideClock,
     LucidePlus,
     AvatarComponent,
-    BlockComponent,
     CardComponent,
     DaySummaryComponent,
     DemoTagComponent,
@@ -88,6 +88,7 @@ const STOCK_LIMIT = 5;
     SkeletonComponent,
     StickerComponent,
     StockMeterComponent,
+    WeekSummaryComponent,
   ],
   templateUrl: './home.component.html',
 })
@@ -127,8 +128,6 @@ export class DashboardHomeComponent {
 
   protected readonly realSkeleton = skeletonVisible(computed(() => this.real().status === 'loading'));
   protected readonly agendaSkeleton = skeletonVisible(computed(() => this.agenda().status === 'loading'));
-  protected readonly weekLoading = computed(() => this.weekView().status === 'loading');
-  protected readonly weekSkeleton = skeletonVisible(this.weekLoading);
   protected readonly stockSkeleton = skeletonVisible(computed(() => this.stock().status === 'loading'));
 
   protected readonly skeletonRows = [0, 1, 2, 3];
@@ -165,7 +164,7 @@ export class DashboardHomeComponent {
   });
 
   // «Esta semana» necesita la semana y las citas ya atendidas de hoy: falla si falla cualquiera.
-  protected readonly weekView = computed(() => {
+  protected readonly weekView = computed<ViewState<WeekSummary>>(() => {
     const week = this.week();
     const agenda = this.agenda();
     if (week.status === 'error') {
@@ -178,7 +177,7 @@ export class DashboardHomeComponent {
       return {
         status: 'ready',
         data: weekSummary(week.data, this.now(), agenda.data.counts.completed),
-      } as const;
+      };
     }
     return LOADING;
   });

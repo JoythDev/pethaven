@@ -2,15 +2,16 @@ import { DatePipe } from '@angular/common';
 import { Component, computed, input } from '@angular/core';
 import { TooltipModule } from 'primeng/tooltip';
 
-import { DayTimeline, TimelineSegment } from '../../../../core/day-timeline/day-timeline';
-import { AvatarComponent } from '../../../shared/avatar/avatar.component';
-import { BlockComponent } from '../../../shared/block/block.component';
-import { DemoTagComponent } from '../../../shared/demo-tag/demo-tag.component';
-import { StickerComponent } from '../../../shared/sticker/sticker.component';
+import { DayTimeline, TimelineSegment } from '../../../core/day-timeline/day-timeline';
+import { AvatarComponent } from '../avatar/avatar.component';
+import { BlockComponent } from '../block/block.component';
+import { DemoTagComponent } from '../demo-tag/demo-tag.component';
+import { StickerComponent } from '../sticker/sticker.component';
 
 /**
- * «Resumen del día» (11.6): línea de tiempo con franjas de 30 min, marcas de hora e indicador de
- * «ahora»; debajo, la cita que sigue y tres cifras. Cada franja es enfocable y lleva un tooltip de
+ * «Resumen del día» (11.6) de la fecha dada: línea de tiempo con franjas de 30 min, marcas de hora
+ * e indicador de «ahora»; debajo, la cita que sigue (hoy), la primera (día futuro) o el aviso de
+ * día terminado, y tres cifras. Cada franja es enfocable y lleva un tooltip de
  * PrimeNG. Solo presenta: el estado de carga y de error lo pone quien la usa.
  */
 @Component({

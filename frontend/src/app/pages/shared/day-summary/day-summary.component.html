@@ -10,12 +10,12 @@
     </span>
   </div>
 
-  @if (t.closed) {
+  @if (t.closed && t.notice) {
     <div class="mt-4 flex items-center gap-3">
       <app-sticker name="calendar" [width]="76" />
       <div class="min-w-0">
-        <p class="font-display text-[17px] leading-[22px] font-semibold">La clínica no atiende hoy.</p>
-        <p class="mt-0.5 text-[12.5px] leading-[18px] text-ink-muted">Atendemos de lunes a sábado.</p>
+        <p class="font-display text-[17px] leading-[22px] font-semibold">{{ t.notice.title }}</p>
+        <p class="mt-0.5 text-[12.5px] leading-[18px] text-ink-muted">{{ t.notice.note }}</p>
       </div>
     </div>
   } @else {
@@ -60,24 +60,17 @@
           [size]="42"
         />
         <div class="min-w-0 flex-1">
-          <p class="text-[12.5px] leading-[18px] font-extrabold">Sigue · {{ next.relative }}</p>
-          <p class="truncate text-sm leading-5 font-extrabold">{{ next.time }} · {{ next.appointment.petName }}</p>
+          <p class="text-[12.5px] leading-[18px] font-extrabold">{{ next.kicker }}</p>
+          <p class="truncate text-sm leading-5 font-extrabold">{{ next.headline }}</p>
           <p class="truncate text-[12.5px] leading-[18px] text-ink-muted">
             {{ next.appointment.reason }} · {{ next.appointment.ownerName }}
           </p>
         </div>
-      } @else {
+      } @else if (t.notice) {
         <app-sticker name="calendar" [width]="52" />
         <div class="min-w-0 flex-1">
-          @if (t.figures.total > 0) {
-            <p class="text-sm leading-5 font-extrabold">Terminaste las citas de hoy</p>
-            <p class="text-[12.5px] leading-[18px] text-ink-muted">
-              Atendiste {{ t.figures.total }} {{ t.figures.total === 1 ? 'cita' : 'citas' }}.
-            </p>
-          } @else {
-            <p class="text-sm leading-5 font-extrabold">No hay citas para hoy</p>
-            <p class="text-[12.5px] leading-[18px] text-ink-muted">Cuando agenden una, aparecerá aquí.</p>
-          }
+          <p class="text-sm leading-5 font-extrabold">{{ t.notice.title }}</p>
+          <p class="text-[12.5px] leading-[18px] text-ink-muted">{{ t.notice.note }}</p>
         </div>
       }
     </div>

@@ -1,6 +1,6 @@
 import { Appointment, DayAgenda } from '../../models/demo/appointment.model';
 import { SLOT_MINUTES } from '../demo/appointments';
-import { formatTime, isSameDay } from '../demo/demo-date';
+import { dayNumber, formatTime, isSameDay } from '../demo/demo-date';
 import { IdentityHue, identityHue } from '../identity/identity';
 
 // «Resumen del día» (11.6, S25, S30): línea de tiempo con franjas de 30 min, marcas de hora y «ahora».
@@ -33,10 +33,25 @@ export interface UpNext {
   appointment: Appointment;
   time: string;
   relative: string;
+  // Textos del bloque: hoy «Sigue · en 25 min» y «09:00 · Luna»; otro día «Primera cita · 08:00» y «Luna».
+  kicker: string;
+  headline: string;
+}
+
+// Hoy, un día que aún no llega o uno que ya pasó, respecto a la hora actual.
+export type DayPhase = 'past' | 'today' | 'future';
+
+// Aviso que reemplaza al bloque «Sigue»: día cerrado o sin nada más que atender.
+export interface DayNotice {
+  title: string;
+  note: string;
 }
 
 export interface DayTimeline {
   closed: boolean;
+  phase: DayPhase;
+  // Día cerrado, o día sin cita siguiente (terminado o vacío); null mientras haya un bloque «Sigue».
+  notice: DayNotice | null;
   segments: TimelineSegment[];
   ticks: TimelineTick[];
   // Posición de «ahora» en la barra; null fuera del horario de atención o de otro día.
@@ -98,25 +113,53 @@ function plural(count: number, one: string, many: string): string {
   return `${count} ${count === 1 ? one : many}`;
 }
 
+function dayPhase(date: Date, now: Date): DayPhase {
+  const diff = dayNumber(date) - dayNumber(now);
+  return diff === 0 ? 'today' : diff > 0 ? 'future' : 'past';
+}
+
+function upNextFor(appointment: Appointment, phase: DayPhase, now: Date): UpNext {
+  const time = formatTime(appointment.start);
+  const relative = relativeStart(appointment.start, now);
+  return phase === 'today'
+    ? { appointment, time, relative, kicker: `Sigue · ${relative}`, headline: `${time} · ${appointment.petName}` }
+    : { appointment, time, relative, kicker: `Primera cita · ${time}`, headline: appointment.petName };
+}
+
+// Aviso del día sin bloque «Sigue»: depende de si es hoy, ya pasó o aún no llega.
+function endNotice(phase: DayPhase, total: number): DayNotice {
+  if (total > 0) {
+    return phase === 'today'
+      ? { title: 'Terminaste las citas de hoy', note: `Atendiste ${plural(total, 'cita', 'citas')}.` }
+      : { title: 'Día terminado', note: `${total} ${total === 1 ? 'cita atendida' : 'citas atendidas'}.` };
+  }
+  if (phase === 'past') {
+    return { title: 'Sin citas este día', note: 'Ese día no tuviste citas.' };
+  }
+  return phase === 'today'
+    ? { title: 'No hay citas para hoy', note: 'Cuando agenden una, aparecerá aquí.' }
+    : { title: 'No hay citas este día', note: 'Cuando agenden una, aparecerá aquí.' };
+}
+
 export function buildDayTimeline(agenda: DayAgenda, now: Date): DayTimeline {
+  const phase = dayPhase(agenda.date, now);
   const sorted = [...agenda.appointments].sort((a, b) => a.start.getTime() - b.start.getTime());
-  const upNextAppointment = sorted.find((a) => appointmentEnd(a) > now.getTime()) ?? null;
-  const upNext: UpNext | null = upNextAppointment
-    ? {
-        appointment: upNextAppointment,
-        time: formatTime(upNextAppointment.start),
-        relative: relativeStart(upNextAppointment.start, now),
-      }
-    : null;
+  // Un día pasado no tiene «siguiente»; uno futuro empieza por su primera cita.
+  const upNextAppointment =
+    phase === 'past' ? null : (sorted.find((a) => appointmentEnd(a) > now.getTime()) ?? null);
+  const upNext: UpNext | null = upNextAppointment ? upNextFor(upNextAppointment, phase, now) : null;
 
   if (agenda.closed || agenda.slots.length === 0) {
+    const title = phase === 'today' ? 'La clínica no atiende hoy.' : 'La clínica no atiende este día.';
     return {
       closed: true,
+      phase,
+      notice: { title, note: 'Atendemos de lunes a sábado.' },
       segments: [],
       ticks: [],
       nowPercent: null,
       figures: { total: 0, urgent: 0, free: 0 },
-      summary: 'La clínica no atiende hoy.',
+      summary: title,
       upNext: null,
     };
   }
@@ -153,6 +196,8 @@ export function buildDayTimeline(agenda: DayAgenda, now: Date): DayTimeline {
   const free = segments.filter((s) => s.free && !s.past).length;
   return {
     closed: false,
+    phase,
+    notice: upNext ? null : endNotice(phase, agenda.counts.total),
     segments,
     ticks,
     nowPercent,
