@@ -1,6 +1,5 @@
 import { Route, Routes } from '@angular/router';
 import { LandingComponent } from './pages/landing/landing.component';
-import { LoginComponent } from './pages/auth/login/login.component';
 import { ClienteEntryComponent } from './pages/cliente/cliente-entry/cliente-entry.component';
 import { ADMIN_DRUG_AREA, DRUG_AREA_DATA_KEY, VET_DRUG_AREA } from './pages/shared/drugs/drug-area';
 import { guestGuard, ownerPortalGuard, roleGuard } from './core/auth/auth.guard';
@@ -23,7 +22,12 @@ const notificationsRoute = (): Route => ({
 export const routes: Routes = [
   // Solo sin sesión: con sesión, guestGuard lleva al portal del rol.
   { path: '', component: LandingComponent, canActivate: [guestGuard] },
-  { path: 'login', component: LoginComponent, canActivate: [guestGuard] },
+  // Carga diferida: así el acceso (con Lucide y los campos de PrimeNG) no entra en el paquete inicial.
+  {
+    path: 'login',
+    canActivate: [guestGuard],
+    loadComponent: () => import('./pages/auth/login/login.component').then((m) => m.LoginComponent),
+  },
 
   // Panel del veterinario: layout propio sobre el shell compartido.
   {

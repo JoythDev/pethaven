@@ -133,6 +133,39 @@
   border-bottom: 70px solid color-mix(in srgb, #fff 26%, var(--hue));
   border-left: 44px solid transparent;
 }
+/* Formas de la composición del acceso (9.11): el tamaño sale de --s (en cqmin) y escala con el bloque. */
+.ph-geo-ring {
+  aspect-ratio: 1;
+  border: calc(var(--s) * 0.2cqmin) solid color-mix(in srgb, #fff 28%, var(--hue));
+  border-radius: 50%;
+}
+.ph-geo-square {
+  aspect-ratio: 1;
+  border-radius: 22%;
+  background: color-mix(in srgb, #fff 24%, var(--hue));
+}
+.ph-geo-half {
+  aspect-ratio: 2 / 1;
+  border-radius: 999px 999px 0 0;
+  background: color-mix(in srgb, var(--color-on-hue) 12%, var(--hue));
+}
+.ph-geo-peak {
+  aspect-ratio: 5 / 4;
+  clip-path: polygon(50% 0, 100% 100%, 0 100%);
+  background: color-mix(in srgb, #fff 26%, var(--hue));
+}
+
+/* Controles de tamaño lg (4.6): 44 px de alto en formularios de acceso y por debajo de 680 px. */
+.ph-controls-lg .p-inputtext {
+  min-height: 44px;
+  font-size: 14px;
+}
+.ph-controls-lg .p-button {
+  min-height: 44px;
+  padding-block: 0;
+  font-size: 13px;
+  line-height: 18px;
+}
 /* Controles sobre un tono: se invierten a on-hue; el oliva no va sobre un tono. */
 .ph-block .p-tag {
   background: color-mix(in srgb, var(--color-on-hue) 12%, var(--hue));

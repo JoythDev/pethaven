@@ -1,0 +1,54 @@
+/* Cada composición ocupa todo el bloque; solo la activa es visible (fundido de 600 ms, sección 7). */
+.art-composition {
+  position: absolute;
+  inset: 0;
+  visibility: hidden;
+  opacity: 0;
+  transition:
+    opacity 600ms ease-in-out,
+    visibility 0s linear 600ms;
+}
+.art-composition.is-active {
+  visibility: visible;
+  opacity: 1;
+  transition-delay: 0s;
+}
+
+/* Tamaño en cqmin (1 = 1 % del lado menor del bloque) y deriva lenta: como máximo 12 px en 8 a 12 s. */
+.art-item {
+  position: absolute;
+  display: block;
+  width: calc(var(--s) * 1cqmin);
+  animation: art-drift var(--dur) ease-in-out var(--delay) infinite alternate;
+}
+/* Círculo y cuarto de círculo son cuadrados; el resto de formas lleva su proporción en styles.css. */
+.art-item.ph-geo-circle,
+.art-item.ph-geo-quarter {
+  aspect-ratio: 1;
+}
+.art-sticker {
+  line-height: 0;
+}
+
+@keyframes art-drift {
+  from {
+    transform: translate(0, 0);
+  }
+  to {
+    transform: translate(var(--dx), var(--dy));
+  }
+}
+
+/* Pestaña oculta o movimiento reducido: todo se detiene. */
+:host(.is-paused) .art-item {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .art-composition {
+    transition: none;
+  }
+  .art-item {
+    animation: none;
+  }
+}

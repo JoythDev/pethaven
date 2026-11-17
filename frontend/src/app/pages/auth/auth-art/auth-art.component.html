@@ -1,0 +1,16 @@
+<div class="absolute inset-0 overflow-hidden [container-type:size]">
+  @for (composition of compositions; track composition.id; let i = $index) {
+    <div class="art-composition" [class.is-active]="i === active()">
+      <span class="ph-geo">
+        @for (shape of composition.shapes; track $index) {
+          <i [class]="shape.className" [style]="shape.style"></i>
+        }
+      </span>
+      @for (sticker of composition.stickers; track $index) {
+        <div class="art-item art-sticker [&_app-sticker]:w-full [&_svg]:h-auto [&_svg]:w-full" [style]="sticker.style">
+          <app-sticker [name]="sticker.name" [kit]="sticker.kit" [width]="120" />
+        </div>
+      }
+    </div>
+  }
+</div>
