@@ -257,23 +257,11 @@ export const routes: Routes = [
         data: { [DRUG_AREA_DATA_KEY]: ADMIN_DRUG_AREA },
         children: [
           {
-            path: '',
+            // Lista y diálogo de alta o edición: «», «add» y «update/:id» son una sola ruta, así la
+            // lista no se recrea al abrir o cerrar el diálogo.
+            matcher: resourceListMatcher,
             loadComponent: () =>
               import('./pages/shared/drugs/drugs-list/drugs-list.component').then((m) => m.DrugsListComponent),
-          },
-          {
-            path: 'add',
-            loadComponent: () =>
-              import('./pages/administrador/medicamentos/drug-form/drug-form.component').then(
-                (m) => m.DrugFormComponent
-              ),
-          },
-          {
-            path: 'update/:id',
-            loadComponent: () =>
-              import('./pages/administrador/medicamentos/drug-form/drug-form.component').then(
-                (m) => m.DrugFormComponent
-              ),
           },
           {
             path: 'import',

@@ -15,6 +15,7 @@ import { NotificationService } from '../../../../core/notifications/notification
 import { skeletonVisible } from '../../../../core/ui/skeleton-timing';
 import { Drug } from '../../../../models/drug.model';
 import { DrugService } from '../../../../services/drug.service';
+import { DrugFormDialogComponent } from '../drug-form-dialog/drug-form-dialog.component';
 import { BlockComponent } from '../../block/block.component';
 import { CardComponent } from '../../card/card.component';
 import { DefinitionListComponent } from '../../definition-list/definition-list.component';
@@ -33,6 +34,8 @@ const LOADING = { status: 'loading' } as const;
  * Ficha de un medicamento (11.2): cabecera en su color de identidad con el estado y las acciones que el
  * rol puede hacer, y tarjetas «Existencias» y «Precios y ventas». El veterinario solo
  * consulta y ve el precio de venta; el administrador además el de compra, el margen y el ingreso.
+ * «Editar» abre el diálogo de edición en la misma ficha (como en la ficha del veterinario), sin cambiar de
+ * ruta, y al guardar la ficha se actualiza sin volver al esqueleto.
  */
 @Component({
   selector: 'app-drug-detail',
@@ -46,6 +49,7 @@ const LOADING = { status: 'loading' } as const;
     BlockComponent,
     CardComponent,
     DefinitionListComponent,
+    DrugFormDialogComponent,
     EmptyStateComponent,
     InlineErrorComponent,
     SkeletonComponent,
@@ -67,7 +71,10 @@ export class DrugDetailComponent {
   protected readonly state = signal<DrugLoad>(LOADING);
   protected readonly skeleton = skeletonVisible(computed(() => this.state().status === 'loading'));
   private readonly deleting = signal(false);
+  protected readonly editing = signal(false);
   private readonly reload$ = new BehaviorSubject<void>(undefined);
+  // Al recargar tras guardar se conservan los datos que ya se ven en vez de volver al esqueleto.
+  private silentReload = false;
 
   // Con los datos listos: el medicamento con su nivel de existencias.
   protected readonly row = computed<DrugRow | null>(() => {
@@ -93,11 +100,25 @@ export class DrugDetailComponent {
         ),
         takeUntilDestroyed(),
       )
-      .subscribe((state) => this.state.set(state));
+      .subscribe((state) => {
+        if (state.status === 'loading' && this.silentReload) {
+          return;
+        }
+        if (state.status !== 'loading') {
+          this.silentReload = false;
+        }
+        this.state.set(state);
+      });
   }
 
   protected retry(): void {
     this.state.set(LOADING);
+    this.reload$.next();
+  }
+
+  /** El diálogo guardó: la ficha se recarga con los datos nuevos. */
+  protected onSaved(): void {
+    this.silentReload = true;
     this.reload$.next();
   }
 

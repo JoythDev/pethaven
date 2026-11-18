@@ -1,0 +1,104 @@
+<p-dialog
+  [visible]="true"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="true"
+  [closeOnEscape]="true"
+  [blockScroll]="true"
+  appendTo="body"
+  [header]="title()"
+  closeAriaLabel="Cerrar"
+  styleClass="w-[min(34rem,calc(100vw-2rem))]"
+  [focusOnShow]="false"
+  (onShow)="focusName()"
+  (visibleChange)="$event ? null : requestClose()"
+>
+  @if (loading()) {
+    @if (skeleton()) {
+      <app-skeleton variant="text" [lines]="4" />
+    }
+  } @else {
+    <form id="drug-form" [formGroup]="form" (ngSubmit)="guardar()" class="flex flex-col gap-4" novalidate>
+      <app-form-field fieldId="name" label="Nombre" [error]="errorFor('name')">
+        <input
+          pInputText
+          id="name"
+          formControlName="name"
+          autocomplete="off"
+          placeholder="Por ejemplo, Amoxicilina 250 mg"
+          [attr.aria-invalid]="errorFor('name') ? 'true' : null"
+          [attr.aria-describedby]="errorFor('name') ? 'name-error' : null"
+        />
+      </app-form-field>
+
+      <app-form-field
+        fieldId="unitsAvailable"
+        label="Unidades disponibles"
+        [error]="errorFor('unitsAvailable')"
+        hint="Las unidades vendidas las actualiza el sistema al registrar tratamientos."
+      >
+        <p-inputnumber
+          inputId="unitsAvailable"
+          formControlName="unitsAvailable"
+          locale="es-CO"
+          [maxFractionDigits]="0"
+          placeholder="Por ejemplo, 40"
+          [fluid]="true"
+          [ariaDescribedBy]="errorFor('unitsAvailable') ? 'unitsAvailable-error' : 'unitsAvailable-hint'"
+        />
+      </app-form-field>
+
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <app-form-field fieldId="purchasePrice" label="Precio de compra" [error]="errorFor('purchasePrice')">
+          <p-inputnumber
+            inputId="purchasePrice"
+            formControlName="purchasePrice"
+            locale="es-CO"
+            prefix="$"
+            [minFractionDigits]="0"
+            [maxFractionDigits]="2"
+            placeholder="$"
+            [fluid]="true"
+            [ariaDescribedBy]="errorFor('purchasePrice') ? 'purchasePrice-error' : undefined"
+          />
+        </app-form-field>
+
+        <app-form-field
+          fieldId="salePrice"
+          label="Precio de venta"
+          [error]="errorFor('salePrice')"
+          [hint]="salePriceWarning()"
+          [hintNotice]="true"
+        >
+          <p-inputnumber
+            inputId="salePrice"
+            formControlName="salePrice"
+            locale="es-CO"
+            prefix="$"
+            [minFractionDigits]="0"
+            [maxFractionDigits]="2"
+            placeholder="$"
+            [fluid]="true"
+            [ariaDescribedBy]="errorFor('salePrice') ? 'salePrice-error' : salePriceWarning() ? 'salePrice-hint' : undefined"
+          />
+        </app-form-field>
+      </div>
+    </form>
+  }
+
+  <ng-template #footer>
+    <div class="flex flex-wrap justify-end gap-2">
+      <button pButton type="button" severity="secondary" [outlined]="true" label="Cancelar" (click)="requestClose()"></button>
+      <button
+        pButton
+        id="btnGuardar"
+        type="submit"
+        form="drug-form"
+        [label]="editing() ? 'Guardar cambios' : 'Guardar medicamento'"
+        [loading]="saving()"
+        [disabled]="loading()"
+      ></button>
+    </div>
+  </ng-template>
+</p-dialog>

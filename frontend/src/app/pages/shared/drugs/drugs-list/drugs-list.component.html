@@ -6,7 +6,7 @@
         <svg lucideFileSpreadsheet [size]="18" aria-hidden="true"></svg>
         <span class="p-button-label max-sm:sr-only">Importar Excel</span>
       </a>
-      <a pButton size="small" [routerLink]="[area.basePath, 'add']">
+      <a pButton size="small" [routerLink]="[area.basePath, 'add']" queryParamsHandling="preserve">
         <svg lucidePlus [size]="18" aria-hidden="true"></svg>
         <span class="p-button-label max-[479px]:sr-only">Nuevo medicamento</span>
       </a>
@@ -89,7 +89,7 @@
     </div>
 
     @if (area.canManage) {
-      <a emptyAction pButton size="small" [routerLink]="[area.basePath, 'add']">
+      <a emptyAction pButton size="small" [routerLink]="[area.basePath, 'add']" queryParamsHandling="preserve">
         <svg lucidePlus [size]="18" aria-hidden="true"></svg>
         <span class="p-button-label">Nuevo medicamento</span>
       </a>
@@ -185,7 +185,7 @@
 
     <div actions class="contents">
       @if (drug && area.canManage) {
-        <a pButton class="w-full" [routerLink]="[area.basePath, 'update', drug.id]">
+        <a pButton class="w-full" [routerLink]="[area.basePath, 'update', drug.id]" queryParamsHandling="preserve">
           <svg lucidePencil [size]="18" aria-hidden="true"></svg>
           <span class="p-button-label">Editar</span>
         </a>
@@ -197,3 +197,7 @@
     </div>
   </app-detail-panel>
 </div>
+
+@if (dialogOpen()) {
+  <app-drug-form-dialog [drugId]="dialogDrugId()" (saved)="onSaved($event)" (closed)="closeDialog()" />
+}

@@ -24,6 +24,7 @@ import {
   priceRangeOf,
   sanitizePriceInput,
 } from '../../../../core/drugs/drugs-list';
+import { parseRouteId } from '../../../../core/http/route-id';
 import { ViewState, toViewState } from '../../../../core/http/view-state';
 import { identityHue } from '../../../../core/identity/identity';
 import {
@@ -45,8 +46,10 @@ import { sortItems } from '../../../../core/list/list-sort';
 import { clampPage, paginate } from '../../../../core/list/pagination';
 import { readViewPreference, writeViewPreference } from '../../../../core/list/view-preference';
 import { NotificationService } from '../../../../core/notifications/notification.service';
+import { resourceDialogRoute } from '../../../../core/owners/owners-route';
 import { Drug } from '../../../../models/drug.model';
 import { DrugService } from '../../../../services/drug.service';
+import { DrugFormDialogComponent } from '../drug-form-dialog/drug-form-dialog.component';
 import { DefinitionListComponent } from '../../definition-list/definition-list.component';
 import { DetailPanelComponent } from '../../detail-panel/detail-panel.component';
 import { PageHeaderComponent } from '../../page-header/page-header.component';
@@ -77,7 +80,9 @@ const CONFIG: ListQueryConfig = {
 /**
  * Medicamentos (11.1): lista en tabla (por defecto) o tarjetas con búsqueda, chips de existencias, rango
  * de precio de venta (11.16), orden y paginación en la URL, y panel de detalle. La monta el administrador
- * (`canManage`: crear, importar, editar y eliminar) y el veterinario (solo consulta, sin acciones).
+ * (`canManage`: crear, importar, editar y eliminar) y el veterinario (solo consulta, sin acciones). En el
+ * área del administrador la lista, `add` y `update/:id` son una misma ruta: el diálogo de alta o edición se
+ * abre según la URL y cerrarlo vuelve a la lista sin recrearla.
  */
 @Component({
   selector: 'app-drugs-list',
@@ -96,6 +101,7 @@ const CONFIG: ListQueryConfig = {
     LucideTrash2,
     DefinitionListComponent,
     DetailPanelComponent,
+    DrugFormDialogComponent,
     PageHeaderComponent,
     ResourceCardComponent,
     ResourceListComponent,
@@ -123,6 +129,8 @@ export class DrugsListComponent {
   protected readonly state = signal<ViewState<Drug[]>>(LOADING);
   private readonly reload$ = new Subject<void>();
   private readonly deleting = signal(false);
+  // Medicamento recién guardado: se selecciona cuando llega la lista recargada que ya lo incluye.
+  private pendingSelectId: number | null = null;
 
   protected readonly query = toSignal(
     this.route.queryParams.pipe(
@@ -132,6 +140,24 @@ export class DrugsListComponent {
     ),
     { initialValue: parseListQuery(new URLSearchParams(), CONFIG) },
   );
+
+  // Diálogo según la URL: `add` abre el alta y `update/:id` la edición de ese medicamento (solo administración).
+  private readonly dialogRoute = toSignal(
+    this.route.url.pipe(map((segments) => resourceDialogRoute(segments.map((segment) => segment.path)))),
+    { initialValue: resourceDialogRoute(this.route.snapshot.url.map((segment) => segment.path)) },
+  );
+  private readonly dialogEditId = computed(() => {
+    const route = this.dialogRoute();
+    return route?.mode === 'edit' ? parseRouteId(route.rawId) : null;
+  });
+  protected readonly dialogOpen = computed(() => {
+    const route = this.dialogRoute();
+    return (
+      this.area.canManage &&
+      (route?.mode === 'create' || (route?.mode === 'edit' && this.dialogEditId() !== null))
+    );
+  });
+  protected readonly dialogDrugId = this.dialogEditId;
 
   protected readonly rows = computed<DrugRow[]>(() => {
     const state = this.state();
@@ -198,8 +224,21 @@ export class DrugsListComponent {
         if (state.status !== 'loading' || this.state().status !== 'ready') {
           this.state.set(state);
         }
+        if (state.status === 'ready' && this.pendingSelectId !== null) {
+          this.selectedId.set(this.pendingSelectId);
+          this.pendingSelectId = null;
+        }
       });
     this.reload$.next();
+
+    // `update/:id` con un id inválido: mismo aviso de siempre y regreso a la lista.
+    effect(() => {
+      const route = this.dialogRoute();
+      if (this.area.canManage && route?.mode === 'edit' && this.dialogEditId() === null) {
+        this.notifications.error('Medicamento no encontrado', null);
+        this.closeDialog();
+      }
+    });
 
     // Un cambio externo de la URL («Quitar filtros», atrás del navegador) reescribe los campos de precio.
     effect(() => {
@@ -273,6 +312,16 @@ export class DrugsListComponent {
   protected flushPrice(key: 'min' | 'max'): void {
     clearTimeout(this.priceTimer);
     this.update(withFilter(this.query(), key, (key === 'min' ? this.minText : this.maxText)()));
+  }
+
+  /** El diálogo guardó: la lista se recarga y el panel sigue al medicamento guardado. */
+  protected onSaved(drug: Drug): void {
+    this.pendingSelectId = drug.id;
+    this.reload$.next();
+  }
+
+  protected closeDialog(): void {
+    void this.router.navigate([this.area.basePath], { queryParamsHandling: 'preserve' });
   }
 
   protected remove(drug: DrugRow): void {

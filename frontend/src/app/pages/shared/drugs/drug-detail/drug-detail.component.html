@@ -52,10 +52,10 @@
 
       <div class="flex flex-wrap items-center gap-2">
         @if (area.canManage) {
-          <a pButton size="small" [routerLink]="[area.basePath, 'update', d.id]">
+          <button pButton type="button" size="small" (click)="editing.set(true)">
             <svg lucidePencil [size]="18" aria-hidden="true"></svg>
             <span class="p-button-label">Editar</span>
-          </a>
+          </button>
           <button pButton type="button" size="small" [outlined]="true" (click)="remove(d)">
             <svg lucideTrash2 [size]="18" aria-hidden="true"></svg>
             <span class="p-button-label">Eliminar medicamento</span>
@@ -104,4 +104,8 @@
       </dl>
     </section>
   </div>
+}
+
+@if (editing()) {
+  <app-drug-form-dialog [drugId]="row()?.id ?? null" (saved)="onSaved()" (closed)="editing.set(false)" />
 }
