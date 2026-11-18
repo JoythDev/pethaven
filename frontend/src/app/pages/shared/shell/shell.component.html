@@ -1,7 +1,7 @@
 <div class="flex h-full flex-col bg-ground font-body text-ink">
   @let cfg = config();
 
-  <header class="flex h-[60px] shrink-0 items-center gap-3 border-b border-line bg-card px-[18px] @max-[679px]:px-3">
+  <header class="relative z-30 flex h-[60px] shrink-0 items-center gap-3 border-b border-line bg-card px-[18px] @max-[679px]:px-3">
     <a [routerLink]="homeLink()" aria-label="PetHaven, ir al inicio" class="ph-focus flex shrink-0 items-center gap-2.5 rounded-control">
       <span class="grid size-8 place-items-center rounded-full bg-accent text-on-accent">
         <svg lucidePawPrint [size]="18" aria-hidden="true"></svg>
