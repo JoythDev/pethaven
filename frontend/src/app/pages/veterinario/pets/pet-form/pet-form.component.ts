@@ -183,7 +183,8 @@ export class PetsFormComponent implements OnInit, HasUnsavedChanges {
     breed: ['', [Validators.required, Validators.pattern(/\S/), Validators.maxLength(60)]],
     age: [0 as number | null, [Validators.required, Validators.min(0), Validators.max(PET_AGE_MAX), Validators.pattern(/^\d+$/)]],
     weight: [null as number | null, [Validators.required, Validators.min(PET_WEIGHT_MIN), Validators.max(PET_WEIGHT_MAX)]],
-    photoUrl: ['', [Validators.required, Validators.maxLength(500), Validators.pattern(/^https?:\/\/.+/)]],
+    // Opcional: sin foto, la mascota se ve con el sticker de su especie (11.13).
+    photoUrl: ['', [Validators.maxLength(500), Validators.pattern(/^https?:\/\/.+/)]],
     ownerId: [null as number | null, Validators.required],
     active: [true],
   });
@@ -251,8 +252,8 @@ export class PetsFormComponent implements OnInit, HasUnsavedChanges {
     this.view() === 'not-found' || this.view() === 'error'
       ? null
       : this.editId() === null
-      ? 'Registra a un nuevo paciente. Todos los campos son obligatorios.'
-      : 'Cambia los datos que haga falta y guarda. Todos los campos son obligatorios.',
+      ? 'Registra a un nuevo paciente. Todos los campos son obligatorios, salvo la foto.'
+      : 'Cambia los datos que haga falta y guarda. Todos los campos son obligatorios, salvo la foto.',
   );
 
   // Vista previa (11.13): en edición usa el tono de la mascota; al crear, un tono fijo, porque el

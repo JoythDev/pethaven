@@ -159,6 +159,7 @@
           <app-form-field
             fieldId="photoUrl"
             label="URL de la foto"
+            [optional]="true"
             [error]="shown().photoUrl ?? null"
             [hint]="photoHint()"
             [hintNotice]="photoFailed()"
