@@ -1,4 +1,5 @@
-// Mínimo de existencias (demo, S3): el API aún no guarda un mínimo por medicamento.
+// Existencias con la regla real (L61): el API aún no guarda un mínimo configurable por medicamento, así que
+// `minimum` es el umbral común de «Stock bajo» más uno.
 import { StockLevel } from '../../core/status/stock-level';
 import { Drug } from '../drug.model';
 

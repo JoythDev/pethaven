@@ -1,210 +1,404 @@
-@let view = state();
+<ng-template #controls>
+  <p-selectbutton
+    aria-label="Periodo del panorama"
+    [options]="periodOptions"
+    optionLabel="label"
+    optionValue="value"
+    [allowEmpty]="false"
+    [ngModel]="periodId()"
+    (ngModelChange)="setPeriod($event)"
+  />
+  <button pButton type="button" size="small" severity="secondary" [outlined]="true" (click)="exportDemo()">
+    <svg lucideDownload [size]="18" aria-hidden="true"></svg>
+    <span class="p-button-label">Exportar</span>
+  </button>
+</ng-template>
 
-<div class="mx-auto max-w-7xl p-5 lg:p-8" [attr.aria-busy]="view.status === 'loading'">
-  <app-page-banner
-    class="mb-8"
-    color="secondary"
-    variant="hero"
-    mascot="cat"
-    [eyebrow]="greeting()"
-    title="Panorama de la clínica"
-    subtitle="Actividad, capacidad y finanzas en un solo vistazo."
-  >
-    @if (view.status === 'ready') {
-      <p class="mt-5 inline-flex max-w-full items-center gap-2 rounded-full bg-white px-4 py-2 text-sm shadow-sm">
-        <i class="pi pi-calendar text-olive" aria-hidden="true"></i>
-        <span class="font-semibold text-text">{{ formatPeriod(view.data) }}</span>
-      </p>
-    }
-  </app-page-banner>
+<!-- El encabezado no parte en dos líneas varias acciones: en compacto los controles van en su propia fila. -->
+<app-page-header heading="Panorama" subtitle="Actividad, capacidad y finanzas de la clínica.">
+  <div actions class="flex items-center gap-2 @max-[679px]:hidden">
+    <ng-container *ngTemplateOutlet="controls" />
+  </div>
+</app-page-header>
+<div class="-mt-1 mb-4 flex flex-wrap items-center gap-2 @min-[680px]:hidden">
+  <ng-container *ngTemplateOutlet="controls" />
+</div>
 
-  @if (view.status === 'loading') {
-    <section
-      class="flex min-h-52 flex-col items-center justify-center gap-3 rounded-3xl border border-olive/15 bg-white p-8 text-center"
-      role="status"
-      aria-live="polite"
-    >
-      <i class="pi pi-chart-bar text-2xl text-olive" aria-hidden="true"></i>
-      <p class="font-semibold text-text">Cargando los indicadores…</p>
+@let v = view();
+
+<div class="grid grid-cols-12 items-stretch gap-[14px]" [attr.aria-busy]="loading()">
+  @if (failed()) {
+    <section app-card heading="Indicadores" class="col-span-12">
+      <app-inline-error text="No pudimos cargar los indicadores de la clínica." (retry)="retrySummary()" />
     </section>
-  } @else if (view.status === 'error') {
-    <section
-      class="flex min-h-64 flex-col items-center justify-center gap-3 rounded-3xl border border-terracotta/30 bg-white p-8 text-center"
-      role="alert"
-    >
-      <i class="pi pi-exclamation-triangle text-2xl text-terracotta" aria-hidden="true"></i>
-      <h2 class="font-display text-xl font-bold text-text">No se pudieron cargar los indicadores</h2>
-      <p class="max-w-xl text-sm text-text/65">{{ view.message }}</p>
-      <p-button label="Reintentar" icon="pi pi-refresh" (onClick)="retry()" />
-    </section>
-  } @else {
-    @let data = view.data;
+  } @else if (v) {
+    <!-- KPI: ventas y ganancia siguen el periodo (demo salvo en «Todo»); tratamientos y mascotas son reales -->
+    @let salesTrend = trendOf(v.period.change?.salesPct ?? null);
+    @let profitTrend = trendOf(v.period.change?.profitPct ?? null);
+    <div class="col-span-12 min-w-0 @min-[680px]:col-span-6 @min-[960px]:col-span-3">
+      <app-kpi
+        hue="honey"
+        class="h-full"
+        label="Ventas"
+        valueId="totalSales"
+        [value]="formatCurrency(v.period.metrics.sales)"
+        [trend]="salesTrend"
+        [series]="v.period.series.sales"
+      >
+        @if (periodIsDemo()) {
+          <app-demo-tag class="absolute top-0 right-0" />
+        }
+        @if (!salesTrend) {
+          <span class="mt-auto pt-2 text-[12.5px] leading-[18px] font-extrabold">Todo el historial</span>
+        }
+        <app-sticker art name="bone" [width]="50" />
+      </app-kpi>
+    </div>
+    <div class="col-span-12 min-w-0 @min-[680px]:col-span-6 @min-[960px]:col-span-3">
+      <app-kpi
+        hue="sage"
+        class="h-full"
+        label="Ganancia bruta"
+        valueId="grossProfit"
+        [value]="formatCurrency(v.period.metrics.profit)"
+        [trend]="profitTrend"
+        [series]="v.period.series.profit"
+      >
+        @if (periodIsDemo()) {
+          <app-demo-tag class="absolute top-0 right-0" />
+        }
+        @if (!profitTrend) {
+          <span class="mt-auto pt-2 text-[12.5px] leading-[18px] font-extrabold">Todo el historial</span>
+        }
+        <app-sticker art name="star" [width]="46" />
+      </app-kpi>
+    </div>
+    <div class="col-span-12 min-w-0 @min-[680px]:col-span-6 @min-[960px]:col-span-3">
+      <app-kpi
+        hue="sky"
+        class="h-full"
+        label="Tratamientos"
+        valueId="administeredTreatments"
+        [value]="formatUnits(v.data.administeredTreatmentsLastMonth)"
+      >
+        <span class="mt-auto pt-2 text-[12.5px] leading-[18px] font-extrabold">Último mes</span>
+        <app-sticker art name="pill" [width]="50" />
+      </app-kpi>
+    </div>
+    <div class="col-span-12 min-w-0 @min-[680px]:col-span-6 @min-[960px]:col-span-3">
+      <app-kpi
+        hue="rose"
+        class="h-full"
+        label="Mascotas activas"
+        valueId="activePets"
+        [value]="formatUnits(v.data.activePets)"
+      >
+        <span class="mt-auto pt-2 text-[12.5px] leading-[18px] font-extrabold">De {{ formatUnits(v.data.totalPets) }} registradas</span>
+        <app-sticker art name="paw" [width]="50" [kit]="3" />
+      </app-kpi>
+    </div>
 
-    <div class="space-y-8">
-      <section class="grid grid-cols-1 gap-5 xl:grid-cols-5" aria-label="Actividad del mes">
-        <article
-          app-stat-card
-          class="xl:col-span-2"
-          color="honey"
-          decor="heart"
-          [big]="true"
-          label="Actividad del mes"
-          [value]="formatCount(data.administeredTreatmentsLastMonth)"
-          caption="Tratamientos administrados"
-        >
-          <p extra class="max-w-xs rounded-2xl bg-white/50 px-4 py-3 text-sm leading-relaxed text-text/80">
-            Atenciones con tratamiento en el período. Las altas de mascotas no se cuentan.
-          </p>
-        </article>
-
-        <article class="overflow-hidden rounded-3xl border border-olive/15 bg-white p-5 shadow-md sm:p-7 xl:col-span-3">
-          <div class="mb-5">
-            <h2 class="font-display text-xl font-bold text-text">Tratamientos por medicamento</h2>
-            <p class="mt-1 text-sm text-text/65">Tratamientos distintos del período que incluyeron cada medicamento.</p>
-          </div>
-
-          @if (data.treatmentsByMedicationLastMonth.length === 0) {
-            <div class="rounded-2xl border border-dashed border-olive/25 bg-background/60 px-5 py-8 text-center">
-              <img src="/images/illustrations/dog-mascot.svg" alt="" class="mx-auto h-24 w-auto" />
-              <p class="mt-2 font-semibold text-text/75">No hubo tratamientos con medicamentos en este período.</p>
-              <p class="mt-1 text-sm text-text/55">El total de tratamientos del mes se muestra en el panel de actividad.</p>
-            </div>
-          } @else {
-            <p-table
-              [value]="data.treatmentsByMedicationLastMonth"
-              [scrollable]="true"
-              scrollHeight="16rem"
-              [tableStyle]="{ 'min-width': '24rem' }"
-            >
-              <ng-template pTemplate="header">
-                <tr>
-                  <th scope="col">Medicamento</th>
-                  <th scope="col" class="text-right">Tratamientos</th>
-                </tr>
-              </ng-template>
-              <ng-template pTemplate="body" let-medication>
-                <tr>
-                  <td class="font-semibold text-text">{{ medication.medicationName }}</td>
-                  <td class="text-right tabular-nums text-text/75">{{ formatCount(medication.treatmentCount) }}</td>
-                </tr>
-              </ng-template>
-            </p-table>
-          }
-        </article>
+    <!-- Ventas y ganancia (demo) y los más vendidos (reales) -->
+    <div class="col-span-12 min-w-0 @min-[960px]:col-span-8">
+      <section app-card heading="Ventas y ganancia" class="h-full">
+        <app-demo-tag title-extra />
+        <p class="-mt-1 mb-2 text-[12.5px] leading-[18px] text-ink-muted">
+          {{ periodId() === 'all' ? 'Todo el historial registrado, por año.' : 'Las variaciones comparan con el periodo anterior.' }}
+        </p>
+        <app-sales-chart [period]="v.period" />
       </section>
-
-      <section aria-labelledby="clinic-capacity-title">
-        <div class="mb-4">
-          <h2 id="clinic-capacity-title" class="font-display text-2xl font-bold text-text">Equipo y mascotas</h2>
-          <p class="mt-1 text-sm text-text/65">Estado actual de los registros de la clínica.</p>
-        </div>
-
-        <div class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-4">
-          <article
-            app-stat-card
-            color="sage"
-            decor="cross"
-            icon="pi pi-users"
-            label="Veterinarios activos"
-            [value]="formatCount(data.activeVeterinarians)"
-          ></article>
-
-          <article
-            app-stat-card
-            color="secondary"
-            decor="circles"
-            icon="pi pi-moon"
-            label="Veterinarios inactivos"
-            [value]="formatCount(data.inactiveVeterinarians)"
-          ></article>
-
-          <article
-            app-stat-card
-            class="md:col-span-2"
-            color="terracotta"
-            decor="heart"
-            mascot="dog"
-            icon="/images/icons/paw-print-icon.svg"
-            label="Mascotas registradas"
-            [value]="formatCount(data.totalPets)"
-          >
-            <p extra class="inline-flex items-center gap-2 rounded-full bg-white px-4 py-1.5 text-sm text-text">
-              Activas en la clínica
-              <strong class="tabular-nums text-tertiary">{{ formatCount(data.activePets) }}</strong>
-            </p>
-          </article>
-        </div>
-      </section>
-
-      <section class="grid grid-cols-1 gap-5 xl:grid-cols-5" aria-labelledby="historical-finances-title">
-        <article class="relative overflow-hidden rounded-3xl bg-tertiary p-6 text-background shadow-xl shadow-tertiary/30 sm:p-8 xl:col-span-2">
-          <span aria-hidden="true" class="absolute -right-12 -top-12 h-44 w-44 rounded-full bg-honey/25"></span>
-          <span aria-hidden="true" class="absolute -bottom-14 -left-10 h-40 w-40 rounded-full bg-secondary/15"></span>
-
-          <div class="relative flex items-center justify-between gap-4">
-            <div>
-              <h2 id="historical-finances-title" class="font-display text-xl font-bold">Finanzas históricas</h2>
-              <p class="mt-1 text-sm text-background/70">Medicamentos administrados · valores en COP</p>
-            </div>
-            <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-honey">
-              <i class="pi pi-wallet text-lg text-text" aria-hidden="true"></i>
-            </span>
-          </div>
-
-          <dl class="relative mt-7 divide-y divide-background/15">
-            <div class="py-4 first:pt-0 last:pb-0">
-              <dt class="text-sm text-background/75">Ventas acumuladas</dt>
-              <dd id="totalSales" class="mt-1 font-display text-3xl font-bold tabular-nums text-honey sm:text-4xl">{{ formatCurrency(data.totalSales) }}</dd>
-            </div>
-            <div class="py-4 last:pb-0">
-              <dt class="text-sm text-background/75">Utilidad bruta acumulada</dt>
-              <dd id="grossProfit" class="mt-1 font-display text-3xl font-bold tabular-nums sm:text-4xl">{{ formatCurrency(data.grossProfit) }}</dd>
-              <dd class="mt-2 max-w-sm text-xs leading-relaxed text-background/60">Ventas menos costo de compra histórico; no descuenta otros gastos.</dd>
-            </div>
-          </dl>
-        </article>
-
-        <article class="overflow-hidden rounded-3xl border border-olive/15 bg-white p-5 shadow-md sm:p-7 xl:col-span-3">
-          <div class="mb-5">
-            <h2 class="font-display text-xl font-bold text-text">Medicamentos más administrados</h2>
-            <p class="mt-1 text-sm text-text/65">Histórico · ordenados por unidades administradas.</p>
-          </div>
-
-          @if (data.topThreeMedicationsByUnitsSold.length === 0) {
-            <div class="rounded-2xl border border-dashed border-olive/25 bg-background/60 px-5 py-8 text-center">
-              <img src="/images/illustrations/cat-mascot.svg" alt="" class="mx-auto h-24 w-auto" />
-              <p class="mt-2 font-semibold text-text/75">Todavía no hay medicamentos administrados.</p>
-              <p class="mt-1 text-sm text-text/55">El ranking aparecerá cuando existan registros.</p>
-            </div>
-          } @else {
-            <ol class="flex flex-col gap-3">
-              @for (medication of data.topThreeMedicationsByUnitsSold; track $index) {
-                <li class="flex items-center gap-4 rounded-2xl p-3" [class]="rankRowClass($index)">
-                  <span class="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white font-display text-xl font-bold text-text shadow-sm">
-                    {{ $index + 1 }}
-                  </span>
-                  <div class="min-w-0 flex-1">
-                    <div class="flex items-baseline justify-between gap-3">
-                      <p class="top-med-name truncate font-semibold text-text">{{ medication.medicationName }}</p>
-                      <p class="shrink-0 tabular-nums text-sm text-text/75">
-                        <strong class="top-med-units text-base text-text">{{ formatCount(medication.unitsSold) }}</strong> unidades
-                      </p>
-                    </div>
-                    <div
-                      class="mt-2 h-2 rounded-full bg-white/60"
-                      role="meter"
-                      aria-label="Unidades administradas"
-                      aria-valuemin="0"
-                      [attr.aria-valuenow]="medication.unitsSold"
-                      [style.background-image]="barFill(medication.unitsSold, data.topThreeMedicationsByUnitsSold)"
-                    ></div>
-                  </div>
+    </div>
+    <div class="col-span-12 min-w-0 @min-[960px]:col-span-4">
+      <section app-card heading="Más vendidos" class="h-full">
+        <a action pButton [text]="true" size="small" label="Ver inventario" routerLink="/administrador/medicamentos"></a>
+        @if (topMedications(v.data); as top) {
+          @if (top.length) {
+            <ol class="flex flex-col gap-0.5">
+              @for (item of top; track $index) {
+                <li>
+                  <a
+                    routerLink="/administrador/medicamentos"
+                    [queryParams]="{ q: item.medication.medicationName }"
+                    class="ph-focus flex items-center gap-3 rounded-row px-2.5 py-[9px] transition-colors duration-[180ms] ease-out-strong hover:bg-sunken motion-reduce:transition-none"
+                  >
+                    <span
+                      class="grid size-8 shrink-0 place-items-center rounded-full bg-(--hue) text-xs font-extrabold text-on-hue"
+                      [class]="'hue-' + hueOf(item.medication.medicationId ?? $index)"
+                      aria-hidden="true"
+                      >{{ $index + 1 }}</span
+                    >
+                    <span class="min-w-0 flex-1">
+                      <span class="flex items-baseline justify-between gap-2">
+                        <span class="top-med-name truncate text-sm leading-5 font-extrabold">{{ item.medication.medicationName }}</span>
+                        <span class="shrink-0 text-[12.5px] leading-[18px] text-ink-muted tabular-nums">
+                          <strong class="top-med-units text-sm font-extrabold text-ink">{{ formatUnits(item.medication.unitsSold) }}</strong> uds.
+                        </span>
+                      </span>
+                      <span class="mt-1.5 block h-2 rounded-full bg-sunken" aria-hidden="true">
+                        <span class="block h-full rounded-full bg-accent" [style.width.%]="item.width"></span>
+                      </span>
+                    </span>
+                  </a>
                 </li>
               }
             </ol>
+          } @else {
+            <app-empty-state
+              heading="Aún no hay ventas"
+              description="Cuando se registren tratamientos con medicamentos, los más vendidos aparecerán aquí."
+            >
+              <app-sticker sticker name="pill" [width]="80" />
+            </app-empty-state>
           }
-        </article>
+        }
       </section>
     </div>
+
+    <!-- Tratamientos por medicamento (real, último mes) -->
+    <div class="col-span-12 min-w-0 @min-[680px]:col-span-6 @min-[960px]:col-span-4">
+      <section app-card heading="Tratamientos por medicamento" class="h-full">
+        <p class="-mt-1 mb-2 text-[12.5px] leading-[18px] text-ink-muted">Último mes · {{ rangeLabel(v.data) }}</p>
+        @if (medications(v.data); as list) {
+          @if (list.items.length) {
+            <ul class="flex flex-col gap-1">
+              @for (item of list.items; track item.medication.medicationName) {
+                <li class="flex items-center gap-3 px-2.5 py-1.5">
+                  <span class="min-w-0 flex-1">
+                    <span class="block truncate text-sm leading-5 font-extrabold">{{ item.medication.medicationName }}</span>
+                    <span class="mt-1.5 block h-2 rounded-full bg-sunken" aria-hidden="true">
+                      <span class="block h-full rounded-full bg-accent" [style.width.%]="item.width"></span>
+                    </span>
+                  </span>
+                  <span class="w-8 shrink-0 text-right text-sm font-extrabold tabular-nums">{{ formatUnits(item.medication.treatmentCount) }}</span>
+                </li>
+              }
+            </ul>
+            @if (list.hidden > 0) {
+              <button
+                pButton
+                type="button"
+                size="small"
+                [text]="true"
+                class="mt-1"
+                [label]="'Mostrar ' + list.hidden + ' más'"
+                (click)="medicationsExpanded.set(true)"
+              ></button>
+            } @else if (medicationsExpanded()) {
+              <button pButton type="button" size="small" [text]="true" class="mt-1" label="Mostrar menos" (click)="medicationsExpanded.set(false)"></button>
+            }
+          } @else {
+            <app-empty-state
+              heading="Sin tratamientos con medicamentos"
+              description="No hubo tratamientos con medicamentos en el último mes."
+            >
+              <app-sticker sticker name="syringe" [width]="80" />
+            </app-empty-state>
+          }
+        }
+      </section>
+    </div>
+
+    <!-- Inventario con stock bajo (regla real de existencias) -->
+    <div class="col-span-12 min-w-0 @min-[680px]:col-span-6 @min-[960px]:col-span-4">
+      <section app-card heading="Inventario con stock bajo" class="h-full">
+        @let stock = inventory();
+        @if (stock && stock.total > 0) {
+          <p-tag title-extra class="ml-2 align-middle" severity="warn" [value]="stock.total + (stock.total === 1 ? ' alerta' : ' alertas')" />
+        }
+        <a action pButton [text]="true" size="small" label="Ver inventario" routerLink="/administrador/medicamentos" [queryParams]="{ orden: 'stock', dir: 'asc' }"></a>
+        @let drugsState = drugs();
+        @if (drugsState.status === 'loading') {
+          @if (drugsSkeleton()) {
+            @for (row of skeletonRows; track row) {
+              <app-skeleton variant="row" [announce]="$first" />
+            }
+          }
+        } @else if (drugsState.status === 'error') {
+          <app-inline-error text="No pudimos cargar el inventario." (retry)="retryDrugs()" />
+        } @else if (stock) {
+          @if (stock.rows.length) {
+            <div class="flex flex-col gap-0.5">
+              @for (row of stock.rows; track row.drug.id) {
+                @let info = drugStatus(row.level);
+                <a
+                  routerLink="/administrador/medicamentos"
+                  [queryParams]="row.queryParams"
+                  class="ph-focus block rounded-row px-2.5 py-[9px] transition-colors duration-[180ms] ease-out-strong hover:bg-sunken motion-reduce:transition-none"
+                >
+                  <span class="flex items-center gap-2">
+                    <span class="min-w-0 flex-1 truncate text-sm leading-5 font-extrabold">{{ row.drug.name }}</span>
+                    <p-tag [severity]="info.severity" [value]="info.label" />
+                  </span>
+                  <app-stock-meter class="mt-1.5" [units]="row.drug.unitsAvailable" [minimum]="stockMinimum" />
+                </a>
+              }
+            </div>
+            @if (stock.total > stock.rows.length) {
+              <p class="mt-2 px-2.5 text-[12.5px] leading-[18px] text-ink-muted">
+                y {{ stock.total - stock.rows.length }} más en el inventario.
+              </p>
+            }
+          } @else {
+            <app-empty-state heading="Todo en orden" description="Ningún medicamento está agotado ni con stock bajo.">
+              <app-sticker sticker name="shield" [width]="80" />
+            </app-empty-state>
+          }
+        }
+      </section>
+    </div>
+
+    <!-- Equipo veterinario (real) -->
+    <div class="col-span-12 min-w-0 @min-[680px]:col-span-6 @min-[960px]:col-span-4">
+      <section app-card heading="Equipo veterinario" class="h-full">
+        <a action pButton [text]="true" size="small" label="Gestionar" routerLink="/administrador/veterinarios"></a>
+        <div class="flex items-center gap-4 px-2.5">
+          <app-ratio-ring
+            [value]="v.data.activeVeterinarians"
+            [total]="totalVeterinarians(v.data)"
+            [label]="v.data.activeVeterinarians + ' de ' + totalVeterinarians(v.data) + ' veterinarios activos'"
+          />
+          <dl class="grid gap-1.5 text-sm leading-5">
+            <div class="flex items-baseline gap-2">
+              <dt class="text-ink-muted">Activos</dt>
+              <dd id="activeVeterinarians" class="font-extrabold tabular-nums">{{ formatUnits(v.data.activeVeterinarians) }}</dd>
+            </div>
+            <div class="flex items-baseline gap-2">
+              <dt class="text-ink-muted">Inactivos</dt>
+              <dd id="inactiveVeterinarians" class="font-extrabold tabular-nums">{{ formatUnits(v.data.inactiveVeterinarians) }}</dd>
+            </div>
+            <div class="flex items-baseline gap-2">
+              <dt class="text-ink-muted">Total</dt>
+              <dd class="font-extrabold tabular-nums">{{ formatUnits(totalVeterinarians(v.data)) }}</dd>
+            </div>
+          </dl>
+        </div>
+      </section>
+    </div>
+
+    <!-- Ocupación (demo) -->
+    <div class="col-span-12 min-w-0 @min-[680px]:col-span-6 @min-[960px]:col-span-4">
+      <section app-card heading="Ocupación" class="h-full">
+        <app-demo-tag title-extra />
+        <div class="flex h-[104px] items-end gap-2 px-1">
+          @for (bar of occupancyBars(v.period); track $index) {
+            <div class="flex min-w-0 flex-1 flex-col items-center justify-end gap-1" [attr.aria-label]="bar.label + ': ' + bar.value + ' %'">
+              <span class="text-xs leading-4 font-extrabold tabular-nums" aria-hidden="true">{{ bar.value }}&nbsp;%</span>
+              <span
+                class="block w-full max-w-10 rounded-[8px]"
+                [class]="bar.peak ? 'bg-accent' : 'bg-accent/45'"
+                [style.height.px]="bar.value * 0.65"
+                aria-hidden="true"
+              ></span>
+              <span class="text-xs leading-4 font-extrabold text-ink-muted" aria-hidden="true">{{ bar.label }}</span>
+            </div>
+          }
+        </div>
+        <p class="mt-3 text-[12.5px] leading-[18px] text-ink-muted">
+          Promedio de {{ v.period.metrics.occupancy }} %
+          @if (v.period.change; as change) {
+            · {{ change.occupancyPoints >= 0 ? '+' : '' }}{{ change.occupancyPoints }} {{ change.occupancyPoints === 1 || change.occupancyPoints === -1 ? 'punto' : 'puntos' }} frente al periodo anterior
+          }
+        </p>
+      </section>
+    </div>
+
+    <!-- Mascotas (real) -->
+    <div class="col-span-12 min-w-0 @min-[680px]:col-span-6 @min-[960px]:col-span-8">
+      <section app-card heading="Mascotas" class="h-full">
+        <dl class="flex flex-wrap gap-x-8 gap-y-3 px-2.5">
+          <div>
+            <dd id="totalPets" class="font-display text-[28px] leading-7 font-semibold tabular-nums">{{ formatUnits(v.data.totalPets) }}</dd>
+            <dt class="text-[12.5px] leading-[18px] text-ink-muted">registradas</dt>
+          </div>
+          <div>
+            <dd class="font-display text-[28px] leading-7 font-semibold tabular-nums">{{ formatUnits(v.data.activePets) }}</dd>
+            <dt class="text-[12.5px] leading-[18px] text-ink-muted">activas</dt>
+          </div>
+          <div>
+            <dd class="font-display text-[28px] leading-7 font-semibold tabular-nums">{{ formatUnits(inactivePets(v.data)) }}</dd>
+            <dt class="text-[12.5px] leading-[18px] text-ink-muted">inactivas</dt>
+          </div>
+        </dl>
+        <div class="mt-4 flex flex-col gap-2.5 px-2.5 text-sm leading-5">
+          @let activeShare = share(v.data.activePets, v.data.totalPets);
+          <div class="flex items-center gap-3">
+            <span class="w-20 shrink-0 text-ink-muted">Activas</span>
+            <span class="block h-2 flex-1 rounded-full bg-sunken" aria-hidden="true">
+              <span class="block h-full rounded-full bg-accent" [style.width.%]="activeShare"></span>
+            </span>
+            <strong class="w-12 shrink-0 text-right font-extrabold tabular-nums">{{ activeShare }} %</strong>
+          </div>
+          <div class="flex items-center gap-3">
+            <span class="w-20 shrink-0 text-ink-muted">Inactivas</span>
+            <span class="block h-2 flex-1 rounded-full bg-sunken" aria-hidden="true">
+              <span class="block h-full rounded-full bg-accent" [style.width.%]="v.data.totalPets ? 100 - activeShare : 0"></span>
+            </span>
+            <strong class="w-12 shrink-0 text-right font-extrabold tabular-nums">{{ v.data.totalPets ? 100 - activeShare : 0 }} %</strong>
+          </div>
+        </div>
+      </section>
+    </div>
+  } @else {
+    <!-- Cargando: antes de 150 ms no se pinta nada (10.21) -->
+    @if (summarySkeleton()) {
+      @for (item of skeletonRows; track item) {
+        <app-skeleton variant="figure" class="col-span-12 @min-[680px]:col-span-6 @min-[960px]:col-span-3" [announce]="$first" />
+      }
+      <app-skeleton variant="chart" class="col-span-12 @min-[960px]:col-span-8" [announce]="false" />
+      <app-skeleton variant="text" [lines]="4" class="col-span-12 @min-[960px]:col-span-4" [announce]="false" />
+      @for (item of [0, 1, 2]; track item) {
+        <app-skeleton variant="text" [lines]="4" class="col-span-12 @min-[680px]:col-span-6 @min-[960px]:col-span-4" [announce]="false" />
+      }
+    }
   }
 </div>
+
+<!-- Barra lateral: ventas del mes, accesos rápidos y equipo; el shell añade Notificaciones al final -->
+<ng-template appShellSidebar>
+  @if (monthPeriod(); as month) {
+    <app-block kind="summary" hue="honey">
+      <span class="text-[12.5px] leading-[18px] font-extrabold">
+        Ventas de {{ sidebarMonths.current }}
+        <app-demo-tag />
+      </span>
+      <span class="mt-1.5 font-display text-[28px] leading-7 font-semibold tracking-[-0.01em] tabular-nums">{{ compactCurrency(month.metrics.sales) }}</span>
+      @if (month.change; as change) {
+        <span class="mt-2 text-[12.5px] leading-[18px] font-extrabold">
+          {{ trendOf(change.salesPct)?.text }} frente a {{ sidebarMonths.previous }}
+        </span>
+      }
+    </app-block>
+  } @else if (failed()) {
+    <section app-card heading="Ventas del mes">
+      <app-inline-error text="No pudimos cargar las ventas del mes." (retry)="retrySummary()" />
+    </section>
+  } @else if (summarySkeleton()) {
+    <app-skeleton variant="figure" />
+  }
+
+  <section app-card heading="Accesos rápidos">
+    <nav class="-mx-1 flex flex-col gap-0.5" aria-label="Accesos rápidos">
+      <a routerLink="/administrador/medicamentos/add" class="ph-focus flex items-center gap-2 rounded-row px-2 py-2 text-sm leading-5 font-extrabold transition-colors duration-[180ms] ease-out-strong hover:bg-sunken motion-reduce:transition-none">
+        <svg lucidePlus [size]="18" aria-hidden="true"></svg>Nuevo medicamento
+      </a>
+      <a routerLink="/administrador/veterinarios/add" class="ph-focus flex items-center gap-2 rounded-row px-2 py-2 text-sm leading-5 font-extrabold transition-colors duration-[180ms] ease-out-strong hover:bg-sunken motion-reduce:transition-none">
+        <svg lucidePlus [size]="18" aria-hidden="true"></svg>Nuevo veterinario
+      </a>
+      <a routerLink="/administrador/medicamentos/import" class="ph-focus flex items-center gap-2 rounded-row px-2 py-2 text-sm leading-5 font-extrabold transition-colors duration-[180ms] ease-out-strong hover:bg-sunken motion-reduce:transition-none">
+        <svg lucideFileUp [size]="18" aria-hidden="true"></svg>Importar Excel
+      </a>
+    </nav>
+  </section>
+
+  @if (v) {
+    <section app-card heading="Equipo">
+      <p class="text-sm leading-5">
+        <strong class="font-extrabold">{{ v.data.activeVeterinarians }}</strong>
+        {{ v.data.activeVeterinarians === 1 ? 'veterinario activo' : 'veterinarios activos' }}
+      </p>
+      <p class="mt-1.5 text-sm leading-5">
+        <strong class="font-extrabold">{{ formatUnits(v.data.totalPets) }}</strong> mascotas registradas
+      </p>
+    </section>
+  }
+</ng-template>

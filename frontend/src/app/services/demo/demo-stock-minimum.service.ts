@@ -5,9 +5,10 @@ import { DrugStockInfo, StockAlerts } from '../../models/demo/stock-minimum.mode
 import { DrugService } from '../drug.service';
 import { demoLatency } from './demo-latency';
 
-// Demo (S3): el API aún no guarda un mínimo de existencias por medicamento. Cada medicamento real
-// recibe un mínimo estable calculado desde su id; las unidades disponibles sí son reales.
-// Las pantallas que ya tienen la lista de medicamentos usan las funciones de core/demo/stock-minimum.
+// Existencias con la regla real (L61): 0 agotado, 1–5 stock bajo, 6 o más disponible. El API aún no guarda un
+// mínimo configurable por medicamento (pendiente de backend); mientras tanto el mínimo es el mismo para todos
+// y las unidades disponibles son reales. Las pantallas que ya tienen la lista de medicamentos usan las
+// funciones de core/demo/stock-minimum.
 @Injectable({ providedIn: 'root' })
 export class DemoStockMinimumService {
   private readonly drugService = inject(DrugService);

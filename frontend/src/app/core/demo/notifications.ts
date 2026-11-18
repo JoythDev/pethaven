@@ -247,7 +247,7 @@ export function administratorNotifications(input: AdministratorNotificationInput
     drafts.push({
       id: 'ntf-adm-low-stock',
       icon: 'package-minus',
-      title: `${low.length} ${low.length === 1 ? 'medicamento bajo el mínimo' : 'medicamentos bajo el mínimo'}`,
+      title: `${low.length} ${low.length === 1 ? 'medicamento con stock bajo' : 'medicamentos con stock bajo'}`,
       detail: namesList(low.map((i) => i.drug.name)),
       at: earlierToday(today, 185),
       route: '/administrador/medicamentos',

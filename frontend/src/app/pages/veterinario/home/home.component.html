@@ -139,10 +139,9 @@
     </section>
   </div>
 
-  <!-- Existencias bajas (demo) -->
+  <!-- Existencias bajas (regla real de existencias, L61) -->
   <div class="col-span-12 @min-[680px]:col-span-6 @min-[960px]:col-span-3 min-w-0">
     <section app-card heading="Existencias bajas" class="h-full">
-      <app-demo-tag title-extra />
       @let stockState = stock();
       @if (stockState.status === 'loading') {
         @if (stockSkeleton()) {
@@ -173,7 +172,7 @@
       } @else {
         <app-empty-state
           heading="Todo en orden"
-          description="Ningún medicamento está por debajo de su mínimo."
+          description="Ningún medicamento tiene stock bajo ni está agotado."
         >
           <app-sticker sticker name="pill" [width]="80" />
         </app-empty-state>

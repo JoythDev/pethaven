@@ -63,7 +63,7 @@ const STOCK_LIMIT = 5;
 
 /**
  * Inicio del veterinario (11.6): héroe con el día, «Resumen del día», citas de hoy, pacientes
- * recientes y existencias bajas. Las citas y las existencias son demo (S3); los pacientes son
+ * recientes y existencias bajas. Las citas son demo (S3); los pacientes y las existencias son
  * reales. Cada fuente carga y falla por separado.
  */
 @Component({
