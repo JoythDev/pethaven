@@ -1,0 +1,41 @@
+<app-profile-layout>
+  @if (user(); as admin) {
+    <app-profile-header
+      class="col-span-12 @min-[960px]:col-span-4"
+      [id]="admin.id"
+      [name]="admin.name"
+      subtitle="Administrador"
+    />
+
+    <section app-card heading="Datos personales" class="col-span-12 @min-[960px]:col-span-8">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+        <app-form-field fieldId="name" label="Nombre">
+          <input
+            pInputText
+            id="name"
+            readonly
+            [value]="admin.name"
+            class="bg-sunken! border-transparent! text-ink-muted!"
+          />
+        </app-form-field>
+
+        <app-form-field fieldId="email" label="Correo">
+          <input
+            pInputText
+            id="email"
+            type="email"
+            readonly
+            [value]="admin.email"
+            class="bg-sunken! border-transparent! text-ink-muted!"
+          />
+        </app-form-field>
+      </div>
+      <p class="mt-4 text-[12.5px] leading-[18px] text-ink-muted">
+        Para cambiar estos datos, contacta al equipo de soporte.
+      </p>
+    </section>
+  }
+
+  <app-profile-appearance-card class="col-span-12 @min-[960px]:col-span-4" />
+  <app-profile-security-card class="col-span-12 @min-[960px]:col-span-8" />
+</app-profile-layout>

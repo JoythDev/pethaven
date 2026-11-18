@@ -250,7 +250,11 @@ export const routes: Routes = [
         ],
       },
       notificationsRoute(),
-      comingSoon('perfil', 'Perfil', 'Aquí podrás consultar los datos de tu cuenta de administrador.'),
+      {
+        path: 'perfil',
+        loadComponent: () =>
+          import('./pages/administrador/perfil/perfil.component').then((m) => m.AdministradorPerfilComponent),
+      },
       {
         path: 'medicamentos',
         // Gestión completa: listado, detalle, alta, edición, eliminación e importación desde Excel.
