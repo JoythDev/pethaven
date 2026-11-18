@@ -4,6 +4,7 @@ import { LandingComponent } from './pages/landing/landing.component';
 import { ClienteEntryComponent } from './pages/cliente/cliente-entry/cliente-entry.component';
 import { ADMIN_DRUG_AREA, DRUG_AREA_DATA_KEY, VET_DRUG_AREA } from './pages/shared/drugs/drug-area';
 import { guestGuard, ownerPortalGuard, roleGuard } from './core/auth/auth.guard';
+import { unsavedChangesGuard } from './core/forms/unsaved-changes.guard';
 
 // Sección que aún no tiene pantalla: usa el placeholder compartido con título y descripción de la ruta.
 const comingSoon = (path: string, title: string, description: string): Route => ({
@@ -77,6 +78,7 @@ export const routes: Routes = [
               import('./pages/veterinario/pets/pet-form/pet-form.component').then(
                 (m) => m.PetsFormComponent
               ),
+            canDeactivate: [unsavedChangesGuard],
           },
           {
             path: 'update/:id',
@@ -84,6 +86,7 @@ export const routes: Routes = [
               import('./pages/veterinario/pets/pet-form/pet-form.component').then(
                 (m) => m.PetsFormComponent
               ),
+            canDeactivate: [unsavedChangesGuard],
           },
           // La historia clínica ahora es una pestaña de la ficha; el enlace anterior sigue funcionando.
           {
@@ -99,6 +102,7 @@ export const routes: Routes = [
               import('./pages/veterinario/pets/treatment-form/treatment-form.component').then(
                 (m) => m.TreatmentFormComponent
               ),
+            canDeactivate: [unsavedChangesGuard],
           },
           {
             path: ':id',
