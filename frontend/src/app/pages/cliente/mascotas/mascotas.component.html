@@ -1,82 +1,95 @@
-<div class="mx-auto max-w-7xl p-5 lg:p-8">
-  <app-page-banner
-    class="mb-8"
-    color="honey"
-    variant="hero"
-    mascot="cat"
-    [eyebrow]="greeting()"
-    title="Mis Mascotas"
-    subtitle="Consulta el estado de tus mascotas y sus tratamientos en tiempo real."
-  />
+<app-page-header heading="Mis mascotas" [subtitle]="subtitle()" />
 
-  @let state = pets();
+@let current = state();
 
-  @if (state.status === 'loading') {
-    <div class="grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3" aria-hidden="true">
-      @for (placeholder of loadingPlaceholders; track placeholder) {
-        <div class="rounded-3xl border border-olive/15 bg-white p-5 shadow-md">
-          <p-skeleton height="11rem" borderRadius="1rem" styleClass="mb-4" />
-          <p-skeleton width="55%" height="1.5rem" styleClass="mb-2" />
-          <p-skeleton width="75%" styleClass="mb-4" />
-          <p-skeleton height="2.5rem" borderRadius="0.75rem" />
-        </div>
+@if (current.status === 'loading') {
+  @if (skeleton()) {
+    <div class="grid grid-cols-1 gap-[14px] @min-[680px]:grid-cols-2 @min-[1080px]:grid-cols-3">
+      @for (card of skeletonCards; track card) {
+        <app-skeleton variant="media" class="min-h-[330px]" [announce]="$first" />
       }
     </div>
-  } @else if (state.status === 'ready') {
-    @let data = state.data;
-    @let m = metrics();
-
-    @if (m) {
-      <section class="grid grid-cols-1 gap-5 sm:grid-cols-3" aria-label="Resumen de tus mascotas">
-        <article app-stat-card layout="inline" color="sage" decor="heart" icon="pi pi-heart" label="mascotas registradas" [value]="m.total"></article>
-        <article app-stat-card layout="inline" color="terracotta" decor="cross" icon="pi pi-wave-pulse" label="hospitalizadas ahora" [value]="m.active"></article>
-        <article app-stat-card layout="inline" color="secondary" decor="circles" icon="pi pi-home" label="en casa" [value]="m.inactive"></article>
-      </section>
-    }
-
-    @if (data.length > 0) {
-      <section class="mt-8 grid grid-cols-1 gap-5 md:grid-cols-2 xl:grid-cols-3" aria-label="Tus mascotas">
-        @for (pet of data; track pet.id) {
-          <article class="flex flex-col overflow-hidden rounded-3xl border border-olive/10 bg-white shadow-md transition duration-300 hover:-translate-y-1.5 hover:shadow-xl">
-            <div class="relative h-24 overflow-hidden" [class]="coverClass($index)">
-              <span aria-hidden="true" class="absolute -right-8 -top-10 h-32 w-32 rounded-full bg-white/35"></span>
-              <span aria-hidden="true" class="absolute -bottom-10 left-6 h-20 w-20 rounded-full bg-white/25"></span>
-            </div>
-            <img
-              [src]="pet.photoUrl"
-              [alt]="pet.name"
-              class="relative z-10 mx-auto -mt-14 h-28 w-28 shrink-0 rounded-full bg-secondary object-cover ring-4 ring-white shadow-md"
-              (error)="onPhotoError($event)"
-            />
-            <div class="flex flex-1 flex-col gap-4 p-5 text-center">
-              <div class="flex-1">
-                <h2 class="pet-name font-display text-2xl font-bold text-text">{{ pet.name }}</h2>
-                <p class="pet-info mt-1 text-sm text-text/60">
-                  {{ speciesLabel(pet.species) }} · {{ pet.breed }} · {{ ageLabel(pet.age) }}
-                </p>
-                <div class="mt-3 flex flex-wrap items-center justify-center gap-2">
-                  <app-cliente-pet-status-tag [active]="pet.active" />
-                  @if (pet.disease; as disease) {
-                    <p-tag [value]="disease" severity="warn" />
-                  }
-                </div>
-              </div>
-              <p-button label="Ver detalles" [fluid]="true" (onClick)="verDetalles(pet.id)" />
-            </div>
-          </article>
-        }
-      </section>
-    } @else {
-      <div class="mt-8 rounded-3xl border border-dashed border-olive/25 bg-white p-10 text-center shadow-md">
-        <img src="/images/illustrations/dog-mascot.svg" alt="" class="mx-auto h-28 w-auto" />
-        <p class="mt-3 text-text/60">Todavía no tienes mascotas registradas.</p>
-      </div>
-    }
-  } @else {
-    <div class="rounded-3xl border border-olive/15 bg-white p-10 text-center shadow-md">
-      <i class="pi pi-exclamation-triangle text-2xl text-text/30" aria-hidden="true"></i>
-      <p class="mt-3 text-text/60">No se pudieron cargar las mascotas.</p>
-      <p class="mt-1 text-sm text-text/50">{{ state.message }}</p>
-    </div>
   }
-</div>
+} @else if (current.status === 'error') {
+  <div class="rounded-box border border-line bg-card p-4">
+    <app-inline-error text="No pudimos cargar tus mascotas." (retry)="retry()" />
+  </div>
+} @else if (cards().length === 0) {
+  <div class="rounded-box border border-line bg-card p-4">
+    <app-empty-state
+      heading="Aún no tienes mascotas registradas"
+      description="Tu veterinario las registra en la primera visita y aparecerán aquí."
+    >
+      <app-sticker sticker name="paw" [width]="96" />
+      <a action pButton size="small" [routerLink]="bookLink()" label="Agendar cita"></a>
+    </app-empty-state>
+  </div>
+} @else {
+  <!-- 3 por fila desde 1080 px de contenido, 2 desde 680 px y 1 por debajo (container query del shell) -->
+  <div
+    class="grid grid-cols-1 items-stretch gap-[14px] @min-[680px]:grid-cols-2 @min-[1080px]:grid-cols-3"
+    role="list"
+    aria-label="Tus mascotas"
+  >
+    @for (card of cards(); track card.pet.id) {
+      @let pet = card.pet;
+      @let status = petStatus(pet);
+      <article class="flex min-w-0 flex-col overflow-hidden rounded-box border border-line bg-card text-ink" role="listitem">
+        <app-block kind="header" [hue]="hue(pet.id)" [flush]="true" class="h-[150px] items-center! p-0!">
+          <div class="flex flex-1 items-center justify-center">
+            @if (showPhoto(pet)) {
+              <img
+                [src]="pet.photoUrl"
+                [alt]="'Foto de ' + pet.name"
+                class="size-[112px] rounded-full object-cover ring-2 ring-card"
+                (error)="onPhotoError(pet.id)"
+              />
+            } @else {
+              <app-sticker [name]="sticker(pet)" [width]="128" [kit]="kit(pet)" />
+            }
+          </div>
+        </app-block>
+
+        <div class="flex flex-1 flex-col px-4 pt-3.5 pb-4">
+          <div class="flex items-start gap-2">
+            <h2 class="pet-name min-w-0 flex-1 font-display text-xl leading-[26px] font-semibold text-balance">{{ pet.name }}</h2>
+            <p-tag class="shrink-0" [severity]="status.severity" [value]="status.label" />
+          </div>
+          <p class="pet-info mt-0.5 text-[12.5px] leading-[18px] text-ink-muted">
+            {{ speciesLabel(pet.species) }} · {{ pet.breed }} · {{ ageLabel(pet.age) }} · {{ formatKg(pet.weight) }}
+          </p>
+
+          <div class="my-3 h-px bg-line" aria-hidden="true"></div>
+
+          <dl app-definition-list>
+            <dt>Último tratamiento</dt>
+            <dd>{{ card.lastDiagnosis ?? 'Sin tratamientos' }}</dd>
+            <dt>Próxima cita<app-demo-tag /></dt>
+            <dd>{{ card.nextAppointment ?? 'Sin agendar' }}</dd>
+          </dl>
+
+          <div class="mt-auto flex gap-2 pt-3.5">
+            <a pButton class="min-w-0 flex-1" [routerLink]="petLink(pet.id)" [attr.aria-label]="'Ver ficha de ' + pet.name">
+              <span class="p-button-label">Ver ficha</span>
+            </a>
+            <a
+              pButton
+              severity="secondary"
+              [outlined]="true"
+              [routerLink]="bookLink()"
+              [queryParams]="{ mascota: pet.id }"
+              [attr.aria-label]="'Agendar cita para ' + pet.name"
+            >
+              <svg lucideCalendar [size]="18" aria-hidden="true"></svg>
+              <span class="p-button-label">Agendar</span>
+            </a>
+          </div>
+        </div>
+      </article>
+    }
+  </div>
+
+  <p class="mt-3.5 text-[12.5px] leading-[18px] text-ink-muted">
+    ¿Tienes una mascota nueva? Agenda su primera cita y tu veterinario la registrará.
+  </p>
+}

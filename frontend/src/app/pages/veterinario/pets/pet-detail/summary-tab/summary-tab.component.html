@@ -33,7 +33,7 @@
     } @else {
       <section app-card heading="Último tratamiento" class="h-full">
         @if (last) {
-          <a action pButton [text]="true" size="small" label="Ver historia" routerLink="." [queryParams]="historyParams(last)"></a>
+          <a action pButton [text]="true" size="small" [label]="area().history.action" routerLink="." [queryParams]="historyParams(last)"></a>
         }
         @if (treatmentsState.status === 'error') {
           <app-inline-error text="No pudimos cargar los tratamientos." (retry)="retryTreatments.emit()" />
@@ -75,18 +75,20 @@
   <div class="col-span-12 min-w-0 @min-[680px]:col-span-6 @min-[960px]:col-span-4">
     <section app-card heading="Datos" class="h-full">
       <dl app-definition-list [items]="facts()">
-        <dt>Dueño</dt>
-        <dd>
-          @if (ownersPath(); as ownersPath) {
-            <a
-              class="ph-focus rounded-check text-accent-text underline-offset-4 hover:underline"
-              [routerLink]="[ownersPath, p.ownerId]"
-              >{{ p.ownerName }}</a
-            >
-          } @else {
-            {{ p.ownerName }}
-          }
-        </dd>
+        @if (area().showOwner) {
+          <dt>Dueño</dt>
+          <dd>
+            @if (area().ownersPath; as ownersPath) {
+              <a
+                class="ph-focus rounded-check text-accent-text underline-offset-4 hover:underline"
+                [routerLink]="[ownersPath, p.ownerId]"
+                >{{ p.ownerName }}</a
+              >
+            } @else {
+              {{ p.ownerName }}
+            }
+          </dd>
+        }
       </dl>
     </section>
   </div>

@@ -2,7 +2,7 @@
 @let p = pet();
 
 <div class="grid grid-cols-12 items-start gap-[14px]">
-  <section app-card heading="Historia clínica" class="min-w-0" [class]="withPanel() ? 'col-span-8' : 'col-span-12'">
+  <section app-card [heading]="area().history.label" class="min-w-0" [class]="withPanel() ? 'col-span-8' : 'col-span-12'">
     @if (current.status === 'loading') {
       @if (skeleton()) {
         @for (row of skeletonRows; track row) {
@@ -18,10 +18,12 @@
       >
         <app-sticker sticker name="stethoscope" [width]="96" />
         @if (canRegister()) {
-          <a action pButton size="small" [routerLink]="[area().basePath, p.id, 'treatments', 'add']">
+          <a action pButton size="small" [routerLink]="[basePath(), p.id, 'treatments', 'add']">
             <svg lucidePlus [size]="18" aria-hidden="true"></svg>
             <span class="p-button-label">Nuevo tratamiento</span>
           </a>
+        } @else if (scheduleLink()) {
+          <a action pButton size="small" [routerLink]="scheduleLink()" [queryParams]="{ mascota: p.id }" label="Agendar cita"></a>
         }
       </app-empty-state>
     } @else {
@@ -82,27 +84,33 @@
                   </span>
                   <span class="min-w-0 flex-1">
                     <span class="block truncate text-sm leading-5 font-extrabold">{{ row.drug.drugName }}</span>
-                    <span class="block text-[12.5px] leading-[18px] text-ink-muted tabular-nums">
-                      {{ units(row.drug.units) }} × {{ formatCurrency(row.drug.unitSalePrice) }}
-                      @if (area().showCost) {
-                        · costo {{ formatCurrency(row.drug.unitPurchasePrice) }}
-                      }
-                    </span>
+                    @if (area().showPrices) {
+                      <span class="block text-[12.5px] leading-[18px] text-ink-muted tabular-nums">
+                        {{ units(row.drug.units) }} × {{ formatCurrency(row.drug.unitSalePrice) }}
+                        @if (area().showCost) {
+                          · costo {{ formatCurrency(row.drug.unitPurchasePrice) }}
+                        }
+                      </span>
+                    }
                   </span>
-                  <span class="shrink-0 text-sm leading-5 font-extrabold tabular-nums">{{ formatCurrency(row.subtotal) }}</span>
+                  @if (area().showPrices) {
+                    <span class="shrink-0 text-sm leading-5 font-extrabold tabular-nums">{{ formatCurrency(row.subtotal) }}</span>
+                  }
                 </li>
               }
             </ul>
-            <dl app-definition-list class="mt-2 border-t border-line pt-2.5">
-              <dt class="font-extrabold text-ink!">Total de la receta</dt>
-              <dd>{{ formatCurrency(prescription().total) }}</dd>
-              @if (area().showCost) {
-                <dt>Costo de compra</dt>
-                <dd>{{ formatCurrency(prescription().cost) }}</dd>
-                <dt class="font-extrabold text-ink!">Ganancia</dt>
-                <dd>{{ formatCurrency(prescription().profit) }}</dd>
-              }
-            </dl>
+            @if (area().showPrices) {
+              <dl app-definition-list class="mt-2 border-t border-line pt-2.5">
+                <dt class="font-extrabold text-ink!">Total de la receta</dt>
+                <dd>{{ formatCurrency(prescription().total) }}</dd>
+                @if (area().showCost) {
+                  <dt>Costo de compra</dt>
+                  <dd>{{ formatCurrency(prescription().cost) }}</dd>
+                  <dt class="font-extrabold text-ink!">Ganancia</dt>
+                  <dd>{{ formatCurrency(prescription().profit) }}</dd>
+                }
+              </dl>
+            }
           }
         </section>
 

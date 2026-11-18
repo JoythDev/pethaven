@@ -1,11 +1,11 @@
 @let state = petState();
 
 <a
-  [routerLink]="area.basePath"
+  [routerLink]="basePath()"
   class="ph-focus mb-2 -ml-1 inline-flex min-h-6 items-center gap-0.5 rounded-control px-1 text-[13px] leading-[18px] font-bold text-ink-muted transition-colors duration-[180ms] ease-out-strong hover:text-ink motion-reduce:transition-none"
 >
   <svg lucideChevronLeft [size]="16" aria-hidden="true"></svg>
-  Mascotas
+  {{ area.listLabel }}
 </a>
 
 @if (state.status === 'loading') {
@@ -25,7 +25,7 @@
       description="Puede que el enlace esté incompleto o que ya no exista."
     >
       <app-sticker sticker name="paw" [width]="96" />
-      <a action pButton size="small" [routerLink]="area.basePath" label="Volver a Mascotas"></a>
+      <a action pButton size="small" [routerLink]="basePath()" [label]="'Volver a ' + area.listLabel"></a>
     </app-empty-state>
   </div>
 } @else if (state.status === 'error') {
@@ -58,15 +58,18 @@
           }
         </div>
         <p class="mt-1 text-sm leading-5">
-          {{ speciesLabel() }} · {{ p.breed }} · {{ ageLabel(p.age) }} · {{ formatKg(p.weight) }} · Dueño:
-          @if (area.ownersPath; as ownersPath) {
-            <a
-              class="ph-focus rounded-check font-extrabold underline underline-offset-4"
-              [routerLink]="[ownersPath, p.ownerId]"
-              >{{ p.ownerName }}</a
-            >
-          } @else {
-            <span class="font-extrabold">{{ p.ownerName }}</span>
+          {{ speciesLabel() }} · {{ p.breed }} · {{ ageLabel(p.age) }} · {{ formatKg(p.weight) }}
+          @if (area.showOwner) {
+            · Dueño:
+            @if (area.ownersPath; as ownersPath) {
+              <a
+                class="ph-focus rounded-check font-extrabold underline underline-offset-4"
+                [routerLink]="[ownersPath, p.ownerId]"
+                >{{ p.ownerName }}</a
+              >
+            } @else {
+              <span class="font-extrabold">{{ p.ownerName }}</span>
+            }
           }
         </p>
         @if (availability.reason; as reason) {
@@ -85,14 +88,20 @@
             type="button"
             size="small"
             [disabled]="!availability.allowed"
-            [routerLink]="[area.basePath, p.id, 'treatments', 'add']"
+            [routerLink]="[basePath(), p.id, 'treatments', 'add']"
           >
             <svg lucidePlus [size]="18" aria-hidden="true"></svg>
             <span class="p-button-label">Nuevo tratamiento</span>
           </button>
-          <a pButton size="small" [outlined]="true" [routerLink]="[area.basePath, 'update', p.id]">
+          <a pButton size="small" [outlined]="true" [routerLink]="[basePath(), 'update', p.id]">
             <svg lucidePencil [size]="18" aria-hidden="true"></svg>
             <span class="p-button-label">Editar</span>
+          </a>
+        }
+        @if (area.canSchedule) {
+          <a pButton size="small" [routerLink]="scheduleLink()" [queryParams]="{ mascota: p.id }">
+            <svg lucideCalendar [size]="18" aria-hidden="true"></svg>
+            <span class="p-button-label">Agendar cita</span>
           </a>
         }
         <button
@@ -114,14 +123,14 @@
   <p-tabs [value]="tab()" [dt]="tabTokens" (valueChange)="setTab($event)">
     <p-tablist>
       <p-tab value="resumen">Resumen</p-tab>
-      <p-tab value="historia">Historia clínica</p-tab>
-      <p-tab value="vacunas">Vacunas</p-tab>
+      <p-tab value="historia">{{ area.history.label }}</p-tab>
+      <p-tab value="vacunas" class="inline-flex items-center">Vacunas<app-demo-tag /></p-tab>
     </p-tablist>
     <p-tabpanels>
       <p-tabpanel value="resumen">
         <app-summary-tab
           [pet]="p"
-          [ownersPath]="area.ownersPath"
+          [area]="area"
           [treatments]="treatments()"
           [weight]="weight()"
           [vaccines]="vaccines()"
@@ -136,13 +145,20 @@
           [area]="area"
           [state]="treatments()"
           [canRegister]="availability.allowed"
+          [basePath]="basePath()"
+          [scheduleLink]="area.canSchedule ? scheduleLink() : null"
           [downloading]="downloading()"
           (retry)="retryTreatments()"
           (download)="downloadPdf()"
         />
       </p-tabpanel>
       <p-tabpanel value="vacunas">
-        <app-vaccines-tab [state]="vaccines()" (retry)="retryVaccines()" />
+        <app-vaccines-tab
+          [state]="vaccines()"
+          [scheduleLink]="area.canSchedule ? scheduleLink() : null"
+          [petId]="p.id"
+          (retry)="retryVaccines()"
+        />
       </p-tabpanel>
     </p-tabpanels>
   </p-tabs>

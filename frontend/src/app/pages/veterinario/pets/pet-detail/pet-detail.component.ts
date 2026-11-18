@@ -1,7 +1,7 @@
-import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
+import { Component, DestroyRef, Signal, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { LucideChevronLeft, LucideDownload, LucideInfo, LucidePencil, LucidePlus } from '@lucide/angular';
+import { LucideCalendar, LucideChevronLeft, LucideDownload, LucideInfo, LucidePencil, LucidePlus } from '@lucide/angular';
 import { BehaviorSubject, Observable, catchError, combineLatest, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -12,7 +12,9 @@ import { getErrorMessage } from '../../../../core/http/http-error';
 import { parseRouteId } from '../../../../core/http/route-id';
 import { ViewState, toViewState } from '../../../../core/http/view-state';
 import { identityHue } from '../../../../core/identity/identity';
-import { resolvePetArea } from '../../../../core/pets-list/pet-area';
+import { belongsToArea, bookingLink } from '../../../../core/client-pets/client-pets';
+import { ownerIdParam } from '../../../../core/client-pets/owner-route';
+import { historyTabFromParam, historyTabToParam, resolvePetArea, resolvePetBasePath } from '../../../../core/pets-list/pet-area';
 import {
   DetailTab,
   NOT_FOUND,
@@ -22,7 +24,6 @@ import {
   ageLabel,
   formatKg,
   parseTab,
-  tabParam,
   toPetLoad,
   toVisits,
 } from '../../../../core/pet-detail/pet-detail';
@@ -42,6 +43,7 @@ import { OwnerService } from '../../../../services/owner.service';
 import { PetService } from '../../../../services/pet.service';
 import { TreatmentService } from '../../../../services/treatment.service';
 import { BlockComponent } from '../../../shared/block/block.component';
+import { DemoTagComponent } from '../../../shared/demo-tag/demo-tag.component';
 import { EmptyStateComponent } from '../../../shared/empty-state/empty-state.component';
 import { InlineErrorComponent } from '../../../shared/inline-error/inline-error.component';
 import { SkeletonComponent } from '../../../shared/skeleton/skeleton.component';
@@ -68,11 +70,13 @@ const TAB_TOKENS = {
 };
 
 /**
- * Ficha de una mascota (11.2) para el veterinario y, en solo consulta, para el administrador (el área
- * llega por el `data` de la ruta): cabecera en el color de identidad con las acciones del rol,
- * pestañas Resumen, Historia clínica y Vacunas, y el estado de cada pestaña en la URL
- * (`?pestana`, `?tratamiento`). Cada fuente (mascota, tratamientos, inventario, curva y vacunas demo)
- * carga y falla por separado. «Descargar PDF» genera la historia clínica completa.
+ * Ficha de una mascota (11.2) para el veterinario y, en solo consulta, para el administrador y el
+ * cliente (el área llega por el `data` de la ruta): cabecera en el color de identidad con las acciones
+ * del rol, pestañas Resumen, Historia clínica (Tratamientos para el cliente) y Vacunas, y el estado de
+ * cada pestaña en la URL (`?pestana`, `?tratamiento`). Cada fuente (mascota, tratamientos, inventario,
+ * curva y vacunas demo) carga y falla por separado. El inventario solo se pide si el área gestiona
+ * (el dueño no puede leerlo). En el área del cliente una mascota de otro dueño se trata como inexistente.
+ * «Descargar PDF» genera la historia clínica completa.
  */
 @Component({
   selector: 'app-pets-detail',
@@ -81,12 +85,14 @@ const TAB_TOKENS = {
     ButtonModule,
     TabsModule,
     TagModule,
+    LucideCalendar,
     LucideChevronLeft,
     LucideDownload,
     LucideInfo,
     LucidePencil,
     LucidePlus,
     BlockComponent,
+    DemoTagComponent,
     EmptyStateComponent,
     HistoryTabComponent,
     InlineErrorComponent,
@@ -118,20 +124,29 @@ export class PetsDetailComponent {
   private readonly petId = toSignal(this.route.paramMap.pipe(map((params) => parseRouteId(params.get('id')))), {
     initialValue: parseRouteId(this.route.snapshot.paramMap.get('id')),
   });
+  // :ownerId del portal del cliente (una ruta ancestra); null fuera de él o si es inválido.
+  private readonly ownerId = toSignal(ownerIdParam(this.route), { initialValue: null });
+  protected readonly basePath = computed(() => resolvePetBasePath(this.area, this.ownerId()));
+  protected readonly scheduleLink = computed(() => bookingLink(this.ownerId()));
   private readonly queryParams = toSignal(this.route.queryParamMap, { initialValue: this.route.snapshot.queryParamMap });
-  protected readonly tab = computed(() => parseTab(this.queryParams().get(TAB_PARAM)));
+  protected readonly tab = computed(() => parseTab(historyTabFromParam(this.area, this.queryParams().get(TAB_PARAM))));
 
   private readonly petRetry = new BehaviorSubject<void>(undefined);
   private readonly treatmentsRetry = new BehaviorSubject<void>(undefined);
   private readonly weightRetry = new BehaviorSubject<void>(undefined);
   private readonly vaccinesRetry = new BehaviorSubject<void>(undefined);
 
-  protected readonly petState = toSignal(
+  private readonly petLoad = toSignal(
     combineLatest([toObservable(this.petId), this.petRetry]).pipe(
       switchMap(([id]) => (id === null ? of<PetLoad>(NOT_FOUND) : this.petService.getById(id).pipe(toPetLoad()))),
     ),
     { initialValue: LOADING as PetLoad },
   );
+  // En el área del cliente una mascota de otro dueño se trata como inexistente. Es una comprobación de interfaz, no de seguridad.
+  protected readonly petState = computed<PetLoad>(() => {
+    const load = this.petLoad();
+    return load.status === 'ready' && !belongsToArea(this.area, load.data, this.ownerId()) ? NOT_FOUND : load;
+  });
   protected readonly pet = computed<Pet | null>(() => {
     const state = this.petState();
     return state.status === 'ready' ? state.data : null;
@@ -148,10 +163,11 @@ export class PetsDetailComponent {
     { initialValue: LOADING as ViewState<Treatment[]> },
   );
 
-  // Inventario con existencias: solo para saber si se puede registrar un tratamiento.
-  private readonly drugs = toSignal(this.drugService.getAvailable().pipe(toViewState<Drug[]>()), {
-    initialValue: LOADING as ViewState<Drug[]>,
-  });
+  // Inventario con existencias: solo para saber si se puede registrar un tratamiento. Quien no gestiona no
+  // lo pide (el dueño recibiría 403 y el administrador no registra tratamientos).
+  private readonly drugs: Signal<ViewState<Drug[]>> = this.area.canManage
+    ? toSignal(this.drugService.getAvailable().pipe(toViewState<Drug[]>()), { initialValue: LOADING as ViewState<Drug[]> })
+    : signal(LOADING as ViewState<Drug[]>);
 
   // Curva de peso y carné de vacunas (demo): se generan a partir de la mascota real.
   protected readonly weight = toSignal(
@@ -215,7 +231,7 @@ export class PetsDetailComponent {
     const tab: DetailTab = parseTab(String(value));
     void this.router.navigate([], {
       relativeTo: this.route,
-      queryParams: { [TAB_PARAM]: tabParam(tab), [TREATMENT_PARAM]: null },
+      queryParams: { [TAB_PARAM]: historyTabToParam(this.area, tab), [TREATMENT_PARAM]: null },
       queryParamsHandling: 'merge',
     });
   }

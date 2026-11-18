@@ -6,6 +6,7 @@ import { TagModule } from 'primeng/tag';
 
 import { ViewState } from '../../../../../core/http/view-state';
 import { identityHue } from '../../../../../core/identity/identity';
+import { PetAreaConfig, VET_PET_AREA } from '../../../../../core/pets-list/pet-area';
 import {
   TAB_PARAM,
   TREATMENT_PARAM,
@@ -57,8 +58,8 @@ const UPCOMING_VACCINES = 3;
 })
 export class SummaryTabComponent {
   readonly pet = input.required<Pet>();
-  /** Ruta base de las fichas de dueño; null si el área no las tiene y el nombre queda como texto. */
-  readonly ownersPath = input<string | null>(null);
+  /** Área que monta la ficha: decide si se nombra al dueño (y si es un enlace) y cómo se llama la pestaña de tratamientos. */
+  readonly area = input<PetAreaConfig>(VET_PET_AREA);
   readonly treatments = input.required<ViewState<Treatment[]>>();
   readonly weight = input.required<ViewState<WeightCurve>>();
   readonly vaccines = input.required<ViewState<VaccineCard>>();
@@ -69,7 +70,7 @@ export class SummaryTabComponent {
   protected readonly evolutionLabel = evolutionLabel;
   protected readonly evolutionSeverity = evolutionSeverity;
   protected readonly vaccineSeverity = vaccineSeverity;
-  protected readonly historyParams = (treatment: Treatment) => ({ [TAB_PARAM]: 'historia', [TREATMENT_PARAM]: treatment.id });
+  protected readonly historyParams = (treatment: Treatment) => ({ [TAB_PARAM]: this.area().history.param, [TREATMENT_PARAM]: treatment.id });
   protected readonly vaccinesParams = { [TAB_PARAM]: 'vacunas' };
 
   protected readonly weightSkeleton = skeletonVisible(computed(() => this.weight().status === 'loading'));

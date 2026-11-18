@@ -3,7 +3,7 @@ import { Route, Router, Routes } from '@angular/router';
 import { LandingComponent } from './pages/landing/landing.component';
 import { ClienteEntryComponent } from './pages/cliente/cliente-entry/cliente-entry.component';
 import { ADMIN_DRUG_AREA, DRUG_AREA_DATA_KEY, VET_DRUG_AREA } from './pages/shared/drugs/drug-area';
-import { ADMIN_PET_AREA, PET_AREA_DATA_KEY } from './core/pets-list/pet-area';
+import { ADMIN_PET_AREA, CLIENT_PET_AREA, PET_AREA_DATA_KEY } from './core/pets-list/pet-area';
 import { guestGuard, ownerPortalGuard, roleGuard } from './core/auth/auth.guard';
 import { unsavedChangesGuard } from './core/forms/unsaved-changes.guard';
 import { ownersListMatcher, resourceListMatcher } from './core/owners/owners-route';
@@ -176,15 +176,22 @@ export const routes: Routes = [
       },
       {
         path: 'mascotas',
-        loadComponent: () =>
-          import('./pages/cliente/mascotas/mascotas.component').then((m) => m.MascotasComponent),
-      },
-      {
-        path: 'mascotas/:petId',
-        loadComponent: () =>
-          import('./pages/cliente/mascota-detalle/mascota-detalle.component').then(
-            (m) => m.MascotaDetalleComponent
-          ),
+        // Solo consulta: la ficha del veterinario con el área del cliente (sin precios ni edición).
+        data: { [PET_AREA_DATA_KEY]: CLIENT_PET_AREA },
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./pages/cliente/mascotas/mascotas.component').then((m) => m.MascotasComponent),
+          },
+          {
+            path: ':id',
+            loadComponent: () =>
+              import('./pages/veterinario/pets/pet-detail/pet-detail.component').then(
+                (m) => m.PetsDetailComponent
+              ),
+          },
+        ],
       },
       comingSoon('citas', 'Citas', 'Aquí podrás agendar y revisar las citas de tus mascotas.'),
       notificationsRoute(),

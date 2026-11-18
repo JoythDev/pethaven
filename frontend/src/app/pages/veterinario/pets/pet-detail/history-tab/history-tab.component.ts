@@ -46,7 +46,8 @@ import { TreatmentTimelineComponent } from '../treatment-timeline/treatment-time
  * derecha, el detalle del elegido (4 columnas, cajón en pantallas medianas y pequeñas). Los seis más
  * recientes se ven primero y «Mostrar N más» abre el resto. El elegido vive en `?tratamiento=<id>`.
  * El veterinario ve precio de venta, subtotal y total de la receta (11.10), nunca el de compra; el
- * administrador, además, el costo de compra de cada medicamento y de la receta, y la ganancia.
+ * administrador, además, el costo de compra de cada medicamento y de la receta, y la ganancia. El
+ * cliente solo ve los nombres de los medicamentos: ningún precio, subtotal ni total (S21).
  */
 @Component({
   selector: 'app-history-tab',
@@ -75,6 +76,10 @@ export class HistoryTabComponent {
   readonly area = input<PetAreaConfig>(VET_PET_AREA);
   /** El veterinario puede registrar un tratamiento a esta mascota (si no, no se ofrece la acción). */
   readonly canRegister = input(false);
+  /** Enlace a las citas del dueño para el estado vacío; null si el área no agenda. */
+  readonly scheduleLink = input<(string | number)[] | null>(null);
+  /** Ruta base del listado ya resuelta (el cliente la toma de su `:ownerId`). */
+  readonly basePath = input.required<string>();
   readonly downloading = input(false);
   readonly retry = output<void>();
   readonly download = output<void>();
