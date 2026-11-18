@@ -58,6 +58,7 @@ export const routes: Routes = [
           import('./pages/veterinario/perfil/perfil.component').then(
             (m) => m.VeterinarioPerfilComponent
           ),
+        canDeactivate: [unsavedChangesGuard],
       },
       // Compatibilidad: las rutas anteriores en inglés redirigen a las nuevas conservando el resto de la URL.
       { path: 'pets', redirectTo: 'mascotas', pathMatch: 'prefix' },

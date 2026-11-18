@@ -97,6 +97,11 @@ export class AuthService {
     }
   }
 
+  // Actualiza el nombre mostrado tras editar el perfil propio, sin volver a pedir /auth/me.
+  updateName(name: string): void {
+    this._user.update((user) => (user ? { ...user, name } : user));
+  }
+
   // Cierra la sesión, borra el token guardado y lleva al login.
   logout(): void {
     this.clearSession();
