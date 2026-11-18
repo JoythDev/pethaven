@@ -1,108 +1,177 @@
-<div class="mx-auto max-w-7xl p-5 lg:p-8">
-  <app-page-banner class="mb-6" color="secondary" mascot="cat" title="Dueños" subtitle="Gestiona las familias y sus datos de contacto.">
-    <p-button class="mt-4 inline-block" label="Nuevo dueño" icon="pi pi-plus" (onClick)="nuevo()" />
-  </app-page-banner>
+<app-page-header heading="Dueños" [subtitle]="subtitle()">
+  <a actions pButton size="small" routerLink="/veterinario/duenos/add" queryParamsHandling="preserve">
+    <svg lucidePlus [size]="18" aria-hidden="true"></svg>
+    <span class="p-button-label">Nuevo dueño</span>
+  </a>
+</app-page-header>
 
-  <section class="overflow-hidden rounded-3xl border border-olive/10 bg-white shadow-lg">
-    <div class="flex flex-col gap-3 border-b border-olive/15 p-4 lg:flex-row lg:items-center">
-      <p-iconfield class="w-full lg:max-w-xs">
-        <p-inputicon class="pi pi-search" />
-        <input
-          pInputText
-          placeholder="Buscar por nombre o documento"
-          class="w-full"
-          [formControl]="searchControl"
-        />
-      </p-iconfield>
+<!-- Lista de 8 columnas y panel de 4 mientras el detalle es una columna fija; por debajo de 1080 px es un cajón. -->
+<div class="grid grid-cols-12 items-start gap-[14px]">
+  <app-resource-list
+    [items]="pageItems()"
+    [total]="total()"
+    [page]="page()"
+    [pageSize]="query().pageSize"
+    [view]="query().view"
+    [searchText]="query().search"
+    searchLabel="Buscar dueños"
+    searchPlaceholder="Buscar por nombre, cédula o correo"
+    [loading]="loading()"
+    [error]="error()"
+    [filtersActive]="filtersActive()"
+    [selectedId]="selectedId()"
+    emptyHeading="Aún no hay dueños"
+    emptyDescription="Registra al primer dueño para asociarle sus mascotas."
+    (searchChange)="update(withSearch(query(), $event))"
+    (viewChange)="onView($event)"
+    (pageChange)="update(withPage(query(), $event))"
+    (pageSizeChange)="update(withPageSize(query(), $event))"
+    (itemSelect)="select($event)"
+    (clearFilters)="update(clearAll(query()))"
+    (retry)="retry()"
+  >
+    <div filters class="flex flex-wrap items-center gap-2" role="group" aria-label="Filtros de dueños">
+      <p-togglebutton
+        onLabel="Con varias mascotas"
+        offLabel="Con varias mascotas"
+        [ngModel]="!!query().filters['varias']"
+        (ngModelChange)="toggleFilter('varias', '1')"
+      />
     </div>
 
-    @let state = owners();
+    <a emptyAction pButton size="small" routerLink="/veterinario/duenos/add" queryParamsHandling="preserve">
+      <svg lucidePlus [size]="18" aria-hidden="true"></svg>
+      <span class="p-button-label">Nuevo dueño</span>
+    </a>
 
-    @if (state.status === 'error') {
-      <div class="flex flex-col items-center gap-3 py-10 text-center">
-        <i class="pi pi-exclamation-triangle text-2xl text-text/30" aria-hidden="true"></i>
-        <p class="text-text/60">No se pudieron cargar los dueños.</p>
-        <p class="text-sm text-text/50">{{ state.message }}</p>
-      </div>
-    } @else {
-      <p-table
-        #dt
-        [value]="filteredOwners()"
-        [loading]="state.status === 'loading'"
-        dataKey="id"
-        [paginator]="true"
-        [rows]="10"
-        [rowsPerPageOptions]="[10, 20, 50]"
-        [showCurrentPageReport]="true"
-        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} dueños"
-        [sortField]="'name'"
-        [sortOrder]="1"
+    <ng-template #card let-owner let-selected="selected" let-select="select">
+      <app-resource-card
+        [id]="owner.id"
+        [heading]="owner.name"
+        [subtitle]="owner.phone"
+        [selected]="selected"
+        (activate)="select()"
       >
-        <ng-template pTemplate="header">
+        <span art class="font-display text-[30px] leading-none font-semibold" aria-hidden="true">{{ initials(owner.name) }}</span>
+        <p-tag status [value]="petsCountLabel(owner.petsCount)" severity="secondary" />
+        <span facts class="min-w-0 truncate text-ink-muted">{{ owner.email }}</span>
+      </app-resource-card>
+    </ng-template>
+
+    <ng-template #table let-items let-selectedId="selectedId" let-select="select">
+      <p-table [value]="items">
+        <ng-template #header>
           <tr>
-            <th pSortableColumn="name">Dueño <p-sortIcon field="name" /></th>
-            <th pSortableColumn="document">Documento <p-sortIcon field="document" /></th>
-            <th pSortableColumn="email">Correo <p-sortIcon field="email" /></th>
-            <th pSortableColumn="phone">Teléfono <p-sortIcon field="phone" /></th>
-            <th>Acciones</th>
+            <th app-sort-header field="name" [sort]="query().sort" (sortChange)="onSort($event)">Dueño</th>
+            <th app-sort-header field="document" [sort]="query().sort" (sortChange)="onSort($event)">Cédula</th>
+            <th app-sort-header field="phone" [sort]="query().sort" (sortChange)="onSort($event)">Teléfono</th>
+            <th app-sort-header field="email" [sort]="query().sort" (sortChange)="onSort($event)">Correo</th>
+            <th app-sort-header field="pets" align="end" [sort]="query().sort" (sortChange)="onSort($event)">Mascotas</th>
           </tr>
         </ng-template>
-
-        <ng-template pTemplate="body" let-owner>
-          <tr>
-            <td class="font-bold text-text">{{ owner.name }}</td>
-            <td class="owner-document text-sm">{{ owner.document }}</td>
-            <td class="text-sm">{{ owner.email }}</td>
-            <td class="text-sm">{{ owner.phone }}</td>
+        <ng-template #body let-owner>
+          <tr [appSelectableRow]="owner.id === selectedId" (rowActivate)="select(owner.id)">
             <td>
-              <div class="flex items-center gap-1">
-                <p-button
-                  icon="pi pi-eye"
-                  severity="secondary"
-                  [text]="true"
-                  [rounded]="true"
-                  ariaLabel="Ver ficha"
-                  pTooltip="Ver ficha"
-                  tooltipPosition="top"
-                  (onClick)="ver(owner)"
-                />
-                <p-button
-                  icon="pi pi-pencil"
-                  severity="secondary"
-                  [text]="true"
-                  [rounded]="true"
-                  ariaLabel="Editar"
-                  pTooltip="Editar"
-                  tooltipPosition="top"
-                  (onClick)="editar(owner)"
-                />
-                <p-button
-                  icon="pi pi-trash"
-                  severity="danger"
-                  [text]="true"
-                  [rounded]="true"
-                  ariaLabel="Eliminar"
-                  pTooltip="Eliminar"
-                  tooltipPosition="top"
-                  (onClick)="eliminar(owner)"
-                />
+              <div class="flex items-center gap-3">
+                <app-avatar [id]="owner.id" [name]="owner.name" kind="person" [size]="32" />
+                <span class="font-extrabold text-ink">{{ owner.name }}</span>
               </div>
             </td>
-          </tr>
-        </ng-template>
-
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="5">
-              <div class="flex flex-col items-center gap-3 py-10 text-center">
-                <i class="pi pi-search text-2xl text-text/30" aria-hidden="true"></i>
-                <p class="text-text/60">No se encontraron dueños.</p>
-                <p-button label="Nuevo dueño" icon="pi pi-plus" [outlined]="true" (onClick)="nuevo()" />
-              </div>
-            </td>
+            <td class="owner-document tabular-nums">{{ owner.document }}</td>
+            <td class="tabular-nums">{{ owner.phone }}</td>
+            <td>{{ owner.email }}</td>
+            <td class="text-right tabular-nums">{{ owner.petsCount ?? '—' }}</td>
           </tr>
         </ng-template>
       </p-table>
-    }
-  </section>
+    </ng-template>
+  </app-resource-list>
+
+  <app-detail-panel
+    label="Detalle del dueño"
+    emptyHeading="Elige un dueño"
+    emptyText="Selecciona una fila o una tarjeta para ver aquí su detalle."
+    [selected]="!!current()"
+    [loading]="loading()"
+    [hue]="currentHue()"
+    [heading]="current()?.name ?? ''"
+    [subtitle]="current() && current()!.petsCount !== null ? petsCountLabel(current()!.petsCount) : null"
+    [fullLink]="current() ? ['/veterinario/duenos', current()!.id] : null"
+    [(open)]="panelOpen"
+  >
+    @let owner = current();
+    <span avatar class="w-14 text-center font-display text-[30px] leading-none font-semibold" aria-hidden="true">{{
+      initials(owner?.name ?? '')
+    }}</span>
+
+    <div details>
+      @if (owner) {
+        <dl app-definition-list>
+          <dt>Cédula</dt>
+          <dd>{{ owner.document }}</dd>
+          <dt>Teléfono</dt>
+          <dd>{{ owner.phone }}</dd>
+          <dt>Correo</dt>
+          <dd>{{ owner.email }}</dd>
+        </dl>
+      }
+    </div>
+
+    <div history>
+      @if (owner) {
+        <h3 class="mb-1 text-sm leading-5 font-extrabold text-ink">Mascotas</h3>
+        @if (pets() === null) {
+          <p class="text-[12.5px] leading-[18px] text-ink-muted">No pudimos cargar sus mascotas.</p>
+        } @else if (panelPets().length) {
+          <div class="-mx-2.5 flex flex-col gap-0.5">
+            @for (pet of panelPets(); track pet.id) {
+              <app-list-item
+                [heading]="pet.name"
+                [subtitle]="speciesLabel(pet.species) + ' · ' + pet.breed"
+                [link]="['/veterinario/mascotas', pet.id]"
+              >
+                <app-avatar leading [id]="pet.id" [name]="pet.name" kind="pet" [species]="pet.species" [photoUrl]="pet.photoUrl" [size]="32" />
+                <p-tag trailing [value]="status(pet).label" [severity]="status(pet).severity" />
+              </app-list-item>
+            }
+          </div>
+          @if (hiddenPets() > 0) {
+            <p class="mt-1 text-[12.5px] leading-[18px] text-ink-muted">
+              y {{ hiddenPets() }} más en la ficha completa.
+            </p>
+          }
+        } @else {
+          <p class="text-[12.5px] leading-[18px] text-ink-muted">Sin mascotas registradas.</p>
+        }
+      }
+    </div>
+
+    <div actions class="contents">
+      @if (owner) {
+        <a pButton class="w-full" [routerLink]="newPetUrl" [queryParams]="ownerPetQuery(owner.id)">
+          <svg lucidePlus [size]="18" aria-hidden="true"></svg>
+          <span class="p-button-label">Registrar mascota</span>
+        </a>
+        <a
+          pButton
+          class="w-full"
+          severity="secondary"
+          [outlined]="true"
+          [routerLink]="['/veterinario/duenos/update', owner.id]"
+          queryParamsHandling="preserve"
+        >
+          <svg lucidePencil [size]="18" aria-hidden="true"></svg>
+          <span class="p-button-label">Editar</span>
+        </a>
+        <button pButton type="button" class="w-full" severity="danger" [text]="true" (click)="remove(owner)">
+          <svg lucideTrash2 [size]="18" aria-hidden="true"></svg>
+          <span class="p-button-label">Eliminar dueño</span>
+        </button>
+      }
+    </div>
+  </app-detail-panel>
 </div>
+
+@if (dialogOpen()) {
+  <app-owner-form-dialog [ownerId]="dialogOwnerId()" (saved)="onSaved($event)" (closed)="closeDialog()" />
+}

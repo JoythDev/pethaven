@@ -1,198 +1,333 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { LucidePencil, LucidePlus, LucideTrash2 } from '@lucide/angular';
 import { ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { IconFieldModule } from 'primeng/iconfield';
-import { InputIconModule } from 'primeng/inputicon';
-import { InputTextModule } from 'primeng/inputtext';
-import { Table, TableModule } from 'primeng/table';
-import { TooltipModule } from 'primeng/tooltip';
+import { TableModule } from 'primeng/table';
+import { TagModule } from 'primeng/tag';
+import { ToggleButtonModule } from 'primeng/togglebutton';
+import { Subject, catchError, finalize, forkJoin, map, of, switchMap } from 'rxjs';
+
+import { parseRouteId } from '../../../../core/http/route-id';
+import { ViewState, toViewState } from '../../../../core/http/view-state';
+import { identityHue, initials } from '../../../../core/identity/identity';
 import {
-  EMPTY,
-  Subject,
-  catchError,
-  concatMap,
-  debounceTime,
-  distinctUntilChanged,
-  map,
-  of,
-  share,
-  startWith,
-  switchMap,
-  tap,
-} from 'rxjs';
+  ListQuery,
+  ListQueryConfig,
+  ListSort,
+  ListView,
+  clearAll,
+  parseListQuery,
+  serializeListQuery,
+  withFilter,
+  withPage,
+  withPageSize,
+  withSearch,
+  withSort,
+  withView,
+} from '../../../../core/list/list-query';
+import { sortItems } from '../../../../core/list/list-sort';
+import { clampPage, paginate } from '../../../../core/list/pagination';
+import { readViewPreference, writeViewPreference } from '../../../../core/list/view-preference';
+import { NotificationService } from '../../../../core/notifications/notification.service';
+import { newPetUrl, ownerPetQuery } from '../../../../core/owners/owner-form';
+import { ownerDialogRoute } from '../../../../core/owners/owners-route';
+import {
+  OWNER_FILTER_KEYS,
+  OWNER_SORT_ACCESSORS,
+  OwnerRow,
+  buildOwnerRows,
+  ownerMatches,
+  ownersCountLabel,
+  petsCountLabel,
+  petsOfOwner,
+} from '../../../../core/owners/owners-list';
+import { ageLabel, speciesLabel } from '../../../../core/pets-list/pets-list';
+import { petStatus } from '../../../../core/status/pet-status';
 import { Owner } from '../../../../models/owner.model';
+import { Pet } from '../../../../models/pet.model';
 import { OwnerService } from '../../../../services/owner.service';
 import { PetService } from '../../../../services/pet.service';
-import { NotificationService } from '../../../../core/notifications/notification.service';
-import { ViewState, toViewState } from '../../../../core/http/view-state';
-import { normalizeText } from '../../../../core/text/normalize-text';
+import { AvatarComponent } from '../../../shared/avatar/avatar.component';
+import { DefinitionListComponent } from '../../../shared/definition-list/definition-list.component';
+import { DetailPanelComponent } from '../../../shared/detail-panel/detail-panel.component';
+import { ListItemComponent } from '../../../shared/list-item/list-item.component';
+import { PageHeaderComponent } from '../../../shared/page-header/page-header.component';
+import { ResourceCardComponent } from '../../../shared/resource-card/resource-card.component';
+import { ResourceListComponent } from '../../../shared/resource-list/resource-list.component';
+import { SelectableRowDirective } from '../../../shared/resource-list/selectable-row.directive';
+import { SortHeaderComponent } from '../../../shared/resource-list/sort-header.component';
+import { ShellSidebarService } from '../../../shared/shell/shell-sidebar.service';
 import { confirmOwnerDeletion } from '../owner-delete-confirmation';
-import { PageBannerComponent } from '../../../shared/page-banner/page-banner.component';
+import { OwnerFormDialogComponent } from '../owner-form-dialog/owner-form-dialog.component';
 
-// Dueño junto con la cantidad de mascotas que tiene (null si no se pudo consultar).
-interface OwnerDeletion {
-  owner: Owner;
-  petsCount: number | null;
+const VIEW_RESOURCE = 'duenos';
+const LIST_URL = '/veterinario/duenos';
+const LOAD_ERROR = 'No pudimos cargar los dueños. Revisa tu conexión e inténtalo de nuevo.';
+const PANEL_PETS_MAX = 4;
+
+// Las mascotas se piden aparte de los dueños: si fallan, la lista sigue y el total queda sin dato.
+interface OwnersData {
+  owners: Owner[];
+  pets: Pet[] | null;
 }
 
+const LOADING = { status: 'loading' } as const;
+
+const CONFIG: ListQueryConfig = {
+  filterKeys: OWNER_FILTER_KEYS,
+  sortFields: Object.keys(OWNER_SORT_ACCESSORS),
+  defaultSort: { field: 'name', direction: 'asc' },
+  defaultView: readViewPreference(VIEW_RESOURCE, 'table'),
+};
+
+/**
+ * Dueños del veterinario (11.1): lista en tabla (por defecto) o tarjetas con búsqueda, chip de filtro,
+ * orden y paginación en la URL, y panel de detalle con sus mascotas. Sin barra lateral contextual.
+ * La lista, `duenos/add` y `duenos/update/:id` son una misma ruta: el diálogo de alta o edición se
+ * abre según la URL y cerrarlo vuelve a `duenos` sin recrear la lista.
+ */
 @Component({
   selector: 'app-owners-list',
   imports: [
-    PageBannerComponent,
-    ReactiveFormsModule,
-    TableModule,
+    FormsModule,
+    RouterLink,
     ButtonModule,
-    TooltipModule,
-    IconFieldModule,
-    InputIconModule,
-    InputTextModule,
+    TableModule,
+    TagModule,
+    ToggleButtonModule,
+    LucidePencil,
+    LucidePlus,
+    LucideTrash2,
+    AvatarComponent,
+    DefinitionListComponent,
+    DetailPanelComponent,
+    ListItemComponent,
+    OwnerFormDialogComponent,
+    PageHeaderComponent,
+    ResourceCardComponent,
+    ResourceListComponent,
+    SelectableRowDirective,
+    SortHeaderComponent,
   ],
   templateUrl: './owners-list.component.html',
 })
-export class OwnersListComponent implements OnInit {
+export class OwnersListComponent {
+  private readonly route = inject(ActivatedRoute);
+  private readonly router = inject(Router);
   private readonly ownerService = inject(OwnerService);
   private readonly petService = inject(PetService);
-  private readonly router = inject(Router);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly notifications = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly shell = inject(ShellSidebarService);
 
-  private readonly table = viewChild<Table>('dt');
+  protected readonly panelOpen = signal(false);
+  protected readonly selectedId = signal<number | null>(null);
 
-  readonly searchControl = new FormControl('', { nonNullable: true });
+  protected readonly state = signal<ViewState<OwnersData>>(LOADING);
+  private readonly reload$ = new Subject<void>();
+  private readonly deleting = signal(false);
+  // Dueño recién guardado: se selecciona cuando llega la lista recargada que ya lo incluye.
+  private pendingSelectId: number | null = null;
 
-  // Cada emisión pide al API la lista de dueños otra vez (carga inicial y recargas).
-  private readonly refresh$ = new Subject<void>();
-
-  // Cada emisión es un dueño cuya eliminación el usuario acaba de solicitar.
-  private readonly deleteRequest$ = new Subject<Owner>();
-
-  // Cada emisión es un dueño cuya eliminación el usuario ya confirmó.
-  private readonly confirmedDelete$ = new Subject<Owner>();
-
-  // Últimos dueños cargados. Se conservan durante una recarga para que la tabla no se vacíe.
-  private readonly lastOwners = signal<Owner[]>([]);
-
-  // Estado de la lista. Cada refresh$ pide los dueños otra vez y switchMap cancela la petición
-  // anterior si llega otra. toViewState va dentro de switchMap para que cada petición empiece en
-  // 'loading' y termine en 'ready' o 'error'. tap guarda los datos listos y vacía la lista si falla.
-  // Aquí no se llama al API: eso ocurre al emitir refresh$.
-  readonly owners = toSignal(
-    this.refresh$.pipe(
-      switchMap(() =>
-        this.ownerService.getAll().pipe(
-          toViewState<Owner[]>(),
-          tap((state) => {
-            if (state.status === 'ready') {
-              this.lastOwners.set(state.data);
-            } else if (state.status === 'error') {
-              this.lastOwners.set([]);
-            }
-          }),
-        ),
+  protected readonly query = toSignal(
+    this.route.queryParams.pipe(
+      map((params) =>
+        parseListQuery(new URLSearchParams(Object.entries(params).map(([key, value]) => [key, String(value)])), CONFIG),
       ),
     ),
-    { initialValue: { status: 'loading' } as ViewState<Owner[]> },
+    { initialValue: parseListQuery(new URLSearchParams(), CONFIG) },
   );
 
-  // Espera 250 ms sin teclear, normaliza el texto y descarta repeticiones antes de filtrar.
-  // share() evita que el reset de página y el filtro creen cada uno su propia cadena de debounce.
-  private readonly searchTerm$ = this.searchControl.valueChanges.pipe(
-    debounceTime(250),
-    map((term) => normalizeText(term)),
-    distinctUntilChanged(),
-    share(),
+  // Diálogo según la URL: `add` abre el alta y `update/:id` la edición de ese dueño.
+  private readonly dialogRoute = toSignal(
+    this.route.url.pipe(map((segments) => ownerDialogRoute(segments.map((segment) => segment.path)))),
+    { initialValue: ownerDialogRoute(this.route.snapshot.url.map((segment) => segment.path)) },
   );
+  private readonly dialogEditId = computed(() => {
+    const route = this.dialogRoute();
+    return route?.mode === 'edit' ? parseRouteId(route.rawId) : null;
+  });
+  protected readonly dialogOpen = computed(() => {
+    const route = this.dialogRoute();
+    return route?.mode === 'create' || (route?.mode === 'edit' && this.dialogEditId() !== null);
+  });
+  protected readonly dialogOwnerId = this.dialogEditId;
 
-  // Último texto buscado (normalizado) como signal, para recalcular la lista filtrada.
-  readonly searchTerm = toSignal(this.searchTerm$.pipe(startWith('')), { initialValue: '' });
-
-  // Lista visible: últimos dueños cargados filtrados por búsqueda. No depende del estado de
-  // carga, así la tabla no se vacía mientras recarga.
-  readonly filteredOwners = computed<Owner[]>(() => {
-    const term = this.searchTerm();
-    return this.lastOwners().filter((owner) => this.matches(owner, term));
+  protected readonly rows = computed<OwnerRow[]>(() => {
+    const state = this.state();
+    return state.status === 'ready' ? buildOwnerRows(state.data.owners, state.data.pets) : [];
+  });
+  protected readonly pets = computed(() => {
+    const state = this.state();
+    return state.status === 'ready' ? state.data.pets : null;
   });
 
-  ngOnInit(): void {
-    // Llama a goToFirstPage cuando cambia la búsqueda para volver a la página 1.
-    this.searchTerm$.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.goToFirstPage());
+  private readonly filtered = computed(() => {
+    const { search, filters } = this.query();
+    const criteria = { search, multiplePets: !!filters['varias'] };
+    return this.rows().filter((row) => ownerMatches(row, criteria));
+  });
+  protected readonly total = computed(() => this.filtered().length);
+  protected readonly page = computed(() => clampPage(this.query().page, this.total(), this.query().pageSize));
+  protected readonly pageItems = computed(() =>
+    paginate(sortItems(this.filtered(), this.query().sort, OWNER_SORT_ACCESSORS), this.page(), this.query().pageSize),
+  );
 
-    // Al solicitar una eliminación consulta cuántas mascotas tiene el dueño para mostrarlo
-    // en la confirmación. switchMap descarta la consulta anterior si se pide otro dueño;
-    // si la consulta falla, la confirmación se abre igual pero sin el conteo.
-    this.deleteRequest$
+  protected readonly loading = computed(() => this.state().status === 'loading');
+  protected readonly error = computed(() => (this.state().status === 'error' ? LOAD_ERROR : null));
+  protected readonly filtersActive = computed(() => Object.keys(this.query().filters).length > 0);
+  protected readonly subtitle = computed(() =>
+    this.state().status === 'ready' ? ownersCountLabel(this.rows().length) : null,
+  );
+
+  protected readonly current = computed(() => this.rows().find((row) => row.id === this.selectedId()) ?? null);
+  protected readonly currentHue = computed(() => identityHue(this.current()?.id ?? 0));
+  protected readonly currentPets = computed(() => {
+    const row = this.current();
+    return row ? petsOfOwner(this.pets(), row.id) : [];
+  });
+  protected readonly panelPets = computed(() => this.currentPets().slice(0, PANEL_PETS_MAX));
+  protected readonly hiddenPets = computed(() => this.currentPets().length - this.panelPets().length);
+
+  protected readonly newPetUrl = newPetUrl();
+  protected readonly ownerPetQuery = ownerPetQuery;
+  protected readonly initials = initials;
+  protected readonly petsCountLabel = petsCountLabel;
+  protected readonly speciesLabel = speciesLabel;
+  protected readonly ageLabel = ageLabel;
+  protected readonly withSearch = withSearch;
+  protected readonly withPage = withPage;
+  protected readonly withPageSize = withPageSize;
+  protected readonly clearAll = clearAll;
+
+  constructor() {
+    this.reload$
       .pipe(
-        switchMap((owner) =>
-          this.petService.getByOwnerId(owner.id).pipe(
-            map((pets): number | null => pets.length),
-            catchError(() => of(null)),
-            map((petsCount): OwnerDeletion => ({ owner, petsCount })),
-          ),
+        switchMap(() =>
+          forkJoin({
+            owners: this.ownerService.getAll(),
+            // Sin las mascotas la lista sigue siendo útil: el total de cada dueño queda como «—».
+            pets: this.petService.getAll().pipe(catchError(() => of(null))),
+          }).pipe(toViewState<OwnersData>()),
         ),
+        takeUntilDestroyed(),
+      )
+      // Al recargar tras guardar o eliminar se conservan los datos que ya se ven.
+      .subscribe((state) => {
+        if (state.status !== 'loading' || this.state().status !== 'ready') {
+          this.state.set(state);
+        }
+        if (state.status === 'ready' && this.pendingSelectId !== null) {
+          this.selectedId.set(this.pendingSelectId);
+          this.pendingSelectId = null;
+        }
+      });
+    this.reload$.next();
+
+    // `update/:id` con un id inválido: mismo aviso de siempre y regreso a la lista.
+    effect(() => {
+      const route = this.dialogRoute();
+      if (route?.mode === 'edit' && this.dialogEditId() === null) {
+        this.notifications.error('Dueño no encontrado', null);
+        this.closeDialog();
+      }
+    });
+
+    // La página se corrige en la URL cuando la lista encoge.
+    effect(() => {
+      const query = this.query();
+      if (this.state().status === 'ready' && query.page !== this.page()) {
+        this.update(withPage(query, this.page()));
+      }
+    });
+
+    // En la columna fija se selecciona el primero al cargar y cuando el elegido ya no existe (10.13);
+    // en cajón no, para no abrirlo solo.
+    effect(() => {
+      const stale = this.selectedId() === null || (this.state().status === 'ready' && this.current() === null);
+      if (this.shell.layout() === 'expanded' && stale && this.pageItems().length) {
+        this.selectedId.set(this.pageItems()[0].id);
+      }
+    });
+  }
+
+  protected retry(): void {
+    this.state.set(LOADING);
+    this.reload$.next();
+  }
+
+  protected select(id: number | string): void {
+    this.selectedId.set(id as number);
+    this.panelOpen.set(true);
+  }
+
+  protected update(query: ListQuery): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: serializeListQuery(query, CONFIG),
+      replaceUrl: true,
+    });
+  }
+
+  protected onSort(sort: ListSort): void {
+    this.update(withSort(this.query(), sort));
+  }
+
+  protected onView(view: ListView): void {
+    writeViewPreference(VIEW_RESOURCE, view);
+    this.update(withView(this.query(), view));
+  }
+
+  protected toggleFilter(key: string, value: string): void {
+    const active = this.query().filters[key] === value;
+    this.update(withFilter(this.query(), key, active ? '' : value));
+  }
+
+  protected status(pet: Pet) {
+    return petStatus(pet);
+  }
+
+  /** El diálogo guardó: la lista se recarga y el panel sigue al dueño guardado. */
+  protected onSaved(owner: Owner): void {
+    this.pendingSelectId = owner.id;
+    this.reload$.next();
+  }
+
+  protected closeDialog(): void {
+    void this.router.navigate([LIST_URL], { queryParamsHandling: 'preserve' });
+  }
+
+  // La confirmación usa el total de mascotas que la lista ya conoce, sin otra petición.
+  protected remove(owner: OwnerRow): void {
+    confirmOwnerDeletion(this.confirmationService, owner, owner.petsCount, () => this.deleteOwner(owner));
+  }
+
+  // Si el API rechaza la eliminación (p. ej. 409 por tratamientos registrados) muestra su mensaje y
+  // deja la lista como estaba; si funciona, avisa y recarga.
+  private deleteOwner(owner: OwnerRow): void {
+    if (this.deleting()) {
+      return;
+    }
+    this.deleting.set(true);
+    this.ownerService
+      .delete(owner.id)
+      .pipe(
+        finalize(() => this.deleting.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe(({ owner, petsCount }) =>
-        confirmOwnerDeletion(this.confirmationService, owner, petsCount, () =>
-          this.confirmedDelete$.next(owner),
-        ),
-      );
-
-    // concatMap procesa las eliminaciones confirmadas de una en una. Si el API rechaza la
-    // eliminación (por ejemplo 409 por tratamientos registrados) muestra su mensaje y el
-    // flujo sigue vivo; si funciona, recarga la lista.
-    this.confirmedDelete$
-      .pipe(
-        concatMap((owner) =>
-          this.ownerService.delete(owner.id).pipe(
-            tap(() => this.notifications.success('Dueño eliminado', `${owner.name} se eliminó correctamente.`)),
-            catchError((error: unknown) => {
-              this.notifications.error('No se pudo eliminar al dueño', error);
-              return EMPTY;
-            }),
-          ),
-        ),
-        takeUntilDestroyed(this.destroyRef),
-      )
-      .subscribe(() => this.refresh$.next());
-
-    // Los pipelines ya están conectados; ahora sí se dispara la carga inicial.
-    this.refresh$.next();
-  }
-
-  nuevo(): void {
-    this.router.navigate(['/veterinario/duenos/add']);
-  }
-
-  ver(owner: Owner): void {
-    this.router.navigate(['/veterinario/duenos', owner.id]);
-  }
-
-  editar(owner: Owner): void {
-    this.router.navigate(['/veterinario/duenos/update', owner.id]);
-  }
-
-  // Envía el dueño a deleteRequest$; la confirmación se abre cuando termina la consulta de mascotas.
-  eliminar(owner: Owner): void {
-    this.deleteRequest$.next(owner);
-  }
-
-  // Indica si el nombre o el documento del dueño contienen el texto buscado.
-  private matches(owner: Owner, term: string): boolean {
-    if (!term) {
-      return true;
-    }
-    return normalizeText(owner.name).includes(term) || normalizeText(owner.document).includes(term);
-  }
-
-  // Lleva la tabla de PrimeNG a la primera página.
-  private goToFirstPage(): void {
-    const table = this.table();
-    if (table) {
-      table.first = 0;
-    }
+      .subscribe({
+        next: () => {
+          this.notifications.success('Dueño eliminado', `${owner.name} se eliminó correctamente.`);
+          if (this.selectedId() === owner.id) {
+            this.selectedId.set(null);
+          }
+          this.reload$.next();
+        },
+        error: (error: unknown) => this.notifications.error('No se pudo eliminar al dueño', error),
+      });
   }
 }

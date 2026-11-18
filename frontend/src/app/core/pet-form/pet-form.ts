@@ -114,8 +114,12 @@ const pathOf = (url: string): string => url.split(/[?#]/)[0];
 /**
  * A dónde vuelve el enlace «atrás» y «Cancelar»: a la lista (con sus filtros) o a la ficha de esta
  * mascota (con su pestaña) si de ahí vino la persona; si no, a la ficha al editar y a la lista al crear.
+ * Al crear con un dueño preelegido (`?dueno=`) vuelve a la ficha de ese dueño.
  */
-export function backTarget(previousUrl: string | null, editId: number | null): BackTarget {
+export function backTarget(previousUrl: string | null, editId: number | null, ownerId: number | null = null): BackTarget {
+  if (editId === null && ownerId !== null) {
+    return { url: `/veterinario/duenos/${ownerId}`, label: 'Volver al dueño' };
+  }
   const list: BackTarget = { url: LIST_URL, label: 'Mascotas' };
   const detail: BackTarget | null =
     editId === null ? null : { url: `${LIST_URL}/${editId}`, label: 'Volver a la ficha' };

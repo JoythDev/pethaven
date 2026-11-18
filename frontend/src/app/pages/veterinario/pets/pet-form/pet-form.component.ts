@@ -34,6 +34,7 @@ import { ViewState, toViewState } from '../../../../core/http/view-state';
 import { identityHue } from '../../../../core/identity/identity';
 import { HasUnsavedChanges } from '../../../../core/forms/unsaved-changes.guard';
 import { NotificationService } from '../../../../core/notifications/notification.service';
+import { parseOwnerParam } from '../../../../core/owners/owner-form';
 import { NOT_FOUND, PetLoad, formatKg, toPetLoad } from '../../../../core/pet-detail/pet-detail';
 import {
   PHOTO_DEBOUNCE_MS,
@@ -159,6 +160,10 @@ export class PetsFormComponent implements OnInit, HasUnsavedChanges {
   private readonly ownersSettled = signal(false);
   private ownerPanelOpen = false;
 
+  // Dueño que llegó en `?dueno=` (desde «Registrar mascota»); solo cuenta si existe en la lista.
+  private readonly ownerParam = parseOwnerParam(this.route.snapshot.queryParamMap.get('dueno'));
+  private readonly preselectedOwnerId = signal<number | null>(null);
+
   readonly ownerSelectOptions = computed<OwnerOption[]>(() => {
     const state = this.ownerOptions();
     if (state.status !== 'ready') {
@@ -239,7 +244,11 @@ export class PetsFormComponent implements OnInit, HasUnsavedChanges {
     this.router.getCurrentNavigation()?.previousNavigation?.finalUrl?.toString() ?? null;
   protected readonly back = computed(() => {
     // Sin ficha a la que volver (id desconocido), el enlace lleva a la lista.
-    const target = backTarget(this.previousUrl, this.view() === 'not-found' ? null : this.editId());
+    const target = backTarget(
+      this.previousUrl,
+      this.view() === 'not-found' ? null : this.editId(),
+      this.preselectedOwnerId(),
+    );
     return { ...target, tree: this.router.parseUrl(target.url) };
   });
 
@@ -303,6 +312,9 @@ export class PetsFormComponent implements OnInit, HasUnsavedChanges {
         this.ownerOptions.set(state);
         if (state.status !== 'loading') {
           this.ownersSettled.set(true);
+        }
+        if (state.status === 'ready') {
+          this.preselectOwner(state.data);
         }
       });
 
@@ -486,6 +498,23 @@ export class PetsFormComponent implements OnInit, HasUnsavedChanges {
     });
     this.form.markAsPristine();
     this.shown.set({});
+  }
+
+  // Al crear con `?dueno=` deja a ese dueño elegido, sin marcar el formulario como modificado.
+  private preselectOwner(owners: readonly Owner[]): void {
+    const id = this.ownerParam;
+    if (
+      id === null ||
+      this.editId() !== null ||
+      this.preselectedOwnerId() !== null ||
+      this.form.controls.ownerId.value !== null ||
+      !owners.some((owner) => owner.id === id)
+    ) {
+      return;
+    }
+    this.form.controls.ownerId.setValue(id);
+    this.form.markAsPristine();
+    this.preselectedOwnerId.set(id);
   }
 
   private setShown(field: PetFormField, message: string | null): void {

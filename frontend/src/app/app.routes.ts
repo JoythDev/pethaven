@@ -5,6 +5,7 @@ import { ClienteEntryComponent } from './pages/cliente/cliente-entry/cliente-ent
 import { ADMIN_DRUG_AREA, DRUG_AREA_DATA_KEY, VET_DRUG_AREA } from './pages/shared/drugs/drug-area';
 import { guestGuard, ownerPortalGuard, roleGuard } from './core/auth/auth.guard';
 import { unsavedChangesGuard } from './core/forms/unsaved-changes.guard';
+import { ownersListMatcher } from './core/owners/owners-route';
 
 // Sección que aún no tiene pantalla: usa el placeholder compartido con título y descripción de la ruta.
 const comingSoon = (path: string, title: string, description: string): Route => ({
@@ -117,24 +118,12 @@ export const routes: Routes = [
         path: 'duenos',
         children: [
           {
-            path: '',
+            // Lista y diálogo de alta o edición: «», «add» y «update/:id» son una sola ruta, así la
+            // lista no se recrea al abrir o cerrar el diálogo.
+            matcher: ownersListMatcher,
             loadComponent: () =>
               import('./pages/veterinario/owners/owners-list/owners-list.component').then(
                 (m) => m.OwnersListComponent
-              ),
-          },
-          {
-            path: 'add',
-            loadComponent: () =>
-              import('./pages/veterinario/owners/owner-form/owner-form.component').then(
-                (m) => m.OwnersFormComponent
-              ),
-          },
-          {
-            path: 'update/:id',
-            loadComponent: () =>
-              import('./pages/veterinario/owners/owner-form/owner-form.component').then(
-                (m) => m.OwnersFormComponent
               ),
           },
           {
