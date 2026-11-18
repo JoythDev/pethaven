@@ -1,227 +1,306 @@
-import { Component, DestroyRef, OnInit, computed, inject, signal, viewChild } from '@angular/core';
+import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
-import { FormControl, ReactiveFormsModule } from '@angular/forms';
-import { ActivatedRoute, Router } from '@angular/router';
+import { FormsModule } from '@angular/forms';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { LucideFileSpreadsheet, LucidePencil, LucidePill, LucidePlus, LucideTrash2 } from '@lucide/angular';
 import { ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
-import { IconFieldModule } from 'primeng/iconfield';
-import { InputIconModule } from 'primeng/inputicon';
-import { InputNumberModule } from 'primeng/inputnumber';
 import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
-import { Table, TableModule } from 'primeng/table';
+import { TableModule } from 'primeng/table';
 import { TagModule } from 'primeng/tag';
-import { TooltipModule } from 'primeng/tooltip';
+import { ToggleButtonModule } from 'primeng/togglebutton';
+import { Subject, finalize, map, switchMap } from 'rxjs';
+
 import {
-  EMPTY,
-  Subject,
-  catchError,
-  concatMap,
-  debounceTime,
-  distinctUntilChanged,
-  map,
-  merge,
-  share,
-  startWith,
-  switchMap,
-  tap,
-} from 'rxjs';
+  DRUG_FILTER_KEYS,
+  DRUG_SORT_ACCESSORS,
+  DRUG_STATUS_PARAM,
+  DrugRow,
+  buildDrugRows,
+  drugMatches,
+  drugStatus,
+  drugStatusFromParam,
+  drugsCountLabel,
+  priceRangeOf,
+  sanitizePriceInput,
+} from '../../../../core/drugs/drugs-list';
+import { ViewState, toViewState } from '../../../../core/http/view-state';
+import { identityHue } from '../../../../core/identity/identity';
+import {
+  ListQuery,
+  ListQueryConfig,
+  ListSort,
+  ListView,
+  clearAll,
+  parseListQuery,
+  serializeListQuery,
+  withFilter,
+  withPage,
+  withPageSize,
+  withSearch,
+  withSort,
+  withView,
+} from '../../../../core/list/list-query';
+import { sortItems } from '../../../../core/list/list-sort';
+import { clampPage, paginate } from '../../../../core/list/pagination';
+import { readViewPreference, writeViewPreference } from '../../../../core/list/view-preference';
+import { NotificationService } from '../../../../core/notifications/notification.service';
 import { Drug } from '../../../../models/drug.model';
 import { DrugService } from '../../../../services/drug.service';
-import { NotificationService } from '../../../../core/notifications/notification.service';
-import { ViewState, toViewState } from '../../../../core/http/view-state';
-import { normalizeText } from '../../../../core/text/normalize-text';
+import { DefinitionListComponent } from '../../definition-list/definition-list.component';
+import { DetailPanelComponent } from '../../detail-panel/detail-panel.component';
+import { PageHeaderComponent } from '../../page-header/page-header.component';
+import { ResourceCardComponent } from '../../resource-card/resource-card.component';
+import { ResourceListComponent } from '../../resource-list/resource-list.component';
+import { SelectableRowDirective } from '../../resource-list/selectable-row.directive';
+import { SortHeaderComponent } from '../../resource-list/sort-header.component';
+import { ShellSidebarService } from '../../shell/shell-sidebar.service';
+import { StickerComponent } from '../../sticker/sticker.component';
+import { StockMeterComponent } from '../../stock-meter/stock-meter.component';
 import { readDrugArea } from '../drug-area';
 import { confirmDrugDeletion } from '../drug-delete-confirmation';
-import {
-  DrugStockStatus,
-  STOCK_FILTER_OPTIONS,
-  formatCurrency,
-  formatUnits,
-  getStockInfo,
-  getStockStatus,
-} from '../drug-stock';
-import { PageBannerComponent } from '../../page-banner/page-banner.component';
+import { formatCurrency, formatPercent, formatUnits, getMarginPercent } from '../drug-stock';
 
-// Listado de medicamentos compartido por el administrador (gestión completa) y el veterinario
-// (solo consulta). Qué acciones se muestran lo decide la configuración de la ruta.
+const VIEW_RESOURCE = 'medicamentos';
+const LOAD_ERROR = 'No pudimos cargar los medicamentos. Revisa tu conexión e inténtalo de nuevo.';
+const LOADING = { status: 'loading' } as const;
+const PRICE_DEBOUNCE_MS = 250;
+const VET_NOTE = 'Consulta de inventario. Solo administración puede modificarlo.';
+
+const CONFIG: ListQueryConfig = {
+  filterKeys: DRUG_FILTER_KEYS,
+  sortFields: Object.keys(DRUG_SORT_ACCESSORS),
+  defaultSort: { field: 'name', direction: 'asc' },
+  defaultView: readViewPreference(VIEW_RESOURCE, 'table'),
+};
+
+/**
+ * Medicamentos (11.1): lista en tabla (por defecto) o tarjetas con búsqueda, chips de existencias, rango
+ * de precio de venta (11.16), orden y paginación en la URL, y panel de detalle. La monta el administrador
+ * (`canManage`: crear, importar, editar y eliminar) y el veterinario (solo consulta, sin acciones).
+ */
 @Component({
   selector: 'app-drugs-list',
   imports: [
-    PageBannerComponent,
-    ReactiveFormsModule,
-    TableModule,
+    FormsModule,
+    RouterLink,
     ButtonModule,
-    TooltipModule,
-    IconFieldModule,
-    InputIconModule,
     InputTextModule,
-    InputNumberModule,
-    SelectModule,
+    TableModule,
     TagModule,
+    ToggleButtonModule,
+    LucideFileSpreadsheet,
+    LucidePencil,
+    LucidePill,
+    LucidePlus,
+    LucideTrash2,
+    DefinitionListComponent,
+    DetailPanelComponent,
+    PageHeaderComponent,
+    ResourceCardComponent,
+    ResourceListComponent,
+    SelectableRowDirective,
+    SortHeaderComponent,
+    StickerComponent,
+    StockMeterComponent,
   ],
   templateUrl: './drugs-list.component.html',
 })
-export class DrugsListComponent implements OnInit {
-  private readonly drugService = inject(DrugService);
+export class DrugsListComponent {
+  private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
+  private readonly drugService = inject(DrugService);
   private readonly confirmationService = inject(ConfirmationService);
   private readonly notifications = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
+  private readonly shell = inject(ShellSidebarService);
 
-  private readonly table = viewChild<Table>('dt');
+  protected readonly area = readDrugArea(this.route);
 
-  readonly area = readDrugArea(inject(ActivatedRoute));
+  protected readonly panelOpen = signal(false);
+  protected readonly selectedId = signal<number | null>(null);
 
-  readonly stockOptions = STOCK_FILTER_OPTIONS;
+  protected readonly state = signal<ViewState<Drug[]>>(LOADING);
+  private readonly reload$ = new Subject<void>();
+  private readonly deleting = signal(false);
 
-  readonly searchControl = new FormControl('', { nonNullable: true });
-  readonly stockControl = new FormControl<DrugStockStatus | null>(null);
-  readonly minPriceControl = new FormControl<number | null>(null);
-  readonly maxPriceControl = new FormControl<number | null>(null);
-
-  // Cada emisión pide al API la lista de medicamentos otra vez (carga inicial y recargas).
-  private readonly refresh$ = new Subject<void>();
-
-  // Cada emisión es un medicamento cuya eliminación el usuario ya confirmó.
-  private readonly confirmedDelete$ = new Subject<Drug>();
-
-  // Últimos medicamentos cargados. Se conservan durante una recarga para que la tabla no se vacíe.
-  private readonly lastDrugs = signal<Drug[]>([]);
-
-  // Estado de la lista. switchMap cancela la petición anterior si llega otro refresh$ y
-  // toViewState hace que cada petición empiece en 'loading' y termine en 'ready' o 'error'.
-  readonly drugs = toSignal(
-    this.refresh$.pipe(
-      switchMap(() =>
-        this.drugService.getAll().pipe(
-          toViewState<Drug[]>(),
-          tap((state) => {
-            if (state.status === 'ready') {
-              this.lastDrugs.set(state.data);
-            } else if (state.status === 'error') {
-              this.lastDrugs.set([]);
-            }
-          }),
-        ),
+  protected readonly query = toSignal(
+    this.route.queryParams.pipe(
+      map((params) =>
+        parseListQuery(new URLSearchParams(Object.entries(params).map(([key, value]) => [key, String(value)])), CONFIG),
       ),
     ),
-    { initialValue: { status: 'loading' } as ViewState<Drug[]> },
+    { initialValue: parseListQuery(new URLSearchParams(), CONFIG) },
   );
 
-  // Espera 250 ms sin teclear, normaliza el texto y descarta repeticiones antes de filtrar.
-  private readonly searchTerm$ = this.searchControl.valueChanges.pipe(
-    debounceTime(250),
-    map((term) => normalizeText(term)),
-    distinctUntilChanged(),
-    share(),
-  );
-
-  readonly searchTerm = toSignal(this.searchTerm$.pipe(startWith('')), { initialValue: '' });
-  readonly stockFilter = toSignal(this.stockControl.valueChanges, { initialValue: null });
-  readonly minPrice = toSignal(this.minPriceControl.valueChanges, { initialValue: null });
-  readonly maxPrice = toSignal(this.maxPriceControl.valueChanges, { initialValue: null });
-
-  // El rango es inválido cuando el mínimo supera al máximo; en ese caso no se filtra por precio.
-  readonly invalidPriceRange = computed(() => {
-    const min = this.minPrice();
-    const max = this.maxPrice();
-    return min !== null && max !== null && min > max;
+  protected readonly rows = computed<DrugRow[]>(() => {
+    const state = this.state();
+    return state.status === 'ready' ? buildDrugRows(state.data) : [];
   });
 
-  readonly hasFilters = computed(
-    () =>
-      this.searchTerm() !== '' ||
-      this.stockFilter() !== null ||
-      this.minPrice() !== null ||
-      this.maxPrice() !== null,
+  protected readonly status = computed(() => drugStatusFromParam(this.query().filters['estado']));
+  protected readonly range = computed(() => priceRangeOf(this.query().filters));
+
+  private readonly filtered = computed(() => {
+    const { min, max } = this.range();
+    const criteria = { search: this.query().search, status: this.status(), min, max };
+    return this.rows().filter((row) => drugMatches(row, criteria));
+  });
+  protected readonly total = computed(() => this.filtered().length);
+  protected readonly page = computed(() => clampPage(this.query().page, this.total(), this.query().pageSize));
+  protected readonly pageItems = computed(() =>
+    paginate(sortItems(this.filtered(), this.query().sort, DRUG_SORT_ACCESSORS), this.page(), this.query().pageSize),
   );
 
-  // Lista visible: últimos medicamentos cargados filtrados por nombre, stock y precio de venta.
-  readonly filteredDrugs = computed<Drug[]>(() => {
-    const term = this.searchTerm();
-    const stock = this.stockFilter();
-    const useRange = !this.invalidPriceRange();
-    const min = useRange ? this.minPrice() : null;
-    const max = useRange ? this.maxPrice() : null;
-
-    return this.lastDrugs().filter(
-      (drug) =>
-        (!term || normalizeText(drug.name).includes(term)) &&
-        (stock === null || getStockStatus(drug.unitsAvailable) === stock) &&
-        (min === null || drug.salePrice >= min) &&
-        (max === null || drug.salePrice <= max),
-    );
+  protected readonly loading = computed(() => this.state().status === 'loading');
+  protected readonly error = computed(() => (this.state().status === 'error' ? LOAD_ERROR : null));
+  protected readonly filtersActive = computed(() => Object.keys(this.query().filters).length > 0);
+  protected readonly subtitle = computed(() => {
+    if (this.state().status !== 'ready') {
+      return null;
+    }
+    const count = drugsCountLabel(this.rows().length);
+    return this.area.canManage ? count : `${count} · ${VET_NOTE}`;
   });
 
-  readonly formatCurrency = formatCurrency;
-  readonly formatUnits = formatUnits;
-  readonly getStockInfo = getStockInfo;
+  protected readonly current = computed(() => this.rows().find((row) => row.id === this.selectedId()) ?? null);
+  protected readonly currentHue = computed(() => identityHue(this.current()?.id ?? 0));
 
-  ngOnInit(): void {
-    // Cualquier cambio de filtro vuelve a la página 1 de la tabla.
-    merge(
-      this.searchTerm$,
-      this.stockControl.valueChanges,
-      this.minPriceControl.valueChanges,
-      this.maxPriceControl.valueChanges,
-    )
-      .pipe(takeUntilDestroyed(this.destroyRef))
-      .subscribe(() => this.goToFirstPage());
+  // Texto de los campos de precio: lo que escribe la persona, antes del antirrebote.
+  protected readonly minText = signal('');
+  protected readonly maxText = signal('');
+  private priceTimer: ReturnType<typeof setTimeout> | undefined;
 
-    // concatMap procesa las eliminaciones confirmadas de una en una. Si el API la rechaza
-    // (409 porque el medicamento está en tratamientos) muestra su mensaje y el flujo sigue vivo.
-    this.confirmedDelete$
+  protected readonly statusFilters = [
+    { label: 'Disponible', value: DRUG_STATUS_PARAM.ok },
+    { label: 'Stock bajo', value: DRUG_STATUS_PARAM.low },
+    { label: 'Agotado', value: DRUG_STATUS_PARAM.out },
+  ];
+  protected readonly hueOf = identityHue;
+  protected readonly formatCurrency = formatCurrency;
+  protected readonly formatUnits = formatUnits;
+  protected readonly formatPercent = formatPercent;
+  protected readonly getMarginPercent = getMarginPercent;
+  protected readonly drugStatus = drugStatus;
+  protected readonly withSearch = withSearch;
+  protected readonly withPage = withPage;
+  protected readonly withPageSize = withPageSize;
+  protected readonly clearAll = clearAll;
+
+  constructor() {
+    this.reload$
       .pipe(
-        concatMap((drug) =>
-          this.drugService.delete(drug.id).pipe(
-            tap(() => this.notifications.success('Medicamento eliminado', `${drug.name} se eliminó correctamente.`)),
-            catchError((error: unknown) => {
-              this.notifications.error('No se pudo eliminar el medicamento', error);
-              return EMPTY;
-            }),
-          ),
-        ),
+        switchMap(() => this.drugService.getAll().pipe(toViewState<Drug[]>())),
+        takeUntilDestroyed(),
+      )
+      // Al recargar tras eliminar se conservan los datos que ya se ven.
+      .subscribe((state) => {
+        if (state.status !== 'loading' || this.state().status !== 'ready') {
+          this.state.set(state);
+        }
+      });
+    this.reload$.next();
+
+    // Un cambio externo de la URL («Quitar filtros», atrás del navegador) reescribe los campos de precio.
+    effect(() => {
+      const { filters } = this.query();
+      this.minText.set(filters['min'] ?? '');
+      this.maxText.set(filters['max'] ?? '');
+    });
+
+    // La página se corrige en la URL cuando la lista encoge.
+    effect(() => {
+      const query = this.query();
+      if (this.state().status === 'ready' && query.page !== this.page()) {
+        this.update(withPage(query, this.page()));
+      }
+    });
+
+    // En la columna fija se selecciona el primero al cargar y cuando el elegido ya no existe (10.13);
+    // en cajón no, para no abrirlo solo.
+    effect(() => {
+      const stale = this.selectedId() === null || (this.state().status === 'ready' && this.current() === null);
+      if (this.shell.layout() === 'expanded' && stale && this.pageItems().length) {
+        this.selectedId.set(this.pageItems()[0].id);
+      }
+    });
+
+    this.destroyRef.onDestroy(() => clearTimeout(this.priceTimer));
+  }
+
+  protected retry(): void {
+    this.state.set(LOADING);
+    this.reload$.next();
+  }
+
+  protected select(id: number | string): void {
+    this.selectedId.set(id as number);
+    this.panelOpen.set(true);
+  }
+
+  protected update(query: ListQuery): void {
+    void this.router.navigate([], {
+      relativeTo: this.route,
+      queryParams: serializeListQuery(query, CONFIG),
+      replaceUrl: true,
+    });
+  }
+
+  protected onSort(sort: ListSort): void {
+    this.update(withSort(this.query(), sort));
+  }
+
+  protected onView(view: ListView): void {
+    writeViewPreference(VIEW_RESOURCE, view);
+    this.update(withView(this.query(), view));
+  }
+
+  protected toggleStatus(value: string): void {
+    const active = this.query().filters['estado'] === value;
+    this.update(withFilter(this.query(), 'estado', active ? '' : value));
+  }
+
+  /** Escribe en un campo de precio: solo dígitos y, tras 250 ms sin teclear, pasa a la URL. */
+  protected onPriceInput(key: 'min' | 'max', input: HTMLInputElement): void {
+    const digits = sanitizePriceInput(input.value);
+    input.value = digits;
+    (key === 'min' ? this.minText : this.maxText).set(digits);
+    clearTimeout(this.priceTimer);
+    this.priceTimer = setTimeout(() => this.update(withFilter(this.query(), key, digits)), PRICE_DEBOUNCE_MS);
+  }
+
+  /** Enter no espera al antirrebote. */
+  protected flushPrice(key: 'min' | 'max'): void {
+    clearTimeout(this.priceTimer);
+    this.update(withFilter(this.query(), key, (key === 'min' ? this.minText : this.maxText)()));
+  }
+
+  protected remove(drug: DrugRow): void {
+    confirmDrugDeletion(this.confirmationService, drug, () => this.deleteDrug(drug));
+  }
+
+  // Si el API rechaza la eliminación (409 por tratamientos asociados) muestra su mensaje y deja la lista
+  // como estaba; si funciona, avisa y recarga.
+  private deleteDrug(drug: DrugRow): void {
+    if (this.deleting()) {
+      return;
+    }
+    this.deleting.set(true);
+    this.drugService
+      .delete(drug.id)
+      .pipe(
+        finalize(() => this.deleting.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
-      .subscribe(() => this.refresh$.next());
-
-    // Los pipelines ya están conectados; ahora sí se dispara la carga inicial.
-    this.refresh$.next();
-  }
-
-  nuevo(): void {
-    this.router.navigate([this.area.basePath, 'add']);
-  }
-
-  importar(): void {
-    this.router.navigate([this.area.basePath, 'import']);
-  }
-
-  ver(drug: Drug): void {
-    this.router.navigate([this.area.basePath, drug.id]);
-  }
-
-  editar(drug: Drug): void {
-    this.router.navigate([this.area.basePath, 'update', drug.id]);
-  }
-
-  eliminar(drug: Drug): void {
-    confirmDrugDeletion(this.confirmationService, drug, () => this.confirmedDelete$.next(drug));
-  }
-
-  limpiarFiltros(): void {
-    this.searchControl.setValue('');
-    this.stockControl.setValue(null);
-    this.minPriceControl.setValue(null);
-    this.maxPriceControl.setValue(null);
-  }
-
-  // Lleva la tabla de PrimeNG a la primera página.
-  private goToFirstPage(): void {
-    const table = this.table();
-    if (table) {
-      table.first = 0;
-    }
+      .subscribe({
+        next: () => {
+          this.notifications.success('Medicamento eliminado', `${drug.name} se eliminó correctamente.`);
+          if (this.selectedId() === drug.id) {
+            this.selectedId.set(null);
+          }
+          this.reload$.next();
+        },
+        error: (error: unknown) => this.notifications.error('No se pudo eliminar el medicamento', error),
+      });
   }
 }
