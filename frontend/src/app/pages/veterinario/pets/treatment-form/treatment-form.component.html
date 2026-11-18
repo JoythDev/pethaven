@@ -1,249 +1,284 @@
-<div class="mx-auto max-w-2xl p-5 lg:p-8">
-  @let s = state();
+@let s = state();
 
-  @if (s.status === 'loading') {
-    <a routerLink="/veterinario/mascotas" class="text-sm font-semibold text-olive transition-colors hover:text-tertiary">
-      ← Volver a Mascotas
-    </a>
-    <div class="mt-6 rounded-3xl border border-olive/15 bg-white p-10 text-center shadow-sm">
-      <i class="pi pi-spin pi-spinner text-2xl text-text/40" aria-hidden="true"></i>
-      <p class="mt-3 text-text/60">Cargando información...</p>
+<app-page-header heading="Nuevo tratamiento" [subtitle]="subtitle()" [backLink]="backLink()" [backLabel]="backLabel()" />
+
+@if (s.status === 'loading') {
+  @if (skeleton()) {
+    <div class="grid grid-cols-12 items-start gap-[14px]">
+      <app-skeleton
+        variant="media"
+        class="col-span-12 @min-[960px]:col-span-4 @min-[960px]:col-start-9 @min-[960px]:row-start-1"
+      />
+      <div class="col-span-12 flex flex-col gap-[14px] @min-[960px]:col-span-8 @min-[960px]:col-start-1 @min-[960px]:row-start-1">
+        <app-skeleton variant="text" [lines]="4" [announce]="false" />
+        <app-skeleton variant="text" [lines]="4" [announce]="false" />
+      </div>
     </div>
-  } @else if (s.status === 'error') {
-    <a routerLink="/veterinario/mascotas" class="text-sm font-semibold text-olive transition-colors hover:text-tertiary">
-      ← Volver a Mascotas
-    </a>
-    <div class="mt-6 rounded-3xl border border-olive/15 bg-white p-10 text-center shadow-sm">
-      <i class="pi pi-search text-2xl text-text/30" aria-hidden="true"></i>
-      <p class="mt-3 text-text/60">{{ s.message }}</p>
+  }
+} @else if (s.status === 'not-found') {
+  <div class="rounded-box border border-line bg-card p-4">
+    <app-empty-state
+      heading="No encontramos esta mascota"
+      description="Puede que el enlace esté incompleto o que ya no exista."
+    >
+      <app-sticker sticker name="paw" [width]="96" />
+      <a action pButton size="small" routerLink="/veterinario/mascotas" label="Volver a Mascotas"></a>
+    </app-empty-state>
+  </div>
+} @else if (s.status === 'error') {
+  <div class="rounded-box border border-line bg-card p-4">
+    <app-inline-error [text]="s.message" (retry)="retry()" />
+  </div>
+} @else {
+  @let data = s.data;
+  @let pet = data.pet;
+
+  @if (blocked(); as reason) {
+    <div class="rounded-box border border-line bg-card p-4">
+      <app-empty-state [heading]="reason.heading" [description]="reason.description">
+        <app-sticker sticker [name]="reason.sticker" [width]="96" />
+        <a action pButton size="small" [routerLink]="['/veterinario/mascotas', pet.id]" [label]="'Volver a ' + pet.name"></a>
+      </app-empty-state>
     </div>
   } @else {
-    @let pet = s.data.pet;
+    <div class="grid grid-cols-12 items-start gap-[14px]">
+      <!-- Resumen de la mascota: arriba en estrecho; columna fija desde 960 px, a la derecha del formulario -->
+      <aside
+        aria-label="Resumen de la mascota"
+        class="col-span-12 min-w-0 overflow-hidden rounded-box border border-line bg-card @min-[960px]:sticky @min-[960px]:top-0 @min-[960px]:col-span-4 @min-[960px]:col-start-9 @min-[960px]:row-start-1"
+      >
+        <app-block kind="header" [hue]="hueOf(pet)" [flush]="true">
+          <app-avatar [id]="pet.id" [name]="pet.name" kind="pet" [species]="pet.species" [photoUrl]="pet.photoUrl" [size]="60" />
+          <div class="min-w-0 flex-1">
+            <h2 class="font-display text-[20px] leading-[26px] font-semibold text-balance">{{ pet.name }}</h2>
+            <p class="mb-1 text-[12.5px] leading-[18px] text-ink-muted">
+              {{ speciesLabel(pet) }} · {{ pet.breed }} · {{ ageLabel(pet.age) }}
+            </p>
+            @let status = statusOf(pet);
+            <p-tag [severity]="status.severity" [value]="status.label" />
+          </div>
+        </app-block>
+        <dl app-definition-list class="px-4 py-3.5" [items]="summaryItems(data)"></dl>
+      </aside>
 
-    <a
-      [routerLink]="['/veterinario/mascotas', pet.id]"
-      class="text-sm font-semibold text-olive transition-colors hover:text-tertiary"
-    >
-      ← Volver a {{ pet.name }}
-    </a>
-
-    <header class="mt-4 mb-6 flex items-end justify-between gap-4">
-      <h1 class="font-display text-3xl font-bold text-text">Registrar Tratamiento</h1>
-      <img
-        [src]="pet.species === 'DOG' ? '/images/illustrations/dog-mascot.svg' : '/images/illustrations/cat-mascot.svg'"
-        alt=""
-        class="h-20 w-auto shrink-0"
-      />
-    </header>
-
-    <div class="mb-5 flex items-center gap-4 rounded-3xl border border-olive/10 bg-white p-4 shadow-md">
-      <img
-        [src]="pet.photoUrl"
-        [alt]="pet.name"
-        class="h-14 w-14 shrink-0 rounded-full bg-secondary/50 object-cover ring-4 ring-honey/40"
-      />
-      <div class="flex flex-col leading-tight">
-        <span class="flex items-center gap-2 font-bold text-text">
-          {{ pet.name }}
-          <app-pet-status-tag [pet]="pet" />
-        </span>
-        <span class="text-sm text-text/60">{{ pet.breed }} · Dueño: {{ pet.ownerName }}</span>
-      </div>
-    </div>
-
-    @if (blockedReason(); as reason) {
-      <div class="rounded-3xl border border-olive/15 bg-white p-8 text-center shadow-sm">
-        <i class="pi pi-exclamation-triangle text-2xl text-text/30" aria-hidden="true"></i>
-        <p class="mt-3 text-text/70">{{ reason }}</p>
-        <p-button
-          class="mt-4"
-          [label]="'Volver a ' + pet.name"
-          [outlined]="true"
-          (onClick)="cancelar(pet.id)"
-        />
-      </div>
-    } @else {
       <form
         [formGroup]="form"
         (ngSubmit)="guardar()"
-        class="flex flex-col gap-5 rounded-3xl border border-olive/15 bg-white p-6 shadow-md lg:p-8"
+        aria-label="Registrar tratamiento"
+        class="col-span-12 flex min-w-0 flex-col gap-[14px] @min-[960px]:col-span-8 @min-[960px]:col-start-1 @min-[960px]:row-start-1"
       >
-        @if (s.data.veterinarian; as vet) {
-          <div class="flex flex-col gap-1">
-            <span class="text-sm font-bold text-text">Veterinario</span>
-            <p class="rounded-xl border border-olive/10 bg-surface-50 px-4 py-3 text-sm text-text">
-              {{ vet.name }} <span class="text-text/60">· {{ vet.specialty }}</span>
-            </p>
-            <span class="text-xs text-text/50">El tratamiento se registra a tu nombre.</span>
-          </div>
-        }
-
-        <div class="grid grid-cols-1 gap-5 sm:grid-cols-2">
-          <div class="flex flex-col gap-1">
-            <label for="weight" class="text-sm font-bold text-text">Peso en la consulta (kg)</label>
-            <p-inputnumber
-              inputId="weight"
-              formControlName="weight"
-              [min]="weightLimits.min"
-              [max]="weightLimits.max"
-              [minFractionDigits]="0"
-              [maxFractionDigits]="2"
-              [fluid]="true"
-            />
-            <div class="min-h-5">
-              @if (form.controls.weight.invalid && form.controls.weight.touched) {
-                <p-message severity="error" variant="simple" size="small">Ingresa un peso entre {{ weightLimits.min }} y {{ weightLimits.max }} kg.</p-message>
-              }
+        <!-- Bloque 1: la consulta -->
+        <section app-card heading="Consulta">
+          <div class="flex flex-col gap-4">
+            <!-- La consulta se registra con la fecha de hoy (el API la pone cuando llega en null). -->
+            <div class="grid grid-cols-1 gap-4 @min-[560px]:grid-cols-2">
+              @let weightError = errorOf('weight', form.controls.weight);
+              <app-form-field label="Peso en la consulta (kg)" fieldId="weight" [error]="weightError">
+                <p-inputnumber
+                  inputId="weight"
+                  formControlName="weight"
+                  locale="es-CO"
+                  [minFractionDigits]="0"
+                  [maxFractionDigits]="2"
+                  [fluid]="true"
+                  [inputStyleClass]="invalidClass(weightError)"
+                  [ariaDescribedBy]="describedBy('weight', weightError, false)"
+                />
+              </app-form-field>
             </div>
-          </div>
 
-          @if (isAdmission()) {
-            <div class="flex flex-col gap-1">
-              <span class="text-sm font-bold text-text">Evolución</span>
-              <p class="rounded-xl border border-olive/10 bg-surface-50 px-4 py-3 text-sm text-text">
-                Ingreso <span class="text-text/60">· llega estable, es su primer diagnóstico</span>
-              </p>
-            </div>
-          } @else {
-            <div class="flex flex-col gap-1">
-              <label for="evolution" class="text-sm font-bold text-text">Evolución</label>
-              <p-select
-                inputId="evolution"
-                formControlName="evolution"
-                [options]="evolutionOptions"
-                optionLabel="label"
-                optionValue="value"
-                placeholder="¿Cómo sigue la mascota?"
-                [fluid]="true"
+            @if (isAdmission()) {
+              <div class="flex flex-col gap-1.5">
+                <span class="text-[13px] leading-[18px] font-bold text-ink">Evolución</span>
+                <div class="flex flex-wrap items-center gap-x-2.5 gap-y-1 rounded-field bg-sunken px-3 py-2.5">
+                  <p-tag severity="secondary" value="Ingreso" />
+                  <span class="text-[12.5px] leading-[18px] text-ink-muted">Llega estable: es su primer diagnóstico.</span>
+                </div>
+              </div>
+            } @else {
+              @let evolutionError = errorOf('evolution', form.controls.evolution);
+              <app-form-field label="Evolución" fieldId="evolution" [error]="evolutionError">
+                <p-selectbutton
+                  id="evolution"
+                  formControlName="evolution"
+                  styleClass="w-full"
+                  ariaLabelledBy="evolution-label"
+                  [options]="evolutionOptions"
+                  optionLabel="label"
+                  optionValue="value"
+                  [allowEmpty]="false"
+                  [attr.aria-describedby]="describedBy('evolution', evolutionError, false)"
+                />
+              </app-form-field>
+            }
+
+            @let diagnosisError = errorOf('diagnosis', form.controls.diagnosis);
+            @let diagnosisHint =
+              form.controls.diagnosis.disabled
+                ? 'Estable: se mantiene el diagnóstico actual.'
+                : 'La mascota quedará con este diagnóstico.';
+            <app-form-field label="Diagnóstico" fieldId="diagnosis" [hint]="diagnosisHint" [error]="diagnosisError">
+              <input
+                pInputText
+                id="diagnosis"
+                formControlName="diagnosis"
+                autocomplete="off"
+                class="w-full"
+                [class]="invalidClass(diagnosisError)"
+                [attr.aria-invalid]="diagnosisError ? true : null"
+                [attr.aria-describedby]="describedBy('diagnosis', diagnosisError, true)"
               />
-              <div class="min-h-5">
-                @if (form.controls.evolution.invalid && form.controls.evolution.touched) {
-                  <p-message severity="error" variant="simple" size="small">Selecciona la evolución.</p-message>
-                } @else if (form.controls.evolution.value) {
-                  <small class="text-text/60">La mascota quedará con este diagnóstico.</small>
+            </app-form-field>
+
+            @let notesError = errorOf('notes', form.controls.notes);
+            <app-form-field label="Observaciones" fieldId="notes" [optional]="true" [error]="notesError">
+              <textarea
+                pTextarea
+                id="notes"
+                formControlName="notes"
+                rows="3"
+                class="min-h-[84px] w-full resize-y"
+                [class]="invalidClass(notesError)"
+                [attr.aria-invalid]="notesError ? true : null"
+                [attr.aria-describedby]="describedBy('notes', notesError, false)"
+              ></textarea>
+            </app-form-field>
+          </div>
+        </section>
+
+        <!-- Bloque 2: medicamentos, con existencias en vivo y precio de venta (11.10) -->
+        <section app-card heading="Medicamentos" formArrayName="drugs">
+          @let rx = prescription();
+          <div class="flex flex-col gap-3">
+            @for (line of form.controls.drugs.controls; track line; let i = $index) {
+              @let row = rx.rows[i];
+              @let drugError = errorOf('drug', line.controls.drugId);
+              @let unitsErr = unitsError(line);
+              <div
+                [formGroupName]="i"
+                role="group"
+                [attr.aria-label]="'Medicamento ' + (i + 1)"
+                class="rounded-row border border-line p-3.5"
+              >
+                <div class="mb-2.5 flex items-center justify-between gap-2">
+                  <span class="text-[13px] leading-[18px] font-extrabold text-ink">Medicamento {{ i + 1 }}</span>
+                  <button
+                    type="button"
+                    class="ph-icon-btn disabled:pointer-events-none disabled:opacity-45"
+                    pTooltip="Quitar medicamento"
+                    tooltipPosition="left"
+                    [attr.aria-label]="'Quitar medicamento ' + (i + 1)"
+                    [disabled]="form.controls.drugs.length === 1"
+                    (click)="quitarMedicamento(i)"
+                  >
+                    <svg lucideTrash2 [size]="18" aria-hidden="true"></svg>
+                  </button>
+                </div>
+
+                <div class="grid grid-cols-1 items-start gap-3 @min-[560px]:grid-cols-[minmax(0,1fr)_10.5rem]">
+                  <app-form-field label="Nombre" [fieldId]="'drug-' + i" [error]="drugError">
+                    <p-select
+                      [inputId]="'drug-' + i"
+                      formControlName="drugId"
+                      placeholder="Busca un medicamento"
+                      optionLabel="label"
+                      optionValue="id"
+                      filterBy="label"
+                      [options]="drugOptionsByLine()[i]"
+                      [filter]="true"
+                      [virtualScroll]="true"
+                      [virtualScrollItemSize]="38"
+                      [fluid]="true"
+                      [class]="invalidClass(drugError)"
+                      [attr.aria-describedby]="describedBy('drug-' + i, drugError, false)"
+                    />
+                  </app-form-field>
+
+                  <app-form-field label="Unidades" [fieldId]="'units-' + i" [error]="unitsErr">
+                    <p-inputnumber
+                      [inputId]="'units-' + i"
+                      formControlName="units"
+                      locale="es-CO"
+                      [step]="1"
+                      [showButtons]="true"
+                      buttonLayout="horizontal"
+                      [fluid]="true"
+                      [inputStyleClass]="invalidClass(unitsErr)"
+                      [ariaDescribedBy]="describedBy('units-' + i, unitsErr, false)"
+                    >
+                      <ng-template #incrementbuttonicon><svg lucidePlus [size]="16" aria-hidden="true"></svg></ng-template>
+                      <ng-template #decrementbuttonicon><svg lucideMinus [size]="16" aria-hidden="true"></svg></ng-template>
+                    </p-inputnumber>
+                  </app-form-field>
+                </div>
+
+                @if (row) {
+                  <div class="mt-3 flex flex-wrap items-end justify-between gap-x-6 gap-y-3 border-t border-line pt-3">
+                    <div class="min-w-[176px] flex-1">
+                      <p class="mb-1 text-[12.5px] leading-[18px] text-ink-muted">
+                        {{ row.check.exceeds ? 'Hoy hay en inventario' : 'Quedarán en inventario' }}
+                      </p>
+                      <app-stock-meter
+                        [units]="row.check.exceeds ? row.drug.unitsAvailable : row.check.remaining"
+                        [minimum]="stockMinimum"
+                        [max]="row.drug.unitsAvailable"
+                      />
+                    </div>
+                    <dl class="m-0 flex gap-6 text-right">
+                      <div>
+                        <dt class="text-[12.5px] leading-[18px] text-ink-muted">Precio de venta</dt>
+                        <dd class="m-0 text-sm leading-5 font-extrabold tabular-nums">{{ formatCurrency(row.unitPrice) }}</dd>
+                      </div>
+                      <div>
+                        <dt class="text-[12.5px] leading-[18px] text-ink-muted">Subtotal</dt>
+                        <dd class="m-0 text-sm leading-5 font-extrabold tabular-nums">{{ formatCurrency(row.subtotal) }}</dd>
+                      </div>
+                    </dl>
+                  </div>
                 }
               </div>
-            </div>
-          }
-        </div>
-
-        <div class="flex flex-col gap-1">
-          <label for="diagnosis" class="text-sm font-bold text-text">Diagnóstico</label>
-          <input pInputText id="diagnosis" formControlName="diagnosis" class="w-full" />
-          <div class="min-h-5">
-            @if (form.controls.diagnosis.invalid && form.controls.diagnosis.touched) {
-              <p-message severity="error" variant="simple" size="small">
-                El diagnóstico es obligatorio (máximo 200 caracteres).
-              </p-message>
-            } @else if (isAdmission()) {
-              <small class="text-text/60">La mascota quedará con este diagnóstico.</small>
-            } @else if (form.controls.diagnosis.disabled) {
-              <small class="text-text/60">Estable: se mantiene el diagnóstico actual.</small>
             }
-          </div>
-        </div>
 
-        <div class="flex flex-col gap-1">
-          <label for="notes" class="text-sm font-bold text-text">Observaciones (opcional)</label>
-          <textarea pTextarea id="notes" formControlName="notes" rows="3" class="w-full"></textarea>
-          <div class="min-h-5">
-            @if (form.controls.notes.invalid && form.controls.notes.touched) {
-              <p-message severity="error" variant="simple" size="small">Máximo 1000 caracteres.</p-message>
-            }
-          </div>
-        </div>
-
-        <div class="flex flex-col gap-3" formArrayName="drugs">
-          <div class="flex items-center justify-between gap-3">
-            <span class="text-sm font-bold text-text">Medicamentos</span>
-            <p-button
-              type="button"
-              label="Agregar medicamento"
-              icon="pi pi-plus"
-              size="small"
-              [text]="true"
-              [disabled]="form.controls.drugs.length >= s.data.drugs.length"
-              (onClick)="agregarMedicamento()"
-            />
-          </div>
-
-          @for (line of form.controls.drugs.controls; track line; let i = $index) {
-            @let stock = stockOf(line.controls.drugId.value);
-
-            <div
-              [formGroupName]="i"
-              class="grid grid-cols-1 gap-3 rounded-2xl border border-olive/10 bg-honey/20 p-4 sm:grid-cols-[1fr_9rem_auto] sm:items-start"
-            >
-              <div class="flex flex-col gap-1">
-                <label [for]="'drug-' + i" class="text-xs font-semibold text-text/60">Medicamento</label>
-                <p-select
-                  [inputId]="'drug-' + i"
-                  formControlName="drugId"
-                  [options]="drugOptionsByLine()[i]"
-                  optionLabel="label"
-                  optionValue="id"
-                  placeholder="Busca un medicamento"
-                  [filter]="true"
-                  filterBy="label"
-                  [virtualScroll]="true"
-                  [virtualScrollItemSize]="38"
-                  [fluid]="true"
-                />
-                <div class="min-h-5">
-                  @if (line.controls.drugId.invalid && line.controls.drugId.touched) {
-                    <p-message severity="error" variant="simple" size="small">Selecciona un medicamento.</p-message>
-                  }
-                </div>
-              </div>
-
-              <div class="flex flex-col gap-1">
-                <label [for]="'units-' + i" class="text-xs font-semibold text-text/60">Unidades</label>
-                <p-inputnumber
-                  [inputId]="'units-' + i"
-                  formControlName="units"
-                  [min]="1"
-                  [max]="stock"
-                  [step]="1"
-                  [fluid]="true"
-                />
-                <div class="min-h-5">
-                  @if (line.errors?.['exceedsStock']; as exceeds) {
-                    <p-message severity="error" variant="simple" size="small">
-                      Solo hay {{ exceeds.available }} disponibles.
-                    </p-message>
-                  } @else if (line.controls.units.invalid && line.controls.units.touched) {
-                    <p-message severity="error" variant="simple" size="small">Ingresa un entero de 1 o más.</p-message>
-                  } @else if (stock !== null) {
-                    <span class="text-xs text-text/50">Disponibles: {{ stock }}</span>
-                  }
-                </div>
-              </div>
-
-              <p-button
+            <div class="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+              <button
+                pButton
                 type="button"
-                class="sm:mt-6"
-                icon="pi pi-trash"
-                severity="danger"
-                [text]="true"
-                ariaLabel="Quitar medicamento"
-                [disabled]="form.controls.drugs.length === 1"
-                (onClick)="quitarMedicamento(i)"
-              />
+                size="small"
+                [outlined]="true"
+                severity="secondary"
+                [disabled]="form.controls.drugs.length >= data.drugs.length"
+                (click)="agregarMedicamento()"
+              >
+                <svg lucidePlus [size]="18" aria-hidden="true"></svg>
+                <span class="p-button-label">Agregar medicamento</span>
+              </button>
             </div>
-          }
-        </div>
 
-        <div class="mt-2 flex items-center gap-4">
-          <p-button id="btnGuardar" type="submit" label="Registrar" [disabled]="form.invalid" [loading]="saving()" />
-          <p-button
-            type="button"
-            label="Cancelar"
-            severity="secondary"
-            [text]="true"
-            (onClick)="cancelar(pet.id)"
-          />
+            <div class="flex items-baseline justify-between gap-3 border-t border-line pt-3">
+              <span class="text-sm leading-5 text-ink-muted">Total de la receta</span>
+              <span class="font-display text-[28px] leading-7 font-semibold tabular-nums">{{ formatCurrency(rx.total) }}</span>
+            </div>
+          </div>
+        </section>
+
+        <!-- Acciones del formulario: el botón siempre está activo; los errores se muestran en los campos -->
+        <div class="flex flex-col gap-3">
+          @if (saveError(); as message) {
+            <app-inline-error [text]="'No se pudo registrar el tratamiento. ' + message" (retry)="guardar()" />
+          }
+          <div class="flex flex-wrap items-center gap-2">
+            <button pButton id="btnGuardar" type="submit" label="Registrar tratamiento" [loading]="saving()"></button>
+            <button
+              pButton
+              type="button"
+              label="Cancelar"
+              severity="secondary"
+              [outlined]="true"
+              (click)="cancelar(pet.id)"
+            ></button>
+          </div>
         </div>
       </form>
-    }
+    </div>
   }
-</div>
+}
