@@ -83,7 +83,7 @@ export class DemoAppointmentsService {
 
   getAvailableSlots(ownerId: number, vet: VetRef, date: Date): Observable<AvailableSlot[]> {
     return this.loadOwnerContext(ownerId).pipe(
-      map(({ pets }) => availableSlots(vet, pets, date, this.now(), this.bookedState())),
+      map(({ pets }) => this.availableSlotsFrom(vet, pets, date)),
       demoLatency(),
     );
   }
@@ -110,8 +110,14 @@ export class DemoAppointmentsService {
     return buildDayAgenda(date, this.vetAppointments(vet, pets, date), this.now());
   }
 
-  ownerAppointmentsFrom(pets: Pet[], vets: VetRef[]): OwnerAppointments {
-    return ownerAppointments(vets, pets, this.now(), this.bookedState());
+  // `ownerId` identifica al dueño cuando no tiene mascotas, para incluir lo agendado a una «Mascota nueva».
+  ownerAppointmentsFrom(pets: Pet[], vets: VetRef[], ownerId?: number): OwnerAppointments {
+    return ownerAppointments(vets, pets, this.now(), this.bookedState(), ownerId);
+  }
+
+  // Franjas libres de un veterinario en un día ya conocido el contexto del dueño, sin simular espera.
+  availableSlotsFrom(vet: VetRef, pets: Pet[], date: Date): AvailableSlot[] {
+    return availableSlots(vet, pets, date, this.now(), this.bookedState());
   }
 
   // Mascotas, tratamientos y veterinarios conocidos de un dueño, sin simular espera.

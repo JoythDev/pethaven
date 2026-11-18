@@ -266,8 +266,10 @@ export function ownerAppointments(
   ownerPets: Pet[],
   today: Date,
   booked: Appointment[],
+  ownerId: number | undefined = ownerPets[0]?.ownerId,
 ): OwnerAppointments {
-  const own = booked.filter((a) => ownerPets.some((p) => p.id === a.petId));
+  // Las del dueño incluyen las de una «Mascota nueva», que aún no está entre sus mascotas.
+  const own = booked.filter((a) => ownerPets.some((p) => p.id === a.petId) || (ownerId !== undefined && a.ownerId === ownerId));
   const first = startOfDay(today);
   const generated: Appointment[] = [];
   if (vets.length && ownerPets.length) {

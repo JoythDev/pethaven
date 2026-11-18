@@ -1,0 +1,255 @@
+<app-page-header heading="Agendar cita" subtitle="Cuatro pasos, menos de un minuto" [demo]="true" />
+
+@let current = state();
+
+@if (current.status === 'loading') {
+  @if (skeleton()) {
+    <div class="grid grid-cols-12 items-start gap-[14px]">
+      <app-skeleton variant="text" [lines]="4" class="col-span-12 min-h-[360px] @min-[960px]:col-span-8" />
+      <app-skeleton variant="figure" class="col-span-12 min-h-[260px] @min-[960px]:col-span-4" [announce]="false" />
+    </div>
+  }
+} @else if (current.status === 'error') {
+  <div class="rounded-box border border-line bg-card p-4">
+    <app-inline-error [text]="current.message" (retry)="retry()" />
+  </div>
+} @else {
+  <div class="grid grid-cols-12 items-start gap-[14px]">
+    <div class="col-span-12 flex min-w-0 flex-col gap-[14px] @min-[960px]:col-span-8">
+      <section app-card>
+        @if (confirmed()) {
+          <div role="status">
+            <app-empty-state heading="Cita agendada" [description]="confirmationText()">
+              <app-sticker sticker [name]="confirmedSticker()" [kit]="confirmedKit()" [width]="130" />
+              <div action class="flex flex-wrap justify-center gap-2">
+                <a pButton size="small" [routerLink]="homeLink()" label="Volver al inicio"></a>
+                <button pButton type="button" size="small" severity="secondary" [outlined]="true" label="Agendar otra" (click)="reset()"></button>
+              </div>
+            </app-empty-state>
+          </div>
+        } @else {
+          <ol class="mb-4 flex items-center gap-2 overflow-x-auto" aria-label="Pasos para agendar la cita">
+            @for (label of steps; track label; let i = $index) {
+              @if (i > 0) {
+                <li aria-hidden="true" class="h-0.5 min-w-3.5 flex-1 rounded-sm" [class]="i <= step() ? 'bg-accent' : 'bg-line'"></li>
+              }
+              <li
+                class="flex items-center gap-2 text-[13px] leading-[18px] font-bold whitespace-nowrap"
+                [class]="i === step() ? 'text-ink' : 'text-ink-muted'"
+                [attr.aria-current]="i === step() ? 'step' : null"
+              >
+                <span
+                  class="grid size-[26px] shrink-0 place-items-center rounded-full text-[12.5px]"
+                  [class]="i === step() ? 'bg-accent text-on-accent' : i < step() ? 'bg-accent-soft text-accent-text' : 'bg-sunken'"
+                >
+                  @if (i < step()) {
+                    <svg lucideCheck [size]="15" [strokeWidth]="3" aria-hidden="true"></svg>
+                    <span class="sr-only">Completado:</span>
+                  } @else {
+                    {{ i + 1 }}
+                  }
+                </span>
+                <span [class]="i === step() ? '' : '@max-[679px]:sr-only'">{{ label }}</span>
+              </li>
+            }
+          </ol>
+
+          <h2 #stepTitle id="step-title" tabindex="-1" class="mb-2.5 text-sm leading-5 font-extrabold text-ink outline-none">{{ stepHeading() }}</h2>
+
+          @switch (step()) {
+            @case (0) {
+              <div class="grid grid-cols-[repeat(auto-fill,minmax(128px,1fr))] gap-2.5">
+                @for (pet of pets(); track pet.id) {
+                  <button type="button" [class]="pickClass + ' p-3'" [attr.aria-pressed]="draft().pet === pet.id" (click)="set({ pet: pet.id })">
+                    <app-avatar [id]="pet.id" [name]="pet.name" kind="pet" [species]="pet.species" [photoUrl]="pet.photoUrl" [size]="60" />
+                    <span class="max-w-full truncate">{{ pet.name }}</span>
+                    <span class="max-w-full truncate text-[12.5px] leading-[18px] font-medium text-ink-muted">{{ pet.breed }}</span>
+                  </button>
+                }
+                <button type="button" [class]="pickClass + ' p-3'" [attr.aria-pressed]="isNewPet()" (click)="set({ pet: newPet })">
+                  <app-sticker name="paw" [width]="56" />
+                  <span>Mascota nueva</span>
+                  <span class="text-[12.5px] leading-[18px] font-medium text-ink-muted">Se registra en la visita</span>
+                </button>
+              </div>
+
+              @if (isNewPet()) {
+                <div class="mt-3.5 grid grid-cols-1 gap-3 @min-[680px]:grid-cols-2">
+                  <app-form-field fieldId="new-pet-name" label="Nombre de la mascota">
+                    <input
+                      pInputText
+                      id="new-pet-name"
+                      autocomplete="off"
+                      maxlength="100"
+                      placeholder="Por ejemplo, Nube"
+                      class="w-full"
+                      [ngModel]="draft().newPetName"
+                      (ngModelChange)="set({ newPetName: $event })"
+                    />
+                  </app-form-field>
+                  <app-form-field fieldId="new-pet-species" label="Especie">
+                    <p-select
+                      inputId="new-pet-species"
+                      ariaLabelledBy="new-pet-species-label"
+                      [options]="speciesOptions"
+                      optionLabel="label"
+                      optionValue="value"
+                      [fluid]="true"
+                      [ngModel]="draft().newPetSpecies"
+                      (ngModelChange)="set({ newPetSpecies: $event })"
+                    />
+                  </app-form-field>
+                </div>
+                <p class="mt-2 text-[12.5px] leading-[18px] text-ink-muted">Tu veterinario completará la ficha en la primera visita.</p>
+              }
+            }
+
+            @case (1) {
+              <div class="grid grid-cols-[repeat(auto-fill,minmax(128px,1fr))] gap-2.5">
+                @for (item of reasons; track item.kind) {
+                  <button type="button" [class]="pickClass + ' p-3'" [attr.aria-pressed]="draft().kind === item.kind" (click)="set({ kind: item.kind })">
+                    <app-sticker [name]="item.sticker" [width]="46" />
+                    <span>{{ item.label }}</span>
+                  </button>
+                }
+              </div>
+            }
+
+            @case (2) {
+              <div class="grid grid-cols-[repeat(auto-fill,minmax(84px,1fr))] gap-2.5" role="group" aria-labelledby="step-title">
+                @for (day of days(); track day.key) {
+                  <button
+                    type="button"
+                    [class]="pickClass + ' px-2 py-2.5'"
+                    [disabled]="day.disabled"
+                    [attr.aria-pressed]="draft().day === day.key"
+                    [attr.aria-label]="dayLabel(day.date) + (day.disabled ? ', la clínica no atiende' : '')"
+                    (click)="pickDay(day.key)"
+                  >
+                    <span class="text-[12.5px] leading-[18px] font-medium text-ink-muted">{{ day.weekday }}</span>
+                    <span class="font-display text-xl leading-6 font-semibold">{{ day.number }}</span>
+                  </button>
+                }
+              </div>
+
+              <h3 class="mt-4 mb-2.5 text-sm leading-5 font-extrabold text-ink">Horarios disponibles</h3>
+              @if (selectedDay()) {
+                @if (dayFull()) {
+                  <p class="text-sm leading-5 text-ink-muted">No quedan horarios libres este día. Prueba con otro.</p>
+                }
+                <div class="grid grid-cols-[repeat(auto-fill,minmax(84px,1fr))] gap-2.5" role="group" aria-label="Horarios disponibles">
+                  @for (slot of slots(); track slot.time) {
+                    <button
+                      type="button"
+                      [class]="pickClass + ' px-2 py-2.5 tabular-nums'"
+                      [disabled]="slot.disabled"
+                      [attr.aria-pressed]="draft().time === slot.time"
+                      (click)="set({ time: slot.time })"
+                    >
+                      {{ slot.time }}
+                    </button>
+                  }
+                </div>
+              } @else {
+                <p class="text-sm leading-5 text-ink-muted">Primero elige un día.</p>
+              }
+            }
+
+            @default {
+              <dl app-definition-list class="max-w-[420px]" [items]="reviewItems()"></dl>
+              <app-form-field class="mt-3.5 max-w-[520px]" fieldId="booking-notes" label="Notas para la veterinaria" hint="Opcional. Ayuda a preparar la consulta.">
+                <textarea
+                  pTextarea
+                  id="booking-notes"
+                  rows="3"
+                  maxlength="500"
+                  placeholder="Síntomas, cambios de apetito, dudas…"
+                  class="w-full"
+                  aria-describedby="booking-notes-hint"
+                  [value]="draft().notes"
+                  (input)="set({ notes: valueOf($event) })"
+                ></textarea>
+              </app-form-field>
+            }
+          }
+
+          <hr class="my-3 border-0 border-t border-line" />
+          <div class="flex flex-wrap items-center gap-2">
+            <button pButton type="button" severity="secondary" [outlined]="true" label="Atrás" [disabled]="step() === 0 || saving()" (click)="back()"></button>
+            <button
+              pButton
+              type="button"
+              id="btnContinuar"
+              class="ml-auto"
+              [label]="step() === lastStep ? 'Confirmar cita' : 'Continuar'"
+              [disabled]="!valid()"
+              [loading]="saving()"
+              (click)="next()"
+            ></button>
+          </div>
+        }
+      </section>
+
+      <section app-card heading="Citas agendadas">
+        <app-demo-tag title-extra />
+        @for (appointment of upcoming(); track appointment.id) {
+          <app-list-item [heading]="appointment.reason + ' de ' + appointment.petName" [subtitle]="when(appointment) + ' · ' + appointment.veterinarianName">
+            <app-avatar leading [id]="appointment.petId" [name]="appointment.petName" kind="pet" [species]="appointment.species" />
+            <button
+              trailing
+              pButton
+              type="button"
+              size="small"
+              severity="secondary"
+              [outlined]="true"
+              label="Reprogramar"
+              [attr.aria-label]="'Reprogramar ' + appointment.reason + ' de ' + appointment.petName"
+              (click)="reschedule()"
+            ></button>
+          </app-list-item>
+        } @empty {
+          <app-empty-state heading="Sin citas agendadas" description="Cuando agendes una cita, aparecerá aquí.">
+            <app-sticker sticker name="calendar" [width]="84" />
+          </app-empty-state>
+        }
+      </section>
+    </div>
+
+    <app-block hue="honey" kind="summary" class="col-span-12 @min-[960px]:col-span-4">
+      <h2 class="text-[13px] leading-[18px] font-extrabold">Resumen</h2>
+      <div class="my-2.5 flex items-center gap-3">
+        @if (selectedPet(); as pet) {
+          <span class="rounded-full ring-[3px] ring-card">
+            <app-avatar [id]="pet.id" [name]="pet.name" kind="pet" [species]="pet.species" [photoUrl]="pet.photoUrl" [size]="60" />
+          </span>
+        } @else {
+          <span class="grid size-[60px] shrink-0 place-items-center rounded-full bg-card ring-[3px] ring-card">
+            <app-sticker name="paw" [width]="38" />
+          </span>
+        }
+        <div class="min-w-0">
+          <p class="font-display text-xl leading-6 font-semibold break-words">{{ petName() ?? 'Por elegir' }}</p>
+          <p class="text-[12.5px] leading-[18px]">
+            @if (selectedPet(); as pet) {
+              {{ speciesLabel(pet.species) }} · {{ pet.breed }}
+            } @else if (isNewPet()) {
+              Se registra en la visita
+            }
+          </p>
+        </div>
+      </div>
+      <dl app-definition-list>
+        <dt>Motivo</dt>
+        <dd>{{ reason()?.label ?? 'Por elegir' }}</dd>
+        <dt>Día</dt>
+        <dd>{{ selectedDay() ? dayLabel(selectedDay()!.date) : 'Por elegir' }}</dd>
+        <dt>Hora</dt>
+        <dd>{{ draft().time ?? 'Por elegir' }}</dd>
+        <dt>Duración</dt>
+        <dd>{{ duration }}</dd>
+      </dl>
+      <hr class="my-3 border-0 border-t border-line" />
+      <p class="font-script text-[22px] leading-[1.1] font-semibold">Lleva el carné y llega 10 minutos antes.</p>
+    </app-block>
+  </div>
+}

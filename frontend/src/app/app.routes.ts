@@ -193,12 +193,16 @@ export const routes: Routes = [
           },
         ],
       },
-      comingSoon('citas', 'Citas', 'Aquí podrás agendar y revisar las citas de tus mascotas.'),
+      {
+        path: 'citas',
+        loadComponent: () => import('./pages/cliente/citas/citas.component').then((m) => m.CitasComponent),
+      },
       notificationsRoute(),
       {
         path: 'perfil',
         loadComponent: () =>
-          import('./pages/cliente/perfil/perfil.component').then((m) => m.PerfilComponent),
+          import('./pages/cliente/perfil/perfil.component').then((m) => m.ClientePerfilComponent),
+        canDeactivate: [unsavedChangesGuard],
       },
     ],
   },
