@@ -3,9 +3,10 @@ import { Route, Router, Routes } from '@angular/router';
 import { LandingComponent } from './pages/landing/landing.component';
 import { ClienteEntryComponent } from './pages/cliente/cliente-entry/cliente-entry.component';
 import { ADMIN_DRUG_AREA, DRUG_AREA_DATA_KEY, VET_DRUG_AREA } from './pages/shared/drugs/drug-area';
+import { ADMIN_PET_AREA, PET_AREA_DATA_KEY } from './core/pets-list/pet-area';
 import { guestGuard, ownerPortalGuard, roleGuard } from './core/auth/auth.guard';
 import { unsavedChangesGuard } from './core/forms/unsaved-changes.guard';
-import { ownersListMatcher } from './core/owners/owners-route';
+import { ownersListMatcher, resourceListMatcher } from './core/owners/owners-route';
 
 // Sección que aún no tiene pantalla: usa el placeholder compartido con título y descripción de la ruta.
 const comingSoon = (path: string, title: string, description: string): Route => ({
@@ -208,31 +209,45 @@ export const routes: Routes = [
       },
       {
         path: 'veterinarios',
-        loadComponent: () =>
-          import('./pages/administrador/veterinarios/vets-list/vets-list.component').then(
-            (m) => m.VetsListComponent
-          ),
-      },
-      {
-        path: 'veterinarios/add',
-        loadComponent: () =>
-          import('./pages/administrador/veterinarios/vet-form/vet-form.component').then(
-            (m) => m.VetFormComponent
-          ),
-      },
-      {
-        path: 'veterinarios/update/:id',
-        loadComponent: () =>
-          import('./pages/administrador/veterinarios/vet-form/vet-form.component').then(
-            (m) => m.VetFormComponent
-          ),
+        children: [
+          {
+            // Lista y diálogo de alta o edición: «», «add» y «update/:id» son una sola ruta, así la
+            // lista no se recrea al abrir o cerrar el diálogo.
+            matcher: resourceListMatcher,
+            loadComponent: () =>
+              import('./pages/administrador/veterinarios/vets-list/vets-list.component').then(
+                (m) => m.VetsListComponent
+              ),
+          },
+          {
+            path: ':id',
+            loadComponent: () =>
+              import('./pages/administrador/veterinarios/vet-detail/vet-detail.component').then(
+                (m) => m.VetDetailComponent
+              ),
+          },
+        ],
       },
       {
         path: 'mascotas',
-        loadComponent: () =>
-          import('./pages/administrador/mascotas/admin-pets-list.component').then(
-            (m) => m.AdminPetsListComponent
-          ),
+        // Solo consulta: la lista y la ficha del veterinario, con el área del administrador.
+        data: { [PET_AREA_DATA_KEY]: ADMIN_PET_AREA },
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./pages/veterinario/pets/pets-list/pets-list.component').then(
+                (m) => m.PetsListComponent
+              ),
+          },
+          {
+            path: ':id',
+            loadComponent: () =>
+              import('./pages/veterinario/pets/pet-detail/pet-detail.component').then(
+                (m) => m.PetsDetailComponent
+              ),
+          },
+        ],
       },
       notificationsRoute(),
       comingSoon('perfil', 'Perfil', 'Aquí podrás consultar los datos de tu cuenta de administrador.'),

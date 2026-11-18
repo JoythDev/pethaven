@@ -57,6 +57,8 @@ const UPCOMING_VACCINES = 3;
 })
 export class SummaryTabComponent {
   readonly pet = input.required<Pet>();
+  /** Ruta base de las fichas de dueño; null si el área no las tiene y el nombre queda como texto. */
+  readonly ownersPath = input<string | null>(null);
   readonly treatments = input.required<ViewState<Treatment[]>>();
   readonly weight = input.required<ViewState<WeightCurve>>();
   readonly vaccines = input.required<ViewState<VaccineCard>>();

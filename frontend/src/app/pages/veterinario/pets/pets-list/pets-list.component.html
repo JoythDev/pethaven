@@ -1,8 +1,10 @@
 <app-page-header heading="Mascotas" [subtitle]="subtitle()">
-  <a actions pButton size="small" routerLink="/veterinario/mascotas/add">
-    <svg lucidePlus [size]="18" aria-hidden="true"></svg>
-    <span class="p-button-label">Nueva mascota</span>
-  </a>
+  @if (area.canManage) {
+    <a actions pButton size="small" [routerLink]="area.basePath + '/add'">
+      <svg lucidePlus [size]="18" aria-hidden="true"></svg>
+      <span class="p-button-label">Nueva mascota</span>
+    </a>
+  }
 </app-page-header>
 
 <!-- Lista de 8 columnas y panel de 4 mientras el detalle es una columna fija; por debajo de 1080 px es un cajón. -->
@@ -21,7 +23,7 @@
     [filtersActive]="filtersActive()"
     [selectedId]="selectedId()"
     emptyHeading="Aún no hay mascotas"
-    emptyDescription="Registra la primera mascota para verla aquí con su ficha y su historia clínica."
+    [emptyDescription]="area.canManage ? 'Registra la primera mascota para verla aquí con su ficha y su historia clínica.' : 'Cuando se registren mascotas, aparecerán aquí con su ficha y su historia clínica.'"
     (searchChange)="update(withSearch(query(), $event))"
     (viewChange)="onView($event)"
     (pageChange)="update(withPage(query(), $event))"
@@ -55,18 +57,22 @@
         [ngModel]="query().filters['especie'] === cat"
         (ngModelChange)="toggleFilter('especie', cat)"
       />
-      <p-togglebutton
-        onLabel="Mis pacientes"
-        offLabel="Mis pacientes"
-        [ngModel]="!!query().filters['mios']"
-        (ngModelChange)="toggleFilter('mios', '1')"
-      />
+      @if (area.canManage) {
+        <p-togglebutton
+          onLabel="Mis pacientes"
+          offLabel="Mis pacientes"
+          [ngModel]="!!query().filters['mios']"
+          (ngModelChange)="toggleFilter('mios', '1')"
+        />
+      }
     </div>
 
-    <a emptyAction pButton size="small" routerLink="/veterinario/mascotas/add">
-      <svg lucidePlus [size]="18" aria-hidden="true"></svg>
-      <span class="p-button-label">Nueva mascota</span>
-    </a>
+    @if (area.canManage) {
+      <a emptyAction pButton size="small" [routerLink]="area.basePath + '/add'">
+        <svg lucidePlus [size]="18" aria-hidden="true"></svg>
+        <span class="p-button-label">Nueva mascota</span>
+      </a>
+    }
 
     <ng-template #card let-pet let-selected="selected" let-select="select">
       <app-resource-card
@@ -126,7 +132,7 @@
     [hue]="currentHue()"
     [heading]="current()?.name ?? ''"
     [subtitle]="current() ? speciesLabel(current()!.species) + ' · ' + current()!.breed : null"
-    [fullLink]="current() ? ['/veterinario/mascotas', current()!.id] : null"
+    [fullLink]="current() && area.canManage ? [area.basePath, current()!.id] : null"
     [(open)]="panelOpen"
   >
     @let pet = current();
@@ -156,11 +162,15 @@
           <dd>{{ pet.weight | number: '1.0-1' }} kg</dd>
           <dt>Dueño</dt>
           <dd>
-            <a
-              class="ph-focus rounded-check underline underline-offset-2 hover:text-accent"
-              [routerLink]="['/veterinario/duenos', pet.ownerId]"
-              >{{ pet.ownerName }}</a
-            >
+            @if (area.ownersPath; as ownersPath) {
+              <a
+                class="ph-focus rounded-check underline underline-offset-2 hover:text-accent"
+                [routerLink]="[ownersPath, pet.ownerId]"
+                >{{ pet.ownerName }}</a
+              >
+            } @else {
+              {{ pet.ownerName }}
+            }
           </dd>
           <dt>Diagnóstico</dt>
           <dd>{{ pet.disease || 'Sin diagnóstico' }}</dd>
@@ -181,16 +191,24 @@
     </div>
 
     <!-- Entre el resumen y las acciones (11.11); la ranura del historial es la que deja ese lugar. -->
-    <div history>
-      @if (pet) {
-        <app-pet-active-switch [pet]="pet" (changed)="onPetChanged($event)" />
-      }
-    </div>
+    @if (area.canManage) {
+      <div history>
+        @if (pet) {
+          <app-pet-active-switch [pet]="pet" (changed)="onPetChanged($event)" />
+        }
+      </div>
+    }
 
     <div actions class="contents">
-      @if (pet) {
+      @if (pet && !area.canManage) {
+        <!-- Solo consulta (11.7): la ficha completa es la acción principal. -->
+        <a pButton class="w-full" [routerLink]="[area.basePath, pet.id]">
+          <svg lucideArrowUpRight [size]="18" aria-hidden="true"></svg>
+          <span class="p-button-label">Abrir ficha completa</span>
+        </a>
+      } @else if (pet) {
         @if (pet.active) {
-          <a pButton class="w-full" [routerLink]="['/veterinario/mascotas', pet.id, 'treatments', 'add']">
+          <a pButton class="w-full" [routerLink]="[area.basePath, pet.id, 'treatments', 'add']">
             <svg lucideStethoscope [size]="18" aria-hidden="true"></svg>
             <span class="p-button-label">Nuevo tratamiento</span>
           </a>
@@ -203,7 +221,7 @@
             {{ pet.name }} está inactiva y no admite tratamientos nuevos. Actívala para registrar uno.
           </p>
         }
-        <a pButton class="w-full" severity="secondary" [outlined]="true" [routerLink]="['/veterinario/mascotas/update', pet.id]">
+        <a pButton class="w-full" severity="secondary" [outlined]="true" [routerLink]="[area.basePath, 'update', pet.id]">
           <svg lucidePencil [size]="18" aria-hidden="true"></svg>
           <span class="p-button-label">Editar</span>
         </a>

@@ -12,6 +12,7 @@ import { getErrorMessage } from '../../../../core/http/http-error';
 import { parseRouteId } from '../../../../core/http/route-id';
 import { ViewState, toViewState } from '../../../../core/http/view-state';
 import { identityHue } from '../../../../core/identity/identity';
+import { resolvePetArea } from '../../../../core/pets-list/pet-area';
 import {
   DetailTab,
   NOT_FOUND,
@@ -67,8 +68,9 @@ const TAB_TOKENS = {
 };
 
 /**
- * Ficha de una mascota para el veterinario (11.2): cabecera en el color de identidad con las acciones
- * del rol, pestañas Resumen, Historia clínica y Vacunas, y el estado de cada pestaña en la URL
+ * Ficha de una mascota (11.2) para el veterinario y, en solo consulta, para el administrador (el área
+ * llega por el `data` de la ruta): cabecera en el color de identidad con las acciones del rol,
+ * pestañas Resumen, Historia clínica y Vacunas, y el estado de cada pestaña en la URL
  * (`?pestana`, `?tratamiento`). Cada fuente (mascota, tratamientos, inventario, curva y vacunas demo)
  * carga y falla por separado. «Descargar PDF» genera la historia clínica completa.
  */
@@ -108,6 +110,7 @@ export class PetsDetailComponent {
   private readonly messages = inject(MessageService);
   private readonly destroyRef = inject(DestroyRef);
 
+  protected readonly area = resolvePetArea(this.route.snapshot.data);
   protected readonly tabTokens = TAB_TOKENS;
   protected readonly formatKg = formatKg;
   protected readonly ageLabel = ageLabel;
@@ -183,6 +186,10 @@ export class PetsDetailComponent {
     const pet = this.petState();
     const drugs = this.drugs();
 
+    // El administrador solo consulta: no se ofrece la acción ni se explica su ausencia.
+    if (!this.area.canManage) {
+      return { allowed: false, reason: null };
+    }
     if (this.auth.user()?.role !== 'VETERINARIAN') {
       return { allowed: false, reason: 'Inicia sesión como veterinario para registrar tratamientos.' };
     }

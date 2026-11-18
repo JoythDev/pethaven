@@ -77,11 +77,15 @@
       <dl app-definition-list [items]="facts()">
         <dt>Dueño</dt>
         <dd>
-          <a
-            class="ph-focus rounded-check text-accent-text underline-offset-4 hover:underline"
-            [routerLink]="['/veterinario/duenos', p.ownerId]"
-            >{{ p.ownerName }}</a
-          >
+          @if (ownersPath(); as ownersPath) {
+            <a
+              class="ph-focus rounded-check text-accent-text underline-offset-4 hover:underline"
+              [routerLink]="[ownersPath, p.ownerId]"
+              >{{ p.ownerName }}</a
+            >
+          } @else {
+            {{ p.ownerName }}
+          }
         </dd>
       </dl>
     </section>

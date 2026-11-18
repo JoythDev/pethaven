@@ -48,6 +48,10 @@ export function petMatches(pet: Pet, criteria: PetCriteria): boolean {
 
 export const patientsCountLabel = (total: number): string => `${total} ${total === 1 ? 'paciente' : 'pacientes'}`;
 
+/** Subtítulo del administrador (solo consulta): «86 mascotas registradas. Solo consulta». */
+export const registeredPetsLabel = (total: number): string =>
+  `${total} ${total === 1 ? 'mascota registrada' : 'mascotas registradas'}. Solo consulta`;
+
 export function ageLabel(age: number): string {
   if (age < 1) {
     return 'Menos de 1 año';

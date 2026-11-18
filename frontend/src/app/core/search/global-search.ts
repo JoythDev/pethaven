@@ -63,11 +63,11 @@ function joinText(parts: readonly (string | number | null | undefined)[]): strin
   return parts.filter((part) => part !== null && part !== undefined && part !== '').join(' ');
 }
 
-// El administrador no tiene ficha de veterinario ni de mascota: sus resultados llevan a la lista.
+// Ruta de la ficha de la mascota según el área del rol.
 function petRoute(role: AuthRole, pet: Pet, ownerId: number): string {
   switch (role) {
     case 'ADMIN':
-      return '/administrador/mascotas';
+      return `/administrador/mascotas/${pet.id}`;
     case 'OWNER':
       return `/cliente/${ownerId}/mascotas/${pet.id}`;
     default:
@@ -125,7 +125,7 @@ export function buildSearchEntries(role: AuthRole, data: SearchData, ownerId: nu
             id: vet.id,
             label: vet.name,
             detail: vet.specialty,
-            route: '/administrador/veterinarios',
+            route: `/administrador/veterinarios/${vet.id}`,
             keywords: joinText([vet.specialty, vet.email, vet.document]),
             photoUrl: vet.photoUrl,
           });

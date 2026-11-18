@@ -1,113 +1,161 @@
-<div class="mx-auto max-w-7xl p-5 lg:p-8">
-  <app-page-banner class="mb-6" color="honey" mascot="cat" title="Veterinarios" subtitle="Registra, edita y activa o desactiva al personal de la clínica.">
-    <p-button class="mt-4 inline-block" label="Nuevo veterinario" icon="pi pi-plus" (onClick)="nuevo()" />
-  </app-page-banner>
+<app-page-header heading="Veterinarios" [subtitle]="subtitle()">
+  <a actions pButton size="small" routerLink="/administrador/veterinarios/add" queryParamsHandling="preserve">
+    <svg lucidePlus [size]="18" aria-hidden="true"></svg>
+    <span class="p-button-label">Nuevo veterinario</span>
+  </a>
+</app-page-header>
 
-  <section class="overflow-hidden rounded-3xl border border-olive/10 bg-white shadow-lg">
-    <div class="border-b border-olive/15 p-4">
-      <p-iconfield class="w-full lg:max-w-sm">
-        <p-inputicon class="pi pi-search" />
-        <input
-          pInputText
-          placeholder="Buscar por nombre, documento o especialidad"
-          class="w-full"
-          [formControl]="searchControl"
-        />
-      </p-iconfield>
+<!-- Lista de 8 columnas y panel de 4 mientras el detalle es una columna fija; por debajo de 1080 px es un cajón. -->
+<div class="grid grid-cols-12 items-start gap-[14px]">
+  <app-resource-list
+    [items]="pageItems()"
+    [total]="total()"
+    [page]="page()"
+    [pageSize]="query().pageSize"
+    [view]="query().view"
+    [searchText]="query().search"
+    searchLabel="Buscar veterinarios"
+    searchPlaceholder="Nombre o especialidad"
+    [loading]="loading()"
+    [error]="error()"
+    [filtersActive]="filtersActive()"
+    [selectedId]="selectedId()"
+    emptyHeading="Aún no hay veterinarios"
+    emptyDescription="Registra al primer veterinario para que pueda ingresar y atender pacientes."
+    (searchChange)="update(withSearch(query(), $event))"
+    (viewChange)="onView($event)"
+    (pageChange)="update(withPage(query(), $event))"
+    (pageSizeChange)="update(withPageSize(query(), $event))"
+    (itemSelect)="select($event)"
+    (clearFilters)="update(clearAll(query()))"
+    (retry)="retry()"
+  >
+    <div filters class="flex flex-wrap items-center gap-2" role="group" aria-label="Filtros de veterinarios">
+      <p-togglebutton
+        onLabel="Activos"
+        offLabel="Activos"
+        [ngModel]="query().filters['estado'] === activeFilter"
+        (ngModelChange)="toggleFilter('estado', activeFilter)"
+      />
+      <p-togglebutton
+        onLabel="Inactivos"
+        offLabel="Inactivos"
+        [ngModel]="query().filters['estado'] === inactiveFilter"
+        (ngModelChange)="toggleFilter('estado', inactiveFilter)"
+      />
     </div>
 
-    @let s = state();
+    <a emptyAction pButton size="small" routerLink="/administrador/veterinarios/add" queryParamsHandling="preserve">
+      <svg lucidePlus [size]="18" aria-hidden="true"></svg>
+      <span class="p-button-label">Nuevo veterinario</span>
+    </a>
 
-    @if (s.status === 'error') {
-      <div class="flex flex-col items-center gap-3 py-10 text-center">
-        <i class="pi pi-exclamation-triangle text-2xl text-text/30" aria-hidden="true"></i>
-        <p class="text-text/60">No se pudieron cargar los veterinarios.</p>
-        <p class="text-sm text-text/50">{{ s.message }}</p>
-      </div>
-    } @else {
-      <p-table
-        [value]="filteredVets()"
-        [loading]="s.status === 'loading'"
-        dataKey="id"
-        [paginator]="true"
-        [rows]="10"
-        [rowsPerPageOptions]="[10, 20, 50]"
-        [showCurrentPageReport]="true"
-        currentPageReportTemplate="Mostrando {first} a {last} de {totalRecords} veterinarios"
-        [sortField]="'name'"
-        [sortOrder]="1"
+    <ng-template #card let-vet let-selected="selected" let-select="select">
+      <app-resource-card
+        [id]="vet.id"
+        [heading]="vet.name"
+        [subtitle]="vet.specialty"
+        [photoUrl]="vet.photoUrl"
+        [selected]="selected"
+        (activate)="select()"
       >
-        <ng-template pTemplate="header">
+        <span art class="font-display text-[30px] leading-none font-semibold" aria-hidden="true">{{ initials(vet.name) }}</span>
+        <p-tag status [value]="statusLabel(vet.active)" [severity]="vet.active ? 'success' : 'secondary'" />
+        <span facts class="min-w-0 truncate text-ink-muted">{{ vet.attentions }} {{ vet.attentions === 1 ? 'atención' : 'atenciones' }}</span>
+      </app-resource-card>
+    </ng-template>
+
+    <ng-template #table let-items let-selectedId="selectedId" let-select="select">
+      <p-table [value]="items">
+        <ng-template #header>
           <tr>
-            <th pSortableColumn="name">Veterinario <p-sortIcon field="name" /></th>
-            <th pSortableColumn="document">Documento <p-sortIcon field="document" /></th>
-            <th pSortableColumn="specialty">Especialidad <p-sortIcon field="specialty" /></th>
-            <th pSortableColumn="attentions">Atenciones <p-sortIcon field="attentions" /></th>
-            <th pSortableColumn="active">Estado <p-sortIcon field="active" /></th>
-            <th>Acciones</th>
+            <th app-sort-header field="name" [sort]="query().sort" (sortChange)="onSort($event)">Veterinario</th>
+            <th app-sort-header field="specialty" [sort]="query().sort" (sortChange)="onSort($event)">Especialidad</th>
+            <th app-sort-header field="document" [sort]="query().sort" (sortChange)="onSort($event)">Cédula</th>
+            <th app-sort-header field="attentions" align="end" [sort]="query().sort" (sortChange)="onSort($event)">Atenciones</th>
+            <th app-sort-header field="status" [sort]="query().sort" (sortChange)="onSort($event)">Estado</th>
           </tr>
         </ng-template>
-
-        <ng-template pTemplate="body" let-vet>
-          <tr [class.opacity-60]="!vet.active">
+        <ng-template #body let-vet>
+          <tr [appSelectableRow]="vet.id === selectedId" (rowActivate)="select(vet.id)">
             <td>
               <div class="flex items-center gap-3">
-                <img
-                  [src]="vet.photoUrl"
-                  [alt]="vet.name"
-                  class="h-10 w-10 shrink-0 rounded-full bg-secondary/50 object-cover"
-                  (error)="onPhotoError($event)"
-                />
-                <div class="flex flex-col leading-tight">
-                  <span class="font-bold text-text">{{ vet.name }}</span>
-                  <span class="text-xs text-text/60">{{ vet.email }}</span>
-                </div>
+                <app-avatar [id]="vet.id" [name]="vet.name" kind="person" [photoUrl]="vet.photoUrl" [size]="32" />
+                <span class="font-extrabold text-ink">{{ vet.name }}</span>
               </div>
             </td>
-            <td class="text-sm">{{ vet.document }}</td>
-            <td class="text-sm">{{ vet.specialty }}</td>
-            <td class="text-sm">{{ vet.attentions }}</td>
-            <td>
-              <p-tag [value]="vet.active ? 'Activo' : 'Inactivo'" [severity]="vet.active ? 'success' : 'secondary'" />
-            </td>
-            <td>
-              <div class="flex items-center gap-1">
-                <p-button
-                  icon="pi pi-pencil"
-                  severity="secondary"
-                  [text]="true"
-                  [rounded]="true"
-                  ariaLabel="Editar"
-                  pTooltip="Editar"
-                  tooltipPosition="top"
-                  (onClick)="editar(vet)"
-                />
-                <p-button
-                  [icon]="vet.active ? 'pi pi-ban' : 'pi pi-check-circle'"
-                  [severity]="vet.active ? 'danger' : 'success'"
-                  [text]="true"
-                  [rounded]="true"
-                  [ariaLabel]="vet.active ? 'Desactivar' : 'Activar'"
-                  [pTooltip]="vet.active ? 'Desactivar' : 'Activar'"
-                  tooltipPosition="top"
-                  (onClick)="cambiarEstado(vet)"
-                />
-              </div>
-            </td>
-          </tr>
-        </ng-template>
-
-        <ng-template pTemplate="emptymessage">
-          <tr>
-            <td colspan="6">
-              <div class="flex flex-col items-center gap-3 py-10 text-center">
-                <i class="pi pi-search text-2xl text-text/30" aria-hidden="true"></i>
-                <p class="text-text/60">No se encontraron veterinarios.</p>
-              </div>
-            </td>
+            <td>{{ vet.specialty }}</td>
+            <td class="vet-document tabular-nums">{{ vet.document }}</td>
+            <td class="text-right tabular-nums">{{ vet.attentions }}</td>
+            <td><p-tag [value]="statusLabel(vet.active)" [severity]="vet.active ? 'success' : 'secondary'" /></td>
           </tr>
         </ng-template>
       </p-table>
-    }
-  </section>
+    </ng-template>
+  </app-resource-list>
+
+  <app-detail-panel
+    label="Detalle del veterinario"
+    emptyHeading="Elige un veterinario"
+    emptyText="Selecciona una fila o una tarjeta para ver aquí su detalle."
+    [selected]="!!current()"
+    [loading]="loading()"
+    [hue]="currentHue()"
+    [heading]="current()?.name ?? ''"
+    [subtitle]="current()?.specialty ?? null"
+    [fullLink]="current() ? [listUrl, current()!.id] : null"
+    [(open)]="panelOpen"
+  >
+    @let vet = current();
+    <span avatar class="w-14 text-center font-display text-[30px] leading-none font-semibold" aria-hidden="true">{{
+      initials(vet?.name ?? '')
+    }}</span>
+
+    <div details>
+      @if (vet) {
+        <div class="mb-3 flex items-center gap-2">
+          <p-tag [value]="statusLabel(vet.active)" [severity]="vet.active ? 'success' : 'secondary'" />
+          @if (activityData(); as activity) {
+            <span class="ml-auto text-[12.5px] leading-[18px] text-ink-muted">
+              {{ activity.patients }} {{ activity.patients === 1 ? 'paciente' : 'pacientes' }}
+            </span>
+          }
+        </div>
+        <dl app-definition-list>
+          <dt>Cédula</dt>
+          <dd>{{ vet.document }}</dd>
+          <dt>Correo</dt>
+          <dd>{{ vet.email }}</dd>
+          <dt>Atenciones</dt>
+          <dd>{{ vet.attentions }}</dd>
+          <dt>Tratamientos del mes</dt>
+          <dd>{{ activityData()?.treatmentsThisMonth ?? '—' }}</dd>
+        </dl>
+      }
+    </div>
+
+    <div history>
+      @if (vet) {
+        <app-vet-active-switch [vet]="vet" (changed)="onActiveChanged($event)" />
+      }
+    </div>
+
+    <div actions class="contents">
+      @if (vet) {
+        <a
+          pButton
+          class="w-full"
+          [routerLink]="[listUrl, 'update', vet.id]"
+          queryParamsHandling="preserve"
+        >
+          <svg lucidePencil [size]="18" aria-hidden="true"></svg>
+          <span class="p-button-label">Editar</span>
+        </a>
+      }
+    </div>
+  </app-detail-panel>
 </div>
+
+@if (dialogOpen()) {
+  <app-vet-form-dialog [vetId]="dialogVetId()" (saved)="onSaved($event)" (closed)="closeDialog()" />
+}

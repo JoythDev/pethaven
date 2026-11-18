@@ -11,7 +11,7 @@ import { getErrorMessage } from '../http/http-error';
 import { TagSeverity } from '../status/pet-status';
 
 // Lógica pura de la ficha de mascota del veterinario: pestañas en la URL, historia clínica en línea
-// de tiempo, «Mostrar N más» y dinero de la receta (11.10: el veterinario ve precio de venta, nunca el de compra).
+// de tiempo, «Mostrar N más» y dinero de la receta (11.10: el veterinario ve precio de venta, nunca el de compra; el administrador ve además costo y ganancia).
 
 export type DetailTab = 'resumen' | 'historia' | 'vacunas';
 
@@ -36,6 +36,17 @@ export const lineSubtotal = (drug: Pick<TreatmentDrug, 'units' | 'unitSalePrice'
 
 export const prescriptionTotal = (drugs: Pick<TreatmentDrug, 'units' | 'unitSalePrice'>[]): number =>
   drugs.reduce((sum, drug) => sum + lineSubtotal(drug), 0);
+
+// Vista del administrador (11.10): costo de compra de la receta y ganancia sobre el precio de venta.
+export const lineCost = (drug: Pick<TreatmentDrug, 'units' | 'unitPurchasePrice'>): number =>
+  drug.units * drug.unitPurchasePrice;
+
+export const prescriptionCost = (drugs: Pick<TreatmentDrug, 'units' | 'unitPurchasePrice'>[]): number =>
+  drugs.reduce((sum, drug) => sum + lineCost(drug), 0);
+
+export const prescriptionProfit = (
+  drugs: Pick<TreatmentDrug, 'units' | 'unitSalePrice' | 'unitPurchasePrice'>[],
+): number => prescriptionTotal(drugs) - prescriptionCost(drugs);
 
 /** La más reciente primero; a igual fecha, el id mayor (el registrado después). */
 export function sortNewestFirst(treatments: Treatment[]): Treatment[] {

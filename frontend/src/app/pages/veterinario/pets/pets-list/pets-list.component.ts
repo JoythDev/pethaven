@@ -3,7 +3,7 @@ import { Component, computed, effect, inject, signal, untracked } from '@angular
 import { takeUntilDestroyed, toObservable, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
-import { LucidePencil, LucidePlus, LucideStethoscope } from '@lucide/angular';
+import { LucideArrowUpRight, LucidePencil, LucidePlus, LucideStethoscope } from '@lucide/angular';
 import { ButtonModule } from 'primeng/button';
 import { SkeletonModule } from 'primeng/skeleton';
 import { TableModule } from 'primeng/table';
@@ -32,6 +32,7 @@ import { sortItems } from '../../../../core/list/list-sort';
 import { clampPage, paginate } from '../../../../core/list/pagination';
 import { readViewPreference, writeViewPreference } from '../../../../core/list/view-preference';
 import { NotificationService } from '../../../../core/notifications/notification.service';
+import { resolvePetArea } from '../../../../core/pets-list/pet-area';
 import {
   PET_FILTER_KEYS,
   PET_SORT_ACCESSORS,
@@ -40,6 +41,7 @@ import {
   lastTreatment,
   patientsCountLabel,
   petMatches,
+  registeredPetsLabel,
   replacePet,
   speciesLabel,
 } from '../../../../core/pets-list/pets-list';
@@ -76,10 +78,11 @@ const CONFIG: ListQueryConfig = {
 };
 
 /**
- * Mascotas del veterinario (11.1): lista en tarjetas o tabla con búsqueda, chips de filtro, orden y
- * paginación en la URL, y panel de detalle con el interruptor «Mascota activa» (11.11). Sin barra
- * lateral contextual: la lista no aporta módulos propios (9.5). Cambiar el estado actualiza la
- * mascota en su sitio, sin recargar.
+ * Mascotas (11.1): lista en tarjetas o tabla con búsqueda, chips de filtro, orden y paginación en la
+ * URL, y panel de detalle. La monta el veterinario, con «Nueva mascota», «Mis pacientes», el
+ * interruptor «Mascota activa» (11.11), «Nuevo tratamiento» y «Editar», y el administrador, que solo
+ * consulta (11.7): el área llega por el `data` de la ruta. Sin barra lateral contextual (9.5).
+ * Cambiar el estado actualiza la mascota en su sitio, sin recargar.
  */
 @Component({
   selector: 'app-pets-list',
@@ -93,6 +96,7 @@ const CONFIG: ListQueryConfig = {
     TableModule,
     TagModule,
     ToggleButtonModule,
+    LucideArrowUpRight,
     LucidePencil,
     LucidePlus,
     LucideStethoscope,
@@ -119,6 +123,7 @@ export class PetsListComponent {
   private readonly notifications = inject(NotificationService);
   private readonly shell = inject(ShellSidebarService);
 
+  protected readonly area = resolvePetArea(this.route.snapshot.data);
   protected readonly dog = Species.DOG;
   protected readonly cat = Species.CAT;
   protected readonly activeFilter = PET_STATUS_FILTERS.active;
@@ -146,7 +151,7 @@ export class PetsListComponent {
     const state = this.state();
     return state.status === 'ready' ? state.data : [];
   });
-  private readonly mineActive = computed(() => !!this.query().filters['mios']);
+  private readonly mineActive = computed(() => this.area.canManage && !!this.query().filters['mios']);
 
   private readonly filtered = computed(() => {
     const { search, filters } = this.query();
@@ -163,9 +168,13 @@ export class PetsListComponent {
   protected readonly loading = computed(() => this.state().status === 'loading' || this.patientsLoading());
   protected readonly error = computed(() => (this.state().status === 'error' ? LOAD_ERROR : null));
   protected readonly filtersActive = computed(() => Object.keys(this.query().filters).length > 0);
-  protected readonly subtitle = computed(() =>
-    this.state().status === 'ready' ? patientsCountLabel(this.pets().length) : null,
-  );
+  protected readonly subtitle = computed(() => {
+    if (this.state().status !== 'ready') {
+      return null;
+    }
+    const total = this.pets().length;
+    return this.area.canManage ? patientsCountLabel(total) : registeredPetsLabel(total);
+  });
 
   protected readonly current = computed(() => this.pets().find((p) => p.id === this.selectedId()) ?? null);
   protected readonly currentHue = computed(() => identityHue(this.current()?.id ?? 0));

@@ -9,13 +9,17 @@ import { TagModule } from 'primeng/tag';
 import { parseRouteId } from '../../../../../core/http/route-id';
 import { ViewState } from '../../../../../core/http/view-state';
 import { identityHue } from '../../../../../core/identity/identity';
+import { PetAreaConfig, VET_PET_AREA } from '../../../../../core/pets-list/pet-area';
 import {
   HISTORY_LIMIT,
   TREATMENT_PARAM,
   formatKg,
   groupByYear,
   hiddenCount,
+  lineCost,
   lineSubtotal,
+  prescriptionCost,
+  prescriptionProfit,
   prescriptionTotal,
   resolveSelected,
   sortNewestFirst,
@@ -41,7 +45,8 @@ import { TreatmentTimelineComponent } from '../treatment-timeline/treatment-time
  * Pestaña «Historia clínica» (11.3, S23, S27): línea de tiempo de tratamientos (8 columnas) y, a la
  * derecha, el detalle del elegido (4 columnas, cajón en pantallas medianas y pequeñas). Los seis más
  * recientes se ven primero y «Mostrar N más» abre el resto. El elegido vive en `?tratamiento=<id>`.
- * El veterinario ve precio de venta, subtotal y total de la receta (11.10), nunca el de compra.
+ * El veterinario ve precio de venta, subtotal y total de la receta (11.10), nunca el de compra; el
+ * administrador, además, el costo de compra de cada medicamento y de la receta, y la ganancia.
  */
 @Component({
   selector: 'app-history-tab',
@@ -66,6 +71,8 @@ import { TreatmentTimelineComponent } from '../treatment-timeline/treatment-time
 export class HistoryTabComponent {
   readonly state = input.required<ViewState<Treatment[]>>();
   readonly pet = input.required<Pet>();
+  /** Área que monta la ficha: decide la ruta del registro y si se muestran costos. */
+  readonly area = input<PetAreaConfig>(VET_PET_AREA);
   /** El veterinario puede registrar un tratamiento a esta mascota (si no, no se ofrece la acción). */
   readonly canRegister = input(false);
   readonly downloading = input(false);
@@ -115,12 +122,20 @@ export class HistoryTabComponent {
     return selected ? identityHue(selected.id) : 'honey';
   });
 
-  // Medicamentos del elegido con su subtotal y el total de la receta (precio de venta).
+  // Medicamentos del elegido con su subtotal y el total de la receta (precio de venta); en el área
+  // del administrador, también el costo de compra de cada línea, el de la receta y la ganancia.
   protected readonly prescription = computed(() => {
     const drugs = this.selected()?.drugs ?? [];
     return {
-      rows: drugs.map((drug) => ({ drug, hue: identityHue(drug.drugId), subtotal: lineSubtotal(drug) })),
+      rows: drugs.map((drug) => ({
+        drug,
+        hue: identityHue(drug.drugId),
+        subtotal: lineSubtotal(drug),
+        cost: lineCost(drug),
+      })),
       total: prescriptionTotal(drugs),
+      cost: prescriptionCost(drugs),
+      profit: prescriptionProfit(drugs),
     };
   });
 

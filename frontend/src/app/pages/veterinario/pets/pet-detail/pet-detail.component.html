@@ -1,7 +1,7 @@
 @let state = petState();
 
 <a
-  routerLink="/veterinario/mascotas"
+  [routerLink]="area.basePath"
   class="ph-focus mb-2 -ml-1 inline-flex min-h-6 items-center gap-0.5 rounded-control px-1 text-[13px] leading-[18px] font-bold text-ink-muted transition-colors duration-[180ms] ease-out-strong hover:text-ink motion-reduce:transition-none"
 >
   <svg lucideChevronLeft [size]="16" aria-hidden="true"></svg>
@@ -25,7 +25,7 @@
       description="Puede que el enlace esté incompleto o que ya no exista."
     >
       <app-sticker sticker name="paw" [width]="96" />
-      <a action pButton size="small" routerLink="/veterinario/mascotas" label="Volver a Mascotas"></a>
+      <a action pButton size="small" [routerLink]="area.basePath" label="Volver a Mascotas"></a>
     </app-empty-state>
   </div>
 } @else if (state.status === 'error') {
@@ -59,11 +59,15 @@
         </div>
         <p class="mt-1 text-sm leading-5">
           {{ speciesLabel() }} · {{ p.breed }} · {{ ageLabel(p.age) }} · {{ formatKg(p.weight) }} · Dueño:
-          <a
-            class="ph-focus rounded-check font-extrabold underline underline-offset-4"
-            [routerLink]="['/veterinario/duenos', p.ownerId]"
-            >{{ p.ownerName }}</a
-          >
+          @if (area.ownersPath; as ownersPath) {
+            <a
+              class="ph-focus rounded-check font-extrabold underline underline-offset-4"
+              [routerLink]="[ownersPath, p.ownerId]"
+              >{{ p.ownerName }}</a
+            >
+          } @else {
+            <span class="font-extrabold">{{ p.ownerName }}</span>
+          }
         </p>
         @if (availability.reason; as reason) {
           <p class="mt-2 flex items-start gap-1.5 text-[12.5px] leading-[18px]" role="status">
@@ -74,21 +78,23 @@
       </div>
 
       <div class="flex flex-wrap gap-2">
-        <button
-          pButton
-          id="btnRegistrarTratamiento"
-          type="button"
-          size="small"
-          [disabled]="!availability.allowed"
-          [routerLink]="['/veterinario/mascotas', p.id, 'treatments', 'add']"
-        >
-          <svg lucidePlus [size]="18" aria-hidden="true"></svg>
-          <span class="p-button-label">Nuevo tratamiento</span>
-        </button>
-        <a pButton size="small" [outlined]="true" [routerLink]="['/veterinario/mascotas/update', p.id]">
-          <svg lucidePencil [size]="18" aria-hidden="true"></svg>
-          <span class="p-button-label">Editar</span>
-        </a>
+        @if (area.canManage) {
+          <button
+            pButton
+            id="btnRegistrarTratamiento"
+            type="button"
+            size="small"
+            [disabled]="!availability.allowed"
+            [routerLink]="[area.basePath, p.id, 'treatments', 'add']"
+          >
+            <svg lucidePlus [size]="18" aria-hidden="true"></svg>
+            <span class="p-button-label">Nuevo tratamiento</span>
+          </button>
+          <a pButton size="small" [outlined]="true" [routerLink]="[area.basePath, 'update', p.id]">
+            <svg lucidePencil [size]="18" aria-hidden="true"></svg>
+            <span class="p-button-label">Editar</span>
+          </a>
+        }
         <button
           pButton
           type="button"
@@ -99,7 +105,7 @@
           (click)="downloadPdf()"
         >
           <svg lucideDownload [size]="18" aria-hidden="true"></svg>
-          <span class="p-button-label">PDF</span>
+          <span class="p-button-label">{{ area.canManage ? 'PDF' : 'Descargar historial' }}</span>
         </button>
       </div>
     </div>
@@ -115,6 +121,7 @@
       <p-tabpanel value="resumen">
         <app-summary-tab
           [pet]="p"
+          [ownersPath]="area.ownersPath"
           [treatments]="treatments()"
           [weight]="weight()"
           [vaccines]="vaccines()"
@@ -126,6 +133,7 @@
       <p-tabpanel value="historia">
         <app-history-tab
           [pet]="p"
+          [area]="area"
           [state]="treatments()"
           [canRegister]="availability.allowed"
           [downloading]="downloading()"
