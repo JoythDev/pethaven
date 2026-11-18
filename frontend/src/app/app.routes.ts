@@ -169,7 +169,11 @@ export const routes: Routes = [
         (m) => m.ClienteLayoutComponent
       ),
     children: [
-      comingSoon('', 'Inicio', 'Aquí verás el resumen de tus mascotas, tu próxima cita y el consejo del día.'),
+      {
+        path: '',
+        pathMatch: 'full',
+        loadComponent: () => import('./pages/cliente/inicio/inicio.component').then((m) => m.InicioComponent),
+      },
       {
         path: 'mascotas',
         loadComponent: () =>

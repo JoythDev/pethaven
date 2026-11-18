@@ -47,7 +47,7 @@ import { ShellSidebarDirective } from '../../shared/shell/shell-sidebar.directiv
 import { SkeletonComponent } from '../../shared/skeleton/skeleton.component';
 import { StickerComponent } from '../../shared/sticker/sticker.component';
 import { StockMeterComponent } from '../../shared/stock-meter/stock-meter.component';
-import { RatioRingComponent } from './ratio-ring.component';
+import { RatioRingComponent } from '../../shared/ratio-ring/ratio-ring.component';
 import { SalesChartComponent } from './sales-chart.component';
 
 const LOADING = { status: 'loading' } as const;

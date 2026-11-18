@@ -3,7 +3,7 @@ import { Router } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 
 // Puente entre el login y el dashboard del dueño: el login navega a '/cliente' sin id
-// y aquí se resuelve el id del usuario autenticado para entrar a sus mascotas.
+// y aquí se resuelve el id del usuario autenticado para entrar a su inicio.
 // Sin sesión (o con rol de veterinario) vuelve al login.
 @Component({
   selector: 'app-cliente-entry',
@@ -17,7 +17,7 @@ export class ClienteEntryComponent {
     const user = this.auth.user();
 
     if (user && user.role === 'OWNER') {
-      void this.router.navigate(['/cliente', user.id, 'mascotas']);
+      void this.router.navigate(['/cliente', user.id]);
       return;
     }
 
