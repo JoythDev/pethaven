@@ -118,7 +118,7 @@
                 <li>
                   <a
                     routerLink="/administrador/medicamentos"
-                    [queryParams]="{ q: item.medication.medicationName }"
+                    [queryParams]="item.medication.medicationId !== null ? { seleccion: item.medication.medicationId } : { q: item.medication.medicationName }"
                     class="ph-focus flex items-center gap-3 rounded-row px-2.5 py-[9px] transition-colors duration-[180ms] ease-out-strong hover:bg-sunken motion-reduce:transition-none"
                   >
                     <span

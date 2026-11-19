@@ -2,7 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, RouterLink } from '@angular/router';
 import { LucideCalendar } from '@lucide/angular';
-import { BehaviorSubject, Observable, combineLatest, forkJoin, map, of, switchMap } from 'rxjs';
+import { BehaviorSubject, Observable, combineLatest, map, of, switchMap } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { TagModule } from 'primeng/tag';
 
@@ -20,8 +20,6 @@ import { Pet, Species } from '../../../models/pet.model';
 import { ClienteTreatment } from '../../../models/treatment-cliente.model';
 import { DemoAppointmentsService } from '../../../services/demo/demo-appointments.service';
 import { DEMO_NOW } from '../../../services/demo/demo-latency';
-import { PetService } from '../../../services/pet.service';
-import { ClienteTreatmentService } from '../../../services/treatment-cliente.service';
 import { BlockComponent } from '../../shared/block/block.component';
 import { DefinitionListComponent } from '../../shared/definition-list/definition-list.component';
 import { DemoTagComponent } from '../../shared/demo-tag/demo-tag.component';
@@ -69,8 +67,6 @@ const SKELETON_CARDS = [0, 1, 2];
 })
 export class MascotasComponent {
   private readonly route = inject(ActivatedRoute);
-  private readonly petService = inject(PetService);
-  private readonly treatmentService = inject(ClienteTreatmentService);
   private readonly appointments = inject(DemoAppointmentsService);
   private readonly clock = inject(DEMO_NOW);
 
@@ -135,15 +131,12 @@ export class MascotasComponent {
     this.retry$.next();
   }
 
-  // Las mascotas del dueño y, de cada una, sus tratamientos. Las citas demo se calculan con las mascotas
-  // y los veterinarios que ya las atendieron.
+  // Las mascotas del dueño y, de cada una, sus tratamientos. Usa el mismo contexto que las notificaciones
+  // del shell, así una carga simultánea no repite las peticiones. Las citas demo se calculan con las
+  // mascotas y los veterinarios que ya las atendieron.
   private load(ownerId: number): Observable<ViewState<PetCard[]>> {
-    return this.petService.getByOwnerId(ownerId).pipe(
-      switchMap((pets) =>
-        (pets.length ? forkJoin(pets.map((pet) => this.treatmentService.getByPetId(pet.id))) : of([])).pipe(
-          map((lists) => this.toCards(pets, lists)),
-        ),
-      ),
+    return this.appointments.loadOwnerContext(ownerId).pipe(
+      map(({ pets, petTreatments }) => this.toCards(pets, petTreatments.map((entry) => entry.treatments))),
       toViewState<PetCard[]>(),
     );
   }

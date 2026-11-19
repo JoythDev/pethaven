@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { Observable, defer, finalize, forkJoin, map, of, switchMap, tap, throwError } from 'rxjs';
+import { Observable, defer, finalize, forkJoin, map, of, shareReplay, switchMap, tap, throwError } from 'rxjs';
 import {
   appointmentsForVet,
   availableSlots,
@@ -120,8 +120,26 @@ export class DemoAppointmentsService {
     return availableSlots(vet, pets, date, this.now(), this.bookedState());
   }
 
-  // Mascotas, tratamientos y veterinarios conocidos de un dueño, sin simular espera.
+  // Cargas del contexto de un dueño que aún no terminan, por id: quien la pide mientras otra está en curso
+  // (por ejemplo, la página y las notificaciones del shell en la misma carga) comparte las peticiones.
+  private readonly ownerContextInFlight = new Map<number, Observable<OwnerContext>>();
+
+  // Mascotas, tratamientos y veterinarios conocidos de un dueño, sin simular espera. Al terminar se olvida:
+  // la siguiente llamada vuelve a pedir datos frescos.
   loadOwnerContext(ownerId: number): Observable<OwnerContext> {
+    const inFlight = this.ownerContextInFlight.get(ownerId);
+    if (inFlight) {
+      return inFlight;
+    }
+    const request = this.fetchOwnerContext(ownerId).pipe(
+      finalize(() => this.ownerContextInFlight.delete(ownerId)),
+      shareReplay({ bufferSize: 1, refCount: true }),
+    );
+    this.ownerContextInFlight.set(ownerId, request);
+    return request;
+  }
+
+  private fetchOwnerContext(ownerId: number): Observable<OwnerContext> {
     return this.petService.getByOwnerId(ownerId).pipe(
       switchMap((pets) =>
         (pets.length

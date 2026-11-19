@@ -51,7 +51,8 @@ export interface InventoryAlert {
   drug: Drug;
   level: 'out' | 'low';
   /** Filtro de la lista de medicamentos que deja a este a la vista. */
-  queryParams: { q: string };
+  /** Selecciona el medicamento en el inventario (`?seleccion=`) y abre su panel. */
+  queryParams: { seleccion: number };
 }
 
 export interface InventoryAlerts {
@@ -70,7 +71,7 @@ export function inventoryAlerts(drugs: readonly Drug[], limit = Number.POSITIVE_
   const low = drugs
     .filter((drug) => getStockStatus(drug.unitsAvailable) === 'LOW')
     .sort((a, b) => a.unitsAvailable - b.unitsAvailable || byName(a, b));
-  const toRow = (drug: Drug, level: 'out' | 'low'): InventoryAlert => ({ drug, level, queryParams: { q: drug.name } });
+  const toRow = (drug: Drug, level: 'out' | 'low'): InventoryAlert => ({ drug, level, queryParams: { seleccion: drug.id } });
   return {
     rows: [...out.map((drug) => toRow(drug, 'out')), ...low.map((drug) => toRow(drug, 'low'))].slice(0, limit),
     total: out.length + low.length,
