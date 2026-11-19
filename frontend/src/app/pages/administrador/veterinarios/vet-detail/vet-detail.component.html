@@ -102,7 +102,11 @@
       @if (act && act.recentPatients.length) {
         <div class="-mx-2.5 flex flex-col gap-0.5">
           @for (patient of act.recentPatients; track patient.petId) {
-            <app-list-item [heading]="patient.petName" [subtitle]="'Último tratamiento: ' + (patient.lastDate | date: 'd MMM y')">
+            <app-list-item
+              [heading]="patient.petName"
+              [subtitle]="'Último tratamiento: ' + (patient.lastDate | date: 'd MMM y')"
+              [link]="['/administrador/mascotas', patient.petId]"
+            >
               <app-avatar leading [id]="patient.petId" [name]="patient.petName" kind="person" [size]="32" />
             </app-list-item>
           }

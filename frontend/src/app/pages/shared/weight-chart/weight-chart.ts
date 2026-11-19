@@ -20,14 +20,15 @@ export function changeText(delta: number): string {
   return `${rounded > 0 ? 'sube' : 'baja'} ${kg(Math.abs(rounded))}`;
 }
 
-/** «Julio 2026 · sube 0,3 kg frente al mes anterior»; el primer punto no se compara. */
+/** «Julio 2026 · sube 0,3 kg frente al mes anterior»; solo el primer registro no se compara. */
 export function pointCaption(curve: WeightCurve, index: number): string {
   const point = curve.points[index];
   const month = capitalize(formatDate(point.date, 'MMMM y', LOCALE));
-  if (index === 0) {
+  const before = index === 0 ? (curve.previous ?? null) : curve.points[index - 1].weight;
+  if (before === null) {
     return `${month} · primer registro`;
   }
-  return `${month} · ${changeText(point.weight - curve.points[index - 1].weight)} frente al mes anterior`;
+  return `${month} · ${changeText(point.weight - before)} frente al mes anterior`;
 }
 
 /** Texto alternativo del gráfico: el recorrido, el mínimo y el máximo. */

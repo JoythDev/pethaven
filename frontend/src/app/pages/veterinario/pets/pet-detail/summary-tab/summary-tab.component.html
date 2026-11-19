@@ -15,10 +15,23 @@
     } @else {
       <section app-card heading="Curva de peso" class="h-full">
         <app-demo-tag title-extra />
-        @if (weightState.status === 'error') {
-          <app-inline-error text="No pudimos cargar la curva de peso." (retry)="retryWeight.emit()" />
+        @if (visibleWeight()) {
+          <p-selectbutton
+            action
+            size="small"
+            aria-label="Tramo de la curva de peso"
+            [options]="weightRanges"
+            optionLabel="label"
+            optionValue="value"
+            [allowEmpty]="false"
+            [ngModel]="weightRange()"
+            (ngModelChange)="weightRange.set($event)"
+          />
+        }
+        @if (visibleWeight(); as curve) {
+          <app-weight-chart [curve]="curve" [petName]="p.name" />
         } @else {
-          <app-weight-chart [curve]="weightState.data" [petName]="p.name" />
+          <app-inline-error text="No pudimos cargar la curva de peso." (retry)="retryWeight.emit()" />
         }
       </section>
     }

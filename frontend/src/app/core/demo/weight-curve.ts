@@ -1,10 +1,10 @@
 import { WeightAxis, WeightCurve, WeightPoint } from '../../models/demo/weight-curve.model';
 import { PET_WEIGHT_MIN, Pet, Species } from '../../models/pet.model';
 import { addMonths } from './demo-date';
-import { seeded, seededInt } from './seeded';
+import { seeded } from './seeded';
 
-const MIN_POINTS = 6;
-const EXTRA_POINTS = 3; // 6 a 8 puntos
+// Un año de puntos mensuales: «12 meses» los muestra todos y «6 meses», los últimos seis.
+const POINTS = 12;
 // Variación mensual máxima de un adulto, por especie.
 const VOLATILITY: Record<Species, number> = { [Species.DOG]: 0.03, [Species.CAT]: 0.02 };
 
@@ -24,7 +24,7 @@ function axisFor(min: number, max: number): WeightAxis {
 // Curva mensual que termina hoy con el peso real de la mascota. Hacia atrás parte de ese peso:
 // los adultos varían poco; los de un año o menos pesaban menos cuanto más atrás.
 export function generateWeightCurve(pet: Pet, today: Date): WeightCurve {
-  const count = MIN_POINTS + seededInt(pet.id, 'weight-count', EXTRA_POINTS);
+  const count = POINTS;
   const growing = pet.age <= 1;
   const next = seeded(pet.id, 'weight-walk');
   const weights = new Array<number>(count);
@@ -48,7 +48,28 @@ export function generateWeightCurve(pet: Pet, today: Date): WeightCurve {
     min,
     max,
     axis: axisFor(min, max),
+    previous: null,
     current: pet.weight,
     change: round1(pet.weight - weights[count - 2]),
+  };
+}
+
+// Los últimos `months` puntos de la curva, con mínimo, máximo y eje del tramo. El peso anterior al
+// primer punto visible se conserva para comparar ese punto con el mes previo.
+export function sliceWeightCurve(curve: WeightCurve, months: number): WeightCurve {
+  if (months >= curve.points.length) {
+    return curve;
+  }
+  const points = curve.points.slice(-months);
+  const weights = points.map((point) => point.weight);
+  const min = Math.min(...weights);
+  const max = Math.max(...weights);
+  return {
+    ...curve,
+    points,
+    min,
+    max,
+    axis: axisFor(min, max),
+    previous: curve.points[curve.points.length - months - 1].weight,
   };
 }

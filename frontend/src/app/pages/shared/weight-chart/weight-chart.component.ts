@@ -1,40 +1,15 @@
 import { formatDate, formatNumber } from '@angular/common';
-import { Component, computed, effect, inject, input, linkedSignal, signal, untracked } from '@angular/core';
+import { Component, computed, input, linkedSignal, signal } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { ChartModule } from 'primeng/chart';
 
-import { ThemeService } from '../../../core/theme/theme.service';
+import { themeChartColors } from '../../../core/charts/chart-colors';
 import { WeightCurve } from '../../../models/demo/weight-curve.model';
 import { chartSummary, monthLabel, pointCaption } from './weight-chart';
 
 const LOCALE = 'es-CO';
 const FONT = '"Nunito Sans", sans-serif';
 const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
-
-interface ChartColors {
-  accent: string;
-  soft: string;
-  grid: string;
-  muted: string;
-  card: string;
-  ink: string;
-}
-
-// Chart.js pinta en un canvas y no entiende `var(--x)`: se leen los valores ya resueltos del tema (10.18).
-function readColors(): ChartColors {
-  const style = getComputedStyle(document.documentElement);
-  const read = (name: string) => style.getPropertyValue(name).trim();
-  return {
-    accent: read('--color-accent'),
-    soft: read('--color-accent-soft'),
-    grid: read('--color-line'),
-    muted: read('--color-ink-muted'),
-    card: read('--color-card'),
-    ink: read('--color-ink'),
-  };
-}
-
-const sameColors = (a: ChartColors, b: ChartColors): boolean => JSON.stringify(a) === JSON.stringify(b);
 
 /**
  * Curva de peso (10.18): línea con área, valores en el eje vertical (S24), punto elegido más grande
@@ -54,15 +29,13 @@ export class WeightChartComponent {
   /** Nombre de la mascota, para el texto alternativo. */
   readonly petName = input.required<string>();
 
-  private readonly theme = inject(ThemeService);
-
   protected readonly showTable = signal(false);
   // Punto elegido: el último (hoy) hasta que se pulsa otro; una curva nueva vuelve al último.
   protected readonly selected = linkedSignal<WeightCurve, number>({
     source: this.curve,
     computation: (curve) => curve.points.length - 1,
   });
-  private readonly colors = signal(readColors(), { equal: sameColors });
+  private readonly colors = themeChartColors({ accent: '--color-accent', soft: '--color-accent-soft' });
   private readonly reducedMotion = window.matchMedia(REDUCED_MOTION).matches;
 
   protected readonly rows = computed(() =>
@@ -145,14 +118,6 @@ export class WeightChartComponent {
       },
     };
   });
-
-  constructor() {
-    // Al cambiar el tema la clase `app-dark` se aplica en otro efecto: se espera a que termine para leer los colores nuevos.
-    effect(() => {
-      this.theme.theme();
-      untracked(() => queueMicrotask(() => this.colors.set(readColors())));
-    });
-  }
 
   protected select(event: { element?: { index?: number } }): void {
     const index = event.element?.index;

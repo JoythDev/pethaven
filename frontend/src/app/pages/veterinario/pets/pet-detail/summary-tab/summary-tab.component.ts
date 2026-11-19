@@ -1,9 +1,12 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, input, output } from '@angular/core';
+import { Component, computed, input, output, signal } from '@angular/core';
+import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
+import { SelectButtonModule } from 'primeng/selectbutton';
 import { TagModule } from 'primeng/tag';
 
+import { sliceWeightCurve } from '../../../../../core/demo/weight-curve';
 import { ViewState } from '../../../../../core/http/view-state';
 import { identityHue } from '../../../../../core/identity/identity';
 import { PetAreaConfig, VET_PET_AREA } from '../../../../../core/pets-list/pet-area';
@@ -19,7 +22,7 @@ import {
 } from '../../../../../core/pet-detail/pet-detail';
 import { skeletonVisible } from '../../../../../core/ui/skeleton-timing';
 import { VaccineCard } from '../../../../../models/demo/vaccine.model';
-import { WeightCurve } from '../../../../../models/demo/weight-curve.model';
+import { WEIGHT_RANGES, WeightCurve, WeightRange } from '../../../../../models/demo/weight-curve.model';
 import { Pet, Species } from '../../../../../models/pet.model';
 import { Treatment, evolutionLabel } from '../../../../../models/treatment.model';
 import { CardComponent } from '../../../../shared/card/card.component';
@@ -43,7 +46,9 @@ const UPCOMING_VACCINES = 3;
   imports: [
     DatePipe,
     RouterLink,
+    FormsModule,
     ButtonModule,
+    SelectButtonModule,
     TagModule,
     CardComponent,
     DefinitionListComponent,
@@ -72,6 +77,14 @@ export class SummaryTabComponent {
   protected readonly vaccineSeverity = vaccineSeverity;
   protected readonly historyParams = (treatment: Treatment) => ({ [TAB_PARAM]: this.area().history.param, [TREATMENT_PARAM]: treatment.id });
   protected readonly vaccinesParams = { [TAB_PARAM]: 'vacunas' };
+
+  protected readonly weightRanges = WEIGHT_RANGES;
+  protected readonly weightRange = signal<WeightRange>(6);
+  // La curva generada trae 12 meses; el segmento elige cuántos se ven.
+  protected readonly visibleWeight = computed(() => {
+    const state = this.weight();
+    return state.status === 'ready' ? sliceWeightCurve(state.data, this.weightRange()) : null;
+  });
 
   protected readonly weightSkeleton = skeletonVisible(computed(() => this.weight().status === 'loading'));
   protected readonly treatmentsSkeleton = skeletonVisible(computed(() => this.treatments().status === 'loading'));

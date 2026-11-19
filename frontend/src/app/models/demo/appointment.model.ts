@@ -2,12 +2,14 @@
 import { Pet, Species } from '../pet.model';
 import { Veterinarian } from '../veterinarian.model';
 
-export type AppointmentKind = 'control' | 'vaccination' | 'consultation' | 'urgency';
+export type AppointmentKind = 'control' | 'vaccination' | 'consultation' | 'deworming' | 'nutrition' | 'urgency';
 
 export const APPOINTMENT_KIND_LABELS: Record<AppointmentKind, string> = {
   control: 'Control de tratamiento',
   vaccination: 'Vacunación',
   consultation: 'Consulta general',
+  deworming: 'Desparasitación',
+  nutrition: 'Nutrición',
   urgency: 'Urgencia',
 };
 

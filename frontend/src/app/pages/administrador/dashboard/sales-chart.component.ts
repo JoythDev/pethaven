@@ -1,41 +1,16 @@
 import { formatNumber } from '@angular/common';
-import { Component, computed, effect, inject, input, signal, untracked } from '@angular/core';
+import { Component, computed, input, signal } from '@angular/core';
 import { ButtonModule } from 'primeng/button';
 import { ChartModule } from 'primeng/chart';
 
 import { compactCurrency, salesChartSeries, salesChartSummary } from '../../../core/admin-dashboard/admin-dashboard';
-import { ThemeService } from '../../../core/theme/theme.service';
+import { themeChartColors } from '../../../core/charts/chart-colors';
 import { DashboardPeriod } from '../../../models/demo/dashboard-period.model';
 import { formatCurrency } from '../../shared/drugs/drug-stock';
 
 const LOCALE = 'es-CO';
 const FONT = '"Nunito Sans", sans-serif';
 const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
-
-interface ChartColors {
-  sales: string;
-  profit: string;
-  grid: string;
-  muted: string;
-  card: string;
-  ink: string;
-}
-
-// Chart.js pinta en un canvas y no entiende `var(--x)`: se leen los valores ya resueltos del tema (10.18).
-function readColors(): ChartColors {
-  const style = getComputedStyle(document.documentElement);
-  const read = (name: string) => style.getPropertyValue(name).trim();
-  return {
-    sales: read('--color-accent'),
-    profit: read('--color-warning'),
-    grid: read('--color-line'),
-    muted: read('--color-ink-muted'),
-    card: read('--color-card'),
-    ink: read('--color-ink'),
-  };
-}
-
-const sameColors = (a: ChartColors, b: ChartColors): boolean => JSON.stringify(a) === JSON.stringify(b);
 
 /**
  * Barras de ventas y ganancia por tramo del periodo (10.18): leyenda con la unidad del eje, valores en
@@ -52,10 +27,8 @@ const sameColors = (a: ChartColors, b: ChartColors): boolean => JSON.stringify(a
 export class SalesChartComponent {
   readonly period = input.required<DashboardPeriod>();
 
-  private readonly theme = inject(ThemeService);
-
   protected readonly showTable = signal(false);
-  protected readonly colors = signal(readColors(), { equal: sameColors });
+  protected readonly colors = themeChartColors({ sales: '--color-accent', profit: '--color-warning' });
   private readonly reducedMotion = window.matchMedia(REDUCED_MOTION).matches;
 
   protected readonly series = computed(() => salesChartSeries(this.period()));
@@ -123,12 +96,4 @@ export class SalesChartComponent {
       },
     };
   });
-
-  constructor() {
-    // Al cambiar el tema la clase `app-dark` se aplica en otro efecto: se espera a que termine para leer los colores nuevos.
-    effect(() => {
-      this.theme.theme();
-      untracked(() => queueMicrotask(() => this.colors.set(readColors())));
-    });
-  }
 }

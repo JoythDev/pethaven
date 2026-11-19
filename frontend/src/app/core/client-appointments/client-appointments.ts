@@ -39,6 +39,8 @@ export const BOOKING_REASONS: readonly BookingReason[] = [
   { kind: 'consultation', label: APPOINTMENT_KIND_LABELS.consultation, sticker: 'heart' },
   { kind: 'vaccination', label: APPOINTMENT_KIND_LABELS.vaccination, sticker: 'syringe' },
   { kind: 'control', label: APPOINTMENT_KIND_LABELS.control, sticker: 'pill' },
+  { kind: 'deworming', label: APPOINTMENT_KIND_LABELS.deworming, sticker: 'shield' },
+  { kind: 'nutrition', label: APPOINTMENT_KIND_LABELS.nutrition, sticker: 'food-bowl' },
   { kind: 'urgency', label: APPOINTMENT_KIND_LABELS.urgency, sticker: 'star' },
 ];
 
