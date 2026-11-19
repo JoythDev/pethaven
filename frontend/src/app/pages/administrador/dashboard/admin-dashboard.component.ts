@@ -8,7 +8,7 @@ import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TagModule } from 'primeng/tag';
-import { BehaviorSubject, of, switchMap } from 'rxjs';
+import { BehaviorSubject, combineLatest, of, switchMap } from 'rxjs';
 
 import {
   PERIOD_OPTIONS,
@@ -56,10 +56,12 @@ const INVENTORY_ROWS = 4;
 const DEMO_SUMMARY = 'Función demo';
 
 /**
- * Panorama del administrador (11.6): todas las métricas del API (ventas, ganancia, tratamientos,
+ * Panorama del administrador (11.6): todas las métricas del API (ventas y ganancia totales, tratamientos,
  * tratamientos por medicamento, más vendidos, equipo y mascotas) como elementos de primera fila, más las
- * demo de alrededor (variación por periodo, serie de ventas y ocupación). El periodo vive en `?periodo=`;
- * en «Todo» las ventas y la ganancia son los totales reales. El inventario usa la regla real de existencias.
+ * demo de alrededor (variación por periodo, serie de ventas y ocupación). «Ventas totales» y «Ganancia
+ * total» son siempre los totales reales del API; el periodo (`?periodo=`) solo mueve lo demo. Lo real
+ * carga en cuanto llega el resumen; lo demo tiene su propia carga y su propio error. El inventario usa
+ * la regla real de existencias.
  */
 @Component({
   selector: 'app-admin-dashboard',
@@ -99,6 +101,7 @@ export class AdminDashboardComponent {
   private readonly clock = inject(DEMO_NOW);
 
   private readonly summaryRetry = new BehaviorSubject<void>(undefined);
+  private readonly periodsRetry = new BehaviorSubject<void>(undefined);
   private readonly drugsRetry = new BehaviorSubject<void>(undefined);
 
   protected readonly summary = toSignal(
@@ -108,10 +111,10 @@ export class AdminDashboardComponent {
     { initialValue: LOADING as ViewState<AdministratorDashboardResponse> },
   );
 
-  // Los periodos salen de los totales reales: se piden cuando llega el resumen.
+  // Los periodos (demo) salen de los totales reales: se piden cuando llega el resumen y no frenan los KPI reales.
   protected readonly periods = toSignal(
-    toObservable(this.summary).pipe(
-      switchMap((state) =>
+    combineLatest([toObservable(this.summary), this.periodsRetry]).pipe(
+      switchMap(([state]) =>
         state.status === 'ready'
           ? this.periodsService.getPeriodsFor(state.data).pipe(toViewState<DashboardPeriod[]>())
           : of<ViewState<DashboardPeriod[]>>(state),
@@ -125,38 +128,34 @@ export class AdminDashboardComponent {
     { initialValue: LOADING as ViewState<Drug[]> },
   );
 
-  // El resumen real y los periodos demo van juntos: cargan, fallan y reintentan como una sola fuente.
-  protected readonly loading = computed(
-    () => this.summary().status === 'loading' || this.periods().status === 'loading',
-  );
-  protected readonly failed = computed(
-    () => this.summary().status === 'error' || this.periods().status === 'error',
-  );
+  // Lo real depende solo del resumen del API; lo demo (periodos) tiene su propio estado.
+  protected readonly loading = computed(() => this.summary().status === 'loading');
+  protected readonly failed = computed(() => this.summary().status === 'error');
   protected readonly summarySkeleton = skeletonVisible(this.loading);
+  protected readonly periodsSkeleton = skeletonVisible(
+    computed(() => this.summary().status === 'ready' && this.periods().status === 'loading'),
+  );
   protected readonly drugsSkeleton = skeletonVisible(computed(() => this.drugs().status === 'loading'));
 
   private readonly queryParams = toSignal(this.route.queryParamMap, {
     initialValue: this.route.snapshot.queryParamMap,
   });
   protected readonly periodId = computed(() => parsePeriodParam(this.queryParams().get('periodo')));
-  // Datos reales y periodo elegido, cuando ambos están listos.
-  protected readonly view = computed(() => {
-    const summary = this.summary();
-    const periods = this.periods();
-    if (summary.status !== 'ready' || periods.status !== 'ready') {
-      return null;
-    }
-    const period = periods.data.find((p) => p.id === this.periodId()) ?? periods.data[0];
-    return { data: summary.data, period };
+  // Resumen real del API, en cuanto llega.
+  protected readonly data = computed(() => {
+    const state = this.summary();
+    return state.status === 'ready' ? state.data : null;
+  });
+  // Periodo demo elegido, cuando los periodos están listos.
+  protected readonly period = computed(() => {
+    const state = this.periods();
+    return state.status === 'ready' ? (state.data.find((p) => p.id === this.periodId()) ?? state.data[0]) : null;
   });
   // Ventas del mes en curso para la barra lateral: siempre el periodo «Mes», sea cual sea el elegido.
   protected readonly monthPeriod = computed(() => {
     const state = this.periods();
     return state.status === 'ready' ? (state.data.find((p) => p.id === 'month') ?? null) : null;
   });
-  // Solo «Mes», «Trimestre» y «Año» son fracciones demo de los totales; «Todo» son los totales reales.
-  protected readonly periodIsDemo = computed(() => this.periodId() !== 'all');
-
   protected readonly periodOptions = PERIOD_OPTIONS;
   protected readonly skeletonRows = [0, 1, 2, 3];
   protected readonly stockMinimum = STOCK_MINIMUM;
@@ -183,6 +182,15 @@ export class AdminDashboardComponent {
 
   protected retrySummary(): void {
     this.summaryRetry.next();
+  }
+
+  // Si falló el resumen vuelve a pedirlo (los periodos dependen de él); si no, solo los periodos demo.
+  protected retryDemo(): void {
+    if (this.summary().status === 'error') {
+      this.summaryRetry.next();
+    } else {
+      this.periodsRetry.next();
+    }
   }
 
   protected retryDrugs(): void {

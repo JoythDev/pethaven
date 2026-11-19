@@ -19,9 +19,11 @@ import {
   firstName,
   heroCopy,
   longDateEs,
+  VetStats,
   WeekSummary,
   recentPatients,
   remainingAppointments,
+  vetStats,
   weekSummary,
 } from '../../../core/vet-home/vet-home';
 import { Appointment, DayAgenda, DayCount } from '../../../models/demo/appointment.model';
@@ -33,6 +35,7 @@ import { DemoAppointmentsService } from '../../../services/demo/demo-appointment
 import { DemoStockMinimumService } from '../../../services/demo/demo-stock-minimum.service';
 import { PetService } from '../../../services/pet.service';
 import { VeterinarianService } from '../../../services/veterinarian.service';
+import { formatUnits } from '../../shared/drugs/drug-stock';
 import { AvatarComponent } from '../../shared/avatar/avatar.component';
 import { CardComponent } from '../../shared/card/card.component';
 import { DaySummaryComponent } from '../../shared/day-summary/day-summary.component';
@@ -40,6 +43,7 @@ import { DemoTagComponent } from '../../shared/demo-tag/demo-tag.component';
 import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
 import { HeroComponent } from '../../shared/hero/hero.component';
 import { InlineErrorComponent } from '../../shared/inline-error/inline-error.component';
+import { KpiComponent } from '../../shared/kpi/kpi.component';
 import { ListItemComponent } from '../../shared/list-item/list-item.component';
 import { PageHeaderComponent } from '../../shared/page-header/page-header.component';
 import { ShellSidebarDirective } from '../../shared/shell/shell-sidebar.directive';
@@ -48,8 +52,9 @@ import { StickerComponent } from '../../shared/sticker/sticker.component';
 import { StockMeterComponent } from '../../shared/stock-meter/stock-meter.component';
 import { WeekSummaryComponent } from '../../shared/week-summary/week-summary.component';
 
-// Datos reales del veterinario: pacientes recientes y las mascotas que puede atender.
+// Datos reales del veterinario: indicadores, pacientes recientes y las mascotas que puede atender.
 interface RealData {
+  stats: VetStats;
   recent: RecentPatient[];
   pets: Pet[];
 }
@@ -62,8 +67,9 @@ const TODAY_LIMIT = 5;
 const STOCK_LIMIT = 5;
 
 /**
- * Inicio del veterinario (11.6): héroe con el día, «Resumen del día», citas de hoy, pacientes
- * recientes y existencias bajas. Las citas son demo (S3); los pacientes y las existencias son
+ * Inicio del veterinario (11.6): héroe con el día, «Resumen del día», cuatro indicadores reales
+ * (pacientes, tratamientos, pacientes activos y última atención), citas de hoy, pacientes recientes y
+ * existencias bajas. Las citas son demo (S3); los indicadores, los pacientes y las existencias son
  * reales. Cada fuente carga y falla por separado.
  */
 @Component({
@@ -82,6 +88,7 @@ const STOCK_LIMIT = 5;
     EmptyStateComponent,
     HeroComponent,
     InlineErrorComponent,
+    KpiComponent,
     ListItemComponent,
     PageHeaderComponent,
     ShellSidebarDirective,
@@ -131,6 +138,7 @@ export class DashboardHomeComponent {
   protected readonly stockSkeleton = skeletonVisible(computed(() => this.stock().status === 'loading'));
 
   protected readonly skeletonRows = [0, 1, 2, 3];
+  protected readonly formatUnits = formatUnits;
   protected readonly todayDate = computed(() => startOfDay(this.now()));
   protected readonly dateLabel = computed(() => longDateEs(this.now()));
   protected readonly kicker = computed(() => greetingFor(firstName(this.auth.user()?.name), this.now()));
@@ -239,6 +247,7 @@ export class DashboardHomeComponent {
       pets: this.petService.getAll(),
     }).pipe(
       map(({ treatments, pets }) => ({
+        stats: vetStats(treatments, pets),
         recent: recentPatients(treatments, pets, RECENT_LIMIT),
         // Solo las activas: el formulario de tratamiento rechaza las inactivas.
         pets: pets.filter((pet) => pet.active).sort((a, b) => a.name.localeCompare(b.name, 'es')),

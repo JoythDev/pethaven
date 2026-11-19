@@ -1,5 +1,5 @@
 import { Injectable, inject, signal } from '@angular/core';
-import { Observable, defer, finalize, forkJoin, map, of, shareReplay, switchMap, tap, throwError } from 'rxjs';
+import { Observable, catchError, defer, finalize, forkJoin, map, of, shareReplay, switchMap, tap, throwError } from 'rxjs';
 import {
   appointmentsForVet,
   availableSlots,
@@ -22,6 +22,7 @@ import {
 } from '../../models/demo/appointment.model';
 import { OwnerContext } from '../../models/demo/owner-context.model';
 import { Pet } from '../../models/pet.model';
+import { ClienteTreatment } from '../../models/treatment-cliente.model';
 import { ClienteTreatmentService } from '../treatment-cliente.service';
 import { PetService } from '../pet.service';
 import { VeterinarianService } from '../veterinarian.service';
@@ -143,7 +144,12 @@ export class DemoAppointmentsService {
     return this.petService.getByOwnerId(ownerId).pipe(
       switchMap((pets) =>
         (pets.length
-          ? forkJoin(pets.map((pet) => this.treatmentService.getByPetId(pet.id)))
+          ? // Un fallo en los tratamientos de una mascota no tumba la lista: esa mascota queda sin tratamientos.
+            forkJoin(
+              pets.map((pet) =>
+                this.treatmentService.getByPetId(pet.id).pipe(catchError(() => of<ClienteTreatment[]>([]))),
+              ),
+            )
           : of([])
         ).pipe(
           map((lists) => {

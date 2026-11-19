@@ -45,6 +45,58 @@
     }
   </div>
 
+  <!-- Indicadores reales: pacientes, tratamientos, pacientes activos y última atención (sin etiqueta Demo).
+       Van en su propia fila: entre 680 y 960 px el resumen del día se empareja con «Citas de hoy», así que
+       la fila pasa al final; desde 960 px sigue al héroe. -->
+  <div class="col-span-12 grid min-w-0 grid-cols-12 gap-[14px] @min-[680px]:order-last @min-[960px]:order-none">
+  @let statsState = real();
+  @if (statsState.status === 'loading') {
+    @if (realSkeleton()) {
+      @for (tile of skeletonRows; track tile) {
+        <app-skeleton
+          variant="figure"
+          class="col-span-12 @min-[480px]:col-span-6 @min-[960px]:col-span-3"
+          [announce]="$first"
+        />
+      }
+    }
+  } @else if (statsState.status === 'error') {
+    <section app-card heading="Indicadores" class="col-span-12">
+      <app-inline-error text="No pudimos cargar tus indicadores." (retry)="retryReal()" />
+    </section>
+  } @else {
+    @let stats = statsState.data.stats;
+    <div class="col-span-12 min-w-0 @min-[480px]:col-span-6 @min-[960px]:col-span-3">
+      <app-kpi hue="honey" class="h-full" label="Mis pacientes" valueId="vetPatients" [value]="formatUnits(stats.patientCount)">
+        <span class="mt-auto pt-2 text-[12.5px] leading-[18px] font-extrabold">Mascotas atendidas</span>
+      </app-kpi>
+    </div>
+    <div class="col-span-12 min-w-0 @min-[480px]:col-span-6 @min-[960px]:col-span-3">
+      <app-kpi hue="sky" class="h-full" label="Tratamientos" valueId="vetTreatments" [value]="formatUnits(stats.treatmentCount)">
+        <span class="mt-auto pt-2 text-[12.5px] leading-[18px] font-extrabold">Atenciones registradas</span>
+      </app-kpi>
+    </div>
+    <div class="col-span-12 min-w-0 @min-[480px]:col-span-6 @min-[960px]:col-span-3">
+      <app-kpi hue="sage" class="h-full" label="Pacientes activos" valueId="vetActivePatients" [value]="formatUnits(stats.activePatientCount)">
+        <span class="mt-auto pt-2 text-[12.5px] leading-[18px] font-extrabold">Mascotas actualmente activas</span>
+      </app-kpi>
+    </div>
+    <div class="col-span-12 min-w-0 @min-[480px]:col-span-6 @min-[960px]:col-span-3">
+      <app-kpi
+        hue="rose"
+        class="h-full"
+        label="Última atención"
+        valueId="vetLatestAttention"
+        [value]="stats.latestAttention?.date ?? '—'"
+      >
+        <span class="mt-auto pt-2 text-[12.5px] leading-[18px] font-extrabold">
+          {{ stats.latestAttention ? 'Más reciente · ' + stats.latestAttention.time : 'Sin atenciones registradas' }}
+        </span>
+      </app-kpi>
+    </div>
+  }
+  </div>
+
   <!-- Citas de hoy (demo) -->
   <div class="col-span-12 @min-[680px]:col-span-6 @min-[960px]:col-span-5 min-w-0">
     <section app-card heading="Citas de hoy" class="h-full">

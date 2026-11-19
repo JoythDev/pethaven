@@ -24,33 +24,25 @@
   <ng-container *ngTemplateOutlet="controls" />
 </div>
 
-@let v = view();
+@let d = data();
+@let p = period();
 
 <div class="grid grid-cols-12 items-stretch gap-[14px]" [attr.aria-busy]="loading()">
   @if (failed()) {
     <section app-card heading="Indicadores" class="col-span-12">
       <app-inline-error text="No pudimos cargar los indicadores de la clínica." (retry)="retrySummary()" />
     </section>
-  } @else if (v) {
-    <!-- KPI: ventas y ganancia siguen el periodo (demo salvo en «Todo»); tratamientos y mascotas son reales -->
-    @let salesTrend = trendOf(v.period.change?.salesPct ?? null);
-    @let profitTrend = trendOf(v.period.change?.profitPct ?? null);
+  } @else if (d) {
+    <!-- KPI reales: ventas y ganancia son siempre los totales del API, sea cual sea el periodo elegido -->
     <div class="col-span-12 min-w-0 @min-[680px]:col-span-6 @min-[960px]:col-span-3">
       <app-kpi
         hue="honey"
         class="h-full"
-        label="Ventas"
+        label="Ventas totales"
         valueId="totalSales"
-        [value]="formatCurrency(v.period.metrics.sales)"
-        [trend]="salesTrend"
-        [series]="v.period.series.sales"
+        [value]="formatCurrency(d.totalSales)"
       >
-        @if (periodIsDemo()) {
-          <app-demo-tag class="absolute top-0 right-0" />
-        }
-        @if (!salesTrend) {
-          <span class="mt-auto pt-2 text-[12.5px] leading-[18px] font-extrabold">Todo el historial</span>
-        }
+        <span class="mt-auto pt-2 text-[12.5px] leading-[18px] font-extrabold">Todo el historial</span>
         <app-sticker art name="bone" [width]="50" />
       </app-kpi>
     </div>
@@ -58,18 +50,11 @@
       <app-kpi
         hue="sage"
         class="h-full"
-        label="Ganancia bruta"
+        label="Ganancia total"
         valueId="grossProfit"
-        [value]="formatCurrency(v.period.metrics.profit)"
-        [trend]="profitTrend"
-        [series]="v.period.series.profit"
+        [value]="formatCurrency(d.grossProfit)"
       >
-        @if (periodIsDemo()) {
-          <app-demo-tag class="absolute top-0 right-0" />
-        }
-        @if (!profitTrend) {
-          <span class="mt-auto pt-2 text-[12.5px] leading-[18px] font-extrabold">Todo el historial</span>
-        }
+        <span class="mt-auto pt-2 text-[12.5px] leading-[18px] font-extrabold">Todo el historial</span>
         <app-sticker art name="star" [width]="46" />
       </app-kpi>
     </div>
@@ -79,7 +64,7 @@
         class="h-full"
         label="Tratamientos"
         valueId="administeredTreatments"
-        [value]="formatUnits(v.data.administeredTreatmentsLastMonth)"
+        [value]="formatUnits(d.administeredTreatmentsLastMonth)"
       >
         <span class="mt-auto pt-2 text-[12.5px] leading-[18px] font-extrabold">Último mes</span>
         <app-sticker art name="pill" [width]="50" />
@@ -91,27 +76,55 @@
         class="h-full"
         label="Mascotas activas"
         valueId="activePets"
-        [value]="formatUnits(v.data.activePets)"
+        [value]="formatUnits(d.activePets)"
       >
-        <span class="mt-auto pt-2 text-[12.5px] leading-[18px] font-extrabold">De {{ formatUnits(v.data.totalPets) }} registradas</span>
+        <span class="mt-auto pt-2 text-[12.5px] leading-[18px] font-extrabold">De {{ formatUnits(d.totalPets) }} registradas</span>
         <app-sticker art name="paw" [width]="50" [kit]="3" />
       </app-kpi>
     </div>
 
-    <!-- Ventas y ganancia (demo) y los más vendidos (reales) -->
+    <!-- Ventas y ganancia del periodo (demo) y los más vendidos (reales) -->
     <div class="col-span-12 min-w-0 @min-[960px]:col-span-8">
       <section app-card heading="Ventas y ganancia" class="h-full">
         <app-demo-tag title-extra />
-        <p class="-mt-1 mb-2 text-[12.5px] leading-[18px] text-ink-muted">
-          {{ periodId() === 'all' ? 'Todo el historial registrado, por año.' : 'Las variaciones comparan con el periodo anterior.' }}
-        </p>
-        <app-sales-chart [period]="v.period" />
+        @if (p) {
+          <p class="-mt-1 mb-2 text-[12.5px] leading-[18px] text-ink-muted">
+            {{ periodId() === 'all' ? 'Todo el historial registrado, por año.' : 'Las variaciones comparan con el periodo anterior.' }}
+          </p>
+          @let salesTrend = trendOf(p.change?.salesPct ?? null);
+          @let profitTrend = trendOf(p.change?.profitPct ?? null);
+          <dl class="mb-3 flex flex-wrap gap-x-8 gap-y-2 px-1">
+            <div>
+              <dt class="text-[12.5px] leading-[18px] text-ink-muted">Ventas · {{ p.label.toLowerCase() }}</dt>
+              <dd class="text-sm leading-5 font-extrabold tabular-nums">
+                {{ formatCurrency(p.metrics.sales) }}
+                @if (salesTrend) {
+                  <span class="ml-1 text-[12.5px] leading-[18px]">{{ salesTrend.text }}</span>
+                }
+              </dd>
+            </div>
+            <div>
+              <dt class="text-[12.5px] leading-[18px] text-ink-muted">Ganancia · {{ p.label.toLowerCase() }}</dt>
+              <dd class="text-sm leading-5 font-extrabold tabular-nums">
+                {{ formatCurrency(p.metrics.profit) }}
+                @if (profitTrend) {
+                  <span class="ml-1 text-[12.5px] leading-[18px]">{{ profitTrend.text }}</span>
+                }
+              </dd>
+            </div>
+          </dl>
+          <app-sales-chart [period]="p" />
+        } @else if (periods().status === 'error') {
+          <app-inline-error text="No pudimos cargar las gráficas de demostración." (retry)="retryDemo()" />
+        } @else if (periodsSkeleton()) {
+          <app-skeleton variant="chart" />
+        }
       </section>
     </div>
     <div class="col-span-12 min-w-0 @min-[960px]:col-span-4">
       <section app-card heading="Más vendidos" class="h-full">
         <a action pButton [text]="true" size="small" label="Ver inventario" routerLink="/administrador/medicamentos"></a>
-        @if (topMedications(v.data); as top) {
+        @if (topMedications(d); as top) {
           @if (top.length) {
             <ol class="flex flex-col gap-0.5">
               @for (item of top; track $index) {
@@ -157,8 +170,8 @@
     <!-- Tratamientos por medicamento (real, último mes) -->
     <div class="col-span-12 min-w-0 @min-[680px]:col-span-6 @min-[960px]:col-span-4">
       <section app-card heading="Tratamientos por medicamento" class="h-full">
-        <p class="-mt-1 mb-2 text-[12.5px] leading-[18px] text-ink-muted">Último mes · {{ rangeLabel(v.data) }}</p>
-        @if (medications(v.data); as list) {
+        <p class="-mt-1 mb-2 text-[12.5px] leading-[18px] text-ink-muted">Último mes · {{ rangeLabel(d) }}</p>
+        @if (medications(d); as list) {
           @if (list.items.length) {
             <ul class="flex flex-col gap-1">
               @for (item of list.items; track item.medication.medicationName) {
@@ -253,22 +266,22 @@
         <a action pButton [text]="true" size="small" label="Gestionar" routerLink="/administrador/veterinarios"></a>
         <div class="flex items-center gap-4 px-2.5">
           <app-ratio-ring
-            [value]="v.data.activeVeterinarians"
-            [total]="totalVeterinarians(v.data)"
-            [label]="v.data.activeVeterinarians + ' de ' + totalVeterinarians(v.data) + ' veterinarios activos'"
+            [value]="d.activeVeterinarians"
+            [total]="totalVeterinarians(d)"
+            [label]="d.activeVeterinarians + ' de ' + totalVeterinarians(d) + ' veterinarios activos'"
           />
           <dl class="grid gap-1.5 text-sm leading-5">
             <div class="flex items-baseline gap-2">
               <dt class="text-ink-muted">Activos</dt>
-              <dd id="activeVeterinarians" class="font-extrabold tabular-nums">{{ formatUnits(v.data.activeVeterinarians) }}</dd>
+              <dd id="activeVeterinarians" class="font-extrabold tabular-nums">{{ formatUnits(d.activeVeterinarians) }}</dd>
             </div>
             <div class="flex items-baseline gap-2">
               <dt class="text-ink-muted">Inactivos</dt>
-              <dd id="inactiveVeterinarians" class="font-extrabold tabular-nums">{{ formatUnits(v.data.inactiveVeterinarians) }}</dd>
+              <dd id="inactiveVeterinarians" class="font-extrabold tabular-nums">{{ formatUnits(d.inactiveVeterinarians) }}</dd>
             </div>
             <div class="flex items-baseline gap-2">
               <dt class="text-ink-muted">Total</dt>
-              <dd class="font-extrabold tabular-nums">{{ formatUnits(totalVeterinarians(v.data)) }}</dd>
+              <dd class="font-extrabold tabular-nums">{{ formatUnits(totalVeterinarians(d)) }}</dd>
             </div>
           </dl>
         </div>
@@ -279,26 +292,32 @@
     <div class="col-span-12 min-w-0 @min-[680px]:col-span-6 @min-[960px]:col-span-4">
       <section app-card heading="Ocupación" class="h-full">
         <app-demo-tag title-extra />
-        <div class="flex h-[104px] items-end gap-2 px-1">
-          @for (bar of occupancyBars(v.period); track $index) {
-            <div class="flex min-w-0 flex-1 flex-col items-center justify-end gap-1" [attr.aria-label]="bar.label + ': ' + bar.value + ' %'">
-              <span class="text-xs leading-4 font-extrabold tabular-nums" aria-hidden="true">{{ bar.value }}&nbsp;%</span>
-              <span
-                class="block w-full max-w-10 rounded-[8px]"
-                [class]="bar.peak ? 'bg-accent' : 'bg-accent/45'"
-                [style.height.px]="bar.value * 0.65"
-                aria-hidden="true"
-              ></span>
-              <span class="text-xs leading-4 font-extrabold text-ink-muted" aria-hidden="true">{{ bar.label }}</span>
-            </div>
-          }
-        </div>
-        <p class="mt-3 text-[12.5px] leading-[18px] text-ink-muted">
-          Promedio de {{ v.period.metrics.occupancy }} %
-          @if (v.period.change; as change) {
-            · {{ change.occupancyPoints >= 0 ? '+' : '' }}{{ change.occupancyPoints }} {{ change.occupancyPoints === 1 || change.occupancyPoints === -1 ? 'punto' : 'puntos' }} frente al periodo anterior
-          }
-        </p>
+        @if (p) {
+          <div class="flex h-[104px] items-end gap-2 px-1">
+            @for (bar of occupancyBars(p); track $index) {
+              <div class="flex min-w-0 flex-1 flex-col items-center justify-end gap-1" [attr.aria-label]="bar.label + ': ' + bar.value + ' %'">
+                <span class="text-xs leading-4 font-extrabold tabular-nums" aria-hidden="true">{{ bar.value }}&nbsp;%</span>
+                <span
+                  class="block w-full max-w-10 rounded-[8px]"
+                  [class]="bar.peak ? 'bg-accent' : 'bg-accent/45'"
+                  [style.height.px]="bar.value * 0.65"
+                  aria-hidden="true"
+                ></span>
+                <span class="text-xs leading-4 font-extrabold text-ink-muted" aria-hidden="true">{{ bar.label }}</span>
+              </div>
+            }
+          </div>
+          <p class="mt-3 text-[12.5px] leading-[18px] text-ink-muted">
+            Promedio de {{ p.metrics.occupancy }} %
+            @if (p.change; as change) {
+              · {{ change.occupancyPoints >= 0 ? '+' : '' }}{{ change.occupancyPoints }} {{ change.occupancyPoints === 1 || change.occupancyPoints === -1 ? 'punto' : 'puntos' }} frente al periodo anterior
+            }
+          </p>
+        } @else if (periods().status === 'error') {
+          <app-inline-error text="No pudimos cargar la ocupación de demostración." (retry)="retryDemo()" />
+        } @else if (periodsSkeleton()) {
+          <app-skeleton variant="chart" />
+        }
       </section>
     </div>
 
@@ -307,20 +326,20 @@
       <section app-card heading="Mascotas" class="h-full">
         <dl class="flex flex-wrap gap-x-8 gap-y-3 px-2.5">
           <div>
-            <dd id="totalPets" class="font-display text-[28px] leading-7 font-semibold tabular-nums">{{ formatUnits(v.data.totalPets) }}</dd>
+            <dd id="totalPets" class="font-display text-[28px] leading-7 font-semibold tabular-nums">{{ formatUnits(d.totalPets) }}</dd>
             <dt class="text-[12.5px] leading-[18px] text-ink-muted">registradas</dt>
           </div>
           <div>
-            <dd class="font-display text-[28px] leading-7 font-semibold tabular-nums">{{ formatUnits(v.data.activePets) }}</dd>
+            <dd class="font-display text-[28px] leading-7 font-semibold tabular-nums">{{ formatUnits(d.activePets) }}</dd>
             <dt class="text-[12.5px] leading-[18px] text-ink-muted">activas</dt>
           </div>
           <div>
-            <dd class="font-display text-[28px] leading-7 font-semibold tabular-nums">{{ formatUnits(inactivePets(v.data)) }}</dd>
+            <dd class="font-display text-[28px] leading-7 font-semibold tabular-nums">{{ formatUnits(inactivePets(d)) }}</dd>
             <dt class="text-[12.5px] leading-[18px] text-ink-muted">inactivas</dt>
           </div>
         </dl>
         <div class="mt-4 flex flex-col gap-2.5 px-2.5 text-sm leading-5">
-          @let activeShare = share(v.data.activePets, v.data.totalPets);
+          @let activeShare = share(d.activePets, d.totalPets);
           <div class="flex items-center gap-3">
             <span class="w-20 shrink-0 text-ink-muted">Activas</span>
             <span class="block h-2 flex-1 rounded-full bg-sunken" aria-hidden="true">
@@ -331,9 +350,9 @@
           <div class="flex items-center gap-3">
             <span class="w-20 shrink-0 text-ink-muted">Inactivas</span>
             <span class="block h-2 flex-1 rounded-full bg-sunken" aria-hidden="true">
-              <span class="block h-full rounded-full bg-accent" [style.width.%]="v.data.totalPets ? 100 - activeShare : 0"></span>
+              <span class="block h-full rounded-full bg-accent" [style.width.%]="d.totalPets ? 100 - activeShare : 0"></span>
             </span>
-            <strong class="w-12 shrink-0 text-right font-extrabold tabular-nums">{{ v.data.totalPets ? 100 - activeShare : 0 }} %</strong>
+            <strong class="w-12 shrink-0 text-right font-extrabold tabular-nums">{{ d.totalPets ? 100 - activeShare : 0 }} %</strong>
           </div>
         </div>
       </section>
@@ -368,11 +387,11 @@
         </span>
       }
     </app-block>
-  } @else if (failed()) {
+  } @else if (periods().status === 'error') {
     <section app-card heading="Ventas del mes">
-      <app-inline-error text="No pudimos cargar las ventas del mes." (retry)="retrySummary()" />
+      <app-inline-error text="No pudimos cargar las ventas del mes." (retry)="retryDemo()" />
     </section>
-  } @else if (summarySkeleton()) {
+  } @else if (summarySkeleton() || periodsSkeleton()) {
     <app-skeleton variant="figure" />
   }
 
@@ -390,14 +409,14 @@
     </nav>
   </section>
 
-  @if (v) {
+  @if (d) {
     <section app-card heading="Equipo">
       <p class="text-sm leading-5">
-        <strong class="font-extrabold">{{ v.data.activeVeterinarians }}</strong>
-        {{ v.data.activeVeterinarians === 1 ? 'veterinario activo' : 'veterinarios activos' }}
+        <strong class="font-extrabold">{{ d.activeVeterinarians }}</strong>
+        {{ d.activeVeterinarians === 1 ? 'veterinario activo' : 'veterinarios activos' }}
       </p>
       <p class="mt-1.5 text-sm leading-5">
-        <strong class="font-extrabold">{{ formatUnits(v.data.totalPets) }}</strong> mascotas registradas
+        <strong class="font-extrabold">{{ formatUnits(d.totalPets) }}</strong> mascotas registradas
       </p>
     </section>
   }

@@ -103,3 +103,36 @@ export function weekSummary(days: DayCount[], today: Date, completedToday: numbe
   const attended = before + completedToday;
   return { total, attended, percent: total ? Math.round((attended / total) * 100) : 0 };
 }
+
+export interface VetStats {
+  /** Mascotas distintas atendidas por el veterinario. */
+  patientCount: number;
+  /** Atenciones (tratamientos) registradas por el veterinario. */
+  treatmentCount: number;
+  /** Mascotas atendidas que hoy siguen activas. */
+  activePatientCount: number;
+  /** Tratamiento más reciente: fecha y hora ya redactadas; null si no hay atenciones. */
+  latestAttention: { date: string; time: string } | null;
+}
+
+const attentionDate = new Intl.DateTimeFormat('es-CO', { dateStyle: 'medium' });
+const attentionTime = new Intl.DateTimeFormat('es-CO', { timeStyle: 'short' });
+
+// Indicadores reales del Inicio (los de la versión anterior): se calculan con los tratamientos del
+// veterinario y la lista completa de mascotas, activas o no.
+export function vetStats(treatments: Treatment[], pets: Pet[]): VetStats {
+  const patientIds = new Set(treatments.map((treatment) => treatment.petId));
+  const latest = treatments.reduce<Treatment | null>(
+    (best, treatment) =>
+      !best || new Date(treatment.date).getTime() > new Date(best.date).getTime() ? treatment : best,
+    null,
+  );
+  return {
+    patientCount: patientIds.size,
+    treatmentCount: treatments.length,
+    activePatientCount: pets.filter((pet) => pet.active && patientIds.has(pet.id)).length,
+    latestAttention: latest
+      ? { date: attentionDate.format(new Date(latest.date)), time: attentionTime.format(new Date(latest.date)) }
+      : null,
+  };
+}
