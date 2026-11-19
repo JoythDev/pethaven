@@ -9,6 +9,7 @@
     <input
       pInputText
       type="search"
+      [attr.id]="searchId()"
       class="h-[38px] w-full border-[1.5px] py-0 pr-9 pl-10 [&::-webkit-search-cancel-button]:hidden @max-[679px]:h-11"
       [attr.aria-label]="searchLabel()"
       [placeholder]="searchPlaceholder()"

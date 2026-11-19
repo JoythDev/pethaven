@@ -53,7 +53,7 @@
         } @else if (last) {
           <div class="flex items-start gap-2">
             <div class="min-w-0 flex-1">
-              <p class="font-display text-[17px] leading-[22px] font-semibold text-balance">{{ last.diagnosis }}</p>
+              <p class="treatment-diagnosis font-display text-[17px] leading-[22px] font-semibold text-balance">{{ last.diagnosis }}</p>
               <p class="mt-0.5 text-[12.5px] leading-[18px] text-ink-muted">
                 {{ last.date | date: 'd MMM y' }} · {{ last.veterinarianName }}
               </p>
@@ -63,7 +63,7 @@
           @if (last.drugs.length) {
             <ul class="m-0 mt-3 flex list-none flex-col gap-0.5 border-t border-line p-0 pt-2.5">
               @for (drug of last.drugs; track drug.id) {
-                <li class="flex items-center gap-2.5 py-1">
+                <li class="treatment-drug flex items-center gap-2.5 py-1">
                   <span class="grid size-8 shrink-0 place-items-center rounded-full bg-(--hue)" [class]="'hue-' + hue(drug.drugId)">
                     <app-sticker name="pill" [width]="22" />
                   </span>

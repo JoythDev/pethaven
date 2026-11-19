@@ -66,6 +66,7 @@
 
     <button
       #userButton
+      id="btnMenuUsuario"
       type="button"
       class="ph-focus flex shrink-0 items-center gap-2.5 rounded-control p-1 text-left transition-colors duration-[180ms] ease-out-strong hover:bg-sunken motion-reduce:transition-none @max-[679px]:size-11 @max-[679px]:justify-center @max-[679px]:p-0"
       aria-haspopup="menu"
@@ -94,6 +95,7 @@
         <span
           class="p-menu-item-link"
           data-pc-section="action"
+          [attr.id]="item.id === 'logout' ? 'btnLogout' : null"
           [class]="sidebar.layout() === 'compact' ? 'min-h-11' : ''"
         >
           @switch (item.id) {

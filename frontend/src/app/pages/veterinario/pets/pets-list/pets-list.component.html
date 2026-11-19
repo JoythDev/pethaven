@@ -16,6 +16,7 @@
     [pageSize]="query().pageSize"
     [view]="query().view"
     [searchText]="query().search"
+    searchId="searchPets"
     searchLabel="Buscar mascotas"
     searchPlaceholder="Buscar por nombre, raza o dueño"
     [loading]="loading()"
@@ -75,7 +76,9 @@
     }
 
     <ng-template #card let-pet let-selected="selected" let-select="select">
+      <!-- `pet-row-name` y `btn-detail` los usan las pruebas E2E (Selenium). -->
       <app-resource-card
+        class="pet-row-name"
         [id]="pet.id"
         [heading]="pet.name"
         [subtitle]="pet.breed + ' · ' + pet.ownerName"
@@ -86,6 +89,7 @@
         <app-sticker art [name]="sticker(pet)" [width]="96" [kit]="kit(pet)" />
         <p-tag status [value]="status(pet).label" [severity]="status(pet).severity" />
         <span facts class="text-ink-muted tabular-nums">{{ ageLabel(pet.age) }} · {{ pet.weight | number: '1.0-1' }} kg</span>
+        <a action pButton class="btn-detail" [text]="true" size="small" label="Ver ficha" [routerLink]="[area.basePath, pet.id]"></a>
       </app-resource-card>
     </ng-template>
 
@@ -99,6 +103,7 @@
             <th app-sort-header field="age" align="end" [sort]="query().sort" (sortChange)="onSort($event)">Edad</th>
             <th app-sort-header field="weight" align="end" [sort]="query().sort" (sortChange)="onSort($event)">Peso</th>
             <th app-sort-header field="status" [sort]="query().sort" (sortChange)="onSort($event)">Estado</th>
+            <th class="w-px"><span class="sr-only">Ficha</span></th>
           </tr>
         </ng-template>
         <ng-template #body let-pet>
@@ -106,7 +111,7 @@
             <td>
               <div class="flex items-center gap-3">
                 <app-avatar [id]="pet.id" [name]="pet.name" kind="pet" [species]="pet.species" [photoUrl]="pet.photoUrl" [size]="32" />
-                <span class="font-extrabold text-ink">{{ pet.name }}</span>
+                <span class="pet-row-name font-extrabold text-ink">{{ pet.name }}</span>
               </div>
             </td>
             <td>
@@ -117,6 +122,19 @@
             <td class="text-right tabular-nums">{{ ageLabel(pet.age) }}</td>
             <td class="text-right tabular-nums">{{ pet.weight | number: '1.0-1' }} kg</td>
             <td><p-tag [value]="status(pet).label" [severity]="status(pet).severity" /></td>
+            <td class="text-right">
+              <a
+                pButton
+                class="btn-detail"
+                [text]="true"
+                size="small"
+                [routerLink]="[area.basePath, pet.id]"
+                [attr.aria-label]="'Abrir la ficha de ' + pet.name"
+                (click)="$event.stopPropagation()"
+              >
+                <svg lucideArrowUpRight [size]="18" aria-hidden="true"></svg>
+              </a>
+            </td>
           </tr>
         </ng-template>
       </p-table>

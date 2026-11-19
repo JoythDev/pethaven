@@ -105,6 +105,8 @@ export class ResourceListComponent<T> {
   readonly pageSize = input<PageSize>(DEFAULT_PAGE_SIZE);
   readonly view = input<ListView>('cards');
   readonly searchText = input('');
+  /** `id` del buscador; lo usan las pruebas E2E (Selenium) para localizarlo. */
+  readonly searchId = input<string | null>(null);
   readonly searchLabel = input('Buscar');
   readonly searchPlaceholder = input('Buscar');
   readonly loading = input(false);
