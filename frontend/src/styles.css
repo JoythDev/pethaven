@@ -39,6 +39,8 @@
   --color-on-accent: #fffaf0;
   --color-accent-soft: #e5e2c9;
   --color-accent-text: #5c5a3b;
+  /* Color del logo original de PetHaven (verde del logo de la landing; crema en oscuro). */
+  --color-brand: #5e6f59;
 
   --color-hue-honey: #eec56f;
   --color-hue-sage: #a9c193;
@@ -86,6 +88,7 @@
   --color-on-accent: #1c1b10;
   --color-accent-soft: #33321f;
   --color-accent-text: #cbc795;
+  --color-brand: #f7f1e9;
   --color-on-hue: #1b130b;
 
   --color-success-soft: #2d3525;

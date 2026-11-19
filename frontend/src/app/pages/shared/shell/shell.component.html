@@ -2,11 +2,10 @@
   @let cfg = config();
 
   <header class="relative z-30 flex h-[60px] shrink-0 items-center gap-3 border-b border-line bg-card px-[18px] @max-[679px]:px-3">
-    <a [routerLink]="homeLink()" aria-label="PetHaven, ir al inicio" class="ph-focus flex shrink-0 items-center gap-2.5 rounded-control">
-      <span class="grid size-8 place-items-center rounded-full bg-accent text-on-accent">
-        <svg lucidePawPrint [size]="18" aria-hidden="true"></svg>
-      </span>
-      <span class="font-display text-[19px] leading-6 font-bold @max-[679px]:hidden">PetHaven</span>
+    <a [routerLink]="homeLink()" aria-label="PetHaven, ir al inicio" class="ph-focus flex shrink-0 items-center rounded-control">
+      <!-- Logo original: completo en escritorio y solo el isotipo en la barra móvil -->
+      <app-brand-logo variant="full" [height]="44" class="@max-[679px]:hidden!" />
+      <app-brand-logo variant="mark" [height]="36" class="@min-[680px]:hidden!" />
     </a>
 
     @if (sidebar.hasContent() && sidebar.layout() === 'compact') {

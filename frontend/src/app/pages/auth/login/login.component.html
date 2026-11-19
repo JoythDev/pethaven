@@ -1,11 +1,8 @@
 <div class="min-h-dvh bg-ground font-body text-ink min-[960px]:grid min-[960px]:grid-cols-[minmax(0,1fr)_minmax(0,1.1fr)]">
   <main class="flex min-h-dvh flex-col px-6 py-8 sm:px-8 min-[960px]:min-h-0">
     <div class="mx-auto flex w-full max-w-[440px] flex-1 flex-col justify-center">
-      <a routerLink="/" aria-label="PetHaven, volver al inicio" class="ph-focus mb-8 flex w-fit items-center gap-2.5 rounded-control max-[679px]:min-h-11">
-        <span class="grid size-8 place-items-center rounded-full bg-accent text-on-accent">
-          <svg lucidePawPrint aria-hidden="true"></svg>
-        </span>
-        <span class="font-display text-[19px] leading-6 font-bold">PetHaven</span>
+      <a routerLink="/" aria-label="PetHaven, volver al inicio" class="ph-focus mb-8 flex w-fit items-center rounded-control max-[679px]:min-h-11">
+        <app-brand-logo variant="full" [height]="64" />
       </a>
 
       <h1 class="font-display text-[36px] leading-10 font-semibold tracking-[-0.01em] text-balance">Bienvenido de nuevo</h1>

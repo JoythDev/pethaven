@@ -9,7 +9,6 @@ import {
   LucideEyeOff,
   LucideHeart,
   LucideInfo,
-  LucidePawPrint,
   LucideShield,
   LucideTriangleAlert,
   provideLucideConfig,
@@ -22,6 +21,7 @@ import { applyServerErrors, getErrorMessage } from '../../../core/http/http-erro
 import { AuthUser } from '../../../models/auth.model';
 import { AuthService } from '../../../services/auth.service';
 import { AuthArtComponent } from '../auth-art/auth-art.component';
+import { BrandLogoComponent } from '../../shared/brand-logo/brand-logo.component';
 
 // Ancho desde el que se muestra el bloque ilustrado; por debajo, solo el formulario (9.11).
 const ART_MIN_WIDTH = '(min-width: 960px)';
@@ -42,7 +42,7 @@ const ART_MIN_WIDTH = '(min-width: 960px)';
     LucideEyeOff,
     LucideHeart,
     LucideInfo,
-    LucidePawPrint,
+    BrandLogoComponent,
     LucideShield,
     LucideTriangleAlert,
   ],

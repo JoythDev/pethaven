@@ -36,6 +36,7 @@ import { GlobalSearchComponent } from '../global-search/global-search.component'
 import { GlobalSearchService } from '../global-search/global-search.service';
 import { NotificationsBellComponent } from '../notifications/notifications-bell.component';
 import { NotificationsCardComponent } from '../notifications/notifications-card.component';
+import { BrandLogoComponent } from '../brand-logo/brand-logo.component';
 import { ShellSidebarService } from './shell-sidebar.service';
 import { SidebarToggleComponent } from './sidebar-toggle.component';
 import { ShellConfig, ShellIconName, activeTabIndex, layoutForWidth, splitBottomTabs } from './shell-tabs';
@@ -81,7 +82,7 @@ const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
     LucideEllipsis,
     LucideLogOut,
     LucideMoon,
-    LucidePawPrint,
+    BrandLogoComponent,
     LucideSearch,
     LucideSun,
     LucideUser,
