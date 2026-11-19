@@ -8,14 +8,6 @@ import { guestGuard, ownerPortalGuard, roleGuard } from './core/auth/auth.guard'
 import { unsavedChangesGuard } from './core/forms/unsaved-changes.guard';
 import { ownersListMatcher, resourceListMatcher } from './core/owners/owners-route';
 
-// Sección que aún no tiene pantalla: usa el placeholder compartido con título y descripción de la ruta.
-const comingSoon = (path: string, title: string, description: string): Route => ({
-  path,
-  loadComponent: () =>
-    import('./pages/shared/coming-soon/coming-soon.component').then((m) => m.ComingSoonComponent),
-  data: { title, description },
-});
-
 // Pestaña Notificaciones: una sola pantalla para los tres roles; el contenido sale de la sesión.
 const notificationsRoute = (): Route => ({
   path: 'notificaciones',
