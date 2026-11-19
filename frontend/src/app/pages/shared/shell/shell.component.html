@@ -1,7 +1,7 @@
 <div class="flex h-full flex-col bg-ground font-body text-ink">
   @let cfg = config();
 
-  <header class="relative z-30 flex h-[60px] shrink-0 items-center gap-3 border-b border-line bg-card px-[18px] @max-[679px]:px-3">
+  <header class="relative z-30 flex h-[60px] shrink-0 items-center gap-3 border-b border-line bg-card px-[18px] @max-[1279px]:gap-2 @max-[1279px]:px-3 @max-[679px]:px-3">
     <a [routerLink]="homeLink()" aria-label="PetHaven, ir al inicio" class="ph-focus flex shrink-0 items-center rounded-control">
       <!-- Logo original: completo en escritorio y solo el isotipo en la barra móvil -->
       <app-brand-logo variant="full" [height]="44" class="@max-[679px]:hidden!" />
@@ -12,9 +12,10 @@
       <app-sidebar-toggle />
     }
 
-    <nav aria-label="Secciones" class="min-w-0 @max-[679px]:hidden">
+    <!-- Las pestañas ceden después de la búsqueda (9.4): casi sin factor de encogimiento. -->
+    <nav aria-label="Secciones" class="min-w-0 [flex-shrink:0.001] @max-[679px]:hidden">
       <div
-        class="ph-scroll-hidden flex gap-[3px] overflow-x-auto rounded-full bg-sunken p-1"
+        class="ph-scroll-hidden flex gap-[3px] overflow-x-auto rounded-full bg-sunken p-1 @max-[1279px]:gap-0.5"
         (keydown)="onTabsKeydown($event)"
         (focusout)="onTabsFocusOut($event)"
       >
@@ -26,7 +27,7 @@
             ariaCurrentWhenActive="page"
             [attr.tabindex]="i === tabStop() ? 0 : -1"
             (focus)="focusIndex.set(i)"
-            class="ph-focus flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] leading-[18px] font-bold whitespace-nowrap text-ink-muted transition-colors duration-[180ms] ease-out-strong [--ph-focus-offset:0px] hover:text-ink motion-reduce:transition-none [&.is-active]:bg-card [&.is-active]:text-ink [&.is-active]:shadow-[0_1px_2px_rgb(0_0_0/0.14)]"
+            class="ph-focus flex shrink-0 items-center gap-1.5 rounded-full px-3.5 py-2 @max-[1279px]:px-2.5 text-[13px] leading-[18px] font-bold whitespace-nowrap text-ink-muted transition-colors duration-[180ms] ease-out-strong [--ph-focus-offset:0px] hover:text-ink motion-reduce:transition-none [&.is-active]:bg-card [&.is-active]:text-ink [&.is-active]:shadow-[0_1px_2px_rgb(0_0_0/0.14)]"
           >
             <svg [lucideIcon]="icons[tab.icon]" [size]="18" aria-hidden="true"></svg>
             {{ tab.label }}
@@ -39,17 +40,17 @@
 
     <app-global-search />
 
-    <!-- En compacto la campana vive en el menú de usuario (9.9). -->
+    <!-- En compacto, y por debajo de 1280 px para que quepan las siete pestañas junto al logo completo, la campana vive en el menú de usuario (9.9). -->
     @let bellLink = notificationsLink();
     @if (bellLink && sidebar.layout() !== 'compact') {
-      <app-notifications-bell [link]="bellLink" />
+      <app-notifications-bell [link]="bellLink" class="@max-[1279px]:hidden!" />
     }
 
-    <!-- En compacto el tema se cambia desde el menú de usuario (9.9). -->
+    <!-- En compacto, y por debajo de 1280 px, el tema se cambia desde el menú de usuario (9.9). -->
     @if (sidebar.layout() !== 'compact') {
       <button
         type="button"
-        class="ph-focus ph-icon-btn"
+        class="ph-focus ph-icon-btn @max-[1279px]:hidden!"
         [attr.aria-label]="themeLabel()"
         [pTooltip]="themeLabel()"
         tooltipPosition="bottom"
@@ -235,6 +236,5 @@
     </p-drawer>
   }
 
-  <p-toast position="top-right" styleClass="top-[72px]! @max-[679px]:left-3! @max-[679px]:right-3! @max-[679px]:w-auto!" />
   <p-confirmdialog />
 </div>

@@ -677,6 +677,67 @@ html.js .reveal.is-visible {
 }
 
 /* --------------------------------------------------------------------------
+   Tamaños de control (4.6) en el tema de PrimeNG: `md` de 38 px por defecto (botones, campos y selects),
+   `sm` de 30 px y `lg` de 44 px. Por debajo de 680 px todos los controles pasan a `lg` (objetivo táctil de
+   44 px). El relleno vertical es pequeño a propósito: el alto lo fija min-height, así que no cambia si el
+   borde pasa de 1 a 1.5 px. Los tokens `--p-form-field-*` los leen botón, campo, select, fecha y número.
+   -------------------------------------------------------------------------- */
+:root {
+  --p-form-field-padding-x: 11px;
+  --p-form-field-padding-y: 6px;
+  --p-form-field-sm-padding-x: 9px;
+  --p-form-field-sm-padding-y: 3px;
+  --p-form-field-lg-padding-y: 9px;
+  --p-button-icon-only-width: 38px;
+}
+.p-inputtext,
+.p-textarea,
+.p-select-label {
+  font-size: 14px;
+  line-height: 20px;
+}
+.p-button {
+  font-size: 13px;
+  line-height: 18px;
+}
+.p-inputtext:not(textarea),
+.p-select,
+.p-button {
+  min-height: 38px;
+}
+.p-inputtext-sm:not(textarea),
+.p-select.p-inputfield-sm,
+.p-select-sm,
+.p-button-sm,
+.p-button-small {
+  min-height: 30px;
+}
+.p-inputtext-lg:not(textarea),
+.p-button-lg,
+.p-button-large {
+  min-height: 44px;
+}
+.p-button-icon-only:not(.p-button-sm):not(.p-button-small) {
+  width: 38px;
+}
+@media (max-width: 679px) {
+  .p-inputtext:not(textarea),
+  .p-select,
+  .p-select.p-inputfield-sm,
+  .p-select-sm,
+  .p-button,
+  .p-button-sm,
+  .p-button-small,
+  .p-inputtext-sm:not(textarea),
+  .p-inputtext-lg:not(textarea) {
+    min-height: 44px;
+  }
+  .p-button-icon-only {
+    width: 44px;
+  }
+}
+
+/* --------------------------------------------------------------------------
    Diálogos y toasts de PrimeNG
    -------------------------------------------------------------------------- */
 /* El diálogo de confirmación no se estira al ancho del texto. */
@@ -867,5 +928,80 @@ html.js .reveal.is-visible {
 @container (max-width: 679px) {
   .p-selectbutton .p-togglebutton-content {
     padding: 11px 13px;
+  }
+}
+
+/* Aviso (p-toast, 10.x): abajo al centro, `ink` sobre `ground`, radio completo, icono al inicio y elevación 2.
+   Sustituye al aspecto por severidad de Aura. El icono lleva el color de la severidad mezclado con `ground`
+   para conservar el contraste en claro y en oscuro. */
+.ph-toast.p-toast {
+  max-width: calc(100vw - 24px);
+}
+.ph-toast .p-toast-message {
+  border: 0;
+  border-radius: 9999px;
+  background: var(--color-ink);
+  color: var(--color-ground);
+  box-shadow: 0 12px 30px -10px rgb(0 0 0 / 0.35);
+  backdrop-filter: none;
+  outline: 0;
+}
+.ph-toast .p-toast-message-content {
+  align-items: center;
+  gap: 10px;
+  padding: 10px 14px 10px 16px;
+}
+.ph-toast .p-toast-message-icon {
+  flex-shrink: 0;
+  width: 18px;
+  height: 18px;
+  color: color-mix(in srgb, var(--ph-toast-tone, var(--color-info)) 65%, var(--color-ground));
+}
+.ph-toast .p-toast-message-success { --ph-toast-tone: var(--color-success); }
+.ph-toast .p-toast-message-warn { --ph-toast-tone: var(--color-warning); }
+.ph-toast .p-toast-message-error { --ph-toast-tone: var(--color-danger); }
+.ph-toast .p-toast-message-info { --ph-toast-tone: var(--color-info); }
+.ph-toast .p-toast-message-text {
+  gap: 0;
+}
+.ph-toast .p-toast-summary {
+  font-size: 14px;
+  line-height: 20px;
+  font-weight: 800;
+}
+.ph-toast .p-toast-summary,
+.ph-toast .p-toast-detail {
+  color: inherit;
+}
+.ph-toast .p-toast-detail {
+  margin: 0;
+  font-size: 13px;
+  line-height: 18px;
+  opacity: 0.85;
+}
+.ph-toast .p-toast-close-button {
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  color: var(--color-ground);
+  border-radius: 9999px;
+}
+.ph-toast .p-toast-close-button:focus-visible {
+  outline: 2px solid var(--color-ground);
+  outline-offset: 1px;
+  box-shadow: none;
+}
+.ph-toast .p-toast-close-button:hover {
+  background: color-mix(in srgb, var(--color-ground) 16%, transparent);
+}
+/* Sobre la barra inferior de móvil (56 px) y su zona segura. PrimeNG fija `bottom` y `left` en línea,
+   por eso estos dos llevan !important. */
+@media (max-width: 679px) {
+  .ph-toast.p-toast-bottom-center {
+    bottom: calc(56px + 12px + env(safe-area-inset-bottom)) !important;
+    left: 12px !important;
+    right: 12px;
+    width: auto;
+    transform: none;
   }
 }

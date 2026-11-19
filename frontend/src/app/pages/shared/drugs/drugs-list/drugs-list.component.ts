@@ -1,7 +1,7 @@
 import { Component, DestroyRef, computed, effect, inject, signal } from '@angular/core';
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
-import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import { ActivatedRoute, Params, Router, RouterLink } from '@angular/router';
 import { LucideFileSpreadsheet, LucidePencil, LucidePill, LucidePlus, LucideTrash2 } from '@lucide/angular';
 import { ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
@@ -34,6 +34,7 @@ import {
   ListView,
   clearAll,
   parseListQuery,
+  parseSelectedId,
   serializeListQuery,
   withFilter,
   withPage,
@@ -69,6 +70,9 @@ const LOAD_ERROR = 'No pudimos cargar los medicamentos. Revisa tu conexión e in
 const LOADING = { status: 'loading' } as const;
 const PRICE_DEBOUNCE_MS = 250;
 const VET_NOTE = 'Consulta de inventario. Solo administración puede modificarlo.';
+
+const toSearchParams = (params: Params): URLSearchParams =>
+  new URLSearchParams(Object.entries(params).map(([key, value]) => [key, String(value)]));
 
 const CONFIG: ListQueryConfig = {
   filterKeys: DRUG_FILTER_KEYS,
@@ -133,12 +137,15 @@ export class DrugsListComponent {
   private pendingSelectId: number | null = null;
 
   protected readonly query = toSignal(
-    this.route.queryParams.pipe(
-      map((params) =>
-        parseListQuery(new URLSearchParams(Object.entries(params).map(([key, value]) => [key, String(value)])), CONFIG),
-      ),
-    ),
+    this.route.queryParams.pipe(map((params) => parseListQuery(toSearchParams(params), CONFIG))),
     { initialValue: parseListQuery(new URLSearchParams(), CONFIG) },
+  );
+
+  // `?seleccion=<id>` elige ese medicamento y abre su panel (también como cajón). Los cambios de la lista
+  // reescriben la URL sin ese parámetro, así que no vuelve a imponerse sobre lo que la persona elija después.
+  private readonly urlSelectedId = toSignal(
+    this.route.queryParams.pipe(map((params) => parseSelectedId(toSearchParams(params)))),
+    { initialValue: parseSelectedId(toSearchParams(this.route.snapshot.queryParams)) },
   );
 
   // Diálogo según la URL: `add` abre el alta y `update/:id` la edición de ese medicamento (solo administración).
@@ -245,6 +252,14 @@ export class DrugsListComponent {
       const { filters } = this.query();
       this.minText.set(filters['min'] ?? '');
       this.maxText.set(filters['max'] ?? '');
+    });
+
+    effect(() => {
+      const id = this.urlSelectedId();
+      if (id !== null) {
+        this.selectedId.set(id);
+        this.panelOpen.set(true);
+      }
     });
 
     // La página se corrige en la URL cuando la lista encoge.

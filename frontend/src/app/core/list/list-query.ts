@@ -36,6 +36,15 @@ export interface ListQueryConfig {
 // Nombres de los parámetros de la URL. Las claves de filtro van tal cual, así que no pueden coincidir con estas.
 const PARAM = { search: 'q', sort: 'orden', direction: 'dir', page: 'pagina', pageSize: 'tamano', view: 'vista' } as const;
 
+/** Parámetro de la URL que selecciona un elemento al entrar a la lista (abre su panel de detalle). */
+export const SELECTED_PARAM = 'seleccion';
+
+/** Id del elemento que pide la URL; solo enteros positivos, lo demás se ignora. */
+export function parseSelectedId(params: URLSearchParams): number | null {
+  const raw = params.get(SELECTED_PARAM);
+  return raw !== null && /^\d{1,12}$/.test(raw) && Number(raw) > 0 ? Number(raw) : null;
+}
+
 export function emptyListQuery(config: ListQueryConfig): ListQuery {
   return {
     search: '',

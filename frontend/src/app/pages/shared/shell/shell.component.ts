@@ -26,7 +26,6 @@ import { MenuItem } from 'primeng/api';
 import { ConfirmDialogModule } from 'primeng/confirmdialog';
 import { DrawerModule } from 'primeng/drawer';
 import { MenuModule } from 'primeng/menu';
-import { ToastModule } from 'primeng/toast';
 import { TooltipModule } from 'primeng/tooltip';
 
 import { ThemeService } from '../../../core/theme/theme.service';
@@ -58,7 +57,8 @@ const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
 /**
  * Shell de los portales: barra superior fija con pestañas de sección, barra lateral contextual,
  * contenido con scroll propio y, en compacto, barra inferior. Ocupa exactamente el alto de la
- * ventana y nunca hace scroll como conjunto. Aloja también el toast y la confirmación globales.
+ * ventana y nunca hace scroll como conjunto. Aloja también la confirmación global (el aviso vive en la
+ * raíz, en app.component).
  */
 @Component({
   selector: 'app-shell',
@@ -70,7 +70,6 @@ const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
     ConfirmDialogModule,
     DrawerModule,
     MenuModule,
-    ToastModule,
     TooltipModule,
     AvatarComponent,
     GlobalSearchComponent,
@@ -107,6 +106,10 @@ export class ShellComponent implements OnInit, OnDestroy {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
 
   private resizeObserver?: ResizeObserver;
+
+  /** Ancho en el que las siete pestañas caben junto al logo completo; por debajo, la campana pasa al menú de usuario. */
+  private static readonly TAB_ROOM_WIDTH = 1280;
+  protected readonly narrow = signal(false);
 
   /** Con movimiento reducido las transiciones de menú, cajón y hoja son instantáneas (7). */
   protected readonly transition = window.matchMedia(REDUCED_MOTION).matches
@@ -160,7 +163,7 @@ export class ShellComponent implements OnInit, OnDestroy {
   protected readonly userButton = viewChild<ElementRef<HTMLButtonElement>>('userButton');
 
   protected readonly menuItems = computed<MenuItem[]>(() => [
-    // En compacto la búsqueda y las notificaciones viven en el menú de usuario (9.9).
+    // En compacto la búsqueda vive en el menú de usuario (9.9); con poco ancho también las notificaciones.
     ...(this.sidebar.layout() === 'compact'
       ? [
           {
@@ -168,6 +171,10 @@ export class ShellComponent implements OnInit, OnDestroy {
             label: 'Buscar',
             command: () => this.search.openOverlay(this.userButton()?.nativeElement ?? null),
           },
+        ]
+      : []),
+    ...(this.sidebar.layout() === 'compact' || this.narrow()
+      ? [
           {
             id: 'notifications',
             label: 'Notificaciones',
@@ -216,9 +223,12 @@ export class ShellComponent implements OnInit, OnDestroy {
     this.document.documentElement.classList.add('ph-scrollbars');
 
     const element = this.host.nativeElement;
-    this.sidebar.layout.set(layoutForWidth(element.getBoundingClientRect().width || window.innerWidth));
+    const initialWidth = element.getBoundingClientRect().width || window.innerWidth;
+    this.sidebar.layout.set(layoutForWidth(initialWidth));
+    this.narrow.set(initialWidth < ShellComponent.TAB_ROOM_WIDTH);
     this.resizeObserver = new ResizeObserver(([entry]) => {
       this.sidebar.layout.set(layoutForWidth(entry.contentRect.width));
+      this.narrow.set(entry.contentRect.width < ShellComponent.TAB_ROOM_WIDTH);
     });
     this.resizeObserver.observe(element);
   }

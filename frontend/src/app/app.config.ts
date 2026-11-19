@@ -9,6 +9,7 @@ import { providePrimeNG } from 'primeng/config';
 
 import { routes } from './app.routes';
 import { authInterceptor } from './core/auth/auth.interceptor';
+import { SingleToastMessageService } from './core/notifications/toast-message.service';
 import { AuthService } from './services/auth.service';
 import { PetHavenPreset } from './theme/pethaven-preset';
 
@@ -23,7 +24,8 @@ export const appConfig: ApplicationConfig = {
     provideAppInitializer(() => inject(AuthService).restoreSession()),
     provideAnimationsAsync(),
     { provide: LOCALE_ID, useValue: 'es-CO' },
-    MessageService,
+    // Un aviso a la vez, con la vida y persistencia del sistema de diseño (core/notifications).
+    { provide: MessageService, useClass: SingleToastMessageService },
     ConfirmationService,
     providePrimeNG({
       theme: {
