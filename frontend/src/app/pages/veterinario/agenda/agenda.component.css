@@ -1,0 +1,44 @@
+/* Citas y franjas de la línea de tiempo (10.17). Van sin capa para ganar a `.ph-focus`: sobre un tono
+   el anillo de foco va en on-hue (13). */
+.appt,
+.chip {
+  box-shadow: 0 0 0 0 transparent;
+  transition:
+    box-shadow 120ms var(--ease-out-strong),
+    transform 120ms var(--ease-out-strong);
+}
+
+.appt:hover,
+.chip:hover {
+  box-shadow: 0 0 0 1.5px color-mix(in srgb, var(--appt-ring) 35%, transparent);
+}
+
+.appt:active,
+.chip:active {
+  transform: scale(0.99);
+}
+
+.appt:focus-visible,
+.chip:focus-visible {
+  outline-color: var(--color-on-hue);
+}
+
+/* Cita elegida: anillo de 2.5 px en `ink` (4.3). La variable viene de fuera del bloque, donde `ink` no se reasigna. */
+.appt-selected,
+.appt-selected:hover,
+.chip-selected,
+.chip-selected:hover {
+  box-shadow: 0 0 0 2.5px var(--appt-ring);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .appt,
+  .chip {
+    transition: none;
+  }
+
+  .appt:active,
+  .chip:active {
+    transform: none;
+  }
+}

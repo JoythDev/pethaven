@@ -1,0 +1,100 @@
+<app-page-header heading="Notificaciones" [demo]="true" [subtitle]="subtitle()">
+  <p-button
+    actions
+    type="button"
+    label="Marcar todo como leído"
+    severity="secondary"
+    [outlined]="true"
+    [disabled]="unread() === 0"
+    (onClick)="markAllAsRead()"
+  >
+    <ng-template #icon><svg lucideCheck [size]="18" aria-hidden="true"></svg></ng-template>
+  </p-button>
+</app-page-header>
+
+<div class="mb-3.5 flex flex-wrap items-center gap-2" role="group" aria-label="Filtrar notificaciones">
+  <p-togglebutton
+    onLabel="Todas"
+    offLabel="Todas"
+    [allowEmpty]="false"
+    [ngModel]="filter() === 'all'"
+    (onChange)="setFilter('all')"
+  />
+  <p-togglebutton
+    onLabel="Sin leer"
+    offLabel="Sin leer"
+    [allowEmpty]="false"
+    [ngModel]="filter() === 'unread'"
+    (onChange)="setFilter('unread')"
+  />
+</div>
+
+<div class="grid grid-cols-12 items-start gap-[14px]">
+  <div [class]="twoColumns() ? 'col-span-8 min-w-0' : 'col-span-12 min-w-0'">
+    @if (showSkeleton()) {
+      <div class="rounded-box border border-line bg-card p-2">
+        @for (row of [0, 1, 2, 3, 4]; track row) {
+          <app-skeleton variant="row" [announce]="$first" />
+        }
+      </div>
+    } @else if (groups().length) {
+      <div class="flex flex-col gap-[14px]">
+        @for (group of groups(); track group.title) {
+          <section app-card [heading]="group.title">
+            <div class="flex flex-col gap-0.5">
+              @for (notification of group.items; track notification.id) {
+                <app-notification-item
+                  [notification]="notification"
+                  [now]="now()"
+                  variant="page"
+                  [interactive]="true"
+                  (activate)="open(notification)"
+                />
+              }
+            </div>
+          </section>
+        }
+      </div>
+    } @else {
+      <section app-card>
+        @if (total() === 0) {
+          <app-empty-state heading="Sin notificaciones" description="Cuando haya novedades en tu cuenta, las verás aquí.">
+            <app-sticker sticker name="star" [width]="80" />
+          </app-empty-state>
+        } @else {
+          <app-empty-state heading="Todo al día" description="No tienes notificaciones sin leer.">
+            <app-sticker sticker name="heart" [width]="80" />
+          </app-empty-state>
+        }
+      </section>
+    }
+  </div>
+
+  <div [class]="twoColumns() ? 'col-span-4 flex min-w-0 flex-col gap-[14px]' : 'col-span-12 flex min-w-0 flex-col gap-[14px]'">
+    @if (showSkeleton()) {
+      <app-skeleton variant="figure" [announce]="false" />
+      <app-skeleton variant="text" [announce]="false" />
+    } @else {
+      <app-block hue="honey" kind="summary">
+        <div class="flex items-center gap-3">
+          <div class="min-w-0 flex-1">
+            <p class="text-[12.5px] leading-[18px] font-extrabold">Resumen</p>
+            <p class="font-display text-[28px] leading-7 font-semibold tabular-nums">
+              {{ unread() }} <span class="font-body text-sm leading-5 font-medium">sin leer</span>
+            </p>
+            <p class="mt-1.5 text-[12.5px] leading-[18px] text-ink-muted">
+              {{ total() === 1 ? '1 notificación' : total() + ' notificaciones' }} esta semana.
+            </p>
+          </div>
+          <app-sticker name="star" [width]="64" />
+        </div>
+      </app-block>
+      <section app-card heading="Qué te avisamos">
+        <dl app-definition-list [items]="topics()"></dl>
+        <p class="mt-2.5 text-[12.5px] leading-[18px] text-ink-muted">
+          Las preferencias se ajustarán desde el perfil.
+        </p>
+      </section>
+    }
+  </div>
+</div>

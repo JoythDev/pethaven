@@ -96,6 +96,7 @@ public class Case2Test {
         assertThat(drugLine).contains(DatabaseInit.DRUG_NAME).contains(UNITS + " unidades");
 
         // 4. El administrador verifica unidades suministradas, ventas y utilidad.
+        logout();
         driver.get(FRONT + "/login");
         login(DatabaseInit.ADMIN_EMAIL, DatabaseInit.ADMIN_PASSWORD);
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("totalSales")));
@@ -126,6 +127,13 @@ public class Case2Test {
     // Quita símbolo y separadores de miles del formato de moneda/cantidad.
     private String digits(By locator) {
         return driver.findElement(locator).getText().replaceAll("[^0-9]", "");
+    }
+
+    // La sesión se guarda en localStorage: sin cerrarla, /login redirige al portal del usuario anterior.
+    private void logout() {
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("btnMenuUsuario"))).click();
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("btnLogout"))).click();
+        wait.until(ExpectedConditions.urlContains("/login"));
     }
 
     private void login(String email, String password) {

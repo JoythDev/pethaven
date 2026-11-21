@@ -1,14 +1,29 @@
-import { Routes } from '@angular/router';
+import { inject } from '@angular/core';
+import { Route, Router, Routes } from '@angular/router';
 import { LandingComponent } from './pages/landing/landing.component';
-import { LoginComponent } from './pages/auth/login/login.component';
 import { ClienteEntryComponent } from './pages/cliente/cliente-entry/cliente-entry.component';
 import { ADMIN_DRUG_AREA, DRUG_AREA_DATA_KEY, VET_DRUG_AREA } from './pages/shared/drugs/drug-area';
+import { ADMIN_PET_AREA, CLIENT_PET_AREA, PET_AREA_DATA_KEY } from './core/pets-list/pet-area';
 import { guestGuard, ownerPortalGuard, roleGuard } from './core/auth/auth.guard';
+import { unsavedChangesGuard } from './core/forms/unsaved-changes.guard';
+import { ownersListMatcher, resourceListMatcher } from './core/owners/owners-route';
+
+// Pestaña Notificaciones: una sola pantalla para los tres roles; el contenido sale de la sesión.
+const notificationsRoute = (): Route => ({
+  path: 'notificaciones',
+  loadComponent: () =>
+    import('./pages/shared/notifications/notifications-page.component').then((m) => m.NotificationsPageComponent),
+});
 
 export const routes: Routes = [
   // Solo sin sesión: con sesión, guestGuard lleva al portal del rol.
   { path: '', component: LandingComponent, canActivate: [guestGuard] },
-  { path: 'login', component: LoginComponent, canActivate: [guestGuard] },
+  // Carga diferida: así el acceso (con Lucide y los campos de PrimeNG) no entra en el paquete inicial.
+  {
+    path: 'login',
+    canActivate: [guestGuard],
+    loadComponent: () => import('./pages/auth/login/login.component').then((m) => m.LoginComponent),
+  },
 
   // Panel del veterinario: layout propio sobre el shell compartido.
   {
@@ -25,11 +40,18 @@ export const routes: Routes = [
           import('./pages/veterinario/home/home.component').then((m) => m.DashboardHomeComponent),
       },
       {
+        path: 'agenda',
+        loadComponent: () =>
+          import('./pages/veterinario/agenda/agenda.component').then((m) => m.AgendaComponent),
+      },
+      notificationsRoute(),
+      {
         path: 'perfil',
         loadComponent: () =>
           import('./pages/veterinario/perfil/perfil.component').then(
             (m) => m.VeterinarioPerfilComponent
           ),
+        canDeactivate: [unsavedChangesGuard],
       },
       // Compatibilidad: las rutas anteriores en inglés redirigen a las nuevas conservando el resto de la URL.
       { path: 'pets', redirectTo: 'mascotas', pathMatch: 'prefix' },
@@ -51,6 +73,7 @@ export const routes: Routes = [
               import('./pages/veterinario/pets/pet-form/pet-form.component').then(
                 (m) => m.PetsFormComponent
               ),
+            canDeactivate: [unsavedChangesGuard],
           },
           {
             path: 'update/:id',
@@ -58,13 +81,15 @@ export const routes: Routes = [
               import('./pages/veterinario/pets/pet-form/pet-form.component').then(
                 (m) => m.PetsFormComponent
               ),
+            canDeactivate: [unsavedChangesGuard],
           },
+          // La historia clínica ahora es una pestaña de la ficha; el enlace anterior sigue funcionando.
           {
             path: ':id/historia',
-            loadComponent: () =>
-              import('./pages/veterinario/pets/clinical-history/clinical-history.component').then(
-                (m) => m.ClinicalHistoryComponent
-              ),
+            redirectTo: ({ params }) =>
+              inject(Router).createUrlTree(['/veterinario/mascotas', params['id']], {
+                queryParams: { pestana: 'historia' },
+              }),
           },
           {
             path: ':id/treatments/add',
@@ -72,6 +97,7 @@ export const routes: Routes = [
               import('./pages/veterinario/pets/treatment-form/treatment-form.component').then(
                 (m) => m.TreatmentFormComponent
               ),
+            canDeactivate: [unsavedChangesGuard],
           },
           {
             path: ':id',
@@ -86,24 +112,12 @@ export const routes: Routes = [
         path: 'duenos',
         children: [
           {
-            path: '',
+            // Lista y diálogo de alta o edición: «», «add» y «update/:id» son una sola ruta, así la
+            // lista no se recrea al abrir o cerrar el diálogo.
+            matcher: ownersListMatcher,
             loadComponent: () =>
               import('./pages/veterinario/owners/owners-list/owners-list.component').then(
                 (m) => m.OwnersListComponent
-              ),
-          },
-          {
-            path: 'add',
-            loadComponent: () =>
-              import('./pages/veterinario/owners/owner-form/owner-form.component').then(
-                (m) => m.OwnersFormComponent
-              ),
-          },
-          {
-            path: 'update/:id',
-            loadComponent: () =>
-              import('./pages/veterinario/owners/owner-form/owner-form.component').then(
-                (m) => m.OwnersFormComponent
               ),
           },
           {
@@ -147,23 +161,40 @@ export const routes: Routes = [
         (m) => m.ClienteLayoutComponent
       ),
     children: [
-      { path: '', redirectTo: 'mascotas', pathMatch: 'full' },
+      {
+        path: '',
+        pathMatch: 'full',
+        loadComponent: () => import('./pages/cliente/inicio/inicio.component').then((m) => m.InicioComponent),
+      },
       {
         path: 'mascotas',
-        loadComponent: () =>
-          import('./pages/cliente/mascotas/mascotas.component').then((m) => m.MascotasComponent),
+        // Solo consulta: la ficha del veterinario con el área del cliente (sin precios ni edición).
+        data: { [PET_AREA_DATA_KEY]: CLIENT_PET_AREA },
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./pages/cliente/mascotas/mascotas.component').then((m) => m.MascotasComponent),
+          },
+          {
+            path: ':id',
+            loadComponent: () =>
+              import('./pages/veterinario/pets/pet-detail/pet-detail.component').then(
+                (m) => m.PetsDetailComponent
+              ),
+          },
+        ],
       },
       {
-        path: 'mascotas/:petId',
-        loadComponent: () =>
-          import('./pages/cliente/mascota-detalle/mascota-detalle.component').then(
-            (m) => m.MascotaDetalleComponent
-          ),
+        path: 'citas',
+        loadComponent: () => import('./pages/cliente/citas/citas.component').then((m) => m.CitasComponent),
       },
+      notificationsRoute(),
       {
         path: 'perfil',
         loadComponent: () =>
-          import('./pages/cliente/perfil/perfil.component').then((m) => m.PerfilComponent),
+          import('./pages/cliente/perfil/perfil.component').then((m) => m.ClientePerfilComponent),
+        canDeactivate: [unsavedChangesGuard],
       },
     ],
   },
@@ -185,31 +216,51 @@ export const routes: Routes = [
       },
       {
         path: 'veterinarios',
-        loadComponent: () =>
-          import('./pages/administrador/veterinarios/vets-list/vets-list.component').then(
-            (m) => m.VetsListComponent
-          ),
-      },
-      {
-        path: 'veterinarios/add',
-        loadComponent: () =>
-          import('./pages/administrador/veterinarios/vet-form/vet-form.component').then(
-            (m) => m.VetFormComponent
-          ),
-      },
-      {
-        path: 'veterinarios/update/:id',
-        loadComponent: () =>
-          import('./pages/administrador/veterinarios/vet-form/vet-form.component').then(
-            (m) => m.VetFormComponent
-          ),
+        children: [
+          {
+            // Lista y diálogo de alta o edición: «», «add» y «update/:id» son una sola ruta, así la
+            // lista no se recrea al abrir o cerrar el diálogo.
+            matcher: resourceListMatcher,
+            loadComponent: () =>
+              import('./pages/administrador/veterinarios/vets-list/vets-list.component').then(
+                (m) => m.VetsListComponent
+              ),
+          },
+          {
+            path: ':id',
+            loadComponent: () =>
+              import('./pages/administrador/veterinarios/vet-detail/vet-detail.component').then(
+                (m) => m.VetDetailComponent
+              ),
+          },
+        ],
       },
       {
         path: 'mascotas',
+        // Solo consulta: la lista y la ficha del veterinario, con el área del administrador.
+        data: { [PET_AREA_DATA_KEY]: ADMIN_PET_AREA },
+        children: [
+          {
+            path: '',
+            loadComponent: () =>
+              import('./pages/veterinario/pets/pets-list/pets-list.component').then(
+                (m) => m.PetsListComponent
+              ),
+          },
+          {
+            path: ':id',
+            loadComponent: () =>
+              import('./pages/veterinario/pets/pet-detail/pet-detail.component').then(
+                (m) => m.PetsDetailComponent
+              ),
+          },
+        ],
+      },
+      notificationsRoute(),
+      {
+        path: 'perfil',
         loadComponent: () =>
-          import('./pages/administrador/mascotas/admin-pets-list.component').then(
-            (m) => m.AdminPetsListComponent
-          ),
+          import('./pages/administrador/perfil/perfil.component').then((m) => m.AdministradorPerfilComponent),
       },
       {
         path: 'medicamentos',
@@ -217,23 +268,11 @@ export const routes: Routes = [
         data: { [DRUG_AREA_DATA_KEY]: ADMIN_DRUG_AREA },
         children: [
           {
-            path: '',
+            // Lista y diálogo de alta o edición: «», «add» y «update/:id» son una sola ruta, así la
+            // lista no se recrea al abrir o cerrar el diálogo.
+            matcher: resourceListMatcher,
             loadComponent: () =>
               import('./pages/shared/drugs/drugs-list/drugs-list.component').then((m) => m.DrugsListComponent),
-          },
-          {
-            path: 'add',
-            loadComponent: () =>
-              import('./pages/administrador/medicamentos/drug-form/drug-form.component').then(
-                (m) => m.DrugFormComponent
-              ),
-          },
-          {
-            path: 'update/:id',
-            loadComponent: () =>
-              import('./pages/administrador/medicamentos/drug-form/drug-form.component').then(
-                (m) => m.DrugFormComponent
-              ),
           },
           {
             path: 'import',

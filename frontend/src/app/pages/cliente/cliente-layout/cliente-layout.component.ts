@@ -1,24 +1,23 @@
 import { Component, DestroyRef, OnInit, computed, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import { parseRouteId } from '../../../core/http/route-id';
-import { AreaLayoutConfig } from '../../shared/area-layout/area-layout-config';
-import { AreaLayoutComponent } from '../../shared/area-layout/area-layout.component';
+import { ShellComponent } from '../../shared/shell/shell.component';
+import { ShellConfig } from '../../shared/shell/shell-tabs';
 import { ClienteContextStore } from '../cliente-context.store';
 import { AuthService } from '../../../services/auth.service';
 
 /**
- * Shell del área del cliente: configura el shell compartido con los enlaces
- * del dueño (:ownerId) y su identidad para la topbar.
+ * Shell del área del cliente: configura el shell compartido con las pestañas del dueño
+ * (:ownerId) y su identidad para la barra superior.
  */
 @Component({
   selector: 'app-cliente-layout',
-  imports: [AreaLayoutComponent],
+  imports: [ShellComponent],
   templateUrl: './cliente-layout.component.html',
 })
 export class ClienteLayoutComponent implements OnInit {
   private readonly route = inject(ActivatedRoute);
-  private readonly router = inject(Router);
   private readonly context = inject(ClienteContextStore);
   private readonly destroyRef = inject(DestroyRef);
   private readonly auth = inject(AuthService);
@@ -27,10 +26,10 @@ export class ClienteLayoutComponent implements OnInit {
   private readonly ownerId = signal<number | null>(null);
 
   /**
-   * Config del shell. Es un computed para que los enlaces, el nombre de la
-   * topbar y el menú se actualicen al cargar el dueño o cambiar :ownerId.
+   * Config del shell. Es un computed para que los enlaces y el nombre de la barra
+   * se actualicen al cargar el dueño o cambiar :ownerId.
    */
-  readonly layoutConfig = computed<AreaLayoutConfig>(() => {
+  readonly shellConfig = computed<ShellConfig>(() => {
     // Con un id inválido los enlaces apuntan a /cliente/x/... (segmento no numérico):
     // las páginas del área muestran "no encontrado" sin llamar al API, en vez de
     // tratar a 0 como si fuera un id válido.
@@ -39,44 +38,23 @@ export class ClienteLayoutComponent implements OnInit {
     const owner = this.context.owner();
 
     return {
-      sidebar: {
-        items: [
-          { label: 'Mis Mascotas', icon: 'pi pi-heart', link: `${home}/mascotas` },
-          { label: 'Mi Perfil', icon: 'pi pi-user', link: `${home}/perfil` },
-          {
-            label: 'Cerrar sesión',
-            icon: 'pi pi-sign-out',
-            command: () => this.logout(),
-          },
-        ],
-        homeLink: home,
-        sectionLabel: 'Mi cuenta',
-      },
-      topbar: {
-        homeItem: { icon: 'pi pi-home', routerLink: home },
-        pageLabels: { mascotas: 'Mis Mascotas', perfil: 'Mi Perfil' },
-        subPageLabels: {},
-        userName: owner?.name ?? '',
-        userInitial: owner ? owner.name.charAt(0).toUpperCase() : '',
-        userMenuItems: [
-          {
-            label: 'Mi Perfil',
-            icon: 'pi pi-user',
-            command: () => void this.router.navigate([home, 'perfil']),
-          },
-          {
-            label: 'Cerrar sesión',
-            icon: 'pi pi-sign-out',
-            command: () => this.logout(),
-          },
-        ],
-        skipNumericSegment: true,
-      },
+      tabs: [
+        { label: 'Inicio', icon: 'house', link: home, exact: true },
+        { label: 'Mis mascotas', icon: 'paw-print', link: `${home}/mascotas` },
+        { label: 'Citas', icon: 'calendar', link: `${home}/citas` },
+        { label: 'Notificaciones', icon: 'bell', link: `${home}/notificaciones` },
+        { label: 'Perfil', icon: 'user', link: `${home}/perfil` },
+      ],
+      roleLabel: 'Cliente',
+      userName: owner?.name ?? '',
+      userId: owner?.id ?? this.ownerId(),
+      userPhotoUrl: null,
+      profileLink: `${home}/perfil`,
     };
   });
 
   // Cierra la sesión (borra el token) y vuelve al login de dueños.
-  private logout(): void {
+  protected logout(): void {
     this.auth.logout();
   }
 

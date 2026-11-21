@@ -1,0 +1,347 @@
+<app-page-header heading="Inicio" [subtitle]="dateLabel()">
+  <a actions pButton [routerLink]="bookLink()" size="small">
+    <svg lucidePlus [size]="18" aria-hidden="true"></svg>
+    <span class="p-button-label">Agendar cita</span>
+  </a>
+</app-page-header>
+
+<!-- Columnas según el ancho del contenido (container query): el sticker del héroe sobresale por arriba
+     y se oculta por debajo de 680 px, así que solo ahí el margen superior sobra. -->
+<div class="mt-0 grid grid-cols-12 items-stretch gap-[14px] @min-[680px]:mt-6">
+  <!-- Héroe: el cuidado pendiente de la mascota destacada -->
+  <div class="col-span-12 min-w-0 @min-[960px]:col-span-8">
+    @let heroView = hero();
+    @if (heroView.kind === 'loading') {
+      @if (historiesSkeleton()) {
+        <app-skeleton variant="text" [lines]="4" class="h-full min-h-[196px]" />
+      }
+    } @else if (heroView.kind === 'error') {
+      <section app-card class="h-full">
+        <app-inline-error text="No pudimos cargar tus mascotas." (retry)="retryPets()" />
+      </section>
+    } @else {
+      <app-hero
+        hue="sage"
+        [headingLevel]="2"
+        class="h-full [&>app-block]:h-full"
+        [kicker]="kicker()"
+        [headline]="heroView.copy.headline"
+        [description]="heroView.copy.description"
+      >
+        @if (heroView.pet; as pet) {
+          <a actions pButton size="small" [routerLink]="petLink(pet.id)" [label]="'Ver ficha de ' + pet.name"></a>
+        }
+        <a actions pButton size="small" [outlined]="heroView.pet !== null" [routerLink]="bookLink()" label="Agendar cita"></a>
+        <app-sticker art [name]="heroSticker()" [width]="200" [kit]="heroKit()" />
+      </app-hero>
+    }
+  </div>
+
+  <!-- Próxima cita (demo) -->
+  @if (showPetCards()) {
+    <div class="col-span-12 min-w-0 @min-[680px]:col-span-6 @min-[960px]:col-span-4">
+      @if (historiesFailed()) {
+        <section app-card heading="Próxima cita" class="h-full">
+          <app-demo-tag title-extra />
+          <app-inline-error text="No pudimos cargar tu próxima cita." (retry)="retryHistories()" />
+        </section>
+      } @else if (histories().status === 'loading' || pets().status === 'loading') {
+        @if (historiesSkeleton()) {
+          <app-skeleton variant="figure" class="h-full" />
+        }
+      } @else {
+        <app-block hue="sky" kind="summary" class="h-full">
+          <div class="flex items-start gap-3">
+            <div class="min-w-0 flex-1">
+              <h2 class="flex items-center text-[13px] leading-[18px] font-extrabold">Próxima cita<app-demo-tag /></h2>
+              @if (nextAppointment(); as next) {
+                <p class="mt-1 font-display text-xl leading-[26px] font-semibold">{{ when(next) }}</p>
+                <p class="mt-0.5 text-sm leading-5">{{ next.reason }} de {{ next.petName }}</p>
+                <p class="text-[12.5px] leading-[18px] text-ink-muted">{{ next.veterinarianName }}</p>
+              } @else {
+                <p class="mt-1 font-display text-xl leading-[26px] font-semibold">Sin citas próximas</p>
+                <p class="mt-0.5 text-sm leading-5">Agenda una cita cuando la necesites.</p>
+              }
+            </div>
+            <app-sticker name="calendar" [width]="70" />
+          </div>
+          <div class="mt-auto flex flex-wrap items-center gap-2 pt-4">
+            @if (nextAppointment(); as next) {
+              <p-tag severity="secondary">
+                <span class="inline-flex items-center gap-1">
+                  <svg lucideClock [size]="12" aria-hidden="true"></svg>{{ whenTag(next, now()) }}
+                </span>
+              </p-tag>
+              <button pButton type="button" class="ml-auto" size="small" [outlined]="true" label="Reprogramar" (click)="reschedule()"></button>
+            } @else {
+              <a pButton size="small" [routerLink]="bookLink()" label="Agendar cita"></a>
+            }
+          </div>
+        </app-block>
+      }
+    </div>
+  }
+
+  <!-- Mis mascotas (datos reales, solo lectura: el veterinario las registra, S21) -->
+  <div [class]="petsColClass()">
+    <section app-card heading="Mis mascotas" class="h-full">
+      @if (hasPets()) {
+        <a action pButton [text]="true" size="small" label="Ver todas" [routerLink]="petsLink()"></a>
+      }
+      @let petsState = pets();
+      @if (petsState.status === 'loading') {
+        @if (petsSkeleton()) {
+          @for (row of skeletonRows; track row) {
+            <app-skeleton variant="row" [announce]="$first" />
+          }
+        }
+      } @else if (petsState.status === 'error') {
+        <app-inline-error text="No pudimos cargar tus mascotas." (retry)="retryPets()" />
+      } @else if (petsState.data.length) {
+        <div class="flex flex-col gap-0.5">
+          @for (pet of visiblePets(); track pet.id) {
+            <app-list-item [heading]="pet.name" [subtitle]="pet.breed + ' · ' + ageLabel(pet.age)" [link]="petLink(pet.id)">
+              <app-avatar
+                leading
+                [id]="pet.id"
+                [name]="pet.name"
+                kind="pet"
+                [species]="pet.species"
+                [photoUrl]="pet.photoUrl"
+                [size]="42"
+              />
+              <p-tag trailing [severity]="petStatus(pet).severity" [value]="petStatus(pet).label" />
+            </app-list-item>
+          }
+        </div>
+        <p class="mt-2.5 text-[12.5px] leading-[18px] text-ink-muted">
+          Tu veterinario registra las mascotas nuevas en la primera visita.
+        </p>
+      } @else {
+        <app-empty-state
+          heading="Aún no tienes mascotas registradas"
+          description="Tu veterinario las registra en la primera visita y aparecerán aquí."
+        >
+          <app-sticker sticker name="paw" [width]="96" />
+        </app-empty-state>
+      }
+    </section>
+  </div>
+
+  @if (showPetCards()) {
+    <!-- Plan de cuidado de hoy (demo; marcar cuidados vive solo en esta sesión) -->
+    <div class="col-span-12 min-w-0 @min-[680px]:col-span-6 @min-[960px]:col-span-5">
+      <section app-card heading="Plan de cuidado de hoy" class="h-full">
+        <app-demo-tag title-extra />
+        @if (historiesFailed()) {
+          <app-inline-error text="No pudimos cargar el plan de cuidado." (retry)="retryHistories()" />
+        } @else if (histories().status === 'loading' || pets().status === 'loading') {
+          @if (historiesSkeleton()) {
+            @for (row of skeletonRows; track row) {
+              <app-skeleton variant="row" [announce]="$first" />
+            }
+          }
+        } @else if (plan().length) {
+          @let care = progress();
+          <p class="mb-2.5 text-[12.5px] leading-[18px] text-ink-muted">Cuidados de {{ featured()?.name }}</p>
+          <div class="mb-2.5 flex items-center gap-3">
+            <div
+              class="h-2 flex-1 rounded-full bg-sunken"
+              role="progressbar"
+              aria-label="Cuidados de hoy completados"
+              aria-valuemin="0"
+              aria-valuemax="100"
+              [attr.aria-valuenow]="progressPercent()"
+            >
+              <span class="block h-full rounded-full bg-accent transition-[width] duration-[180ms] ease-out-strong motion-reduce:transition-none" [style.width.%]="progressPercent()"></span>
+            </div>
+            <span class="text-[12.5px] leading-[18px] font-extrabold tabular-nums">{{ care.done }} de {{ care.total }}</span>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            @for (item of plan(); track item.id) {
+              @let done = isDone(item);
+              <button
+                type="button"
+                class="ph-focus flex w-full min-w-0 cursor-pointer items-center gap-3 rounded-row px-2.5 py-[9px] text-left text-ink transition-colors duration-[180ms] ease-out-strong hover:bg-sunken motion-reduce:transition-none"
+                [attr.aria-pressed]="done"
+                (click)="toggleCare(item)"
+              >
+                <span
+                  class="grid size-[22px] shrink-0 place-items-center rounded-check border-[1.5px] transition-colors duration-[180ms] ease-out-strong motion-reduce:transition-none"
+                  [class]="done ? 'border-accent bg-accent text-on-accent' : 'border-line-strong text-transparent'"
+                  aria-hidden="true"
+                >
+                  <svg lucideCheck [size]="14" [strokeWidth]="3"></svg>
+                </span>
+                <span class="min-w-0 flex-1" [class.opacity-55]="done">
+                  <span class="block truncate text-sm leading-5 font-extrabold" [class.line-through]="done">{{ item.title }}</span>
+                  <span class="block truncate text-[12.5px] leading-[18px] text-ink-muted">{{ item.detail }}</span>
+                </span>
+                <p-tag severity="secondary">
+                  <span class="inline-flex items-center gap-1 tabular-nums">
+                    <svg lucideClock [size]="12" aria-hidden="true"></svg>{{ item.time }}
+                  </span>
+                </p-tag>
+              </button>
+            }
+          </div>
+        } @else {
+          <app-empty-state
+            heading="Hoy no hay cuidados por marcar"
+            [description]="(featured()?.name ?? 'Tu mascota') + ' no tiene un plan de cuidado para hoy.'"
+          >
+            <app-sticker sticker name="heart" [width]="96" />
+          </app-empty-state>
+        }
+      </section>
+    </div>
+
+    <!-- Carné de vacunas de la mascota destacada (demo) -->
+    <div class="col-span-12 min-w-0 @min-[680px]:col-span-6 @min-[960px]:col-span-3">
+      <section app-card heading="Carné de vacunas" class="h-full">
+        <app-demo-tag title-extra />
+        @let vaccineState = vaccines();
+        @if (historiesFailed() || vaccineState.status === 'error') {
+          <app-inline-error
+            text="No pudimos cargar el carné de vacunas."
+            (retry)="historiesFailed() ? retryHistories() : retryVaccines()"
+          />
+        } @else if (vaccineState.status === 'loading' || histories().status === 'loading' || pets().status === 'loading') {
+          @if (vaccinesSkeleton()) {
+            <app-skeleton variant="figure" class="h-full min-h-[200px]" />
+          }
+        } @else {
+          <div class="mb-2 flex items-center gap-3">
+            <app-ratio-ring
+              [value]="vaccineState.data.summary.upToDate"
+              [total]="vaccineState.data.summary.total"
+              [label]="vaccineSummary()"
+            />
+            <p class="text-[12.5px] leading-[18px] text-ink-muted">{{ vaccineSummary() }}</p>
+          </div>
+          <div class="flex flex-col gap-0.5">
+            @for (vaccine of vaccineRows(); track vaccine.name) {
+              <app-list-item [heading]="vaccine.name">
+                <p-tag trailing [severity]="vaccineSeverity(vaccine.status)" [value]="vaccine.label" />
+              </app-list-item>
+            }
+          </div>
+          <a pButton class="mt-3 w-full" size="small" severity="secondary" [outlined]="true" [routerLink]="bookLink()" label="Agendar refuerzo"></a>
+        }
+      </section>
+    </div>
+
+    <!-- Tratamientos recientes (datos reales de la mascota destacada) -->
+    <div class="col-span-12 min-w-0 @min-[960px]:col-span-7">
+      <section app-card heading="Tratamientos recientes" class="h-full">
+        @if (featured(); as pet) {
+          <a
+            action
+            pButton
+            [text]="true"
+            size="small"
+            label="Ver historial"
+            [routerLink]="petLink(pet.id)"
+            [queryParams]="{ pestana: 'tratamientos' }"
+          ></a>
+        }
+        @if (historiesFailed()) {
+          <app-inline-error text="No pudimos cargar los tratamientos recientes." (retry)="retryHistories()" />
+        } @else if (histories().status === 'loading' || pets().status === 'loading') {
+          @if (historiesSkeleton()) {
+            @for (row of skeletonRows; track row) {
+              <app-skeleton variant="row" [announce]="$first" />
+            }
+          }
+        } @else if (recent().length) {
+          @if (petList().length > 1) {
+            <p class="mb-2.5 text-[12.5px] leading-[18px] text-ink-muted">Historial de {{ featured()?.name }}</p>
+          }
+          <div class="flex flex-col gap-0.5">
+            @for (treatment of recent(); track treatment.id) {
+              <a
+                [routerLink]="petLink(featured()!.id)"
+                [queryParams]="{ pestana: 'tratamientos' }"
+                class="ph-focus flex w-full min-w-0 items-center gap-3 rounded-row px-2.5 py-[9px] text-ink transition-colors duration-[180ms] ease-out-strong hover:bg-sunken motion-reduce:transition-none"
+              >
+                <span class="w-[52px] shrink-0 text-[12.5px] leading-[18px] font-extrabold text-ink-muted tabular-nums">{{ treatment.day }}</span>
+                <span class="min-w-0 flex-1">
+                  <span class="block truncate text-sm leading-5 font-extrabold">{{ treatment.diagnosis }}</span>
+                  <span class="block truncate text-[12.5px] leading-[18px] text-ink-muted">{{ treatment.veterinarian }}</span>
+                </span>
+                <p-tag [severity]="treatment.severity" [value]="treatment.evolution" />
+              </a>
+            }
+          </div>
+        } @else {
+          <app-empty-state
+            heading="Aún no hay tratamientos"
+            [description]="(featured()?.name ?? 'Tu mascota') + ' no tiene tratamientos registrados. Los verás aquí después de su primera consulta.'"
+          >
+            <app-sticker sticker name="stethoscope" [width]="96" />
+          </app-empty-state>
+        }
+      </section>
+    </div>
+  }
+
+  <!-- Consejo del día (demo): sticker y texto grandes para que el bloque no tenga espacio muerto (11.15) -->
+  <div [class]="tipColClass()">
+    @let tipState = tip();
+    @if (tipState.status === 'loading') {
+      @if (tipSkeleton()) {
+        <app-skeleton variant="text" [lines]="4" class="h-full min-h-[196px]" />
+      }
+    } @else if (tipState.status === 'error') {
+      <section app-card heading="Consejo del día" class="h-full">
+        <app-demo-tag title-extra />
+        <app-inline-error text="No pudimos cargar el consejo de hoy." (retry)="retryTip()" />
+      </section>
+    } @else {
+      <app-block hue="rose" kind="summary" class="h-full">
+        <div class="flex h-full items-center gap-4">
+          <div class="min-w-0 flex-1">
+            <p class="font-script text-[26px] leading-[26px] font-semibold">Consejo del día<app-demo-tag /></p>
+            <h2 class="mt-2 mb-1.5 font-display text-[clamp(21px,2.3cqi,29px)] leading-[1.14] font-semibold tracking-[-0.01em] text-balance">
+              {{ tipState.data.headline }}
+            </h2>
+            <p class="max-w-[52ch] text-base leading-6">{{ tipState.data.text }}</p>
+          </div>
+          <app-sticker class="@max-[479px]:hidden" [name]="tipState.data.sticker" [width]="130" />
+        </div>
+      </app-block>
+    }
+  </div>
+</div>
+
+<!-- Barra lateral: tu clínica y recordatorios; el shell añade Notificaciones al final -->
+<ng-template appShellSidebar>
+  <app-block hue="lilac" kind="summary">
+    <h2 class="flex items-center text-[13px] leading-[18px] font-extrabold">Tu clínica<app-demo-tag /></h2>
+    <p class="mt-1 font-display text-[17px] leading-[22px] font-semibold">PetHaven Chapinero</p>
+    <p class="mt-1 text-sm leading-5">Calle 63 n.º 9-41<br />Lunes a sábado, 8:00 a 17:30</p>
+  </app-block>
+
+  <section app-card heading="Recordatorios">
+    <app-demo-tag title-extra />
+    @if (historiesFailed()) {
+      <app-inline-error text="No pudimos cargar tus recordatorios." (retry)="retryHistories()" />
+    } @else if (histories().status === 'loading' || pets().status === 'loading') {
+      @if (historiesSkeleton()) {
+        @for (row of sidebarRows; track row) {
+          <app-skeleton variant="row" [announce]="$first" />
+        }
+      }
+    } @else if (reminders().length) {
+      <ul class="flex flex-col gap-2">
+        @for (reminder of reminders(); track reminder.text) {
+          <li class="text-sm leading-5">
+            <span class="font-extrabold">{{ reminder.when }}</span> · {{ reminder.text }}
+          </li>
+        }
+      </ul>
+    } @else {
+      <p class="text-sm leading-5 text-ink-muted">No tienes recordatorios por ahora.</p>
+    }
+  </section>
+</ng-template>

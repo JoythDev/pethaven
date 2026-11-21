@@ -1,0 +1,31 @@
+@if (backLink(); as link) {
+  <a
+    [routerLink]="link"
+    class="ph-focus mb-1 -ml-1 inline-flex min-h-6 items-center gap-0.5 rounded-control px-1 text-[13px] leading-[18px] font-bold text-ink-muted transition-colors duration-[180ms] ease-out-strong hover:text-ink motion-reduce:transition-none"
+  >
+    <svg lucideChevronLeft [size]="16" aria-hidden="true"></svg>
+    {{ backLabel() }}
+  </a>
+}
+
+<div class="flex flex-wrap items-start gap-x-3 gap-y-3">
+  @if (sidebar.hasContent() && sidebar.layout() !== 'compact') {
+    <app-sidebar-toggle />
+  }
+
+  <div class="min-w-0 flex-[1_1_14rem]">
+    <h1 class="font-display text-[28px] leading-8 font-semibold tracking-[-0.01em] text-balance text-ink">
+      {{ heading() }}
+      @if (demo()) {
+        <app-demo-tag />
+      }
+    </h1>
+    @if (subtitle(); as text) {
+      <p class="mt-0.5 text-[12.5px] leading-[18px] text-ink-muted">{{ text }}</p>
+    }
+  </div>
+
+  <div class="flex max-w-full shrink-0 flex-wrap items-center gap-2 empty:hidden">
+    <ng-content select="[actions]" />
+  </div>
+</div>

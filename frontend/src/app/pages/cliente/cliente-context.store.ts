@@ -17,6 +17,11 @@ export class ClienteContextStore {
   /** Dueño cargado; null mientras carga o si el id no existe. */
   readonly owner = this.ownerState.asReadonly();
 
+  // Reemplaza el dueño cargado con el que acaba de guardar el perfil, para que la barra superior lo refleje.
+  update(owner: Owner): void {
+    this.ownerState.set(owner);
+  }
+
   // Carga el dueño una sola vez por id: repetir la misma carga no vuelve a llamar al API.
   load(ownerId: number): void {
     if (this.ownerState()?.id === ownerId) {

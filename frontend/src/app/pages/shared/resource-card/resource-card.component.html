@@ -1,0 +1,38 @@
+<app-block kind="header" [hue]="hue()" [flush]="true" class="h-[118px] items-center! p-0!">
+  <div class="flex flex-1 items-center justify-center">
+    @if (showPhoto()) {
+      <img
+        [src]="photoUrl()"
+        [alt]="'Foto de ' + heading()"
+        class="size-[86px] rounded-full object-cover ring-2 ring-card"
+        (error)="onPhotoError()"
+      />
+    } @else {
+      <ng-content select="[art]" />
+    }
+  </div>
+</app-block>
+
+<div class="flex flex-1 flex-col gap-2 px-3.5 py-3">
+  <div class="flex items-start gap-2">
+    <h3 class="min-w-0 flex-1 font-display text-[17px] leading-[22px] font-semibold text-ink">
+      <button
+        type="button"
+        class="rc-main -m-0.5 block max-w-full cursor-pointer truncate p-0.5 text-left after:absolute after:inset-0 after:content-[''] focus-visible:outline-none"
+        [attr.aria-pressed]="selected()"
+        (click)="activate.emit()"
+      >
+        {{ heading() }}
+      </button>
+    </h3>
+    <div class="shrink-0 empty:hidden"><ng-content select="[status]" /></div>
+  </div>
+
+  @if (subtitle(); as text) {
+    <p class="truncate text-[12.5px] leading-[18px] text-ink-muted">{{ text }}</p>
+  }
+
+  <div class="flex flex-col gap-1 text-sm leading-5 empty:hidden"><ng-content select="[facts]" /></div>
+
+  <div class="relative z-10 mt-auto flex pt-1 empty:hidden"><ng-content select="[action]" /></div>
+</div>

@@ -1,0 +1,133 @@
+@let current = state();
+@let p = pet();
+
+<div class="grid grid-cols-12 items-start gap-[14px]">
+  <section app-card [heading]="area().history.label" class="min-w-0" [class]="withPanel() ? 'col-span-8' : 'col-span-12'">
+    @if (current.status === 'loading') {
+      @if (skeleton()) {
+        @for (row of skeletonRows; track row) {
+          <app-skeleton variant="row" [announce]="$first" />
+        }
+      }
+    } @else if (current.status === 'error') {
+      <app-inline-error text="No pudimos cargar la historia clínica." (retry)="retry.emit()" />
+    } @else if (current.data.length === 0) {
+      <app-empty-state
+        heading="Aún no hay tratamientos"
+        [description]="canRegister() ? 'Registra el primero y aparecerá aquí.' : 'Cuando se registre uno, aparecerá aquí.'"
+      >
+        <app-sticker sticker name="stethoscope" [width]="96" />
+        @if (canRegister()) {
+          <a action pButton size="small" [routerLink]="[basePath(), p.id, 'treatments', 'add']">
+            <svg lucidePlus [size]="18" aria-hidden="true"></svg>
+            <span class="p-button-label">Nuevo tratamiento</span>
+          </a>
+        } @else if (scheduleLink()) {
+          <a action pButton size="small" [routerLink]="scheduleLink()" [queryParams]="{ mascota: p.id }" label="Agendar cita"></a>
+        }
+      </app-empty-state>
+    } @else {
+      <app-treatment-timeline
+        [groups]="groups()"
+        [selectedId]="selected()?.id ?? null"
+        [toggleText]="toggleText()"
+        [expanded]="expanded()"
+        (selectTreatment)="select($event)"
+        (toggle)="toggle()"
+      />
+    }
+  </section>
+
+  <!-- Detalle del tratamiento: columna fija desde 1080 px; cajón por debajo -->
+  <app-detail-panel
+    label="Detalle del tratamiento"
+    emptyHeading="Nada seleccionado"
+    emptyText="Elige un tratamiento de la línea de tiempo para ver sus medicamentos."
+    [selected]="selected() !== null"
+    [loading]="skeleton()"
+    [hue]="detailHue()"
+    [heading]="selected()?.diagnosis ?? ''"
+    [(open)]="panelOpen"
+  >
+    @let treatment = selected();
+    <app-sticker avatar name="stethoscope" [width]="56" />
+
+    <div figure class="flex flex-wrap items-center gap-2">
+      @if (treatment) {
+        <p-tag [severity]="evolutionSeverity(treatment.evolution)" [value]="evolutionLabel(treatment.evolution)" />
+      }
+    </div>
+
+    <dl details app-definition-list>
+      @if (treatment) {
+        <dt>Fecha</dt>
+        <dd>{{ treatment.date | date: "d MMM y · HH:mm" }}</dd>
+        <dt>Veterinario</dt>
+        <dd>{{ treatment.veterinarianName }}</dd>
+        <dt>Peso en la visita</dt>
+        <dd>{{ formatKg(treatment.weight) }}</dd>
+      }
+    </dl>
+
+    <div history class="flex flex-col gap-3">
+      @if (treatment) {
+        <section aria-labelledby="rx-title">
+          <h3 id="rx-title" class="mb-1.5 text-[13px] leading-[18px] font-extrabold">Medicamentos</h3>
+          @if (prescription().rows.length === 0) {
+            <p class="text-[12.5px] leading-[18px] text-ink-muted">Sin medicamentos en esta visita.</p>
+          } @else {
+            <ul class="m-0 flex list-none flex-col gap-1 p-0">
+              @for (row of prescription().rows; track row.drug.id) {
+                <li class="flex items-center gap-2.5 py-1">
+                  <span class="grid size-8 shrink-0 place-items-center rounded-full bg-(--hue)" [class]="'hue-' + row.hue">
+                    <app-sticker name="pill" [width]="22" />
+                  </span>
+                  <span class="min-w-0 flex-1">
+                    <span class="block truncate text-sm leading-5 font-extrabold">{{ row.drug.drugName }}</span>
+                    @if (area().showPrices) {
+                      <span class="block text-[12.5px] leading-[18px] text-ink-muted tabular-nums">
+                        {{ units(row.drug.units) }} × {{ formatCurrency(row.drug.unitSalePrice) }}
+                        @if (area().showCost) {
+                          · costo {{ formatCurrency(row.drug.unitPurchasePrice) }}
+                        }
+                      </span>
+                    }
+                  </span>
+                  @if (area().showPrices) {
+                    <span class="shrink-0 text-sm leading-5 font-extrabold tabular-nums">{{ formatCurrency(row.subtotal) }}</span>
+                  }
+                </li>
+              }
+            </ul>
+            @if (area().showPrices) {
+              <dl app-definition-list class="mt-2 border-t border-line pt-2.5">
+                <dt class="font-extrabold text-ink!">Total de la receta</dt>
+                <dd>{{ formatCurrency(prescription().total) }}</dd>
+                @if (area().showCost) {
+                  <dt>Costo de compra</dt>
+                  <dd>{{ formatCurrency(prescription().cost) }}</dd>
+                  <dt class="font-extrabold text-ink!">Ganancia</dt>
+                  <dd>{{ formatCurrency(prescription().profit) }}</dd>
+                }
+              </dl>
+            }
+          }
+        </section>
+
+        <section>
+          <h3 class="mb-1 text-[13px] leading-[18px] font-extrabold">Notas del veterinario</h3>
+          <p class="text-sm leading-5" [class.text-ink-muted]="!treatment.notes">{{ treatment.notes || 'Sin observaciones.' }}</p>
+        </section>
+      }
+    </div>
+
+    <ng-container ngProjectAs="[actions]">
+      @if (treatment) {
+        <button pButton type="button" severity="secondary" [outlined]="true" class="w-full" [loading]="downloading()" (click)="download.emit()">
+          <svg lucideDownload [size]="18" aria-hidden="true"></svg>
+          <span class="p-button-label">Descargar PDF</span>
+        </button>
+      }
+    </ng-container>
+  </app-detail-panel>
+</div>

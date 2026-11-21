@@ -1,0 +1,6 @@
+/* Campo inválido (10.2): borde `danger`; el mensaje va debajo, enlazado con aria-describedby. */
+input[aria-invalid='true'],
+input[aria-invalid='true']:hover,
+input[aria-invalid='true']:enabled:focus {
+  border-color: var(--color-danger);
+}

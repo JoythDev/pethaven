@@ -1,20 +1,62 @@
-import { Component, inject, signal } from '@angular/core';
+import { DOCUMENT } from '@angular/common';
+import { Component, DestroyRef, ElementRef, OnDestroy, OnInit, inject, signal } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { ActivatedRoute, Router, RouterLink } from '@angular/router';
+import {
+  LucideArrowLeft,
+  LucideClock,
+  LucideEye,
+  LucideEyeOff,
+  LucideHeart,
+  LucideInfo,
+  LucideShield,
+  LucideTriangleAlert,
+  provideLucideConfig,
+} from '@lucide/angular';
+import { ButtonModule } from 'primeng/button';
+import { InputTextModule } from 'primeng/inputtext';
+import { TooltipModule } from 'primeng/tooltip';
+
 import { applyServerErrors, getErrorMessage } from '../../../core/http/http-error';
 import { AuthUser } from '../../../models/auth.model';
 import { AuthService } from '../../../services/auth.service';
+import { AuthArtComponent } from '../auth-art/auth-art.component';
+import { BrandLogoComponent } from '../../shared/brand-logo/brand-logo.component';
+
+// Ancho desde el que se muestra el bloque ilustrado; por debajo, solo el formulario (9.11).
+const ART_MIN_WIDTH = '(min-width: 960px)';
 
 // Pantalla de inicio de sesión única: al entrar, cada usuario va al portal de su rol.
 @Component({
   selector: 'app-login',
-  imports: [ReactiveFormsModule, RouterLink],
+  imports: [
+    ReactiveFormsModule,
+    RouterLink,
+    ButtonModule,
+    InputTextModule,
+    TooltipModule,
+    AuthArtComponent,
+    LucideArrowLeft,
+    LucideClock,
+    LucideEye,
+    LucideEyeOff,
+    LucideHeart,
+    LucideInfo,
+    BrandLogoComponent,
+    LucideShield,
+    LucideTriangleAlert,
+  ],
+  providers: [provideLucideConfig({ size: 18, strokeWidth: 1.8 })],
   templateUrl: './login.component.html',
+  styleUrl: './login.component.css',
 })
-export class LoginComponent {
+export class LoginComponent implements OnInit, OnDestroy {
   private readonly fb = inject(FormBuilder);
   private readonly router = inject(Router);
   private readonly auth = inject(AuthService);
+  private readonly document = inject(DOCUMENT);
+  private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly destroyRef = inject(DestroyRef);
 
   private readonly route = inject(ActivatedRoute);
 
@@ -29,6 +71,25 @@ export class LoginComponent {
     this.route.snapshot.queryParamMap.get('expired') ? 'Tu sesión expiró. Inicia sesión de nuevo.' : null
   );
   readonly showPassword = signal(false);
+  // El bloque ilustrado solo existe mientras cabe: así no corre su animación oculto.
+  readonly showArt = signal(false);
+
+  ngOnInit(): void {
+    // Scrollbars propios mientras haya acceso en pantalla (4.5).
+    this.document.documentElement.classList.add('ph-scrollbars');
+
+    const query = this.document.defaultView?.matchMedia(ART_MIN_WIDTH);
+    if (query) {
+      this.showArt.set(query.matches);
+      const onChange = (event: MediaQueryListEvent) => this.showArt.set(event.matches);
+      query.addEventListener('change', onChange);
+      this.destroyRef.onDestroy(() => query.removeEventListener('change', onChange));
+    }
+  }
+
+  ngOnDestroy(): void {
+    this.document.documentElement.classList.remove('ph-scrollbars');
+  }
 
   togglePassword(): void {
     this.showPassword.update((visible) => !visible);
@@ -40,6 +101,7 @@ export class LoginComponent {
 
     if (this.form.invalid) {
       this.form.markAllAsTouched();
+      this.host.nativeElement.querySelector<HTMLInputElement>('input.ng-invalid')?.focus();
       return;
     }
 

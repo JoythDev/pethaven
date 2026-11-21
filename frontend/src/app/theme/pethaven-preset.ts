@@ -5,11 +5,11 @@ export const PetHavenPreset = definePreset(Aura, {
   primitive: {
     borderRadius: {
       none: '0',
-      xs: '4px',
+      xs: '6px',
       sm: '8px',
-      md: '12px',
-      lg: '16px',
-      xl: '24px',
+      md: '10px',
+      lg: '12px',
+      xl: '20px',
     },
     // success family (sage)
     green: {
@@ -112,9 +112,9 @@ export const PetHavenPreset = definePreset(Aura, {
       950: '#2a291b',
     },
     focusRing: {
-      width: '2px',
+      width: '2.5px',
       style: 'solid',
-      color: '{primary.700}',
+      color: '{primary.color}',
       offset: '2px',
     },
     formField: {
@@ -125,28 +125,117 @@ export const PetHavenPreset = definePreset(Aura, {
       light: {
         primary: {
           color: '{primary.700}',
-          contrastColor: '#ffffff',
-          hoverColor: '{primary.800}',
+          contrastColor: '#fffaf0',
+          hoverColor: '#5c5a3b',
           activeColor: '{primary.900}',
         },
-        // warm neutrals — brand cream (#f2ece0) is the page surface
+        highlight: {
+          background: '#e5e2c9',
+          focusBackground: '#dad6b8',
+          color: '#5c5a3b',
+          focusColor: '#42402b',
+        },
+        // warm neutrals: 50 surface, 100 sunken, 200 border, 500 strong border, 600 muted ink, 950 ink
         surface: {
           0: '#ffffff',
-          50: '#f8f5ee',
-          100: '#f2ece0',
-          200: '#e2dbcf',
-          300: '#d5cfc3',
-          400: '#b9b1a6',
-          500: '#989084',
-          600: '#7c7267',
-          700: '#63594e',
-          800: '#4b4035',
-          900: '#382d23',
-          950: '#2d2117',
+          50: '#fffaf0',
+          100: '#f5ecdc',
+          200: '#ddd0b9',
+          300: '#c9bca3',
+          400: '#a89a82',
+          500: '#857760',
+          600: '#6b5e4e',
+          700: '#564a3c',
+          800: '#40352a',
+          900: '#30261b',
+          950: '#261a10',
+        },
+        mask: {
+          background: 'rgba(20, 14, 8, 0.5)',
+        },
+        formField: {
+          background: '{surface.50}',
+          disabledBackground: '{surface.100}',
+          borderColor: '{surface.500}',
+          hoverBorderColor: '{surface.600}',
+          color: '{surface.950}',
+          placeholderColor: '{surface.600}',
+          iconColor: '{surface.600}',
+          shadow: 'none',
         },
         text: {
-          color: '#261a10',
-          mutedColor: '#6b6156',
+          color: '{surface.950}',
+          hoverColor: '{surface.950}',
+          mutedColor: '{surface.600}',
+          hoverMutedColor: '{surface.700}',
+        },
+        content: {
+          background: '{surface.50}',
+          hoverBackground: '{surface.100}',
+          borderColor: '{surface.200}',
+        },
+        overlay: {
+          select: { background: '{surface.50}', borderColor: '{surface.200}' },
+          popover: { background: '{surface.50}', borderColor: '{surface.200}' },
+          modal: { background: '{surface.50}', borderColor: '{surface.200}' },
+        },
+      },
+      dark: {
+        primary: {
+          color: '#cbc795',
+          contrastColor: '#1c1b10',
+          hoverColor: '#dedaa9',
+          activeColor: '#e8e5bd',
+        },
+        highlight: {
+          background: '#33321f',
+          focusBackground: '#3f3e27',
+          color: '#cbc795',
+          focusColor: '#dedaa9',
+        },
+        // true neutrals: 950 ground, 900 surface, 800 sunken, 700 border, 500 strong border, 400 muted ink, 50 ink
+        surface: {
+          0: '#ffffff',
+          50: '#f3efe6',
+          100: '#e3ded3',
+          200: '#cbc5b9',
+          300: '#b8b1a5',
+          400: '#a59e92',
+          500: '#757368',
+          600: '#4f4d47',
+          700: '#32312d',
+          800: '#252522',
+          900: '#1a1a18',
+          950: '#0e0e0d',
+        },
+        mask: {
+          background: 'rgba(0, 0, 0, 0.6)',
+        },
+        formField: {
+          background: '{surface.900}',
+          disabledBackground: '{surface.800}',
+          borderColor: '{surface.500}',
+          hoverBorderColor: '{surface.400}',
+          color: '{surface.50}',
+          placeholderColor: '{surface.400}',
+          iconColor: '{surface.400}',
+          shadow: 'none',
+        },
+        text: {
+          color: '{surface.50}',
+          hoverColor: '{surface.50}',
+          mutedColor: '{surface.400}',
+          hoverMutedColor: '{surface.300}',
+        },
+        content: {
+          background: '{surface.900}',
+          hoverBackground: '{surface.800}',
+          borderColor: '{surface.700}',
+        },
+        overlay: {
+          select: { background: '{surface.900}', borderColor: '{surface.700}' },
+          popover: { background: '{surface.900}', borderColor: '{surface.700}' },
+          modal: { background: '{surface.900}', borderColor: '{surface.700}' },
         },
       },
     },
@@ -154,9 +243,9 @@ export const PetHavenPreset = definePreset(Aura, {
   components: {
     button: {
       root: {
-        borderRadius: '9999px',
+        borderRadius: '12px',
         label: {
-          fontWeight: '700',
+          fontWeight: '800',
         },
       },
       colorScheme: {
@@ -220,59 +309,144 @@ export const PetHavenPreset = definePreset(Aura, {
         },
       },
     },
+    // Tabla de datos (10.9): encabezado sin fondo, filas de 10 px, sin cebra; hover `sunken`.
+    // El tamaño del encabezado y la última fila viven en `.ph-resource-table` (styles.css).
     datatable: {
       headerCell: {
-        background: '#f6ece9',
-        borderColor: '#eacecb',
-        color: '#7a502a',
-        selectedBackground: '#f0d9d4',
-        selectedColor: '#7a502a',
+        background: 'transparent',
+        borderColor: '{content.border.color}',
+        color: '{text.muted.color}',
+        selectedBackground: '{highlight.background}',
+        selectedColor: '{highlight.color}',
+        padding: '10px 12px',
       },
       columnTitle: {
         fontWeight: '700',
       },
       row: {
-        hoverBackground: '#fbf6ee',
+        hoverBackground: '{content.hover.background}',
       },
       bodyCell: {
-        borderColor: '#f0e9dd',
-      },
-    },
-    paginator: {
-      navButton: {
-        selectedBackground: '{orange.500}',
-        selectedColor: '#261a10',
+        borderColor: '{content.border.color}',
+        padding: '10px 12px',
       },
     },
     dialog: {
       root: {
-        borderRadius: '1.5rem',
+        borderRadius: '20px',
       },
     },
     menu: {
       root: {
-        borderRadius: '1rem',
+        borderRadius: '14px',
+        shadow: '0 12px 30px -10px rgb(0 0 0 / 0.35)',
+      },
+    },
+    drawer: {
+      root: {
+        shadow: '0 24px 60px -20px rgb(0 0 0 / 0.45)',
       },
     },
     select: {
       overlay: {
-        borderRadius: '1rem',
+        borderRadius: '14px',
       },
     },
-    tag: {
-      root: {
-        fontWeight: '700',
-      },
+    // Chip de filtro (10.3): contorno de 1.5 px (en styles.css), `ink` al seleccionarlo. El control
+    // segmentado de `p-selectbutton` lo redefine en styles.css.
+    togglebutton: {
+      root: { padding: '0', borderRadius: '12px', gap: '0.5rem', fontWeight: '700' },
+      content: { padding: '0.375rem 0.875rem', borderRadius: '12px', checkedShadow: 'none' },
       colorScheme: {
         light: {
-          primary: { color: '{primary.800}' },
-          success: { color: '{green.800}' },
-          warn: { color: '{orange.900}' },
-          danger: { color: '{red.800}' },
+          root: {
+            background: 'transparent',
+            hoverBackground: '{content.hover.background}',
+            borderColor: '{content.border.color}',
+            color: '{text.muted.color}',
+            hoverColor: '{text.color}',
+            checkedBackground: '{text.color}',
+            checkedBorderColor: '{text.color}',
+            checkedColor: 'var(--color-ground)',
+          },
+          content: { checkedBackground: 'transparent' },
+          icon: { color: '{text.muted.color}', hoverColor: '{text.color}', checkedColor: 'var(--color-ground)' },
+        },
+        dark: {
+          root: {
+            background: 'transparent',
+            hoverBackground: '{content.hover.background}',
+            borderColor: '{content.border.color}',
+            color: '{text.muted.color}',
+            hoverColor: '{text.color}',
+            checkedBackground: '{text.color}',
+            checkedBorderColor: '{text.color}',
+            checkedColor: 'var(--color-ground)',
+          },
+          content: { checkedBackground: 'transparent' },
+          icon: { color: '{text.muted.color}', hoverColor: '{text.color}', checkedColor: 'var(--color-ground)' },
         },
       },
     },
+    // Interruptor (10.3): pista de 40 por 23 px y pieza de 17 px; activado usa el acento (`primary`).
+    toggleswitch: {
+      root: { width: '40px', height: '23px', gap: '3px' },
+      handle: { size: '17px' },
+    },
+    // Pares suaves de estado del sistema de diseño; las variables cambian solas con .app-dark.
+    tag: {
+      root: {
+        fontSize: '12px',
+        fontWeight: '800',
+        padding: '3px 10px',
+        gap: '4px',
+        borderRadius: '9999px',
+      },
+      icon: {
+        size: '13px',
+      },
+      colorScheme: {
+        light: {
+          primary: { background: 'var(--color-accent-soft)', color: 'var(--color-accent-text)' },
+          secondary: { background: 'var(--color-sunken)', color: 'var(--color-ink-muted)' },
+          success: { background: 'var(--color-success-soft)', color: 'var(--color-on-success-soft)' },
+          info: { background: 'var(--color-info-soft)', color: 'var(--color-on-info-soft)' },
+          warn: { background: 'var(--color-warning-soft)', color: 'var(--color-on-warning-soft)' },
+          danger: { background: 'var(--color-danger-soft)', color: 'var(--color-on-danger-soft)' },
+        },
+        dark: {
+          primary: { background: 'var(--color-accent-soft)', color: 'var(--color-accent-text)' },
+          secondary: { background: 'var(--color-sunken)', color: 'var(--color-ink-muted)' },
+          success: { background: 'var(--color-success-soft)', color: 'var(--color-on-success-soft)' },
+          info: { background: 'var(--color-info-soft)', color: 'var(--color-on-info-soft)' },
+          warn: { background: 'var(--color-warning-soft)', color: 'var(--color-on-warning-soft)' },
+          danger: { background: 'var(--color-danger-soft)', color: 'var(--color-on-danger-soft)' },
+        },
+      },
+    },
+    // Barras de esqueleto en `line` y sin brillo; el pulso lo define .ph-skeleton-bar en styles.css.
+    // Aura define el fondo por esquema, así que se sustituye en ambos.
+    skeleton: {
+      root: { borderRadius: '7px' },
+      colorScheme: {
+        light: { root: { background: 'var(--color-line)', animationBackground: 'transparent' } },
+        dark: { root: { background: 'var(--color-line)', animationBackground: 'transparent' } },
+      },
+    },
+    tooltip: {
+      root: {
+        maxWidth: '16rem',
+        padding: '7px 10px',
+        borderRadius: '10px',
+        shadow: '0 12px 30px -10px rgb(0 0 0 / 0.35)',
+      },
+      colorScheme: {
+        light: { root: { background: 'var(--color-ink)', color: 'var(--color-ground)' } },
+        dark: { root: { background: 'var(--color-ink)', color: 'var(--color-ground)' } },
+      },
+    },
     message: {
+      root: { borderRadius: '14px' },
       colorScheme: {
         light: {
           success: {

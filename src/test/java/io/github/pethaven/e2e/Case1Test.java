@@ -116,6 +116,7 @@ public class Case1Test {
         wait.until(ExpectedConditions.urlMatches(".*/veterinario/mascotas/[0-9]+$"));
 
         // 4. El dueño ingresa al portal de clientes y ve su mascota.
+        logout();
         driver.get(FRONT + "/login");
         login(OWNER_EMAIL, OWNER_PASSWORD);
         wait.until(ExpectedConditions.presenceOfElementLocated(By.className("pet-name")));
@@ -129,6 +130,13 @@ public class Case1Test {
     private WebElement findOwnerOption() {
         return driver.findElements(By.className("p-select-option")).stream()
                 .filter(o -> o.getText().contains(OWNER_DOCUMENT)).findFirst().orElse(null);
+    }
+
+    // La sesión se guarda en localStorage: sin cerrarla, /login redirige al portal del usuario anterior.
+    private void logout() {
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("btnMenuUsuario"))).click();
+        wait.until(ExpectedConditions.elementToBeClickable(By.id("btnLogout"))).click();
+        wait.until(ExpectedConditions.urlContains("/login"));
     }
 
     private void login(String email, String password) {

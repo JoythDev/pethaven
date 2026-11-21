@@ -1,0 +1,45 @@
+<div class="mb-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-[12.5px] leading-[18px] font-extrabold">
+  <span class="inline-flex items-center gap-1.5">
+    <i class="size-2.5 rounded-check" aria-hidden="true" [style.background-color]="colors().sales"></i>Ventas
+  </span>
+  <span class="inline-flex items-center gap-1.5">
+    <i class="size-2.5 rounded-check" aria-hidden="true" [style.background-color]="colors().profit"></i>Ganancia
+  </span>
+  <span class="ml-auto font-medium text-ink-muted">{{ unitLabel() }}</span>
+</div>
+
+@if (showTable()) {
+  <div class="overflow-x-auto">
+    <table class="w-full text-sm leading-5">
+      <caption class="sr-only">{{ summary() }}</caption>
+      <thead>
+        <tr class="border-b border-line text-left text-[12.5px] text-ink-muted">
+          <th scope="col" class="py-1.5 pr-3 font-bold">Tramo</th>
+          <th scope="col" class="py-1.5 pr-3 text-right font-bold">Ventas</th>
+          <th scope="col" class="py-1.5 text-right font-bold">Ganancia</th>
+        </tr>
+      </thead>
+      <tbody>
+        @for (row of rows(); track $index) {
+          <tr class="border-b border-line last:border-0">
+            <td class="py-1.5 pr-3">{{ row.label }}</td>
+            <td class="py-1.5 pr-3 text-right font-extrabold tabular-nums">{{ row.sales }}</td>
+            <td class="py-1.5 text-right font-extrabold tabular-nums">{{ row.profit }}</td>
+          </tr>
+        }
+      </tbody>
+    </table>
+  </div>
+} @else {
+  <p-chart type="bar" height="220px" [data]="data()" [options]="options()" [ariaLabel]="summary()" />
+}
+
+<div class="mt-2 flex justify-end">
+  <p-button
+    [text]="true"
+    size="small"
+    [label]="showTable() ? 'Ver como gráfico' : 'Ver como tabla'"
+    [attr.aria-pressed]="showTable()"
+    (onClick)="showTable.set(!showTable())"
+  />
+</div>

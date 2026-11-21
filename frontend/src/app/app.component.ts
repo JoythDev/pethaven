@@ -1,10 +1,11 @@
 import { Component } from '@angular/core';
 import { RouterOutlet } from '@angular/router';
+import { ToastModule } from 'primeng/toast';
 import { PawTrailDirective } from './core/directives/paw-trail.directive';
 
 @Component({
   selector: 'app-root',
-  imports: [RouterOutlet, PawTrailDirective],
+  imports: [RouterOutlet, ToastModule, PawTrailDirective],
   templateUrl: './app.component.html',
   styleUrl: './app.component.css'
 })

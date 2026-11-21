@@ -1,0 +1,344 @@
+<app-page-header heading="Agenda" [subtitle]="subtitle()">
+  <button actions pButton type="button" size="small" (click)="demoAction('Agendar desde la agenda llegará con la versión final.')">
+    <svg lucidePlus [size]="18" aria-hidden="true"></svg>
+    <span class="p-button-label">Nueva cita</span>
+  </button>
+</app-page-header>
+
+@let agendaState = agenda();
+
+<!-- Dos columnas (8 + 4) mientras el detalle es una columna fija; por debajo de 1080 px el detalle es un cajón. -->
+<div class="grid grid-cols-12 items-start gap-[14px]">
+  <div class="flex min-w-0 flex-col gap-[14px]" [class]="withPanel() ? 'col-span-8' : 'col-span-12'">
+    <!-- Resumen del día elegido (demo) -->
+    @if (timeline(); as tl) {
+      <app-day-summary [timeline]="tl" [date]="day()" />
+    } @else if (agendaState.status === 'error') {
+      <section app-card heading="Resumen del día">
+        <app-demo-tag title-extra />
+        <app-inline-error text="No pudimos cargar la agenda de este día." (retry)="retryAgenda()" />
+      </section>
+    } @else if (agendaSkeleton()) {
+      <app-skeleton variant="text" [lines]="4" />
+    }
+
+    <!-- Línea de tiempo (demo): Día o Semana -->
+    <section app-card heading="Línea de tiempo" class="@container">
+      <app-demo-tag title-extra />
+      <p-selectbutton
+        action
+        aria-label="Vista de la línea de tiempo"
+        [options]="viewOptions"
+        optionLabel="label"
+        optionValue="value"
+        [allowEmpty]="false"
+        [ngModel]="view()"
+        (ngModelChange)="setView($event)"
+      />
+
+      @if (view() === 'dia') {
+        @if (agendaState.status === 'error') {
+          <app-inline-error text="No pudimos cargar la línea de tiempo." (retry)="retryAgenda()" />
+        } @else if (agendaState.status === 'loading') {
+          @if (agendaSkeleton()) {
+            @for (row of skeletonRows; track row) {
+              <app-skeleton variant="row" [announce]="$first" />
+            }
+          }
+        } @else if (agendaState.data.closed) {
+          <app-empty-state
+            heading="Sin citas este día"
+            description="La clínica no atiende los domingos. Elige otro día en el calendario."
+          >
+            <app-sticker sticker name="cat" [width]="110" [kit]="2" />
+          </app-empty-state>
+        } @else {
+          <div
+            class="grid grid-cols-[54px_minmax(0,1fr)] gap-x-2.5 gap-y-2 [--appt-ring:var(--color-ink)]"
+            [style.grid-template-rows]="'repeat(' + slotTimes().length + ', minmax(56px, auto))'"
+          >
+            @for (slot of slotTimes(); track slot) {
+              <time
+                class="col-start-1 pt-2.5 text-[12.5px] leading-[18px] font-extrabold text-ink-muted tabular-nums"
+                [style.grid-row]="$index + 1"
+                >{{ slot }}</time
+              >
+            }
+            @for (row of rows(); track row.segment.time) {
+              @let segment = row.segment;
+              @if (segment.appointment; as appointment) {
+                @let status = appointmentStatus(appointment);
+                <button
+                  type="button"
+                  class="appt ph-block ph-focus col-start-2 flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2 rounded-row px-3 py-2.5 text-left"
+                  [class]="'hue-' + segment.hue"
+                  [class.appt-selected]="isSelected(appointment)"
+                  [style.grid-row]="row.row + ' / span ' + row.span"
+                  [attr.aria-pressed]="isSelected(appointment)"
+                  [attr.aria-label]="segment.label + ', ' + status.label.toLowerCase()"
+                  (click)="selectAppointment(appointment)"
+                >
+                  <app-avatar
+                    class="ring-2 ring-[color-mix(in_srgb,var(--color-on-hue)_16%,var(--hue))]"
+                    [id]="appointment.petId"
+                    [name]="appointment.petName"
+                    kind="pet"
+                    [species]="appointment.species"
+                    [size]="42"
+                  />
+                  <span class="min-w-0 flex-1 basis-40">
+                    <span class="block truncate text-sm leading-5 font-extrabold"
+                      >{{ appointment.petName }}<span class="font-semibold"> · {{ appointment.reason }}</span></span
+                    >
+                    <span class="block truncate text-[12.5px] leading-[18px] text-ink-muted">
+                      {{ appointment.ownerName }} · {{ appointment.durationMinutes }} min
+                    </span>
+                  </span>
+                  <span class="flex flex-wrap gap-1.5 empty:hidden">
+                    @if (appointment.urgent) {
+                      <p-tag>
+                        <span class="inline-flex items-center gap-1">
+                          <svg lucideTriangleAlert [size]="12" aria-hidden="true"></svg>Urgencia
+                        </span>
+                      </p-tag>
+                    }
+                    <p-tag [value]="status.label" />
+                  </span>
+                </button>
+              } @else {
+                <button
+                  type="button"
+                  class="ph-focus col-start-2 flex min-w-0 items-center gap-2 rounded-row border-[1.5px] border-dashed border-line-strong px-3 py-2 text-left text-sm leading-5 font-bold text-ink-muted transition-colors duration-[180ms] ease-out-strong hover:bg-sunken disabled:cursor-default disabled:opacity-55 disabled:hover:bg-transparent motion-reduce:transition-none"
+                  [style.grid-row]="row.row"
+                  [disabled]="segment.past"
+                  [attr.aria-label]="segment.label"
+                  (click)="demoFreeSlot(segment.time)"
+                >
+                  <svg lucidePlus [size]="16" aria-hidden="true"></svg>
+                  Libre
+                </button>
+              }
+            }
+          </div>
+        }
+      } @else {
+        @let weekState = weekAgendas();
+        @if (weekState.status === 'error') {
+          <app-inline-error text="No pudimos cargar la semana." (retry)="retryWeekAgendas()" />
+        } @else if (weekState.status === 'loading') {
+          @if (weekSkeleton()) {
+            @for (row of skeletonRows; track row) {
+              <app-skeleton variant="row" [announce]="$first" />
+            }
+          }
+        } @else {
+          <!-- Columnas según el ancho de la tarjeta: lista apilada, 3 por fila o los 6 días a la vez. -->
+          <div class="grid grid-cols-1 gap-2 [--appt-ring:var(--color-ink)] @min-[460px]:grid-cols-3 @min-[700px]:grid-cols-6">
+            @for (column of weekColumns(); track column.date.getTime()) {
+              <section
+                class="flex min-w-0 flex-col gap-1.5 rounded-row border border-line p-2"
+                [class.bg-accent-soft]="column.selected"
+                [attr.aria-label]="column.label"
+              >
+                <button
+                  type="button"
+                  class="ph-focus rounded-field px-1 py-0.5 text-left"
+                  [attr.aria-label]="column.label + (column.today ? ', hoy' : '')"
+                  (click)="openFromWeek(column.date, null)"
+                >
+                  <span class="block text-xs leading-4 font-bold text-ink-muted first-letter:uppercase">
+                    {{ column.date | date: 'EEE' }}{{ column.today ? ' · hoy' : '' }}
+                  </span>
+                  <span class="font-display text-[20px] leading-6 font-semibold tabular-nums">{{ column.number }}</span>
+                </button>
+                @for (appointment of column.agenda.appointments; track appointment.id) {
+                  <button
+                    type="button"
+                    class="chip ph-block ph-focus flex min-w-0 items-center gap-1.5 rounded-field px-2 py-1.5 text-left text-[12.5px] leading-[18px] font-extrabold"
+                    [class]="'hue-' + hueOf(appointment)"
+                    [class.chip-selected]="column.selected && isSelected(appointment)"
+                    [attr.aria-pressed]="column.selected && isSelected(appointment)"
+                    [attr.aria-label]="time(appointment) + ', ' + appointment.petName + ', ' + appointment.reason"
+                    (click)="openFromWeek(column.date, appointment)"
+                  >
+                    <span class="tabular-nums">{{ time(appointment) }}</span>
+                    <span class="min-w-0 flex-1 truncate">{{ appointment.petName }}</span>
+                    @if (appointment.urgent) {
+                      <svg lucideTriangleAlert class="shrink-0" [size]="14" aria-hidden="true"></svg>
+                    }
+                  </button>
+                } @empty {
+                  <p class="px-1 text-xs leading-4 text-ink-muted">Sin citas</p>
+                }
+              </section>
+            }
+          </div>
+        }
+      }
+    </section>
+  </div>
+
+  <!-- Detalle de la visita: columna fija desde 1080 px; cajón por debajo -->
+  <app-detail-panel
+    label="Detalle de la visita"
+    emptyHeading="Nada seleccionado"
+    emptyText="Elige una cita de la línea de tiempo para ver al paciente."
+    [selected]="selected() !== null"
+    [loading]="agendaSkeleton()"
+    [hue]="detailHue()"
+    [heading]="selected()?.petName ?? ''"
+    [subtitle]="detailSubtitle()"
+    [fullLink]="selected() ? ['/veterinario/mascotas', selected()!.petId] : null"
+    [(open)]="panelOpen"
+  >
+    @let visit = selected();
+    <app-avatar
+      avatar
+      [id]="visit?.petId ?? 0"
+      [name]="visit?.petName ?? ''"
+      kind="pet"
+      [species]="visit?.species ?? defaultSpecies"
+      [photoUrl]="pet()?.photoUrl ?? null"
+      [size]="60"
+    />
+
+    <div figure class="flex flex-wrap gap-1.5">
+      @if (visit) {
+        <p-tag severity="secondary">
+          <span class="inline-flex items-center gap-1 tabular-nums">
+            <svg lucideClock [size]="12" aria-hidden="true"></svg>{{ time(visit) }}
+          </span>
+        </p-tag>
+        <p-tag severity="info" [value]="visit.reason" />
+        @if (visit.urgent) {
+          <p-tag severity="danger">
+            <span class="inline-flex items-center gap-1">
+              <svg lucideTriangleAlert [size]="12" aria-hidden="true"></svg>Urgencia
+            </span>
+          </p-tag>
+        }
+        @if (statusTag(); as tag) {
+          <p-tag [severity]="tag.severity" [value]="tag.label" />
+        }
+      }
+    </div>
+
+    <div details class="flex flex-col gap-3">
+      <dl app-definition-list>
+        <dt>Dueño</dt>
+        <dd>{{ visit?.ownerName }}</dd>
+        <dt>Estado</dt>
+        <dd>
+          @if (petStatusTag(); as tag) {
+            <p-tag [severity]="tag.severity" [value]="tag.label" />
+          } @else if (pets().status === 'loading') {
+            @if (petsSkeleton()) {
+              <p-skeleton class="ml-auto block w-20" height="14px" borderRadius="999px" animation="none" styleClass="ph-skeleton-bar" />
+            }
+          } @else if (pets().status === 'error') {
+            No disponible
+          } @else {
+            Sin registrar
+          }
+        </dd>
+        <dt>Última visita</dt>
+        <dd>
+          @if (lastVisit(); as label) {
+            {{ label }}
+          } @else if (treatments().status === 'loading') {
+            @if (treatmentsSkeleton()) {
+              <p-skeleton class="ml-auto block w-24" height="14px" borderRadius="999px" animation="none" styleClass="ph-skeleton-bar" />
+            }
+          } @else {
+            No disponible
+          }
+        </dd>
+      </dl>
+      @if (pets().status === 'error') {
+        <app-inline-error text="No pudimos cargar los datos de la mascota." (retry)="retryPets()" />
+      }
+      @if (treatments().status === 'error') {
+        <app-inline-error text="No pudimos cargar la última visita." (retry)="retryTreatments()" />
+      }
+    </div>
+
+    <div actions class="contents">
+      @if (visit) {
+        @if (petInactive()) {
+          <button pButton type="button" class="w-full" [disabled]="true" aria-describedby="consult-blocked">
+            <svg lucideStethoscope [size]="18" aria-hidden="true"></svg>
+            <span class="p-button-label">Iniciar consulta</span>
+          </button>
+          <p id="consult-blocked" class="text-[12.5px] leading-[18px] text-ink-muted">
+            {{ visit.petName }} está inactiva y no admite consultas nuevas. Actívala desde su ficha.
+          </p>
+        } @else {
+          <a pButton class="w-full" [routerLink]="['/veterinario/mascotas', visit.petId, 'treatments', 'add']">
+            <svg lucideStethoscope [size]="18" aria-hidden="true"></svg>
+            <span class="p-button-label">Iniciar consulta</span>
+          </a>
+        }
+        <button
+          pButton
+          type="button"
+          class="w-full"
+          severity="secondary"
+          [outlined]="true"
+          label="Reprogramar"
+          (click)="demoAction('Reprogramar la cita de ' + visit.petName + ' llegará con la versión final.')"
+        ></button>
+      }
+    </div>
+  </app-detail-panel>
+</div>
+
+<!-- Barra lateral: calendario del mes y «Esta semana»; el shell añade Notificaciones al final -->
+<ng-template appShellSidebar>
+  <section app-card [heading]="monthTitle()" class="p-3!">
+    <div class="mb-2 flex items-center gap-1">
+      <button
+        type="button"
+        class="ph-focus ph-icon-btn"
+        aria-label="Mes anterior"
+        pTooltip="Mes anterior"
+        tooltipPosition="bottom"
+        (click)="shiftMonth(-1)"
+      >
+        <svg lucideChevronLeft [size]="18" aria-hidden="true"></svg>
+      </button>
+      <button
+        type="button"
+        class="ph-focus ph-icon-btn"
+        aria-label="Mes siguiente"
+        pTooltip="Mes siguiente"
+        tooltipPosition="bottom"
+        (click)="shiftMonth(1)"
+      >
+        <svg lucideChevronRight [size]="18" aria-hidden="true"></svg>
+      </button>
+      <button pButton type="button" class="ml-auto" size="small" [text]="true" label="Hoy" (click)="selectDay(today())"></button>
+    </div>
+
+    <app-month-calendar
+      [month]="visibleMonth()"
+      [monthLabel]="monthTitle()"
+      [selected]="day()"
+      [today]="today()"
+      [counts]="monthCounts()"
+      (daySelect)="selectDay($event)"
+      (monthChange)="showMonth($event)"
+    />
+
+    @let monthState = month();
+    @if (monthState.status === 'error') {
+      <app-inline-error class="mt-3" text="No pudimos cargar las citas del mes." (retry)="retryMonth()" />
+    }
+    <p class="mt-3 flex items-center text-xs leading-4 text-ink-muted">
+      <span class="mr-1.5 inline-block size-1 rounded-full bg-current opacity-60" aria-hidden="true"></span>
+      Día con citas
+      <app-demo-tag class="ml-auto!" />
+    </p>
+  </section>
+
+  <app-week-summary [state]="weekView()" (retry)="retrySummary()" />
+</ng-template>

@@ -1,0 +1,39 @@
+<div class="contents" [appPopoverDismiss]="open()" (dismissed)="dismiss($event)">
+  <button
+    #trigger
+    type="button"
+    class="ph-focus ph-icon-btn relative"
+    aria-haspopup="dialog"
+    aria-controls="notifications-popover"
+    [attr.aria-expanded]="open()"
+    [attr.aria-label]="label()"
+    pTooltip="Notificaciones"
+    tooltipPosition="bottom"
+    (click)="open.set(!open())"
+  >
+    <svg lucideBell [size]="18" aria-hidden="true"></svg>
+    @if (notifications.unreadCount() > 0) {
+      <span class="absolute top-1.5 right-1.5 size-2 rounded-full bg-danger ring-2 ring-card" aria-hidden="true"></span>
+    }
+  </button>
+
+  <div
+    id="notifications-popover"
+    role="dialog"
+    aria-label="Notificaciones"
+    class="ph-popover absolute top-[calc(100%+8px)] right-0 w-[300px] max-w-[calc(100vw-24px)] p-3"
+    [attr.data-open]="open()"
+  >
+    <h2 class="mb-1 px-1 font-display text-[17px] leading-[22px] font-semibold text-ink">
+      Notificaciones<app-demo-tag />
+    </h2>
+    <div class="px-1">
+      @for (notification of notifications.recent(); track notification.id) {
+        <app-notification-item [notification]="notification" [now]="now()" variant="bell" />
+      } @empty {
+        <p class="py-2 text-[12.5px] leading-[18px] text-ink-muted">No hay avisos por ahora.</p>
+      }
+    </div>
+    <button pButton type="button" [text]="true" size="small" label="Mostrar todo" class="-ml-1" (click)="showAll()"></button>
+  </div>
+</div>

@@ -1,0 +1,32 @@
+<div class="grid grid-cols-7 gap-[3px]" role="group" [attr.aria-label]="monthLabel()">
+  @for (name of weekdays; track $index) {
+    <span class="py-1 text-center text-xs leading-4 font-bold text-ink-muted" aria-hidden="true">{{ name }}</span>
+  }
+  @for (week of weeks(); track $index) {
+    @for (cell of week; track $index) {
+      @if (cell) {
+        <button
+          type="button"
+          [class]="cell.classes"
+          [attr.data-day]="cell.key"
+          [attr.aria-label]="cell.label"
+          [attr.aria-pressed]="cell.selected"
+          [attr.aria-current]="cell.today ? 'date' : null"
+          [attr.tabindex]="cell.key === tabStop() ? 0 : -1"
+          (click)="daySelect.emit(cell.date)"
+          (keydown)="onKeydown($event, cell)"
+        >
+          {{ cell.day }}
+          @if (cell.hasAppointments) {
+            <span
+              class="absolute bottom-1 left-1/2 size-1 -translate-x-1/2 rounded-full bg-current opacity-60"
+              aria-hidden="true"
+            ></span>
+          }
+        </button>
+      } @else {
+        <span aria-hidden="true"></span>
+      }
+    }
+  }
+</div>
