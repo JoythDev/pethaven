@@ -9,11 +9,18 @@ import io.github.pethaven.repository.VeterinarianRepository;
 import io.github.pethaven.security.auth.dto.AuthProfileResponse;
 import io.github.pethaven.security.auth.dto.AuthResponse;
 import io.github.pethaven.security.auth.dto.LoginRequest;
+import io.github.pethaven.security.auth.dto.OtpChallengeResponse;
+import io.github.pethaven.security.auth.dto.ResendOtpRequest;
+import io.github.pethaven.security.auth.dto.VerifyOtpRequest;
 import io.github.pethaven.security.jwt.JwtProvider;
+import io.github.pethaven.security.otp.OtpService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -28,6 +35,8 @@ public class AuthServiceImpl implements AuthService {
     private final VeterinarianRepository veterinarianRepository;
     private final AdministratorRepository administratorRepository;
     private final JwtProvider jwtProvider;
+    private final OtpService otpService;
+    private final UserDetailsService userDetailsService;
 
     @Autowired
     public AuthServiceImpl(
@@ -36,7 +45,9 @@ public class AuthServiceImpl implements AuthService {
             OwnerRepository ownerRepository,
             VeterinarianRepository veterinarianRepository,
             AdministratorRepository administratorRepository,
-            JwtProvider jwtProvider
+            JwtProvider jwtProvider,
+            OtpService otpService,
+            UserDetailsService userDetailsService
     ) {
         this.authenticationManager = authenticationManager;
         this.userRepository = userRepository;
@@ -44,18 +55,39 @@ public class AuthServiceImpl implements AuthService {
         this.veterinarianRepository = veterinarianRepository;
         this.administratorRepository = administratorRepository;
         this.jwtProvider = jwtProvider;
+        this.otpService = otpService;
+        this.userDetailsService = userDetailsService;
     }
 
     @Override
-    public AuthResponse login(LoginRequest request) {
+    public OtpChallengeResponse login(LoginRequest request) {
         Authentication authentication = authenticationManager.authenticate(
                 UsernamePasswordAuthenticationToken.unauthenticated(request.email(), request.password()));
+        return otpService.start(authentication.getName());
+    }
+
+    @Override
+    public AuthResponse verifyOtp(VerifyOtpRequest request) {
+        String username = otpService.verify(request.challengeId(), request.code());
+
+        // Se vuelve a leer la cuenta: pudo desactivarse o eliminarse entre la contraseña y el código.
+        UserDetails account = userDetailsService.loadUserByUsername(username);
+        if (!account.isEnabled()) {
+            throw new DisabledException("La cuenta está desactivada.");
+        }
+        Authentication authentication =
+                UsernamePasswordAuthenticationToken.authenticated(account, null, account.getAuthorities());
 
         AuthProfileResponse profile = getProfile(authentication.getName());
         String token = jwtProvider.generateToken(authentication);
 
         return new AuthResponse(token, jwtProvider.getExpirationSeconds(),
                 profile.profileId(), profile.name(), profile.email(), profile.role());
+    }
+
+    @Override
+    public OtpChallengeResponse resendOtp(ResendOtpRequest request) {
+        return otpService.resend(request.challengeId());
     }
 
     // Sin @Transactional: ninguna lectura lo necesita. Los roles de la cuenta se cargan EAGER, así que no queda

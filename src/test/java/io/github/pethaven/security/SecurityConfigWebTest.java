@@ -24,8 +24,8 @@ import java.net.URI;
 public class SecurityConfigWebTest {
 
     private static final String ALLOWED_ORIGIN = "http://allowed.test";
-    // Única ruta del API abierta sin sesión en la matriz de permisos: el controlador de prueba la ocupa para
-    // probar CORS sobre una respuesta exitosa.
+    // Ruta del API abierta sin sesión (paso 1 del login) que el controlador de prueba ocupa para probar CORS
+    // sobre una respuesta exitosa.
     private static final String PUBLIC_SAMPLE_PATH = "/api/auth/login";
     // El controlador de prueba solo existe con este perfil: el escaneo de componentes de un @SpringBootTest
     // también lo encuentra, y su ruta pública chocaría con el AuthController real.

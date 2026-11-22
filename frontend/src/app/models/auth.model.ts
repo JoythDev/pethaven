@@ -7,7 +7,22 @@ export interface LoginRequest {
   password: string;
 }
 
-// Respuesta de POST /auth/login (AuthResponse del backend).
+// Respuesta de POST /auth/login y de POST /auth/resend-otp (OtpChallengeResponse del backend): la contraseña
+// es correcta y se envió un código al correo. Todavía no hay sesión.
+export interface OtpChallenge {
+  challengeId: string;
+  maskedEmail: string; // correo al que se envió el código, parcialmente oculto
+  expiresIn: number; // segundos de vigencia del código
+  resendAvailableIn: number; // segundos que hay que esperar antes de pedir otro código
+}
+
+// Cuerpo de POST /auth/verify-otp (VerifyOtpRequest del backend).
+export interface VerifyOtpRequest {
+  challengeId: string;
+  code: string; // 6 dígitos
+}
+
+// Respuesta de POST /auth/verify-otp (AuthResponse del backend).
 export interface AuthResponse {
   token: string;
   expiresIn: number; // segundos de vigencia del token

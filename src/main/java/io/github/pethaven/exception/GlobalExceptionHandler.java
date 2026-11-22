@@ -83,6 +83,12 @@ public class GlobalExceptionHandler {
         return build(HttpStatus.FORBIDDEN, "No tienes permisos para acceder a este recurso.", request);
     }
 
+    /** Segundo factor: código incorrecto o vencido (401), demasiados intentos (429) o correo no entregado (503). */
+    @ExceptionHandler(OtpException.class)
+    public ResponseEntity<ApiErrorResponse> handleOtp(OtpException ex, HttpServletRequest request) {
+        return build(ex.getStatus(), ex.getMessage(), request);
+    }
+
     @ExceptionHandler(InvalidExcelFormatException.class)
     public ResponseEntity<ApiErrorResponse> handleInvalidExcelFormat(InvalidExcelFormatException ex, HttpServletRequest request) {
         return build(HttpStatus.BAD_REQUEST, ex.getMessage(), request);

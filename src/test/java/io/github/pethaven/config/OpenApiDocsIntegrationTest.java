@@ -28,6 +28,14 @@ class OpenApiDocsIntegrationTest {
     }
 
     @Test
+    void apiDocs_OtpSteps_OverrideGlobalBearerRequirementWithNone() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/v3/api-docs"))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.paths['/api/auth/verify-otp'].post.security").isEmpty())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.paths['/api/auth/resend-otp'].post.security").isEmpty());
+    }
+
+    @Test
     void apiDocs_ProtectedOperation_InheritsGlobalBearerRequirement() throws Exception {
         mockMvc.perform(MockMvcRequestBuilders.get("/v3/api-docs"))
                 .andExpect(MockMvcResultMatchers.status().isOk())

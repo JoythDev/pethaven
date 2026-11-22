@@ -4,7 +4,15 @@ import { Router } from '@angular/router';
 import { Observable, firstValueFrom, map, timeout } from 'rxjs';
 import { API_BASE_URL } from '../core/api/api-base-url';
 import { ANONYMOUS_REQUEST, SKIP_SESSION_EXPIRED_REDIRECT } from '../core/auth/auth-context';
-import { AuthProfile, AuthResponse, AuthRole, AuthUser, LoginRequest } from '../models/auth.model';
+import {
+  AuthProfile,
+  AuthResponse,
+  AuthRole,
+  AuthUser,
+  LoginRequest,
+  OtpChallenge,
+  VerifyOtpRequest,
+} from '../models/auth.model';
 
 // Lo único que se guarda en el navegador es el token: el perfil (nombre, rol, id) se pide al API
 // con GET /auth/me en cada carga, y la expiración se lee del propio token (claim exp).
@@ -57,11 +65,20 @@ export class AuthService {
     return this._token();
   }
 
-  // POST /auth/login: 401 si las credenciales no son válidas; 403 si la contraseña es correcta
-  // pero la cuenta está desactivada.
-  login(request: LoginRequest): Observable<AuthUser> {
-    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/login`, request, {
+  // Primer paso del inicio de sesión. POST /auth/login: 401 si las credenciales no son válidas; 403 si la
+  // contraseña es correcta pero la cuenta está desactivada; 503 si no se pudo enviar el correo. Si son
+  // válidas, el API envía un código al correo y devuelve el desafío: todavía no hay sesión.
+  login(request: LoginRequest): Observable<OtpChallenge> {
+    return this.http.post<OtpChallenge>(`${this.apiUrl}/auth/login`, request, {
       // Sin el token guardado: un 401 por credenciales incorrectas no debe cerrar la sesión vigente.
+      context: new HttpContext().set(ANONYMOUS_REQUEST, true),
+    });
+  }
+
+  // Segundo paso. POST /auth/verify-otp: 401 si el código es incorrecto o venció, 429 si se agotaron los
+  // intentos. Con el código correcto abre la sesión.
+  verifyOtp(request: VerifyOtpRequest): Observable<AuthUser> {
+    return this.http.post<AuthResponse>(`${this.apiUrl}/auth/verify-otp`, request, {
       context: new HttpContext().set(ANONYMOUS_REQUEST, true),
     }).pipe(
       map((response) => {
@@ -70,6 +87,14 @@ export class AuthService {
         return user;
       })
     );
+  }
+
+  // POST /auth/resend-otp: envía un código nuevo para el mismo desafío. 429 si falta esperar o se agotaron
+  // los reenvíos; 401 si el desafío venció.
+  resendOtp(challengeId: string): Observable<OtpChallenge> {
+    return this.http.post<OtpChallenge>(`${this.apiUrl}/auth/resend-otp`, { challengeId }, {
+      context: new HttpContext().set(ANONYMOUS_REQUEST, true),
+    });
   }
 
   // Al arrancar la app: si hay un token guardado y vigente, pide el perfil con GET /auth/me.

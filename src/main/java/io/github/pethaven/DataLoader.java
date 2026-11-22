@@ -9,6 +9,7 @@ import io.github.pethaven.service.UserAccountService;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Profile;
 import org.springframework.core.annotation.Order;
@@ -48,6 +49,25 @@ public class DataLoader implements CommandLineRunner {
     @Autowired
     private UserAccountService userAccountService;
 
+    // Cuentas de demostración con correo real: el código de verificación llega a una bandeja a la que se puede
+    // entrar. Cada correo sale de la configuración; si falta, la cuenta conserva su correo de ejemplo.
+    @Value("${app.demo.owner-email:}")
+    private String demoOwnerEmail;
+
+    @Value("${app.demo.owner2-email:}")
+    private String demoOwner2Email;
+
+    @Value("${app.demo.vet-email:}")
+    private String demoVetEmail;
+
+    // Contraseña de las cuentas de demostración; vacía, cada una conserva la de los datos de ejemplo.
+    @Value("${app.demo.password:}")
+    private String demoPassword;
+
+    // Los administradores de ejemplo (correos ficticios y contraseña conocida) se omiten en el despliegue.
+    @Value("${app.demo.sample-admins:true}")
+    private boolean sampleAdmins;
+
     private static final Logger log = LoggerFactory.getLogger(DataLoader.class);
 
     private final Random random = new Random(42);
@@ -69,6 +89,14 @@ public class DataLoader implements CommandLineRunner {
         return account;
     }
 
+    private static String configuredOrDefault(String configured, String fallback) {
+        return configured == null || configured.isBlank() ? fallback : configured.trim();
+    }
+
+    private String demoPasswordOr(String fallback) {
+        return configuredOrDefault(demoPassword, fallback);
+    }
+
     private void savePet(Pet pet) {
         pet.setOwner(ownerPool.get(random.nextInt(ownerPool.size())));
         petRepository.save(pet);
@@ -82,8 +110,10 @@ public class DataLoader implements CommandLineRunner {
         // ==================================
         // ==== Cargar dueños de ejemplo ====
         // ==================================
-        ownerRepository.save(Owner.builder().name("John Doe").document("123456789").phone("1234567890").email("john.doe@example.com").user(account("john.doe@example.com", "password123", Role.OWNER)).build());
-        ownerRepository.save(Owner.builder().name("Jane Doe").document("987654321").phone("0987654321").email("jane.doe@example.com").user(account("jane.doe@example.com", "password123", Role.OWNER)).build());
+        String johnEmail = configuredOrDefault(demoOwnerEmail, "john.doe@example.com");
+        ownerRepository.save(Owner.builder().name("John Doe").document("123456789").phone("1234567890").email(johnEmail).user(account(johnEmail, demoPasswordOr("password123"), Role.OWNER)).build());
+        String janeEmail = configuredOrDefault(demoOwner2Email, "jane.doe@example.com");
+        ownerRepository.save(Owner.builder().name("Jane Doe").document("987654321").phone("0987654321").email(janeEmail).user(account(janeEmail, demoPasswordOr("password123"), Role.OWNER)).build());
         ownerRepository.save(Owner.builder().name("Alice Smith").document("456789123").phone("4567891230").email("alice.smith@example.com").user(account("alice.smith@example.com", "password123", Role.OWNER)).build());
         ownerRepository.save(Owner.builder().name("Bob Johnson").document("789123456").phone("7891234560").email("bob.johnson@example.com").user(account("bob.johnson@example.com", "password123", Role.OWNER)).build());
         ownerRepository.save(Owner.builder().name("Charlie Brown").document("321654987").phone("3216549870").email("charlie.brown@example.com").user(account("charlie.brown@example.com", "password123", Role.OWNER)).build());
@@ -358,7 +388,8 @@ public class DataLoader implements CommandLineRunner {
         // ========================================
         // Los primeros tres son los mismos veterinarios que aparecen en la landing de la SPA
         // (sección "Especialistas al Cuidado"), para que la app quede coherente.
-        veterinarianRepository.save(Veterinarian.builder().name("Dra. Valentina Soler").document("328146627").email("valentina.soler@pethaven.com").user(account("valentina.soler@pethaven.com", "vet12345", Role.VETERINARIAN)).specialty("Cuidados Críticos").photoUrl("https://randomuser.me/api/portraits/women/44.jpg").build());
+        String valentinaEmail = configuredOrDefault(demoVetEmail, "valentina.soler@pethaven.com");
+        veterinarianRepository.save(Veterinarian.builder().name("Dra. Valentina Soler").document("328146627").email(valentinaEmail).user(account(valentinaEmail, demoPasswordOr("vet12345"), Role.VETERINARIAN)).specialty("Cuidados Críticos").photoUrl("https://randomuser.me/api/portraits/women/44.jpg").build());
         veterinarianRepository.save(Veterinarian.builder().name("Dr. Esteban Ruiz").document("241882914").email("esteban.ruiz@pethaven.com").user(account("esteban.ruiz@pethaven.com", "vet12345", Role.VETERINARIAN)).specialty("Cirujano General").photoUrl("https://randomuser.me/api/portraits/men/32.jpg").build());
         veterinarianRepository.save(Veterinarian.builder().name("Dra. Amalia Carter").document("581736412").email("amalia.carter@pethaven.com").user(account("amalia.carter@pethaven.com", "vet12345", Role.VETERINARIAN)).specialty("Anestesiología").photoUrl("https://randomuser.me/api/portraits/women/68.jpg").build());
         veterinarianRepository.save(Veterinarian.builder().name("Dr. Miguel Ángel Torres").document("522124823").email("miguel.torres@pethaven.com").user(account("miguel.torres@pethaven.com", "vet12345", Role.VETERINARIAN)).specialty("Medicina Interna").build());
@@ -368,8 +399,10 @@ public class DataLoader implements CommandLineRunner {
         // ==========================================
         // ==== Cargar administradores de prueba ====
         // ==========================================
-        administratorRepository.save(Administrator.builder().name("Admin Principal").email("admin@pethaven.com").user(account("admin@pethaven.com", "admin12345", Role.ADMIN)).build());
-        administratorRepository.save(Administrator.builder().name("Laura Admin").email("laura.admin@pethaven.com").user(account("laura.admin@pethaven.com", "admin12345", Role.ADMIN)).build());
+        if (sampleAdmins) {
+            administratorRepository.save(Administrator.builder().name("Admin Principal").email("admin@pethaven.com").user(account("admin@pethaven.com", "admin12345", Role.ADMIN)).build());
+            administratorRepository.save(Administrator.builder().name("Laura Admin").email("laura.admin@pethaven.com").user(account("laura.admin@pethaven.com", "admin12345", Role.ADMIN)).build());
+        }
 
         // =======================================
         // ==== Cargar tratamientos de ejemplo ====

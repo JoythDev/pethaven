@@ -180,10 +180,13 @@ public class PermissionMatrixWebTest {
     }
 
     @Test
-    public void login_WithoutAuthentication_IsPublic() throws Exception {
-        int status = mockMvc.perform(request(HttpMethod.POST, "/api/auth/login")).andReturn().getResponse().getStatus();
+    public void loginSteps_WithoutAuthentication_ArePublic() throws Exception {
+        // Aún no hay token en ninguno de los tres pasos: la contraseña y el código son lo que protege cada uno.
+        for (String path : new String[]{"/api/auth/login", "/api/auth/verify-otp", "/api/auth/resend-otp"}) {
+            int status = mockMvc.perform(request(HttpMethod.POST, path)).andReturn().getResponse().getStatus();
 
-        Assertions.assertThat(status).isNotIn(401, 403, 404, 405);
+            Assertions.assertThat(status).as(path).isNotIn(401, 403, 404, 405);
+        }
     }
 
     @Test

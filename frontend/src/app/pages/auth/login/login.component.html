@@ -5,8 +5,16 @@
         <app-brand-logo variant="full" [height]="64" />
       </a>
 
-      <h1 class="font-display text-[36px] leading-10 font-semibold tracking-[-0.01em] text-balance">Bienvenido de nuevo</h1>
-      <p class="mt-2 text-[14px] leading-5 text-ink-muted">Ingresa para acceder a tu portal de PetHaven.</p>
+      @if (challenge(); as pending) {
+        <h1 class="font-display text-[36px] leading-10 font-semibold tracking-[-0.01em] text-balance">Revisa tu correo</h1>
+        <p class="mt-2 text-[14px] leading-5 text-ink-muted">
+          Enviamos un código de 6 dígitos a <strong class="font-bold text-ink">{{ pending.maskedEmail }}</strong>. Vence en
+          {{ pending.expiresIn / 60 }} minutos.
+        </p>
+      } @else {
+        <h1 class="font-display text-[36px] leading-10 font-semibold tracking-[-0.01em] text-balance">Bienvenido de nuevo</h1>
+        <p class="mt-2 text-[14px] leading-5 text-ink-muted">Ingresa para acceder a tu portal de PetHaven.</p>
+      }
 
       @if (noticeMessage(); as notice) {
         <p role="status" class="mt-5 flex items-start gap-2.5 rounded-row bg-info-soft px-3 py-2.5 text-[14px] leading-5 font-semibold text-on-info-soft">
@@ -21,80 +29,131 @@
         </p>
       }
 
-      <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="ph-controls-lg mt-6 flex flex-col gap-2">
-        <!-- Correo -->
-        <div class="flex flex-col gap-1.5">
-          <label for="email" class="text-[13px] leading-[18px] font-bold">Correo electrónico</label>
-          <input
-            pInputText
-            id="email"
-            type="email"
-            formControlName="email"
-            autocomplete="email"
-            placeholder="tucorreo@ejemplo.com"
-            class="w-full"
-            [attr.aria-invalid]="form.controls.email.touched && form.controls.email.invalid ? 'true' : null"
-            aria-describedby="email-error"
-          />
-          <small id="email-error" class="min-h-[18px] text-[12.5px] leading-[18px] text-on-danger-soft">
-            @if (form.controls.email.touched && form.controls.email.errors; as errors) {
-              @if (errors['required']) {
-                Escribe tu correo.
-              } @else if (errors['email']) {
-                El correo no tiene un formato válido, por ejemplo nombre&#64;correo.com.
-              } @else if (errors['server']) {
-                {{ errors['server'] }}
-              } @else {
-                Revisa el correo.
-              }
-            }
-          </small>
-        </div>
-
-        <!-- Contraseña -->
-        <div class="flex flex-col gap-1.5">
-          <label for="password" class="text-[13px] leading-[18px] font-bold">Contraseña</label>
-          <div class="relative">
+      @if (!challenge()) {
+        <form [formGroup]="form" (ngSubmit)="submit()" novalidate class="ph-controls-lg mt-6 flex flex-col gap-2">
+          <!-- Correo -->
+          <div class="flex flex-col gap-1.5">
+            <label for="email" class="text-[13px] leading-[18px] font-bold">Correo electrónico</label>
             <input
               pInputText
-              id="password"
-              [type]="showPassword() ? 'text' : 'password'"
-              formControlName="password"
-              autocomplete="current-password"
-              placeholder="Tu contraseña"
-              class="w-full pr-12"
-              [attr.aria-invalid]="form.controls.password.touched && form.controls.password.invalid ? 'true' : null"
-              aria-describedby="password-error"
+              id="email"
+              type="email"
+              formControlName="email"
+              autocomplete="email"
+              placeholder="tucorreo@ejemplo.com"
+              class="w-full"
+              [attr.aria-invalid]="form.controls.email.touched && form.controls.email.invalid ? 'true' : null"
+              aria-describedby="email-error"
             />
-            <button
-              type="button"
-              (click)="togglePassword()"
-              [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
-              [attr.aria-pressed]="showPassword()"
-              [pTooltip]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
-              tooltipPosition="top"
-              class="ph-focus absolute top-1 right-1 grid size-9 cursor-pointer place-items-center rounded-control text-ink-muted transition-colors duration-[180ms] hover:bg-sunken hover:text-ink max-[679px]:top-0 max-[679px]:right-0 max-[679px]:size-11"
-            >
-              @if (showPassword()) {
-                <svg lucideEyeOff aria-hidden="true"></svg>
-              } @else {
-                <svg lucideEye aria-hidden="true"></svg>
+            <small id="email-error" class="min-h-[18px] text-[12.5px] leading-[18px] text-on-danger-soft">
+              @if (form.controls.email.touched && form.controls.email.errors; as errors) {
+                @if (errors['required']) {
+                  Escribe tu correo.
+                } @else if (errors['email']) {
+                  El correo no tiene un formato válido, por ejemplo nombre&#64;correo.com.
+                } @else if (errors['server']) {
+                  {{ errors['server'] }}
+                } @else {
+                  Revisa el correo.
+                }
               }
-            </button>
+            </small>
           </div>
-          <small id="password-error" class="min-h-[18px] text-[12.5px] leading-[18px] text-on-danger-soft">
-            @if (form.controls.password.touched && form.controls.password.errors; as errors) {
-              @if (errors['required']) {
-                Escribe tu contraseña.
-              } @else if (errors['server']) {
-                {{ errors['server'] }}
-              }
-            }
-          </small>
-        </div>
 
-        <p-button id="btnLogin" type="submit" label="Ingresar" styleClass="w-full" [loading]="submitting()" />
-      </form>
+          <!-- Contraseña -->
+          <div class="flex flex-col gap-1.5">
+            <label for="password" class="text-[13px] leading-[18px] font-bold">Contraseña</label>
+            <div class="relative">
+              <input
+                pInputText
+                id="password"
+                [type]="showPassword() ? 'text' : 'password'"
+                formControlName="password"
+                autocomplete="current-password"
+                placeholder="Tu contraseña"
+                class="w-full pr-12"
+                [attr.aria-invalid]="form.controls.password.touched && form.controls.password.invalid ? 'true' : null"
+                aria-describedby="password-error"
+              />
+              <button
+                type="button"
+                (click)="togglePassword()"
+                [attr.aria-label]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                [attr.aria-pressed]="showPassword()"
+                [pTooltip]="showPassword() ? 'Ocultar contraseña' : 'Mostrar contraseña'"
+                tooltipPosition="top"
+                class="ph-focus absolute top-1 right-1 grid size-9 cursor-pointer place-items-center rounded-control text-ink-muted transition-colors duration-[180ms] hover:bg-sunken hover:text-ink max-[679px]:top-0 max-[679px]:right-0 max-[679px]:size-11"
+              >
+                @if (showPassword()) {
+                  <svg lucideEyeOff aria-hidden="true"></svg>
+                } @else {
+                  <svg lucideEye aria-hidden="true"></svg>
+                }
+              </button>
+            </div>
+            <small id="password-error" class="min-h-[18px] text-[12.5px] leading-[18px] text-on-danger-soft">
+              @if (form.controls.password.touched && form.controls.password.errors; as errors) {
+                @if (errors['required']) {
+                  Escribe tu contraseña.
+                } @else if (errors['server']) {
+                  {{ errors['server'] }}
+                }
+              }
+            </small>
+          </div>
+
+          <p-button id="btnLogin" type="submit" label="Ingresar" styleClass="w-full" [loading]="submitting()" />
+        </form>
+
+      } @else {
+        <form [formGroup]="codeForm" (ngSubmit)="verifyCode()" novalidate class="ph-controls-lg mt-6 flex flex-col gap-2">
+          <div class="flex flex-col gap-1.5">
+            <label for="otpCode" class="text-[13px] leading-[18px] font-bold">Código de verificación</label>
+            <input
+              pInputText
+              id="otpCode"
+              type="text"
+              inputmode="numeric"
+              autocomplete="one-time-code"
+              maxlength="6"
+              placeholder="000000"
+              formControlName="code"
+              class="w-full text-center font-mono text-[22px] tracking-[0.4em]"
+              [attr.aria-invalid]="codeForm.controls.code.touched && codeForm.controls.code.invalid ? 'true' : null"
+              aria-describedby="otp-error"
+              (input)="onCodeInput($event)"
+            />
+            <small id="otp-error" class="min-h-[18px] text-[12.5px] leading-[18px] text-on-danger-soft">
+              @if (codeForm.controls.code.touched && codeForm.controls.code.errors) {
+                Escribe los 6 dígitos del código.
+              }
+            </small>
+          </div>
+
+          <p-button id="btnVerify" type="submit" label="Verificar código" styleClass="w-full" [loading]="submitting()" />
+        </form>
+
+        <div class="mt-4 flex flex-col gap-1">
+          <p-button
+            id="btnResend"
+            type="button"
+            [label]="resendSeconds() > 0 ? 'Reenviar código en ' + resendSeconds() + ' s' : 'Reenviar código'"
+            [text]="true"
+            styleClass="w-full"
+            [disabled]="resendSeconds() > 0"
+            [loading]="resending()"
+            (onClick)="resendCode()"
+          />
+          <button
+            id="btnOtherAccount"
+            type="button"
+            class="ph-focus mx-auto flex min-h-6 cursor-pointer items-center gap-1.5 rounded-control text-[13px] leading-[18px] font-bold text-accent-text hover:underline max-[679px]:min-h-11"
+            (click)="backToCredentials()"
+          >
+            Usar otra cuenta
+          </button>
+        </div>
+      }
 
       <a routerLink="/" class="ph-focus mt-4 flex min-h-6 w-fit items-center gap-1.5 rounded-control text-[13px] leading-[18px] font-bold text-accent-text hover:underline max-[679px]:min-h-11">
         <svg lucideArrowLeft aria-hidden="true"></svg>
