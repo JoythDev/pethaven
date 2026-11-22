@@ -1,5 +1,6 @@
 import { Component, ElementRef, HostListener, ViewChild, inject, signal } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { ThemeService } from '../../../../core/theme/theme.service';
 
 /**
  * Header de la landing. Portado de `fragments.html` (`th:fragment="header"`).
@@ -19,6 +20,7 @@ import { RouterLink } from '@angular/router';
 })
 export class HeaderComponent {
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  protected readonly theme = inject(ThemeService);
 
   @ViewChild('menuBtn') private menuBtn?: ElementRef<HTMLButtonElement>;
 
