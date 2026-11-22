@@ -7,6 +7,8 @@
   --color-tertiary: #7a502a;
   --color-text: #261a10;
   --color-background: #f2ece0;
+  --color-cream: #f2ece0;
+  --color-paper: #ffffff;
   --color-honey: #e8b04b;
   --color-terracotta: #c96f4a;
   --color-sage: #9db38a;
@@ -73,6 +75,33 @@
   --radius-box: 20px;
 
   --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+}
+
+/* Landing en oscuro: los tokens heredados cambian de valor. Crema (--color-cream) queda fijo
+   para el texto claro sobre bloques de color. */
+.app-dark {
+  color-scheme: dark;
+  --color-background: #15120e;
+  --color-paper: #1f1a14;
+  --color-text: #f2ece0;
+  --color-secondary: #3b2c2b;
+  --color-tertiary: #5c3d21;
+}
+
+/* Los íconos e ilustraciones de trazo oscuro de la landing se aclaran en el tema oscuro. */
+.app-dark app-landing img[src^="/images/icons/"] {
+  filter: brightness(0) invert(0.92);
+}
+
+.app-dark app-landing img[src^="/images/illustrations/"] {
+  filter: brightness(0) invert(0.7);
+}
+
+/* Los blobs que acompañan al video del hero se atenúan para no restar contraste al texto. */
+.app-dark app-landing .hero-blob-sage,
+.app-dark app-landing .hero-blob-honey,
+.app-dark app-landing .hero-blob-pink {
+  filter: brightness(0.55);
 }
 
 .app-dark {
