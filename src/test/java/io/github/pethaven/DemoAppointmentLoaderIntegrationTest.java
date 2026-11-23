@@ -143,6 +143,15 @@ public class DemoAppointmentLoaderIntegrationTest {
     }
 
     @Test
+    public void run_Twice_DoesNotDuplicateTheScript() {
+        int firstRun = loadDemo().size();
+        long pets = petRepository.count();
+
+        Assertions.assertThat(loadDemo()).hasSize(firstRun);
+        Assertions.assertThat(petRepository.count()).isEqualTo(pets);
+    }
+
+    @Test
     public void run_OneActiveAppointmentPerPetAndPastOnesAlreadyReminded() {
         List<Appointment> appointments = loadDemo();
 

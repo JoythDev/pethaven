@@ -84,6 +84,11 @@ public class DemoAppointmentLoader implements CommandLineRunner {
             log.warn("Faltan las cuentas de demostración: no se cargaron citas de ejemplo.");
             return;
         }
+        // Si la base persiste entre arranques, el guion ya está cargado: no se duplica.
+        if (petRepository.findByOwnerId(john.get().getId()).stream().anyMatch(pet -> "Rex".equals(pet.getName()))) {
+            log.info("El guion de citas de ejemplo ya estaba cargado.");
+            return;
+        }
         now = clinicSchedule.now();
         long before = appointmentRepository.count();
         loadDemoScript(john.get(), jane.get(), valentina.get());
