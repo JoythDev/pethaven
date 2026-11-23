@@ -120,6 +120,14 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.PUT, "/api/drugs/*").hasRole(admin)
                 .requestMatchers(HttpMethod.DELETE, "/api/drugs/*").hasRole(admin)
 
+                // Citas: el dueño reserva y gestiona las suyas; el veterinario, las que tiene asignadas
+                .requestMatchers(HttpMethod.GET, "/api/appointments/availability", "/api/appointments/*")
+                .hasAnyRole(vet, owner)
+                .requestMatchers(HttpMethod.PUT, "/api/appointments/*/cancel", "/api/appointments/*/reschedule")
+                .hasAnyRole(vet, owner)
+                .requestMatchers(HttpMethod.GET, "/api/owners/*/appointments").hasAnyRole(vet, owner)
+                .requestMatchers(HttpMethod.POST, "/api/owners/*/appointments").hasRole(owner)
+
                 // Dueños: gestión del veterinario; el dueño solo accede a su propio perfil
                 .requestMatchers(HttpMethod.GET, "/api/owners").hasAnyRole(admin, vet)
                 .requestMatchers(HttpMethod.GET, "/api/owners/*", "/api/owners/*/pets").hasAnyRole(admin, vet, owner)

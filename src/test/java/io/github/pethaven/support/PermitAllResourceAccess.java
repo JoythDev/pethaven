@@ -39,4 +39,14 @@ public class PermitAllResourceAccess implements ResourceAccess {
     public boolean authoredTreatment(Long treatmentId, String username) {
         return true;
     }
+
+    @Override
+    public boolean ownsAppointment(Long appointmentId, String username) {
+        return true;
+    }
+
+    @Override
+    public boolean attendsAppointment(Long appointmentId, String username) {
+        return true;
+    }
 }

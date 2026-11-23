@@ -1,10 +1,13 @@
 package io.github.pethaven.controller;
 
 import io.github.pethaven.dto.common.ApiErrorResponse;
+import io.github.pethaven.dto.request.AppointmentRequest;
 import io.github.pethaven.dto.request.OwnerRequest;
 import io.github.pethaven.dto.request.OwnerUpdateRequest;
+import io.github.pethaven.dto.response.AppointmentResponse;
 import io.github.pethaven.dto.response.OwnerResponse;
 import io.github.pethaven.dto.response.PetResponse;
+import io.github.pethaven.service.AppointmentService;
 import io.github.pethaven.service.OwnerService;
 import io.github.pethaven.service.PetService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -34,14 +37,17 @@ public class OwnerController {
 
     private final OwnerService ownerService;
     private final PetService petService;
+    private final AppointmentService appointmentService;
 
     @Autowired
     public OwnerController(
             OwnerService ownerService,
-            PetService petService
+            PetService petService,
+            AppointmentService appointmentService
     ) {
         this.ownerService = ownerService;
         this.petService = petService;
+        this.appointmentService = appointmentService;
     }
 
     /**
@@ -164,6 +170,57 @@ public class OwnerController {
             @Parameter(description = "Id del dueño", example = "1") @PathVariable Long id) {
         ownerService.getOwnerById(id);
         return petService.getPetsByOwnerId(id);
+    }
+
+    /**
+     * Lista las citas de un dueño, de la más antigua a la más reciente.
+     *
+     * @param id id del dueño
+     * @return citas del dueño (todas sus mascotas y estados)
+     */
+    @Operation(summary = "Listar citas de un dueño",
+            description = "Devuelve todas las citas del dueño, en cualquier estado, ordenadas por fecha. Falla con 404 si el dueño no existe.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Lista de citas del dueño"),
+            @ApiResponse(responseCode = "404", description = "No existe un dueño con ese id",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PreAuthorize("hasRole('VETERINARIAN') or @access.isOwner(#id, authentication.name)")
+    @GetMapping("/{id}/appointments")
+    public List<AppointmentResponse> getAppointmentsByOwnerId(
+            @Parameter(description = "Id del dueño", example = "1") @PathVariable Long id) {
+        return appointmentService.getAppointmentsByOwnerId(id);
+    }
+
+    /**
+     * Reserva una cita para una mascota del dueño que no esté hospitalizada, o para una aún no registrada.
+     *
+     * @param id      id del dueño
+     * @param request mascota, motivo, franja y notas
+     * @return la cita creada (201 + cabecera Location)
+     */
+    @Operation(summary = "Reservar una cita",
+            description = "Reserva una franja libre para una mascota del dueño que no esté hospitalizada o para una mascota aún no registrada. El servidor asigna el veterinario: el último que atendió a la mascota si está libre, o cualquiera libre.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "201", description = "Cita reservada (incluye cabecera Location)"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos (validación)",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "No existe el dueño o la mascota indicados",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "Mascota hospitalizada, motivo no permitido, cita activa, franja inválida u ocupada",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PreAuthorize("@access.isOwner(#id, authentication.name)")
+    @PostMapping("/{id}/appointments")
+    public ResponseEntity<AppointmentResponse> bookAppointment(
+            @Parameter(description = "Id del dueño", example = "1") @PathVariable Long id,
+            @Valid @RequestBody AppointmentRequest request) {
+        AppointmentResponse newAppointment = appointmentService.bookAppointment(id, request);
+        URI location = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/appointments/{id}")
+                .buildAndExpand(newAppointment.id())
+                .toUri();
+        return ResponseEntity.created(location).body(newAppointment);
     }
 
 }

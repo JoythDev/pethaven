@@ -2,13 +2,19 @@ package io.github.pethaven.controller;
 
 import io.github.pethaven.support.WebMvcSecurityTestSupport;
 import io.github.pethaven.support.WithAnyApiRole;
+import io.github.pethaven.dto.request.AppointmentRequest;
 import io.github.pethaven.dto.request.OwnerRequest;
+import io.github.pethaven.dto.request.ProvisionalPetRequest;
 import io.github.pethaven.dto.request.OwnerUpdateRequest;
+import io.github.pethaven.dto.response.AppointmentResponse;
 import io.github.pethaven.dto.response.OwnerResponse;
 import io.github.pethaven.dto.response.PetResponse;
+import io.github.pethaven.entity.AppointmentReason;
+import io.github.pethaven.entity.AppointmentStatus;
 import io.github.pethaven.entity.Species;
 import io.github.pethaven.exception.IllegalOperationException;
 import io.github.pethaven.exception.ResourceNotFoundException;
+import io.github.pethaven.service.AppointmentService;
 import io.github.pethaven.service.OwnerService;
 import io.github.pethaven.service.PetService;
 import org.assertj.core.api.Assertions;
@@ -21,9 +27,11 @@ import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import java.time.LocalDateTime;
 import java.util.List;
 
 // Pruebas del controlador con mocks: solo se levanta la capa web (MockMvc), sin base de datos.
@@ -54,6 +62,9 @@ public class OwnerControllerTest {
 
     @MockitoBean
     private PetService petService;
+
+    @MockitoBean
+    private AppointmentService appointmentService;
 
     @Autowired
     public OwnerControllerTest(MockMvc mockMvc) {
@@ -215,5 +226,85 @@ public class OwnerControllerTest {
         mockMvc.perform(MockMvcRequestBuilders.delete("/api/owners/1"))
                 .andExpect(MockMvcResultMatchers.status().isConflict())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(409));
+    }
+
+    // ---------- Citas del dueño ----------
+
+    private static final String PET_CHOICE_MESSAGE = "Indica una mascota registrada o los datos de una mascota nueva, pero no ambos";
+
+    private ResultActions bookWith(String body) throws Exception {
+        return mockMvc.perform(MockMvcRequestBuilders.post("/api/owners/1/appointments")
+                .contentType(MediaType.APPLICATION_JSON).content(body));
+    }
+
+    @Test
+    public void getAppointmentsByOwnerId_Returns200WithTheOwnersAppointments() throws Exception {
+        Mockito.when(appointmentService.getAppointmentsByOwnerId(1L)).thenReturn(List.of(
+                AppointmentControllerTest.appointment(5L, AppointmentStatus.COMPLETED),
+                AppointmentControllerTest.appointment(6L, AppointmentStatus.SCHEDULED)));
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/owners/1/appointments"))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.length()").value(2))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].status").value("COMPLETED"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[1].id").value(6));
+    }
+
+    @Test
+    public void bookAppointment_RegisteredPet_Returns201WithLocationOfTheAppointment() throws Exception {
+        AppointmentResponse booked = AppointmentControllerTest.appointment(7L, AppointmentStatus.SCHEDULED);
+        Mockito.when(appointmentService.bookAppointment(ArgumentMatchers.eq(1L), ArgumentMatchers.any())).thenReturn(booked);
+
+        bookWith("{\"petId\":10,\"reason\":\"CONTROL\",\"startTime\":\"2026-11-24T09:30:00\",\"ownerNotes\":\"Cojea\"}")
+                .andExpect(MockMvcResultMatchers.status().isCreated())
+                .andExpect(MockMvcResultMatchers.header().string("Location", "http://localhost/api/appointments/7"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.id").value(7));
+        Mockito.verify(appointmentService).bookAppointment(1L, new AppointmentRequest(10L, null, AppointmentReason.CONTROL,
+                LocalDateTime.of(2026, 11, 24, 9, 30), "Cojea"));
+    }
+
+    @Test
+    public void bookAppointment_ProvisionalPet_PassesItsData() throws Exception {
+        Mockito.when(appointmentService.bookAppointment(ArgumentMatchers.eq(1L), ArgumentMatchers.any()))
+                .thenReturn(AppointmentControllerTest.appointment(8L, AppointmentStatus.SCHEDULED));
+
+        bookWith("{\"provisionalPet\":{\"name\":\"Kira\",\"species\":\"CAT\",\"age\":2},\"startTime\":\"2026-11-24T09:30:00\"}")
+                .andExpect(MockMvcResultMatchers.status().isCreated());
+        Mockito.verify(appointmentService).bookAppointment(1L, new AppointmentRequest(null,
+                new ProvisionalPetRequest("Kira", Species.CAT, null, 2), null, LocalDateTime.of(2026, 11, 24, 9, 30), null));
+    }
+
+    @Test
+    public void bookAppointment_BothOrNeitherPet_Returns400() throws Exception {
+        for (String body : new String[]{
+                "{\"startTime\":\"2026-11-24T09:30:00\"}",
+                "{\"petId\":10,\"provisionalPet\":{\"name\":\"Kira\",\"species\":\"CAT\"},\"startTime\":\"2026-11-24T09:30:00\"}"}) {
+            bookWith(body)
+                    .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                    .andExpect(MockMvcResultMatchers.jsonPath("$.errors.petChoiceValid").value(PET_CHOICE_MESSAGE));
+        }
+        Mockito.verifyNoInteractions(appointmentService);
+    }
+
+    @Test
+    public void bookAppointment_InvalidFields_Returns400WithEachMessage() throws Exception {
+        bookWith("{\"provisionalPet\":{\"name\":\" \",\"species\":null,\"age\":41},\"ownerNotes\":\"" + "a".repeat(501) + "\"}")
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errors.startTime").value("La fecha y hora de la cita es obligatoria"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errors['provisionalPet.name']").value("El nombre de la mascota es obligatorio"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errors['provisionalPet.species']").value("La especie de la mascota es obligatoria"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errors['provisionalPet.age']").value("La edad no puede superar los 40 años"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errors.ownerNotes").value("Las notas no pueden superar los 500 caracteres"));
+        Mockito.verifyNoInteractions(appointmentService);
+    }
+
+    @Test
+    public void bookAppointment_BusinessRuleFails_Returns409() throws Exception {
+        Mockito.when(appointmentService.bookAppointment(ArgumentMatchers.eq(1L), ArgumentMatchers.any()))
+                .thenThrow(new IllegalOperationException("Ese motivo no se puede reservar desde la app."));
+
+        bookWith("{\"petId\":10,\"reason\":\"DISCHARGE\",\"startTime\":\"2026-11-24T09:30:00\"}")
+                .andExpect(MockMvcResultMatchers.status().isConflict())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("Ese motivo no se puede reservar desde la app."));
     }
 }

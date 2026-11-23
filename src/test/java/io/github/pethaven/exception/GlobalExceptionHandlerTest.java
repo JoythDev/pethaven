@@ -19,6 +19,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.core.MethodParameter;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
+import org.springframework.orm.ObjectOptimisticLockingFailureException;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.authentication.AuthenticationServiceException;
 import org.springframework.security.authentication.BadCredentialsException;
@@ -71,6 +72,17 @@ public class GlobalExceptionHandlerTest {
                         .value("El archivo supera el tamaño máximo permitido (10 MB)."))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.path").value("/test/errors/max-upload"))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.errors").isEmpty());
+    }
+
+    // ---------- handleOptimisticLocking ----------
+
+    @Test
+    public void globalExceptionHandler_handleOptimisticLocking_ConcurrentChange_Returns409WithMessage() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.post("/test/errors/optimistic-lock"))
+                .andExpect(MockMvcResultMatchers.status().isConflict())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+                        .value("El recurso cambió mientras lo editabas: vuelve a cargarlo e inténtalo de nuevo."))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.path").value("/test/errors/optimistic-lock"));
     }
 
     // ---------- handleMultipart ----------
@@ -373,6 +385,11 @@ public class GlobalExceptionHandlerTest {
         @PostMapping("/max-upload")
         public void maxUpload() {
             throw new MaxUploadSizeExceededException(10L * 1024 * 1024);
+        }
+
+        @PostMapping("/optimistic-lock")
+        public void optimisticLock() {
+            throw new ObjectOptimisticLockingFailureException("Appointment", 1L);
         }
 
         @PostMapping("/multipart/max-upload-cause")

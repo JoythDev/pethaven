@@ -1,6 +1,7 @@
 package io.github.pethaven.security;
 
 import io.github.pethaven.controller.AdministratorDashboardController;
+import io.github.pethaven.controller.AppointmentController;
 import io.github.pethaven.controller.DrugController;
 import io.github.pethaven.controller.OwnerController;
 import io.github.pethaven.controller.PetController;
@@ -10,6 +11,7 @@ import io.github.pethaven.entity.Role;
 import io.github.pethaven.security.auth.AuthController;
 import io.github.pethaven.security.auth.AuthService;
 import io.github.pethaven.service.AdministratorDashboardService;
+import io.github.pethaven.service.AppointmentService;
 import io.github.pethaven.service.DrugImportService;
 import io.github.pethaven.service.DrugService;
 import io.github.pethaven.service.OwnerService;
@@ -51,6 +53,7 @@ import java.util.stream.Stream;
 @WebMvcTest(controllers = {
         AuthController.class,
         AdministratorDashboardController.class,
+        AppointmentController.class,
         DrugController.class,
         OwnerController.class,
         PetController.class,
@@ -69,6 +72,8 @@ public class PermissionMatrixWebTest {
     private AuthService authService;
     @MockitoBean
     private AdministratorDashboardService dashboardService;
+    @MockitoBean
+    private AppointmentService appointmentService;
     @MockitoBean
     private DrugService drugService;
     @MockitoBean
@@ -104,6 +109,13 @@ public class PermissionMatrixWebTest {
                 Arguments.of(HttpMethod.GET, "/api/auth/me", ALL_ROLES),
 
                 Arguments.of(HttpMethod.GET, "/api/administrators/dashboard", Set.of(A)),
+
+                Arguments.of(HttpMethod.GET, "/api/appointments/availability", Set.of(V, O)),
+                Arguments.of(HttpMethod.GET, "/api/appointments/1", Set.of(V, O)),
+                Arguments.of(HttpMethod.PUT, "/api/appointments/1/cancel", Set.of(V, O)),
+                Arguments.of(HttpMethod.PUT, "/api/appointments/1/reschedule", Set.of(V, O)),
+                Arguments.of(HttpMethod.GET, "/api/owners/1/appointments", Set.of(V, O)),
+                Arguments.of(HttpMethod.POST, "/api/owners/1/appointments", Set.of(O)),
 
                 Arguments.of(HttpMethod.GET, "/api/drugs", Set.of(A, V)),
                 Arguments.of(HttpMethod.GET, "/api/drugs/1", Set.of(A, V)),

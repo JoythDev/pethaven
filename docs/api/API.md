@@ -19,6 +19,7 @@ Referencia de la API REST de PetHaven: dueños, mascotas, veterinarios, medicame
   - [Medicamentos (`/api/drugs`)](#medicamentos-apidrugs)
   - [Administración (`/api/administrators`)](#administración-apiadministrators)
   - [Tratamientos (`/api/treatments`)](#tratamientos-apitreatments)
+  - [Citas (`/api/appointments`)](#citas-apiappointments)
   - [Autenticación (`/api/auth`)](#autenticación-apiauth)
 - [Reglas de negocio](#reglas-de-negocio)
 - [Limitaciones y roadmap](#limitaciones-y-roadmap)
@@ -301,6 +302,10 @@ Toda petición a `/api/**` necesita un token, salvo los tres pasos del login (`P
 | `GET /api/treatments`, `GET /api/treatments/{id}`, `GET /api/treatments/{id}/drugs` | ✅ | ✅ | — |
 | `POST /api/treatments` | — | Solo con su propio `veterinarianId` | — |
 | `POST /api/treatments/{id}/drugs` | — | Solo en tratamientos que registró él | — |
+| `GET /api/appointments/availability` | — | ✅ | ✅ |
+| `GET /api/appointments/{id}`, `PUT /api/appointments/{id}/cancel`, `PUT /api/appointments/{id}/reschedule` | — | Solo las que tiene asignadas | Solo las suyas |
+| `GET /api/owners/{id}/appointments` | — | ✅ | Solo el suyo |
+| `POST /api/owners/{id}/appointments` | — | — | Solo el suyo |
 | `GET /api/veterinarians` | ✅ | — | — |
 | `GET /api/veterinarians/{id}`, `GET /api/veterinarians/{id}/treatments` | ✅ | Solo el suyo | — |
 | `POST /api/veterinarians`, `PUT /api/veterinarians/{id}/active` | ✅ | — | — |
@@ -333,6 +338,9 @@ erDiagram
     VETERINARIAN ||--o{ TREATMENT : "atiende"
     TREATMENT ||--o{ TREATMENT_DRUG : "incluye"
     DRUG ||--o{ TREATMENT_DRUG : "se administra en"
+    OWNER ||--o{ APPOINTMENT : "reserva"
+    PET |o--o{ APPOINTMENT : "asiste a"
+    VETERINARIAN ||--o{ APPOINTMENT : "atiende"
     OWNER ||--|| USERS : "inicia sesión con"
     VETERINARIAN ||--|| USERS : "inicia sesión con"
     ADMINISTRATOR ||--|| USERS : "inicia sesión con"
@@ -374,6 +382,7 @@ Semántica de borrado:
 - **Mascota → tratamientos:** existe una cascada en base de datos, pero nunca se alcanza: no hay `DELETE` de mascotas y el borrado del dueño se bloquea antes.
 - **Tratamiento → medicamentos administrados:** cascada de JPA; los tratamientos no se actualizan ni se eliminan por API, son un registro médico inmutable.
 - **Medicamento → medicamentos administrados:** sin cascada. Un medicamento asociado a tratamientos no se puede eliminar (`409`).
+- **Dueño o mascota → citas:** borrado en cascada a nivel de base de datos (las citas de un dueño que se borra desaparecen con él).
 - **Mascotas y veterinarios:** no tienen borrado. Se desactivan (`active`) para conservar su historial.
 
 ## Esquemas
@@ -741,6 +750,104 @@ Cuerpo para `POST /api/treatments/{id}/drugs`.
   "unitSalePrice": 15000.00
 }
 ```
+
+### Citas
+
+Las fechas y horas de las citas están en hora local de la clínica (`America/Bogota`), en ISO-8601 sin zona.
+
+#### `AppointmentRequest`
+
+Cuerpo para `POST /api/owners/{id}/appointments`. Lleva `petId` o `provisionalPet`, nunca los dos ni ninguno (`400` con `errors.petChoiceValid`).
+
+| Campo | Tipo | Obligatorio | Restricciones |
+|---|---|---|---|
+| `petId` | number \| null | Uno de los dos | Mascota del dueño que no esté hospitalizada (`active: false`) |
+| `provisionalPet` | `ProvisionalPetRequest` \| null | Uno de los dos | Mascota aún no registrada; el motivo pasa a ser `FIRST_VISIT` |
+| `reason` | string \| null | Con `petId` | `CONTROL`, `VACCINATION`, `CONSULTATION`, `DEWORMING` o `NUTRITION`; otro valor o `null` → `409`. Con `provisionalPet` debe ir en `null` o `FIRST_VISIT` (otro valor → `409`) |
+| `startTime` | string | Sí | Inicio exacto de una franja del horario (`2026-11-24T09:30:00`) |
+| `ownerNotes` | string \| null | No | Notas del dueño. Máx. 500 caracteres |
+
+```json
+{
+  "petId": 24,
+  "reason": "VACCINATION",
+  "startTime": "2026-11-24T09:30:00",
+  "ownerNotes": "Le toca el refuerzo de la rabia."
+}
+```
+
+#### `ProvisionalPetRequest`
+
+| Campo | Tipo | Obligatorio | Restricciones |
+|---|---|---|---|
+| `name` | string | Sí | Máx. 60 caracteres |
+| `species` | string | Sí | `DOG` o `CAT` |
+| `breed` | string \| null | No | Máx. 60 caracteres |
+| `age` | number \| null | No | Años, entre 0 y 40 |
+
+#### `AppointmentRescheduleRequest`
+
+Cuerpo para `PUT /api/appointments/{id}/reschedule`.
+
+| Campo | Tipo | Obligatorio | Restricciones |
+|---|---|---|---|
+| `startTime` | string | Sí | Inicio exacto de una franja del horario |
+| `ownerNotes` | string \| null | No | Solo el dueño; `null` conserva las notas. Si la envía el veterinario → `409`. Máx. 500 caracteres |
+
+#### `AppointmentResponse`
+
+| Campo | Tipo | Obligatorio | Restricciones |
+|---|---|---|---|
+| `id` | number | — | Solo lectura |
+| `startTime`, `endTime` | string | — | Inicio y fin (inicio + 30 min) en hora local de la clínica |
+| `reason` | string | — | `CONTROL`, `VACCINATION`, `CONSULTATION`, `DEWORMING`, `NUTRITION`, `FIRST_VISIT`, `DISCHARGE` o `BRIEFING` |
+| `status` | string | — | `SCHEDULED`, `IN_PROGRESS`, `COMPLETED`, `CANCELLED` o `NO_SHOW` |
+| `petId` | number \| null | — | `null` mientras la mascota no esté registrada |
+| `petName`, `species` | string | — | De la mascota registrada o, si no lo está, los provisionales |
+| `provisionalPet` | boolean | — | La mascota aún no está registrada |
+| `provisionalBreed`, `provisionalAge` | string \| null, number \| null | — | Solo con mascota no registrada |
+| `ownerId`, `ownerName`, `ownerPhone` | number, string, string | — | Dueño |
+| `veterinarianId`, `veterinarianName` | number, string | — | Veterinario asignado |
+| `ownerNotes` | string \| null | — | Notas del dueño |
+| `clinicalNotes` | string \| null | — | Nota clínica del veterinario; la ven el dueño y el veterinario |
+| `createdAt` | string | — | Momento de la reserva |
+| `cancelledBy` | string \| null | — | `OWNER`, `VETERINARIAN` o `SYSTEM`; `null` si no está cancelada |
+| `cancelledAt`, `cancellationReason` | string \| null | — | Cuándo y por qué se canceló |
+
+```json
+{
+  "id": 31,
+  "startTime": "2026-11-24T09:30:00",
+  "endTime": "2026-11-24T10:00:00",
+  "reason": "VACCINATION",
+  "status": "SCHEDULED",
+  "petId": 24,
+  "petName": "Canela",
+  "species": "DOG",
+  "provisionalPet": false,
+  "provisionalBreed": null,
+  "provisionalAge": null,
+  "ownerId": 3,
+  "ownerName": "Laura Gómez",
+  "ownerPhone": "3001234567",
+  "veterinarianId": 1,
+  "veterinarianName": "Dra. Valentina Soler",
+  "ownerNotes": "Le toca el refuerzo de la rabia.",
+  "clinicalNotes": null,
+  "createdAt": "2026-11-22T15:04:00",
+  "cancelledBy": null,
+  "cancelledAt": null,
+  "cancellationReason": null
+}
+```
+
+#### `AvailabilityDayResponse`
+
+| Campo | Tipo | Obligatorio | Restricciones |
+|---|---|---|---|
+| `date` | string | — | Día (`2026-11-24`) |
+| `open` | boolean | — | La clínica atiende ese día |
+| `freeSlots` | array<string> | — | Inicio de cada franja con al menos un veterinario activo libre (`"09:30:00"`); vacía si el día está cerrado o lleno |
 
 ### Autenticación
 
@@ -2008,6 +2115,62 @@ Administra un medicamento a un tratamiento: descuenta el inventario, suma las un
 - `409` no hay stock suficiente: `No hay suficientes unidades disponibles de 'Amoxicilina 250mg'. Disponibles: 2, solicitadas: 3.`
 - `409` la mascota del tratamiento ya no está activa: `La mascota 'Canela' no está activa: no se le pueden administrar medicamentos.`
 
+### Citas (`/api/appointments`)
+
+Las reservas y el listado de un dueño cuelgan de su ruta (`/api/owners/{id}/appointments`); el resto de operaciones, de la cita. Las reglas están en [Reglas de negocio · Citas](#citas-1).
+
+#### `GET /api/appointments/availability`
+
+Devuelve un elemento por día, de hoy al último día reservable (14 días con hoy incluido). Solo lista franjas que el dueño puede reservar: con al menos 2 horas de antelación y con al menos un veterinario activo libre. No dice qué veterinario está libre.
+
+**Respuesta** `200 OK` — `array<AvailabilityDayResponse>`:
+
+```json
+[
+  { "date": "2026-11-23", "open": true, "freeSlots": ["10:00:00", "10:30:00", "11:00:00"] },
+  { "date": "2026-11-29", "open": false, "freeSlots": [] }
+]
+```
+
+#### `GET /api/owners/{id}/appointments`
+
+Devuelve todas las citas del dueño, en cualquier estado, ordenadas por `startTime`.
+
+**Respuesta** `200 OK` — `array<AppointmentResponse>`.
+
+**Errores**: `404` el dueño no existe.
+
+#### `POST /api/owners/{id}/appointments`
+
+Reserva una cita. El servidor asigna el veterinario: el último que atendió a la mascota si está libre en esa franja; si no, el veterinario activo libre de menor `id`.
+
+**Cuerpo** — `AppointmentRequest`. **Respuesta** `201 Created` — `AppointmentResponse`, con `Location: /api/appointments/{id}`.
+
+**Errores**:
+- `400` validación, o `petId` y `provisionalPet` a la vez o ninguno
+- `404` el dueño no existe, o la mascota no existe o es de otro dueño
+- `409` con el motivo concreto: `La mascota 'Canela' está hospitalizada: el veterinario agenda sus citas.`, `Ese motivo no se puede reservar desde la app.`, `La mascota 'Canela' ya tiene una cita activa: reprográmala o cancélala.`, `La hora elegida no corresponde a una franja del horario de atención.`, `Las citas se reservan con al menos 2 horas de antelación y hasta el 2026-12-06.` o `La franja elegida ya no tiene veterinarios disponibles: elige otra.`
+
+#### `GET /api/appointments/{id}`
+
+Devuelve una cita. **Respuesta** `200 OK` — `AppointmentResponse`. Una cita que no existe responde `403` a quien no es su dueño ni su veterinario (ver [Permisos](#permisos)).
+
+#### `PUT /api/appointments/{id}/cancel`
+
+Cancela una cita `SCHEDULED` y libera su franja. Sin cuerpo. Guarda quién la canceló (`OWNER` o `VETERINARIAN`, según el rol del token) y cuándo.
+
+**Respuesta** `200 OK` — `AppointmentResponse` con `status: "CANCELLED"`.
+
+**Errores**: `409` `Solo se puede cancelar una cita programada.` o, para el dueño, `Las citas se pueden cancelar hasta 2 horas antes: comunícate con la clínica.`
+
+#### `PUT /api/appointments/{id}/reschedule`
+
+Mueve una cita `SCHEDULED` a otra franja; conserva su `id`, motivo e historial. Conserva al veterinario si sigue libre en la nueva franja; si no, prueba con el último que atendió a la mascota y después con cualquiera libre. Las citas `DISCHARGE` y `BRIEFING` no cambian de veterinario: si el suyo no está libre, responde `409`.
+
+**Cuerpo** — `AppointmentRescheduleRequest`. **Respuesta** `200 OK` — `AppointmentResponse`.
+
+**Errores**: `400` validación; `409` `Solo se puede reprogramar una cita programada.`, `Las citas se pueden reprogramar hasta 2 horas antes: comunícate con la clínica.` (dueño), `La mascota 'Canela' está hospitalizada: el veterinario agenda sus citas.` (dueño, si la mascota se hospitalizó después de reservar), `Solo el dueño puede cambiar sus notas de la cita.` (veterinario), las mismas reglas de franja y ventana que la reserva (dueño), `La nueva hora de la cita ya pasó.` (veterinario), `El veterinario de la cita no tiene libre esa franja: elige otra.` o `La franja elegida ya no tiene veterinarios disponibles: elige otra.`
+
 ### Autenticación (`/api/auth`)
 
 Un único login para dueños, veterinarios y administradores, en dos pasos: la contraseña (`POST /api/auth/login`) abre un desafío y envía un código al correo; el código (`POST /api/auth/verify-otp`) entrega el token JWT y el perfil con su rol, que decide a qué portal entra el usuario. Las reglas del código están en [Inicio de sesión en dos pasos](#inicio-de-sesión-en-dos-pasos).
@@ -2179,6 +2342,17 @@ Devuelve el perfil del usuario autenticado por el token. Permite al frontend rec
 - Responde `409` si la droga ya fue administrada en ese tratamiento, si no hay stock suficiente o si la mascota del tratamiento no está activa.
 - `units` debe ser mayor que 0 (en caso contrario es un `400` de validación).
 
+### Citas
+
+- **Horario:** lunes a viernes 8:00–17:00, sábado 8:00–13:00, domingo cerrado; franjas de 30 minutos y cada cita ocupa una. Los festivos se tratan como días normales. Se configura en `app.clinic.*` (`application.properties`), en hora local de `America/Bogota`.
+- **Quién agenda:** el dueño reserva para sus mascotas que no están hospitalizadas (`active: false`) o para una aún no registrada, con los datos provisionales de `ProvisionalPetRequest` y el motivo `FIRST_VISIT`. Las citas de mascotas hospitalizadas (`DISCHARGE` y `BRIEFING`) las agenda el veterinario.
+- **Ventana del dueño:** hasta 14 días con hoy incluido y con al menos 2 horas de antelación. Cada mascota (registrada, o provisional identificada por dueño y nombre) tiene como máximo una cita activa: `SCHEDULED` a futuro o `IN_PROGRESS`.
+- **Disponibilidad y asignación:** todos los veterinarios activos atienden todo el horario y cada uno atiende una cita por franja. Una franja está libre si al menos un veterinario activo no tiene cita en ella. El dueño no elige veterinario.
+- **Reservas simultáneas:** una restricción única (veterinario, franja) impide dos citas del mismo veterinario en la misma franja; una cita cancelada deja de ocuparla. Si dos reservas compiten, la segunda responde `409` `La franja elegida ya no tiene veterinarios disponibles: elige otra.`
+- **Cancelar y reprogramar:** solo citas `SCHEDULED`. El dueño, hasta 2 horas antes; el veterinario asignado, en cualquier momento antes de iniciarla. Reprogramar mueve la misma cita y solo el dueño cambia `ownerNotes`.
+- **Estados:** `SCHEDULED` → `IN_PROGRESS` → `COMPLETED`, más `CANCELLED` y `NO_SHOW`.
+- **Cambios simultáneos de una cita:** la cita lleva bloqueo optimista; si dos cambios de la misma cita se cruzan (por ejemplo, cancelar y reprogramar), el segundo responde `409` `El recurso cambió mientras lo editabas: vuelve a cargarlo e inténtalo de nuevo.`
+
 ### Unicidad
 
 | Recurso | Campos únicos |
@@ -2187,6 +2361,7 @@ Devuelve el perfil del usuario autenticado por el token. Permite al frontend rec
 | Veterinarios | `document`, `email` |
 | Medicamentos | `name` |
 | Medicamentos administrados | la combinación tratamiento + medicamento (`treatment_id`, `drug_id`) |
+| Citas | la combinación veterinario + inicio de franja mientras la cita ocupa la franja (`veterinarian_id`, `start_time`, `occupies_slot`) |
 
 Los duplicados se detectan antes de escribir y responden `409` con un mensaje explícito (`Ya existe un dueño con el documento '…'.`). Además hay restricciones únicas en la base de datos: si dos peticiones simultáneas pasaran el pre-chequeo, la segunda falla igualmente con `409`, aunque con el mensaje genérico de conflicto de integridad.
 
@@ -2220,6 +2395,7 @@ Los duplicados se detectan antes de escribir y responden `409` con un mensaje ex
 - **Sin paginación.** Los `GET` de colección devuelven todos los registros; no hay `page`/`size` ni totales.
 - **Sin versionado.** Las rutas no llevan versión (`/api`, no `/api/v1`).
 - **Sin borrado de mascotas ni veterinarios.** Solo desactivación.
+- **Citas bajo contención.** Si varias reservas compiten por la misma franja, todas eligen al mismo veterinario libre y solo una gana: las demás responden `409` aunque otro veterinario siguiera libre, y el dueño debe reintentar. Tampoco hay una restricción en la base que impida dos reservas simultáneas de la misma mascota en franjas distintas; el límite de una cita activa se comprueba antes de guardar.
 - **CORS restringido.** Por defecto solo se permite el origen `http://localhost:4200`, sin credenciales; en despliegue se define `CORS_ALLOWED_ORIGINS` con el dominio del frontend.
 
 Seguridad:

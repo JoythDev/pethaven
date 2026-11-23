@@ -9,12 +9,14 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TreatmentRepository extends JpaRepository<Treatment, Long> {
     List<Treatment> findByPetId(Long petId);
     List<Treatment> findByVeterinarianId(Long veterinarianId);
     boolean existsByPetOwnerId(Long ownerId);
+    Optional<Treatment> findFirstByPetIdOrderByDateDesc(Long petId);
 
     // Comprobación de propiedad de la matriz de permisos (ResourceAccess): el tratamiento es del veterinario de login.
     boolean existsByIdAndVeterinarianUserUsername(Long id, String username);
