@@ -21,6 +21,7 @@ import io.github.pethaven.service.PetService;
 import io.github.pethaven.service.TreatmentDrugService;
 import io.github.pethaven.service.TreatmentService;
 import io.github.pethaven.service.VeterinarianService;
+import io.github.pethaven.service.WeightHistoryService;
 import io.github.pethaven.support.WebMvcSecurityTestSupport;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
@@ -93,6 +94,8 @@ public class PermissionMatrixWebTest {
     private TreatmentDrugService treatmentDrugService;
     @MockitoBean
     private VeterinarianService veterinarianService;
+    @MockitoBean
+    private WeightHistoryService weightHistoryService;
 
     private final MockMvc mockMvc;
 
@@ -149,6 +152,7 @@ public class PermissionMatrixWebTest {
                 Arguments.of(HttpMethod.PUT, "/api/pets/1", Set.of(V)),
                 Arguments.of(HttpMethod.PUT, "/api/pets/1/active", Set.of(V)),
                 Arguments.of(HttpMethod.GET, "/api/pets/1/treatments", ALL_ROLES),
+                Arguments.of(HttpMethod.GET, "/api/pets/1/weights", ALL_ROLES),
                 Arguments.of(HttpMethod.GET, "/api/pets/1/photo", ALL_ROLES),
                 Arguments.of(HttpMethod.POST, "/api/pets/1/discharge", Set.of(V)),
 

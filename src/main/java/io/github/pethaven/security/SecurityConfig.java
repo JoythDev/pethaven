@@ -146,7 +146,7 @@ public class SecurityConfig {
 
                 // Mascotas: gestión del veterinario; el dueño solo consulta las suyas
                 .requestMatchers(HttpMethod.GET, "/api/pets").hasAnyRole(admin, vet)
-                .requestMatchers(HttpMethod.GET, "/api/pets/*", "/api/pets/*/treatments", "/api/pets/*/photo")
+                .requestMatchers(HttpMethod.GET, "/api/pets/*", "/api/pets/*/treatments", "/api/pets/*/weights", "/api/pets/*/photo")
                 .hasAnyRole(admin, vet, owner)
                 .requestMatchers(HttpMethod.POST, "/api/pets", "/api/pets/*/discharge").hasRole(vet)
                 .requestMatchers(HttpMethod.PUT, "/api/pets/*", "/api/pets/*/active").hasRole(vet)

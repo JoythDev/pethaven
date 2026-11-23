@@ -6,12 +6,14 @@ import io.github.pethaven.dto.request.PetRequest;
 import io.github.pethaven.dto.response.PetResponse;
 import io.github.pethaven.dto.response.TreatmentDrugResponse;
 import io.github.pethaven.dto.response.TreatmentResponse;
+import io.github.pethaven.dto.response.WeightRecordResponse;
 import io.github.pethaven.entity.Evolution;
 import io.github.pethaven.entity.Species;
 import io.github.pethaven.exception.IllegalOperationException;
 import io.github.pethaven.exception.ResourceNotFoundException;
 import io.github.pethaven.service.PetService;
 import io.github.pethaven.service.TreatmentService;
+import io.github.pethaven.service.WeightHistoryService;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -87,6 +89,9 @@ public class PetControllerTest {
 
     @MockitoBean
     private TreatmentService treatmentService;
+
+    @MockitoBean
+    private WeightHistoryService weightHistoryService;
 
     @Autowired
     public PetControllerTest(MockMvc mockMvc) {
@@ -699,6 +704,41 @@ public class PetControllerTest {
                 .andExpect(MockMvcResultMatchers.status().isNotFound())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(PET_NOT_FOUND_MESSAGE));
         Mockito.verifyNoInteractions(treatmentService);
+    }
+
+    // ---------- GET /api/pets/{id}/weights ----------
+
+    @Test
+    public void petController_getWeightsByPetId_PetWithHistory_Returns200OldestFirst() throws Exception {
+        // Arrange
+        Mockito.when(petService.getPetById(1L)).thenReturn(pet(1L, "Buddy", true));
+        Mockito.when(weightHistoryService.getWeightsByPetId(1L)).thenReturn(List.of(
+                new WeightRecordResponse(3L, LocalDateTime.of(2026, 5, 2, 9, 0), 11.8),
+                new WeightRecordResponse(7L, LocalDateTime.of(2026, 10, 12, 10, 30, 15), 12.5)));
+
+        // Act + Assert
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/pets/1/weights"))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.length()").value(2))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].id").value(3))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].date").value("2026-05-02T09:00:00"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].weight").value(11.8))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[1].id").value(7))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[1].date").value("2026-10-12T10:30:15"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$[1].weight").value(12.5));
+        Mockito.verify(petService).getPetById(1L);
+    }
+
+    @Test
+    public void petController_getWeightsByPetId_NonExistingPet_Returns404AndDoesNotReadHistory() throws Exception {
+        // Arrange
+        Mockito.when(petService.getPetById(99L)).thenThrow(new ResourceNotFoundException("Pet", "id", 99L));
+
+        // Act + Assert
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/pets/99/weights"))
+                .andExpect(MockMvcResultMatchers.status().isNotFound())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(PET_NOT_FOUND_MESSAGE));
+        Mockito.verifyNoInteractions(weightHistoryService);
     }
 
     // ---------- GET /api/pets/{id}/photo ----------

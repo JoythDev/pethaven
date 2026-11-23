@@ -110,6 +110,7 @@ public class OwnershipAccessIntegrationTest {
         perform(MockMvcRequestBuilders.get("/api/owners/{id}/pets", owner.getId()), asOwner(owner)).andExpect(MockMvcResultMatchers.status().isOk());
         perform(MockMvcRequestBuilders.get("/api/pets/{id}", pet.getId()), asOwner(owner)).andExpect(MockMvcResultMatchers.status().isOk());
         perform(MockMvcRequestBuilders.get("/api/pets/{id}/treatments", pet.getId()), asOwner(owner)).andExpect(MockMvcResultMatchers.status().isOk());
+        perform(MockMvcRequestBuilders.get("/api/pets/{id}/weights", pet.getId()), asOwner(owner)).andExpect(MockMvcResultMatchers.status().isOk());
     }
 
     @Test
@@ -118,6 +119,7 @@ public class OwnershipAccessIntegrationTest {
         expectDenied(MockMvcRequestBuilders.get("/api/owners/{id}/pets", otherOwner.getId()), asOwner(owner));
         expectDenied(MockMvcRequestBuilders.get("/api/pets/{id}", otherPet.getId()), asOwner(owner));
         expectDenied(MockMvcRequestBuilders.get("/api/pets/{id}/treatments", otherPet.getId()), asOwner(owner));
+        expectDenied(MockMvcRequestBuilders.get("/api/pets/{id}/weights", otherPet.getId()), asOwner(owner));
         expectDenied(MockMvcRequestBuilders.get("/api/pets/{id}/photo", otherPet.getId()), asOwner(owner));
     }
 
@@ -162,6 +164,7 @@ public class OwnershipAccessIntegrationTest {
     public void staff_ReadsAnyOwnerAndPet_IsAllowed() throws Exception {
         perform(MockMvcRequestBuilders.get("/api/owners/{id}", otherOwner.getId()), asAdmin()).andExpect(MockMvcResultMatchers.status().isOk());
         perform(MockMvcRequestBuilders.get("/api/pets/{id}/treatments", otherPet.getId()), asAdmin()).andExpect(MockMvcResultMatchers.status().isOk());
+        perform(MockMvcRequestBuilders.get("/api/pets/{id}/weights", otherPet.getId()), asAdmin()).andExpect(MockMvcResultMatchers.status().isOk());
         perform(MockMvcRequestBuilders.get("/api/pets/{id}", otherPet.getId()), asVet(vet)).andExpect(MockMvcResultMatchers.status().isOk());
         perform(MockMvcRequestBuilders.get("/api/owners/{id}/pets", otherOwner.getId()), asVet(vet)).andExpect(MockMvcResultMatchers.status().isOk());
     }

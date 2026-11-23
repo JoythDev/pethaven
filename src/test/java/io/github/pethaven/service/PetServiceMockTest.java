@@ -29,6 +29,7 @@ import java.net.InetSocketAddress;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
+import java.time.LocalDateTime;
 import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +47,8 @@ public class PetServiceMockTest {
     private PetRepository petRepository;
     @Mock
     private OwnerService ownerService;
+    @Mock
+    private WeightHistoryService weightHistoryService;
 
     private PetServiceImpl petService;
     private HttpServer photoServer;
@@ -56,7 +59,7 @@ public class PetServiceMockTest {
 
     @BeforeEach
     public void setUp() {
-        petService = new PetServiceImpl(petRepository, new PetMapper(), ownerService,
+        petService = new PetServiceImpl(petRepository, new PetMapper(), ownerService, weightHistoryService,
                 uri -> outboundUrlPolicy.isAllowed(uri));
     }
 
@@ -369,6 +372,58 @@ public class PetServiceMockTest {
         Assertions.assertThat(saved.getDisease()).isEqualTo("Dermatitis");
         Assertions.assertThat(saved.getOwner()).isSameAs(newOwner);
         Mockito.verify(ownerService).getOwnerEntity(2L);
+    }
+
+    @Test
+    public void petService_createPet_ValidRequest_RecordsTheInitialWeight() {
+        // Arrange
+        Mockito.when(ownerService.getOwnerEntity(7L)).thenReturn(owner(7L, "Ana Torres"));
+        Mockito.when(petRepository.save(ArgumentMatchers.any(Pet.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        petService.createPet(createRequest());
+
+        // Assert
+        ArgumentCaptor<Pet> captor = ArgumentCaptor.forClass(Pet.class);
+        Mockito.verify(petRepository).save(captor.capture());
+        Mockito.verify(weightHistoryService).record(
+                Mockito.same(captor.getValue()), Mockito.eq(3.75), ArgumentMatchers.any(LocalDateTime.class));
+    }
+
+    @Test
+    public void petService_updatePet_WeightChanged_RecordsTheNewWeight() {
+        // Arrange
+        Owner owner = owner(1L, "Ana Torres");
+        Pet existing = pet(1L, owner, "Buddy", Species.DOG, "Labrador", 4, 20.0);
+        Mockito.when(petRepository.findById(1L)).thenReturn(Optional.of(existing));
+        Mockito.when(ownerService.getOwnerEntity(1L)).thenReturn(owner);
+        Mockito.when(petRepository.save(ArgumentMatchers.any(Pet.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        petService.updatePet(1L, new PetRequest("Buddy", 1L, Species.DOG, "Labrador", 4, 21.5, null));
+
+        // Assert
+        Mockito.verify(weightHistoryService).record(
+                Mockito.same(existing), Mockito.eq(21.5), ArgumentMatchers.any(LocalDateTime.class));
+    }
+
+    @Test
+    public void petService_updatePet_SameWeight_DoesNotRecordAWeight() {
+        // Arrange
+        Owner owner = owner(1L, "Ana Torres");
+        Pet existing = pet(1L, owner, "Buddy", Species.DOG, "Labrador", 4, 20.0);
+        Mockito.when(petRepository.findById(1L)).thenReturn(Optional.of(existing));
+        Mockito.when(ownerService.getOwnerEntity(1L)).thenReturn(owner);
+        Mockito.when(petRepository.save(ArgumentMatchers.any(Pet.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+
+        // Act
+        petService.updatePet(1L, new PetRequest("Buddy", 1L, Species.DOG, "Labrador", 5, 20.0, null));
+
+        // Assert
+        Mockito.verifyNoInteractions(weightHistoryService);
     }
 
     @Test
@@ -860,7 +915,7 @@ public class PetServiceMockTest {
         AtomicInteger hits = new AtomicInteger();
         photoServer = countingServer(hits, null);
         PetServiceImpl protectedService =
-                new PetServiceImpl(petRepository, new PetMapper(), ownerService, new PublicNetworkUrlPolicy());
+                new PetServiceImpl(petRepository, new PetMapper(), ownerService, weightHistoryService, new PublicNetworkUrlPolicy());
         Mockito.when(petRepository.findById(1L)).thenReturn(Optional.of(petWithPhoto(url(photoServer, "/photo.png"))));
 
         // Act + Assert
@@ -879,7 +934,7 @@ public class PetServiceMockTest {
             validated.add(uri);
             return true;
         };
-        PetServiceImpl service = new PetServiceImpl(petRepository, new PetMapper(), ownerService,
+        PetServiceImpl service = new PetServiceImpl(petRepository, new PetMapper(), ownerService, weightHistoryService,
                 uri -> outboundUrlPolicy.isAllowed(uri), Duration.ofSeconds(20),
                 (uri, timeout) -> new PetServiceImpl.FetchResult(302, "", "http://photos.test/photo.png", new byte[0]));
 
@@ -906,7 +961,7 @@ public class PetServiceMockTest {
             exchange.close();
         });
         photoServer.start();
-        PetServiceImpl service = new PetServiceImpl(petRepository, new PetMapper(), ownerService,
+        PetServiceImpl service = new PetServiceImpl(petRepository, new PetMapper(), ownerService, weightHistoryService,
                 uri -> true, Duration.ofMillis(500));
         Mockito.when(petRepository.findById(1L)).thenReturn(Optional.of(petWithPhoto(url(photoServer, "/start"))));
 
@@ -926,7 +981,7 @@ public class PetServiceMockTest {
         // Arrange
         // Cabeceras inmediatas y cuerpo gota a gota (20 x 200 ms): el presupuesto de 500 ms también cubre el cuerpo.
         CountDownLatch aborted = startDrippingPhotoServer();
-        PetServiceImpl service = new PetServiceImpl(petRepository, new PetMapper(), ownerService,
+        PetServiceImpl service = new PetServiceImpl(petRepository, new PetMapper(), ownerService, weightHistoryService,
                 uri -> true, Duration.ofMillis(500));
         Mockito.when(petRepository.findById(1L)).thenReturn(Optional.of(petWithPhoto(url(photoServer, "/slow.png"))));
 
@@ -947,7 +1002,7 @@ public class PetServiceMockTest {
         // Arrange
         // Presupuesto amplio (10 s): la lectura termina por la interrupción del hilo, no por el tiempo.
         CountDownLatch aborted = startDrippingPhotoServer();
-        PetServiceImpl service = new PetServiceImpl(petRepository, new PetMapper(), ownerService,
+        PetServiceImpl service = new PetServiceImpl(petRepository, new PetMapper(), ownerService, weightHistoryService,
                 uri -> true, Duration.ofSeconds(10));
         Mockito.when(petRepository.findById(1L)).thenReturn(Optional.of(petWithPhoto(url(photoServer, "/slow.png"))));
         AtomicReference<Optional<PetService.Photo>> result = new AtomicReference<>();
