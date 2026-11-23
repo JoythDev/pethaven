@@ -32,7 +32,7 @@ import { AdministratorDashboardResponse } from '../../../models/administrator-da
 import { DashboardPeriod, DashboardPeriodId } from '../../../models/demo/dashboard-period.model';
 import { Drug } from '../../../models/drug.model';
 import { AdministratorDashboardService } from '../../../services/administrator-dashboard.service';
-import { DEMO_NOW } from '../../../services/demo/demo-latency';
+import { CLOCK } from '../../../core/time/clock';
 import { DemoDashboardPeriodsService } from '../../../services/demo/demo-dashboard-periods.service';
 import { DrugService } from '../../../services/drug.service';
 import { formatCurrency, formatUnits } from '../../shared/drugs/drug-stock';
@@ -98,7 +98,7 @@ export class AdminDashboardComponent {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly messages = inject(MessageService);
-  private readonly clock = inject(DEMO_NOW);
+  private readonly clock = inject(CLOCK);
 
   private readonly summaryRetry = new BehaviorSubject<void>(undefined);
   private readonly periodsRetry = new BehaviorSubject<void>(undefined);

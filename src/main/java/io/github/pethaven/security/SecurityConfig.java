@@ -111,6 +111,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/verify-otp", "/api/auth/resend-otp").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
 
+                // Datos de la clínica (sede y horario): información pública
+                .requestMatchers(HttpMethod.GET, "/api/clinic").permitAll()
+
                 // Métricas del negocio
                 .requestMatchers(HttpMethod.GET, "/api/administrators/dashboard").hasRole(admin)
 
@@ -119,6 +122,20 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/drugs", "/api/drugs/import").hasRole(admin)
                 .requestMatchers(HttpMethod.PUT, "/api/drugs/*").hasRole(admin)
                 .requestMatchers(HttpMethod.DELETE, "/api/drugs/*").hasRole(admin)
+
+                // Citas: el dueño reserva y gestiona las suyas; el veterinario, las que tiene asignadas
+                .requestMatchers(HttpMethod.GET, "/api/appointments/availability", "/api/appointments/*")
+                .hasAnyRole(vet, owner)
+                .requestMatchers(HttpMethod.PUT, "/api/appointments/*/cancel", "/api/appointments/*/reschedule")
+                .hasAnyRole(vet, owner)
+                .requestMatchers(HttpMethod.PUT, "/api/appointments/*/start", "/api/appointments/*/complete",
+                        "/api/appointments/*/no-show").hasRole(vet)
+                .requestMatchers(HttpMethod.POST, "/api/appointments/*/pet").hasRole(vet)
+                .requestMatchers(HttpMethod.GET, "/api/veterinarians/*/appointments", "/api/veterinarians/*/availability")
+                .hasRole(vet)
+                .requestMatchers(HttpMethod.POST, "/api/veterinarians/*/appointments").hasRole(vet)
+                .requestMatchers(HttpMethod.GET, "/api/owners/*/appointments").hasAnyRole(vet, owner)
+                .requestMatchers(HttpMethod.POST, "/api/owners/*/appointments").hasRole(owner)
 
                 // Dueños: gestión del veterinario; el dueño solo accede a su propio perfil
                 .requestMatchers(HttpMethod.GET, "/api/owners").hasAnyRole(admin, vet)

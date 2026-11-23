@@ -36,9 +36,11 @@ import {
   switchMap,
   Subject,
 } from 'rxjs';
+import { admissionRequest, agendaParams } from '../../../../core/vet-appointments/vet-appointments';
+import { AppointmentService } from '../../../../services/appointment.service';
 import { Drug } from '../../../../models/drug.model';
 import { PET_WEIGHT_MAX, PET_WEIGHT_MIN, Pet, Species } from '../../../../models/pet.model';
-import { EVOLUTION_LABELS, Evolution, TreatmentRequest } from '../../../../models/treatment.model';
+import { EVOLUTION_LABELS, Evolution, Treatment, TreatmentRequest } from '../../../../models/treatment.model';
 import { Veterinarian } from '../../../../models/veterinarian.model';
 import { AuthService } from '../../../../services/auth.service';
 import { DrugService } from '../../../../services/drug.service';
@@ -149,15 +151,22 @@ export class TreatmentFormComponent implements OnInit, HasUnsavedChanges {
   private readonly drugService = inject(DrugService);
   private readonly veterinarianService = inject(VeterinarianService);
   private readonly treatmentService = inject(TreatmentService);
+  private readonly appointmentService = inject(AppointmentService);
   private readonly authService = inject(AuthService);
   private readonly formBuilder = inject(NonNullableFormBuilder);
   private readonly notifications = inject(NotificationService);
   private readonly destroyRef = inject(DestroyRef);
 
   protected readonly state = signal<FormLoad>(LOADING);
+  // Cita en curso que terminó en ingreso (`?cita=`): al registrar el tratamiento se completa con él (S16.9).
+  private readonly appointmentId = parseRouteId(this.route.snapshot.queryParamMap.get('cita'));
   protected readonly saving = signal(false);
   // Motivo del último intento fallido de registrar; se muestra junto a las acciones (11.8).
   protected readonly saveError = signal<string | null>(null);
+  // Tratamiento del ingreso ya guardado cuya cita no se pudo cerrar: se reintenta el cierre, nunca el registro.
+  protected readonly pendingAdmission = signal<Treatment | null>(null);
+  protected readonly closeError = signal<string | null>(null);
+  protected readonly closing = signal(false);
   // Tras guardar, la navegación a la ficha no debe pedir confirmación.
   private readonly saved = signal(false);
   protected readonly skeleton = skeletonVisible(computed(() => this.state().status === 'loading'));
@@ -274,16 +283,26 @@ export class TreatmentFormComponent implements OnInit, HasUnsavedChanges {
   });
 
   protected readonly backLink = computed(() => {
+    if (this.appointmentId !== null) {
+      return '/veterinario/agenda';
+    }
     const state = this.state();
     return state.status === 'ready' ? `/veterinario/mascotas/${state.data.pet.id}` : '/veterinario/mascotas';
   });
   protected readonly backLabel = computed(() => {
+    if (this.appointmentId !== null) {
+      return 'Agenda';
+    }
     const state = this.state();
     return state.status === 'ready' ? `Ficha de ${state.data.pet.name}` : 'Mascotas';
   });
   protected readonly subtitle = computed(() => {
     const state = this.state();
-    return state.status === 'ready' ? `Consulta de ${state.data.pet.name} · ${state.data.pet.ownerName}` : null;
+    if (state.status !== 'ready') {
+      return null;
+    }
+    const prefix = this.appointmentId !== null ? 'Ingreso desde la cita' : 'Consulta';
+    return `${prefix} de ${state.data.pet.name} · ${state.data.pet.ownerName}`;
   });
 
   ngOnInit(): void {
@@ -299,6 +318,10 @@ export class TreatmentFormComponent implements OnInit, HasUnsavedChanges {
       )
       .subscribe((treatment) => {
         this.saved.set(true);
+        if (this.appointmentId !== null) {
+          this.completeAdmission(this.appointmentId, treatment);
+          return;
+        }
         this.notifications.success(
           'Tratamiento registrado',
           `Se registró el tratamiento de ${treatment.petName} con ${treatment.drugs.length} medicamento(s).`,
@@ -412,6 +435,9 @@ export class TreatmentFormComponent implements OnInit, HasUnsavedChanges {
 
   // Valida el formulario, arma el cuerpo que espera el API y lo envía a submit$.
   protected guardar(): void {
+    if (this.pendingAdmission()) {
+      return;
+    }
     this.saveError.set(null);
     if (this.form.invalid) {
       this.form.markAllAsTouched();
@@ -442,7 +468,45 @@ export class TreatmentFormComponent implements OnInit, HasUnsavedChanges {
   }
 
   protected cancelar(petId: number): void {
+    if (this.appointmentId !== null) {
+      this.router.navigate(['/veterinario/agenda']);
+      return;
+    }
     this.router.navigate(['/veterinario/mascotas', petId]);
+  }
+
+  protected retryCloseAppointment(): void {
+    const treatment = this.pendingAdmission();
+    if (treatment && this.appointmentId !== null && !this.closing()) {
+      this.completeAdmission(this.appointmentId, treatment);
+    }
+  }
+
+  // El tratamiento del ingreso ya quedó guardado: completa la cita con él y vuelve a la Agenda. Si el
+  // cierre falla, la página se queda aquí para reintentar solo el cierre (registrar de nuevo duplicaría
+  // el tratamiento y el descuento de inventario).
+  private completeAdmission(appointmentId: number, treatment: Treatment): void {
+    this.closing.set(true);
+    this.closeError.set(null);
+    this.appointmentService
+      .complete(appointmentId, admissionRequest(treatment.id))
+      .pipe(
+        finalize(() => this.closing.set(false)),
+        takeUntilDestroyed(this.destroyRef),
+      )
+      .subscribe({
+        next: (appointment) => {
+          this.notifications.success(
+            'Consulta completada',
+            `${treatment.petName} quedó hospitalizada con su tratamiento y la cita se cerró como ingreso.`,
+          );
+          this.router.navigate(['/veterinario/agenda'], { queryParams: agendaParams(appointment) });
+        },
+        error: (error: unknown) => {
+          this.pendingAdmission.set(treatment);
+          this.closeError.set(getErrorMessage(error, 'No se pudo cerrar la cita.'));
+        },
+      });
   }
 
   // Pide los datos de la pantalla; un 404 de la mascota se distingue de un fallo reintentable.

@@ -1,4 +1,4 @@
-import { Appointment } from '../../models/demo/appointment.model';
+import { Appointment } from '../../models/appointment.model';
 import { Pet } from '../../models/pet.model';
 import { PetAreaConfig } from '../pets-list/pet-area';
 

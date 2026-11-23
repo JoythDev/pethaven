@@ -37,26 +37,25 @@
     }
   </div>
 
-  <!-- Próxima cita (demo) -->
+  <!-- Próxima cita -->
   @if (showPetCards()) {
     <div class="col-span-12 min-w-0 @min-[680px]:col-span-6 @min-[960px]:col-span-4">
-      @if (historiesFailed()) {
+      @if (appointments().status === 'error') {
         <section app-card heading="Próxima cita" class="h-full">
-          <app-demo-tag title-extra />
-          <app-inline-error text="No pudimos cargar tu próxima cita." (retry)="retryHistories()" />
+          <app-inline-error text="No pudimos cargar tu próxima cita." (retry)="retryAppointments()" />
         </section>
-      } @else if (histories().status === 'loading' || pets().status === 'loading') {
-        @if (historiesSkeleton()) {
+      } @else if (appointments().status === 'loading') {
+        @if (appointmentsSkeleton()) {
           <app-skeleton variant="figure" class="h-full" />
         }
       } @else {
         <app-block hue="sky" kind="summary" class="h-full">
           <div class="flex items-start gap-3">
             <div class="min-w-0 flex-1">
-              <h2 class="flex items-center text-[13px] leading-[18px] font-extrabold">Próxima cita<app-demo-tag /></h2>
+              <h2 class="flex items-center text-[13px] leading-[18px] font-extrabold">Próxima cita</h2>
               @if (nextAppointment(); as next) {
                 <p class="mt-1 font-display text-xl leading-[26px] font-semibold">{{ when(next) }}</p>
-                <p class="mt-0.5 text-sm leading-5">{{ next.reason }} de {{ next.petName }}</p>
+                <p class="mt-0.5 text-sm leading-5">{{ reasonLabel(next) }} de {{ next.petName }}</p>
                 <p class="text-[12.5px] leading-[18px] text-ink-muted">{{ next.veterinarianName }}</p>
               } @else {
                 <p class="mt-1 font-display text-xl leading-[26px] font-semibold">Sin citas próximas</p>
@@ -72,7 +71,9 @@
                   <svg lucideClock [size]="12" aria-hidden="true"></svg>{{ whenTag(next, now()) }}
                 </span>
               </p-tag>
-              <button pButton type="button" class="ml-auto" size="small" [outlined]="true" label="Reprogramar" (click)="reschedule()"></button>
+              @if (canChange(next)) {
+                <a pButton class="ml-auto" size="small" [outlined]="true" label="Reprogramar" [routerLink]="bookLink()" [queryParams]="rescheduleQuery(next)"></a>
+              }
             } @else {
               <a pButton size="small" [routerLink]="bookLink()" label="Agendar cita"></a>
             }
@@ -317,9 +318,17 @@
 <!-- Barra lateral: tu clínica y recordatorios; el shell añade Notificaciones al final -->
 <ng-template appShellSidebar>
   <app-block hue="lilac" kind="summary">
-    <h2 class="flex items-center text-[13px] leading-[18px] font-extrabold">Tu clínica<app-demo-tag /></h2>
-    <p class="mt-1 font-display text-[17px] leading-[22px] font-semibold">PetHaven Chapinero</p>
-    <p class="mt-1 text-sm leading-5">Calle 63 n.º 9-41<br />Lunes a sábado, 8:00 a 17:30</p>
+    <h2 class="flex items-center text-[13px] leading-[18px] font-extrabold">Tu clínica</h2>
+    @let clinicState = clinic();
+    @if (clinicState.status === 'ready') {
+      <p class="mt-1 font-display text-[17px] leading-[22px] font-semibold">{{ clinicState.data.name }}</p>
+      <p class="mt-1 text-sm leading-5">{{ clinicState.data.address }}<br />{{ clinicHours() }}</p>
+      <p class="mt-1 text-sm leading-5">Teléfono: {{ clinicState.data.phone }}</p>
+    } @else if (clinicState.status === 'error') {
+      <app-inline-error text="No pudimos cargar los datos de la clínica." (retry)="retryClinic()" />
+    } @else {
+      <app-skeleton variant="text" [lines]="3" [announce]="false" />
+    }
   </app-block>
 
   <section app-card heading="Recordatorios">

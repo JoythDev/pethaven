@@ -3,7 +3,7 @@
 <app-block hue="sky" kind="summary" class="h-full">
   <div class="flex items-center">
     <h2 class="font-display text-[17px] leading-[22px] font-semibold text-balance">
-      Resumen del día<app-demo-tag />
+      Resumen del día
     </h2>
     <span class="ml-auto pl-2 text-[12.5px] leading-[18px] font-bold whitespace-nowrap text-ink-muted first-letter:uppercase">
       {{ date() | date: 'EEE d MMM' }}
@@ -53,7 +53,7 @@
     <div class="mt-4 mb-4 flex items-center gap-3 rounded-row bg-[color-mix(in_srgb,var(--color-on-hue)_12%,var(--hue))] p-3">
       @if (t.upNext; as next) {
         <app-avatar
-          [id]="next.appointment.petId"
+          [id]="next.appointment.petId ?? next.appointment.id"
           [name]="next.appointment.petName"
           kind="pet"
           [species]="next.appointment.species"
@@ -63,7 +63,7 @@
           <p class="text-[12.5px] leading-[18px] font-extrabold">{{ next.kicker }}</p>
           <p class="truncate text-sm leading-5 font-extrabold">{{ next.headline }}</p>
           <p class="truncate text-[12.5px] leading-[18px] text-ink-muted">
-            {{ next.appointment.reason }} · {{ next.appointment.ownerName }}
+            {{ reasonOf(next.appointment) }} · {{ next.appointment.ownerName }}
           </p>
         </div>
       } @else if (t.notice) {

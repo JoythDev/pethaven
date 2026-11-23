@@ -1,4 +1,4 @@
-import { Appointment } from '../../models/demo/appointment.model';
+import { APPOINTMENT_REASON_LABELS, Appointment } from '../../models/appointment.model';
 import { CareItem } from '../../models/demo/care-plan.model';
 import { DashboardPeriod } from '../../models/demo/dashboard-period.model';
 import { DemoNotification } from '../../models/demo/demo-notification.model';
@@ -14,7 +14,7 @@ export interface ClientNotificationInput {
   today: Date;
   ownerId: number;
   pets: Pet[];
-  // Próximas citas de sus mascotas, de la más cercana a la más lejana.
+  // Próximas citas reales de sus mascotas, de la más cercana a la más lejana.
   upcoming: Appointment[];
   care: { pet: Pet; items: CareItem[] }[];
   doneCareIds: ReadonlySet<string>;
@@ -22,7 +22,7 @@ export interface ClientNotificationInput {
 
 export interface VeterinarianNotificationInput {
   today: Date;
-  // Citas de hoy del veterinario.
+  // Citas reales de hoy del veterinario, sin las canceladas.
   todayAppointments: Appointment[];
   pets: Pet[];
   drugs: Drug[];
@@ -111,8 +111,8 @@ export function clientNotifications(input: ClientNotificationInput): DemoNotific
       id: `ntf-cli-appointment-${next.id}`,
       icon: 'calendar',
       title: `Cita de ${next.petName} ${whenPhrase(next.start, today)}`,
-      detail: `${next.reason} con ${next.veterinarianName}.`,
-      at: earlierToday(today, minutesFor(next.id, 30, 180)),
+      detail: `${APPOINTMENT_REASON_LABELS[next.reason]} con ${next.veterinarianName}.`,
+      at: earlierToday(today, minutesFor(String(next.id), 30, 180)),
       route: `/cliente/${ownerId}/citas`,
     });
   }
@@ -180,17 +180,6 @@ export function veterinarianNotifications(input: VeterinarianNotificationInput):
       title: `Tienes ${plural(day.length, 'cita', 'citas')} hoy`,
       detail: day.length === 1 ? `Es a las ${first}.` : `La primera es a las ${first} y la última a las ${last}.`,
       at: earlierToday(today, 240),
-      route: '/veterinario/agenda',
-    });
-  }
-
-  for (const appointment of day.filter((a) => a.urgent)) {
-    drafts.push({
-      id: `ntf-vet-urgency-${appointment.id}`,
-      icon: 'triangle-alert',
-      title: `Urgencia agendada a las ${formatTime(appointment.start)}`,
-      detail: `${appointment.petName}. Dueño: ${appointment.ownerName}.`,
-      at: earlierToday(today, minutesFor(appointment.id, 20, 90)),
       route: '/veterinario/agenda',
     });
   }

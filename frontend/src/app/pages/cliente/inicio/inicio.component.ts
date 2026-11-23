@@ -13,6 +13,7 @@ import {
   Reminder,
   appointmentWhen,
   buildReminders,
+  clinicHoursText,
   heroCopy,
   pickFeaturedPet,
   recentTreatments,
@@ -21,26 +22,27 @@ import {
   whenTag,
   HERO_NO_PETS,
 } from '../../../core/client-home/client-home';
-import { vetsFromTreatments } from '../../../core/demo/appointments';
+import { canChange, splitAppointments } from '../../../core/client-appointments/client-appointments';
 import { parseRouteId } from '../../../core/http/route-id';
 import { ViewState, toViewState } from '../../../core/http/view-state';
-import { NotificationService } from '../../../core/notifications/notification.service';
 import { ageLabel, vaccineSeverity } from '../../../core/pet-detail/pet-detail';
 import { petStatus } from '../../../core/status/pet-status';
 import { coatKitFor, speciesSticker } from '../../../core/stickers/stickers';
 import { skeletonVisible } from '../../../core/ui/skeleton-timing';
+import { CLOCK } from '../../../core/time/clock';
 import { firstName, longDateEs } from '../../../core/vet-home/vet-home';
-import { Appointment } from '../../../models/demo/appointment.model';
+import { APPOINTMENT_REASON_LABELS, Appointment } from '../../../models/appointment.model';
+import { Clinic } from '../../../models/clinic.model';
 import { CareItem } from '../../../models/demo/care-plan.model';
 import { DailyTip } from '../../../models/demo/daily-tip.model';
 import { VaccineCard } from '../../../models/demo/vaccine.model';
 import { Pet } from '../../../models/pet.model';
 import { ClienteTreatment } from '../../../models/treatment-cliente.model';
+import { AppointmentService } from '../../../services/appointment.service';
 import { AuthService } from '../../../services/auth.service';
-import { DemoAppointmentsService } from '../../../services/demo/demo-appointments.service';
+import { ClinicService } from '../../../services/clinic.service';
 import { DemoCarePlanService } from '../../../services/demo/demo-care-plan.service';
 import { DemoDailyTipService } from '../../../services/demo/demo-daily-tip.service';
-import { DEMO_NOW } from '../../../services/demo/demo-latency';
 import { DemoVaccinesService } from '../../../services/demo/demo-vaccines.service';
 import { PetService } from '../../../services/pet.service';
 import { ClienteTreatmentService } from '../../../services/treatment-cliente.service';
@@ -82,8 +84,8 @@ const OWNER_NOT_FOUND: ViewState<Pet[]> = { status: 'error', message: 'Dueño no
 /**
  * Inicio del cliente (11.6, 11.15): héroe con el cuidado pendiente de su mascota, próxima cita,
  * mis mascotas (solo lectura, S21), plan de cuidado, carné de vacunas, tratamientos recientes y
- * «Consejo del día» (S22). Mascotas y tratamientos son reales; cita, plan, vacunas y consejo son
- * demo (S3). Cada fuente carga y falla por separado.
+ * «Consejo del día» (S22). Mascotas, tratamientos, próxima cita y «Tu clínica» son reales; plan,
+ * vacunas y consejo son demo (S3). Cada fuente carga y falla por separado.
  */
 @Component({
   selector: 'app-cliente-inicio',
@@ -115,12 +117,12 @@ export class InicioComponent {
   private readonly auth = inject(AuthService);
   private readonly petService = inject(PetService);
   private readonly treatmentService = inject(ClienteTreatmentService);
-  private readonly appointments = inject(DemoAppointmentsService);
+  private readonly appointmentService = inject(AppointmentService);
+  private readonly clinicService = inject(ClinicService);
   private readonly carePlan = inject(DemoCarePlanService);
   private readonly vaccineService = inject(DemoVaccinesService);
   private readonly tipService = inject(DemoDailyTipService);
-  private readonly notifications = inject(NotificationService);
-  private readonly clock = inject(DEMO_NOW);
+  private readonly clock = inject(CLOCK);
 
   // Reloj de la página: mantiene bien «Hoy» y «Mañana» si cambia el día con la página abierta.
   protected readonly now = signal(this.clock());
@@ -131,6 +133,8 @@ export class InicioComponent {
 
   private readonly petsRetry = new BehaviorSubject<void>(undefined);
   private readonly historiesRetry = new BehaviorSubject<void>(undefined);
+  private readonly appointmentsRetry = new BehaviorSubject<void>(undefined);
+  private readonly clinicRetry = new BehaviorSubject<void>(undefined);
   private readonly vaccinesRetry = new BehaviorSubject<void>(undefined);
   private readonly tipRetry = new BehaviorSubject<void>(undefined);
 
@@ -156,6 +160,27 @@ export class InicioComponent {
     ),
     { initialValue: LOADING as ViewState<PetHistory[]> },
   );
+
+  // Citas del dueño (reales): de ahí sale la próxima.
+  protected readonly appointments = toSignal(
+    combineLatest([this.ownerId$, this.appointmentsRetry]).pipe(
+      switchMap(([ownerId]): Observable<ViewState<Appointment[]>> =>
+        ownerId === null
+          ? of({ status: 'error', message: 'Dueño no encontrado.' })
+          : this.appointmentService.getByOwnerId(ownerId).pipe(toViewState<Appointment[]>()),
+      ),
+    ),
+    { initialValue: LOADING as ViewState<Appointment[]> },
+  );
+
+  protected readonly clinic = toSignal(
+    this.clinicRetry.pipe(switchMap(() => this.clinicService.getClinic().pipe(toViewState<Clinic>()))),
+    { initialValue: LOADING as ViewState<Clinic> },
+  );
+  protected readonly clinicHours = computed(() => {
+    const state = this.clinic();
+    return state.status === 'ready' ? clinicHoursText(state.data.hours) : '';
+  });
 
   protected readonly tip = toSignal(
     this.tipRetry.pipe(switchMap(() => this.tipService.getTip().pipe(toViewState<DailyTip>()))),
@@ -242,14 +267,9 @@ export class InicioComponent {
     return view.kind === 'ready' && view.pet ? coatKitFor(view.pet.id) : 1;
   });
 
-  // Citas demo del dueño, calculadas con sus mascotas y los veterinarios de sus tratamientos.
   protected readonly nextAppointment = computed<Appointment | null>(() => {
-    const state = this.histories();
-    if (state.status !== 'ready') {
-      return null;
-    }
-    const vets = vetsFromTreatments(state.data.flatMap((entry) => entry.treatments));
-    return this.appointments.ownerAppointmentsFrom(this.petList(), vets).upcoming[0] ?? null;
+    const state = this.appointments();
+    return state.status === 'ready' ? (splitAppointments(state.data, this.now()).upcoming[0] ?? null) : null;
   });
 
   protected readonly recent = computed(() => {
@@ -298,6 +318,7 @@ export class InicioComponent {
     ),
   );
   protected readonly tipSkeleton = skeletonVisible(computed(() => this.tip().status === 'loading'));
+  protected readonly appointmentsSkeleton = skeletonVisible(computed(() => this.appointments().status === 'loading'));
 
   // Una tarjeta que depende de las mascotas falla si fallan estas o los tratamientos.
   protected readonly historiesFailed = computed(
@@ -325,6 +346,27 @@ export class InicioComponent {
   constructor() {
     const timer = setInterval(() => this.now.set(this.clock()), CLOCK_TICK_MS);
     inject(DestroyRef).onDestroy(() => clearInterval(timer));
+  }
+
+  // «Reprogramar» abre el asistente de citas en la reprogramación de esa cita.
+  protected rescheduleQuery(appointment: Appointment): { reprogramar: number } {
+    return { reprogramar: appointment.id };
+  }
+
+  protected canChange(appointment: Appointment): boolean {
+    return canChange(appointment, this.now());
+  }
+
+  protected reasonLabel(appointment: Appointment): string {
+    return APPOINTMENT_REASON_LABELS[appointment.reason];
+  }
+
+  protected retryAppointments(): void {
+    this.appointmentsRetry.next();
+  }
+
+  protected retryClinic(): void {
+    this.clinicRetry.next();
   }
 
   protected petLink(petId: number): (string | number)[] {
@@ -362,11 +404,6 @@ export class InicioComponent {
 
   protected retryTip(): void {
     this.tipRetry.next();
-  }
-
-  // Demo (S3): reprogramar no existe en el API; avisa lo que haría.
-  protected reschedule(): void {
-    this.notifications.success('Reprogramación solicitada', 'Te enviamos tres horarios alternativos.');
   }
 
   private loadHistories(pets: Pet[]): Observable<PetHistory[]> {

@@ -64,7 +64,7 @@
           <dl app-definition-list>
             <dt>Último tratamiento</dt>
             <dd>{{ card.lastDiagnosis ?? 'Sin tratamientos' }}</dd>
-            <dt>Próxima cita<app-demo-tag /></dt>
+            <dt>Próxima cita</dt>
             <dd>{{ card.nextAppointment ?? 'Sin agendar' }}</dd>
           </dl>
 
@@ -72,17 +72,19 @@
             <a pButton class="min-w-0 flex-1" [routerLink]="petLink(pet.id)" [attr.aria-label]="'Ver ficha de ' + pet.name">
               <span class="p-button-label">Ver ficha</span>
             </a>
-            <a
-              pButton
-              severity="secondary"
-              [outlined]="true"
-              [routerLink]="bookLink()"
-              [queryParams]="{ mascota: pet.id }"
-              [attr.aria-label]="'Agendar cita para ' + pet.name"
-            >
-              <svg lucideCalendar [size]="18" aria-hidden="true"></svg>
-              <span class="p-button-label">Agendar</span>
-            </a>
+            @if (!isHospitalized(pet)) {
+              <a
+                pButton
+                severity="secondary"
+                [outlined]="true"
+                [routerLink]="bookLink()"
+                [queryParams]="{ mascota: pet.id }"
+                [attr.aria-label]="'Agendar cita para ' + pet.name"
+              >
+                <svg lucideCalendar [size]="18" aria-hidden="true"></svg>
+                <span class="p-button-label">Agendar</span>
+              </a>
+            }
           </div>
         </div>
       </article>

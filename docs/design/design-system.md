@@ -740,9 +740,9 @@ Used for treatment history and activity.
 ### 10.17 Calendar and day timeline — `p-datepicker` (inline) plus custom day view
 
 - Month grid: 36px day cells, `radius-sm`, Monday first. Today has a 1.5px `accent` inset ring; selected is `accent` with `on-accent`; days with appointments show a 4px dot; closed days are `ink-muted` at 55%.
-- Day timeline: one row per time slot with a 54px time column. An appointment is a color block in the pet's identity hue (`radius-lg`) with avatar, pet name, reason, owner and duration. A free slot is a dashed button that starts a new appointment.
-- Urgent appointments carry a tag with the `triangle-alert` icon. Selected appointment: 2.5px `ink` ring.
-- Selecting an appointment updates the visit detail panel.
+- Day timeline: one row per slot of the clinic schedule (`GET /api/clinic`, 30-minute slots) with a 54px time column. An appointment is a color block in the pet's identity hue (`radius-lg`) with avatar, pet name, reason, owner, duration and its status tag (12.3); completed and no-show appointments are drawn at 70% opacity. A cancelled appointment frees its slot and is not drawn. A free future slot is a dashed button that opens "Nueva cita" at that time; past free slots are disabled.
+- There are no urgent appointments: urgencies are not booked in the app (11.5). Selected appointment: 2.5px `ink` ring.
+- Selecting an appointment updates the visit detail panel, whose actions follow the appointment status (11.17).
 
 ### 10.18 Charts — `p-chart` (Chart.js)
 
@@ -861,7 +861,11 @@ Search filters as the user types (debounced 250ms). Search text, filters, sort, 
 - For multi-step tasks such as booking an appointment. Stepper on top, step content, footer navigation, live summary beside it.
 - Each step asks one question. Choices are picker tiles where there are six or fewer options.
 - The last step is a review of all choices before the commit. Success replaces the wizard with a confirmation state (sticker, what happened, next actions).
-- Booking for a new pet: the "Mascota" step includes a "Mascota nueva" tile that collects name and species only; the veterinarian completes the record at the visit. Clients cannot create or edit pet records elsewhere.
+- Booking for a new pet: the "Mascota" step includes a "Mascota nueva" tile that collects name and species only; the veterinarian completes the record at the visit. Clients cannot create or edit pet records elsewhere. A new pet skips the "Motivo" step: its reason is always "Primera consulta".
+- A pet that cannot be booked stays visible as a disabled tile with the reason in its caption ("Hospitalizada: tu veterinario agenda sus citas", "Ya tiene cita el …").
+- The "Motivo" step does not offer urgencies: a warning inline alert under the tiles gives the clinic phone instead.
+- Rescheduling reuses the wizard from the "Fecha y hora" step, with an info inline alert that names the appointment being moved and a "Descartar cambio" action. Cancelling an appointment uses the confirm dialog ("¿Cancelar la cita de Lola?", primary "Cancelar cita", secondary "Mantener cita").
+- Day tiles and time slots come from the clinic schedule; slots without a free veterinarian or inside the minimum notice are disabled, never hidden.
 
 ### 11.6 Dashboards
 
@@ -890,6 +894,8 @@ Search filters as the user types (debounced 250ms). Search text, filters, sort, 
 
 ### 11.9 Notifications (demo)
 
+The notifications themselves are still demo (no backend yet), but their appointment items are computed from the real appointments API: the client's next appointment and the veterinarian's appointments of the day.
+
 Notifications exist in three places for every role, all fed by the same source:
 
 | Place | Shows | Ends with |
@@ -900,7 +906,7 @@ Notifications exist in three places for every role, all fed by the same source:
 
 - "Mostrar todo" always opens the Notificaciones tab.
 - The bell shows a dot while there are unread notifications.
-- Content is role-specific: appointments, daily care and vaccines for clients; agenda, urgencies, stock and pending check-ups for veterinarians; inventory, sales, team and imports for administrators.
+- Content is role-specific: appointments, daily care and vaccines for clients; agenda, stock and pending check-ups for veterinarians; inventory, sales, team and imports for administrators.
 
 ### 11.10 Role-specific detail in treatments
 
@@ -947,6 +953,21 @@ The side column lists the file requirements (format, size, required and unique n
 - Global search in the top bar searches across resources the role can see and groups results by type.
 - List search is scoped to the list. Active filters are visible as selected chips; "Quitar filtros" appears when any is active.
 - The drug list has a price range filter in the toolbar: two numeric fields, "Precio mín." and "Precio máx.", joined by "a". When the minimum is greater than the maximum the range is ignored and an inline message says so.
+
+### 11.17 Veterinarian appointment actions
+
+The visit detail panel of the agenda (10.17) offers the actions of the selected appointment's status:
+
+| Status | Actions |
+|---|---|
+| Programada | "Iniciar consulta" (primary; enabled only on the appointment's day, with a caption that says when it can start), "Reprogramar" (secondary), "No asistió" (enabled once the start time has passed) and "Cancelar cita" (danger text button) |
+| En curso, pet not registered yet | "Registrar mascota": the pet form, prefilled with the provisional name, species, breed and age and locked to the appointment's owner; it saves at home and links the pet to the appointment |
+| En curso | "Completar consulta" (owner reasons) or "Completar cita" (discharge and briefing) |
+| Completada, No asistió, Cancelada | None; the panel shows the outcome, the owner's notes and the clinical note |
+
+- "Cancelar cita" and "No asistió" use the confirm dialog with a Danger primary that repeats the verb. Success is a toast; an API refusal (`409`) shows its message in an error toast, and the agenda reloads without skeletons.
+- **Completion dialog** (10.20): the form depends on the reason. Owner reasons ask "¿Cómo terminó la consulta?" with a segmented control "Ambulatoria" / "Ingreso". Ambulatoria requires a clinical note. Ingreso explains with an info inline alert that the pet is hospitalized and the treatment form opens; the treatment form carries `?cita=<id>`, completes the appointment with the saved treatment and returns to the agenda. "Alta y entrega" needs the medical discharge first: a warning inline alert offers "Dar alta médica" inside the dialog; completing takes the pet home. "Reunión informativa" requires a clinical note. API failures stay in the dialog as an error inline alert.
+- **"Nueva cita" dialog**: opened from the page header or from a free slot (preselected). The veterinarian picks the reason ("Alta y entrega" or "Reunión informativa"), a hospitalized pet (searchable select showing pet and owner) and a day and time from their own free slots (day tiles and slot tiles as in 11.5; taken slots are disabled, never hidden). "Reprogramar" reuses the same dialog with only the day and time.
 
 ---
 
@@ -1003,6 +1024,11 @@ Use Angular's `es-CO` locale pipes; do not format by hand.
 | Vaccine | Vence en N días | warning |
 | Vaccine | Pendiente, Vencida | danger |
 | Veterinarian | Activo / Inactivo | success / neutral |
+| Appointment | Programada | info |
+| Appointment | En curso | warning |
+| Appointment | Completada | success |
+| Appointment | Cancelada | neutral |
+| Appointment | No asistió | danger |
 
 ---
 
@@ -1194,4 +1220,4 @@ Proposed by the author and approved in review. They are final.
 | Landing page redesign | Deferred. Section 9.10 will define marketing surfaces when it starts |
 | Chart series 4 to 6 | Not contrast-tested against both surfaces |
 | Muted text on hues in dark theme | Derived value not measured |
-| Demo-only features | These ship in the UI with example data and are marked with a "Demo" tag; their backend and real implementation are pending: appointments (client booking wizard and veterinarian agenda), daily care plan, weight curve, vaccine card, minimum stock and inventory alerts, dashboard period selector with sales, profit and occupancy charts, global search and notifications. Replenishment orders and the live waiting room are out of scope |
+| Demo-only features | Appointments (client booking wizard, scheduled appointments, rescheduling, next appointment, veterinarian agenda, "Resumen del día", "Citas de hoy" and "Esta semana") are real since the appointments feature and no longer carry the "Demo" tag. These ship in the UI with example data and are marked with a "Demo" tag; their backend and real implementation are pending: daily care plan, weight curve, vaccine card, minimum stock and inventory alerts, dashboard period selector with sales, profit and occupancy charts, global search and notifications. Replenishment orders and the live waiting room are out of scope |

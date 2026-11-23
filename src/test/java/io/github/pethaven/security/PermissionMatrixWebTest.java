@@ -1,6 +1,8 @@
 package io.github.pethaven.security;
 
 import io.github.pethaven.controller.AdministratorDashboardController;
+import io.github.pethaven.controller.AppointmentController;
+import io.github.pethaven.controller.ClinicController;
 import io.github.pethaven.controller.DrugController;
 import io.github.pethaven.controller.OwnerController;
 import io.github.pethaven.controller.PetController;
@@ -10,6 +12,8 @@ import io.github.pethaven.entity.Role;
 import io.github.pethaven.security.auth.AuthController;
 import io.github.pethaven.security.auth.AuthService;
 import io.github.pethaven.service.AdministratorDashboardService;
+import io.github.pethaven.service.AppointmentService;
+import io.github.pethaven.service.ClinicService;
 import io.github.pethaven.service.DrugImportService;
 import io.github.pethaven.service.DrugService;
 import io.github.pethaven.service.OwnerService;
@@ -51,6 +55,8 @@ import java.util.stream.Stream;
 @WebMvcTest(controllers = {
         AuthController.class,
         AdministratorDashboardController.class,
+        AppointmentController.class,
+        ClinicController.class,
         DrugController.class,
         OwnerController.class,
         PetController.class,
@@ -69,6 +75,10 @@ public class PermissionMatrixWebTest {
     private AuthService authService;
     @MockitoBean
     private AdministratorDashboardService dashboardService;
+    @MockitoBean
+    private AppointmentService appointmentService;
+    @MockitoBean
+    private ClinicService clinicService;
     @MockitoBean
     private DrugService drugService;
     @MockitoBean
@@ -104,6 +114,20 @@ public class PermissionMatrixWebTest {
                 Arguments.of(HttpMethod.GET, "/api/auth/me", ALL_ROLES),
 
                 Arguments.of(HttpMethod.GET, "/api/administrators/dashboard", Set.of(A)),
+
+                Arguments.of(HttpMethod.GET, "/api/appointments/availability", Set.of(V, O)),
+                Arguments.of(HttpMethod.GET, "/api/appointments/1", Set.of(V, O)),
+                Arguments.of(HttpMethod.PUT, "/api/appointments/1/cancel", Set.of(V, O)),
+                Arguments.of(HttpMethod.PUT, "/api/appointments/1/reschedule", Set.of(V, O)),
+                Arguments.of(HttpMethod.GET, "/api/owners/1/appointments", Set.of(V, O)),
+                Arguments.of(HttpMethod.POST, "/api/owners/1/appointments", Set.of(O)),
+                Arguments.of(HttpMethod.PUT, "/api/appointments/1/start", Set.of(V)),
+                Arguments.of(HttpMethod.PUT, "/api/appointments/1/complete", Set.of(V)),
+                Arguments.of(HttpMethod.PUT, "/api/appointments/1/no-show", Set.of(V)),
+                Arguments.of(HttpMethod.POST, "/api/appointments/1/pet", Set.of(V)),
+                Arguments.of(HttpMethod.GET, "/api/veterinarians/1/appointments", Set.of(V)),
+                Arguments.of(HttpMethod.GET, "/api/veterinarians/1/availability", Set.of(V)),
+                Arguments.of(HttpMethod.POST, "/api/veterinarians/1/appointments", Set.of(V)),
 
                 Arguments.of(HttpMethod.GET, "/api/drugs", Set.of(A, V)),
                 Arguments.of(HttpMethod.GET, "/api/drugs/1", Set.of(A, V)),
@@ -187,6 +211,13 @@ public class PermissionMatrixWebTest {
 
             Assertions.assertThat(status).as(path).isNotIn(401, 403, 404, 405);
         }
+    }
+
+    @Test
+    public void clinicInformation_WithoutAuthentication_IsPublic() throws Exception {
+        int status = mockMvc.perform(request(HttpMethod.GET, "/api/clinic")).andReturn().getResponse().getStatus();
+
+        Assertions.assertThat(status).isNotIn(401, 403, 404, 405);
     }
 
     @Test

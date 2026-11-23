@@ -33,6 +33,10 @@ export interface PetRequest {
   photoUrl: string | null;
 }
 
+// En el API `active: true` significa que la mascota está hospitalizada; `false`, que está en su casa
+// (API.md, «Estados activo/inactivo»). Sus citas las agenda el veterinario, no el dueño.
+export const isHospitalized = (pet: Pick<Pet, 'active'>): boolean => pet.active;
+
 // Límites de peso (kg) y edad (años) que valida el API.
 export const PET_WEIGHT_MIN = 0.1;
 export const PET_WEIGHT_MAX = 120;

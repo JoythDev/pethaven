@@ -1,12 +1,11 @@
 @let current = state();
 @if (current.status === 'error') {
   <section app-card heading="Esta semana">
-    <app-demo-tag title-extra />
     <app-inline-error text="No pudimos cargar tu semana." (retry)="retry.emit()" />
   </section>
 } @else if (current.status === 'ready') {
   <app-block hue="honey" kind="summary">
-    <h2 class="flex items-center text-[13px] leading-[18px] font-extrabold">Esta semana<app-demo-tag /></h2>
+    <h2 class="flex items-center text-[13px] leading-[18px] font-extrabold">Esta semana</h2>
     <p class="mt-1.5 flex items-baseline gap-1.5">
       <span class="font-display text-[28px] leading-7 font-semibold tabular-nums">{{ current.data.total }}</span>
       <span class="text-sm leading-5 font-bold">{{ current.data.total === 1 ? 'cita' : 'citas' }}</span>

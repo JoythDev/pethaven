@@ -9,6 +9,11 @@ import io.github.pethaven.dto.response.VeterinarianResponse;
 import io.github.pethaven.entity.Evolution;
 import io.github.pethaven.exception.IllegalOperationException;
 import io.github.pethaven.exception.ResourceNotFoundException;
+import io.github.pethaven.dto.request.VeterinarianAppointmentRequest;
+import io.github.pethaven.dto.response.AvailabilityDayResponse;
+import io.github.pethaven.entity.AppointmentReason;
+import io.github.pethaven.entity.AppointmentStatus;
+import io.github.pethaven.service.AppointmentService;
 import io.github.pethaven.service.TreatmentService;
 import io.github.pethaven.service.VeterinarianService;
 import org.assertj.core.api.Assertions;
@@ -27,6 +32,7 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
@@ -78,6 +84,9 @@ public class VeterinarianControllerTest {
     private static final String PHOTO_URL_TOO_LONG_MESSAGE = "La URL de la foto no puede superar los 500 caracteres";
 
     private final MockMvc mockMvc;
+
+    @MockitoBean
+    private AppointmentService appointmentService;
 
     @MockitoBean
     private VeterinarianService veterinarianService;
@@ -1079,5 +1088,68 @@ public class VeterinarianControllerTest {
                 .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(VETERINARIAN_NOT_FOUND_MESSAGE))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.path").value("/api/veterinarians/99/treatments"));
         Mockito.verifyNoInteractions(treatmentService);
+    }
+
+    // ---------- Agenda del veterinario ----------
+
+    @Test
+    public void getAppointmentsByVeterinarianId_ValidRange_Returns200() throws Exception {
+        Mockito.when(appointmentService.getAppointmentsByVeterinarianId(1L, LocalDate.of(2026, 11, 23), LocalDate.of(2026, 11, 29)))
+                .thenReturn(List.of(AppointmentControllerTest.appointment(5L, AppointmentStatus.SCHEDULED)));
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/veterinarians/1/appointments")
+                        .param("from", "2026-11-23").param("to", "2026-11-29"))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].id").value(5));
+    }
+
+    @Test
+    public void getAppointmentsByVeterinarianId_InvalidRange_Returns400() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/veterinarians/1/appointments")
+                        .param("from", "2026-11-23").param("to", "2026-11-22"))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("La fecha final no puede ser anterior a la inicial."));
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/veterinarians/1/availability")
+                        .param("from", "2026-11-01").param("to", "2026-12-03"))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("El rango de fechas no puede superar los 31 días."));
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/veterinarians/1/appointments").param("from", "2026-11-23"))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest());
+        Mockito.verifyNoInteractions(appointmentService);
+    }
+
+    @Test
+    public void getVeterinarianAvailability_MaximumRange_Returns200() throws Exception {
+        Mockito.when(appointmentService.getVeterinarianAvailability(1L, LocalDate.of(2026, 11, 1), LocalDate.of(2026, 12, 2)))
+                .thenReturn(List.of(new AvailabilityDayResponse(LocalDate.of(2026, 11, 1), false, List.of())));
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/veterinarians/1/availability")
+                        .param("from", "2026-11-01").param("to", "2026-12-02"))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].open").value(false));
+    }
+
+    @Test
+    public void scheduleForHospitalizedPet_Returns201WithLocation() throws Exception {
+        Mockito.when(appointmentService.scheduleForHospitalizedPet(ArgumentMatchers.eq(1L), ArgumentMatchers.any()))
+                .thenReturn(AppointmentControllerTest.appointment(9L, AppointmentStatus.SCHEDULED));
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/veterinarians/1/appointments").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"petId\":10,\"reason\":\"DISCHARGE\",\"startTime\":\"2026-11-24T11:00:00\"}"))
+                .andExpect(MockMvcResultMatchers.status().isCreated())
+                .andExpect(MockMvcResultMatchers.header().string("Location", "http://localhost/api/appointments/9"));
+        Mockito.verify(appointmentService).scheduleForHospitalizedPet(1L,
+                new VeterinarianAppointmentRequest(10L, AppointmentReason.DISCHARGE, LocalDateTime.of(2026, 11, 24, 11, 0)));
+    }
+
+    @Test
+    public void scheduleForHospitalizedPet_MissingFields_Returns400() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/veterinarians/1/appointments").contentType(MediaType.APPLICATION_JSON)
+                        .content("{}"))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errors.petId").value("El ID de la mascota es obligatorio"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errors.reason").value("El motivo de la cita es obligatorio"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errors.startTime").value("La fecha y hora de la cita es obligatoria"));
+        Mockito.verifyNoInteractions(appointmentService);
     }
 }

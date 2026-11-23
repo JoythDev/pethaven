@@ -1,6 +1,8 @@
 package io.github.pethaven.support;
 
 import io.github.pethaven.entity.Administrator;
+import io.github.pethaven.entity.Appointment;
+import io.github.pethaven.entity.AppointmentReason;
 import io.github.pethaven.entity.Drug;
 import io.github.pethaven.entity.Evolution;
 import io.github.pethaven.entity.Owner;
@@ -78,6 +80,17 @@ public final class RepositoryTestData {
                 .diagnosis("Test diagnosis")
                 .evolution(evolution)
                 .notes("Test notes")
+                .build();
+    }
+
+    public static Appointment appointment(Owner owner, Pet pet, Veterinarian veterinarian, LocalDateTime start) {
+        return Appointment.builder()
+                .owner(owner)
+                .pet(pet)
+                .veterinarian(veterinarian)
+                .startTime(start)
+                .reason(AppointmentReason.CONTROL)
+                .createdAt(start.minusDays(1))
                 .build();
     }
 

@@ -2,12 +2,14 @@ package io.github.pethaven.security;
 
 import io.github.pethaven.dto.request.OwnerRequest;
 import io.github.pethaven.dto.request.VeterinarianRequest;
+import io.github.pethaven.entity.Appointment;
 import io.github.pethaven.entity.Drug;
 import io.github.pethaven.entity.Owner;
 import io.github.pethaven.entity.Pet;
 import io.github.pethaven.entity.Role;
 import io.github.pethaven.entity.Treatment;
 import io.github.pethaven.entity.Veterinarian;
+import io.github.pethaven.repository.AppointmentRepository;
 import io.github.pethaven.repository.DrugRepository;
 import io.github.pethaven.repository.OwnerRepository;
 import io.github.pethaven.repository.PetRepository;
@@ -64,6 +66,8 @@ public class OwnershipAccessIntegrationTest {
     private TreatmentRepository treatmentRepository;
     @Autowired
     private DrugRepository drugRepository;
+    @Autowired
+    private AppointmentRepository appointmentRepository;
 
     private Owner owner;
     private Owner otherOwner;
@@ -74,6 +78,7 @@ public class OwnershipAccessIntegrationTest {
     private Treatment treatmentByVet;
     private Treatment treatmentByOtherVet;
     private Drug drug;
+    private Appointment appointment;
 
     @BeforeEach
     public void setUp() {
@@ -93,6 +98,8 @@ public class OwnershipAccessIntegrationTest {
                 .unitsAvailable(10)
                 .unitsSold(0)
                 .build());
+        appointment = appointmentRepository.save(
+                RepositoryTestData.appointment(owner, pet, vet, LocalDateTime.now().plusDays(3).withHour(9).withMinute(0).withSecond(0).withNano(0)));
     }
 
     // ---------- Dueño: solo su perfil y sus mascotas ----------
@@ -236,6 +243,110 @@ public class OwnershipAccessIntegrationTest {
         expectDenied(addDrug(treatmentByOtherVet.getId()), asVet(vet));
     }
 
+    // ---------- Citas: el dueño las suyas, el veterinario las que tiene asignadas ----------
+
+    @Test
+    public void owner_ReadsOwnAppointments_IsAllowed() throws Exception {
+        perform(MockMvcRequestBuilders.get("/api/appointments/{id}", appointment.getId()), asOwner(owner))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+        perform(MockMvcRequestBuilders.get("/api/owners/{id}/appointments", owner.getId()), asOwner(owner))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].id").value(appointment.getId()));
+    }
+
+    @Test
+    public void owner_ReadsOrChangesAnotherOwnersAppointment_Returns403() throws Exception {
+        expectDenied(MockMvcRequestBuilders.get("/api/appointments/{id}", appointment.getId()), asOwner(otherOwner));
+        expectDenied(MockMvcRequestBuilders.put("/api/appointments/{id}/cancel", appointment.getId()), asOwner(otherOwner));
+        expectDenied(reschedule(appointment.getId()), asOwner(otherOwner));
+        expectDenied(MockMvcRequestBuilders.get("/api/owners/{id}/appointments", owner.getId()), asOwner(otherOwner));
+    }
+
+    @Test
+    public void owner_BooksInAnotherOwnersName_Returns403() throws Exception {
+        expectDenied(book(owner.getId()), asOwner(otherOwner));
+    }
+
+    @Test
+    public void owner_BooksInOwnName_PassesAuthorization() throws Exception {
+        // The booking may still be refused by business rules (409 for the slot or the pet), never by access.
+        int status = perform(book(owner.getId()), asOwner(owner)).andReturn().getResponse().getStatus();
+        org.assertj.core.api.Assertions.assertThat(status).isNotEqualTo(403);
+    }
+
+    @Test
+    public void owner_CancelsOwnAppointment_IsAllowed() throws Exception {
+        perform(MockMvcRequestBuilders.put("/api/appointments/{id}/cancel", appointment.getId()), asOwner(owner))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("CANCELLED"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.cancelledBy").value("OWNER"));
+    }
+
+    @Test
+    public void veterinarian_ReadsAndCancelsAssignedAppointment_IsAllowed() throws Exception {
+        perform(MockMvcRequestBuilders.get("/api/appointments/{id}", appointment.getId()), asVet(vet))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+        perform(MockMvcRequestBuilders.put("/api/appointments/{id}/cancel", appointment.getId()), asVet(vet))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.cancelledBy").value("VETERINARIAN"));
+    }
+
+    @Test
+    public void veterinarian_ReadsOrChangesAnotherVeterinariansAppointment_Returns403() throws Exception {
+        expectDenied(MockMvcRequestBuilders.get("/api/appointments/{id}", appointment.getId()), asVet(otherVet));
+        expectDenied(MockMvcRequestBuilders.put("/api/appointments/{id}/cancel", appointment.getId()), asVet(otherVet));
+        expectDenied(reschedule(appointment.getId()), asVet(otherVet));
+    }
+
+    @Test
+    public void veterinarian_StartsOrClosesAnotherVeterinariansAppointment_Returns403() throws Exception {
+        expectDenied(MockMvcRequestBuilders.put("/api/appointments/{id}/start", appointment.getId()), asVet(otherVet));
+        expectDenied(MockMvcRequestBuilders.put("/api/appointments/{id}/no-show", appointment.getId()), asVet(otherVet));
+        expectDenied(MockMvcRequestBuilders.put("/api/appointments/{id}/complete", appointment.getId())
+                .contentType(MediaType.APPLICATION_JSON).content("{}"), asVet(otherVet));
+        expectDenied(MockMvcRequestBuilders.post("/api/appointments/{id}/pet", appointment.getId())
+                .contentType(MediaType.APPLICATION_JSON).content("""
+                        {"name":"Kira","ownerId":%d,"species":"CAT","breed":"Criollo","age":2,"weight":3.4}
+                        """.formatted(owner.getId())), asVet(otherVet));
+    }
+
+    @Test
+    public void veterinarian_StartsAssignedAppointment_PassesAuthorization() throws Exception {
+        // The start may still be refused by business rules (409 if it is not today), never by access.
+        int status = perform(MockMvcRequestBuilders.put("/api/appointments/{id}/start", appointment.getId()), asVet(vet))
+                .andReturn().getResponse().getStatus();
+        org.assertj.core.api.Assertions.assertThat(status).isNotEqualTo(403);
+    }
+
+    @Test
+    public void veterinarian_ReadsOwnAgenda_IsAllowedAndAnotherVeterinariansAgenda_Returns403() throws Exception {
+        String from = LocalDateTime.now().toLocalDate().toString();
+        String to = LocalDateTime.now().toLocalDate().plusDays(6).toString();
+        perform(MockMvcRequestBuilders.get("/api/veterinarians/{id}/appointments", vet.getId()).param("from", from).param("to", to),
+                asVet(vet))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].id").value(appointment.getId()));
+        expectDenied(MockMvcRequestBuilders.get("/api/veterinarians/{id}/appointments", otherVet.getId())
+                .param("from", from).param("to", to), asVet(vet));
+        expectDenied(MockMvcRequestBuilders.get("/api/veterinarians/{id}/availability", otherVet.getId())
+                .param("from", from).param("to", to), asVet(vet));
+    }
+
+    @Test
+    public void veterinarian_SchedulesInAnotherVeterinariansName_Returns403() throws Exception {
+        expectDenied(MockMvcRequestBuilders.post("/api/veterinarians/{id}/appointments", otherVet.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"petId":%d,"reason":"BRIEFING","startTime":"%s"}
+                        """.formatted(pet.getId(), LocalDateTime.now().plusDays(2).withHour(9).withMinute(0).withSecond(0).withNano(0))),
+                asVet(vet));
+    }
+
+    @Test
+    public void anyone_ReadsAppointmentThatDoesNotExist_Returns403() throws Exception {
+        expectDenied(MockMvcRequestBuilders.get("/api/appointments/{id}", 999_999L), asOwner(owner));
+    }
+
     // ---------- Helpers ----------
 
     private Owner createOwner(String document, String email) {
@@ -289,6 +400,21 @@ public class OwnershipAccessIntegrationTest {
                 {"petId":%d,"veterinarianId":%d,"weight":12.4,"diagnosis":"Otitis","notes":"Notas",
                  "drugs":[{"drugId":%d,"units":1}]}
                 """.formatted(pet.getId(), veterinarianId, drug.getId()));
+    }
+
+    private MockHttpServletRequestBuilder book(Long ownerId) {
+        return MockMvcRequestBuilders.post("/api/owners/{id}/appointments", ownerId).contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"provisionalPet":{"name":"Kira","species":"CAT"},"startTime":"%s"}
+                        """.formatted(LocalDateTime.now().plusDays(3).withHour(10).withMinute(0).withSecond(0).withNano(0)));
+    }
+
+    private static MockHttpServletRequestBuilder reschedule(Long appointmentId) {
+        return MockMvcRequestBuilders.put("/api/appointments/{id}/reschedule", appointmentId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"startTime":"%s"}
+                        """.formatted(LocalDateTime.now().plusDays(4).withHour(9).withMinute(0).withSecond(0).withNano(0)));
     }
 
     private MockHttpServletRequestBuilder addDrug(Long treatmentId) {

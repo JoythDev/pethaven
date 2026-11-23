@@ -2,51 +2,63 @@ import { Component, DestroyRef, ElementRef, computed, effect, inject, signal, un
 import { takeUntilDestroyed, toSignal } from '@angular/core/rxjs-interop';
 import { FormsModule } from '@angular/forms';
 import { ActivatedRoute, RouterLink } from '@angular/router';
-import { LucideCheck } from '@lucide/angular';
+import { LucideCalendarClock, LucideCheck, LucidePhone } from '@lucide/angular';
+import { ConfirmationService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { InputTextModule } from 'primeng/inputtext';
+import { MessageModule } from 'primeng/message';
 import { SelectModule } from 'primeng/select';
+import { TagModule } from 'primeng/tag';
 import { TextareaModule } from 'primeng/textarea';
-import { BehaviorSubject, combineLatest, finalize, map, of, switchMap } from 'rxjs';
+import { BehaviorSubject, EMPTY, Observable, Subject, catchError, combineLatest, finalize, forkJoin, map, of, switchMap } from 'rxjs';
 
 import { appointmentWhen } from '../../../core/client-home/client-home';
 import {
-  BOOKING_DURATION,
   BOOKING_REASONS,
   BOOKING_STEPS,
   BookingDraft,
+  DATE_STEP,
   EMPTY_DRAFT,
   LAST_STEP,
+  MIN_NOTICE_HOURS,
   NEW_PET,
+  NEW_PET_NAME_MAX,
+  NOTES_MAX,
+  apiDateTime,
   bookableDays,
+  bookingRequest,
+  canChange,
   confirmationText,
   dayLabel,
+  draftReasonLabel,
   isStepValid,
   longDayLabel,
-  newPetFrom,
+  petBlocker,
   petPreselection,
+  reasonLabel,
+  rescheduleDraft,
   slotOptions,
-  vetForPet,
-  visibleUpcoming,
+  splitAppointments,
   withDay,
 } from '../../../core/client-appointments/client-appointments';
 import { ownerIdParam } from '../../../core/client-pets/owner-route';
-import { atTime } from '../../../core/demo/demo-date';
+import { parseRouteId } from '../../../core/http/route-id';
 import { ViewState, toViewState } from '../../../core/http/view-state';
 import { NotificationService } from '../../../core/notifications/notification.service';
+import { appointmentStatus } from '../../../core/status/appointment-status';
 import { coatKitFor, speciesSticker } from '../../../core/stickers/stickers';
+import { CLOCK } from '../../../core/time/clock';
 import { skeletonVisible } from '../../../core/ui/skeleton-timing';
-import { Appointment } from '../../../models/demo/appointment.model';
-import { OwnerContext } from '../../../models/demo/owner-context.model';
+import { Appointment, AvailabilityDay } from '../../../models/appointment.model';
+import { Clinic } from '../../../models/clinic.model';
 import { Pet, Species } from '../../../models/pet.model';
-import { AuthService } from '../../../services/auth.service';
-import { DemoAppointmentsService } from '../../../services/demo/demo-appointments.service';
-import { DEMO_NOW } from '../../../services/demo/demo-latency';
+import { AppointmentService } from '../../../services/appointment.service';
+import { ClinicService } from '../../../services/clinic.service';
+import { PetService } from '../../../services/pet.service';
 import { AvatarComponent } from '../../shared/avatar/avatar.component';
 import { BlockComponent } from '../../shared/block/block.component';
 import { CardComponent } from '../../shared/card/card.component';
 import { DefinitionListComponent } from '../../shared/definition-list/definition-list.component';
-import { DemoTagComponent } from '../../shared/demo-tag/demo-tag.component';
 import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
 import { FormFieldComponent } from '../../shared/form-field/form-field.component';
 import { InlineErrorComponent } from '../../shared/inline-error/inline-error.component';
@@ -55,9 +67,17 @@ import { PageHeaderComponent } from '../../shared/page-header/page-header.compon
 import { SkeletonComponent } from '../../shared/skeleton/skeleton.component';
 import { StickerComponent } from '../../shared/sticker/sticker.component';
 
+// Lo que necesita la página: mascotas, citas y disponibilidad del dueño, y el horario de la clínica.
+interface BookingContext {
+  pets: Pet[];
+  appointments: Appointment[];
+  availability: AvailabilityDay[];
+  clinic: Clinic;
+}
+
 const LOADING = { status: 'loading' } as const;
-const OWNER_NOT_FOUND: ViewState<OwnerContext> = { status: 'error', message: 'Dueño no encontrado.' };
-const UPCOMING_LIMIT = 4;
+const OWNER_NOT_FOUND: ViewState<BookingContext> = { status: 'error', message: 'Dueño no encontrado.' };
+const PAST_LIMIT = 5;
 
 const STEP_HEADINGS = ['¿Para quién es la cita?', '¿Cuál es el motivo?', 'Elige el día', 'Revisa antes de confirmar'] as const;
 
@@ -69,10 +89,11 @@ const PICK_CLASS =
   'disabled:cursor-not-allowed disabled:opacity-40 disabled:line-through disabled:hover:bg-card';
 
 /**
- * «Agendar cita» del cliente (demo, S3): asistente de cuatro pasos (mascota, motivo, fecha y hora,
- * confirmar) con resumen y «Citas agendadas». Las mascotas son reales; las citas y la disponibilidad
- * salen del servicio demo y lo agendado vive solo en memoria. S21: el primer paso ofrece «Mascota
- * nueva», que el veterinario registra en la primera visita. `?mascota=<id>` preelige la mascota.
+ * «Agendar cita» del cliente (S16): asistente de cuatro pasos (mascota, motivo, fecha y hora, confirmar)
+ * con resumen, «Citas agendadas» e «Historial de citas». Las franjas libres y el veterinario los decide el
+ * API. Una mascota nueva solo pide nombre y especie (primera consulta). Reprogramar reutiliza el asistente
+ * desde el paso de fecha; cancelar pide confirmación. `?mascota=<id>` preelige la mascota y
+ * `?reprogramar=<id>` abre la reprogramación de esa cita.
  */
 @Component({
   selector: 'app-cliente-citas',
@@ -81,14 +102,17 @@ const PICK_CLASS =
     RouterLink,
     ButtonModule,
     InputTextModule,
+    MessageModule,
     SelectModule,
+    TagModule,
     TextareaModule,
+    LucideCalendarClock,
     LucideCheck,
+    LucidePhone,
     AvatarComponent,
     BlockComponent,
     CardComponent,
     DefinitionListComponent,
-    DemoTagComponent,
     EmptyStateComponent,
     FormFieldComponent,
     InlineErrorComponent,
@@ -101,26 +125,27 @@ const PICK_CLASS =
 })
 export class CitasComponent {
   private readonly route = inject(ActivatedRoute);
-  private readonly auth = inject(AuthService);
-  private readonly appointments = inject(DemoAppointmentsService);
+  private readonly petService = inject(PetService);
+  private readonly appointmentService = inject(AppointmentService);
+  private readonly clinicService = inject(ClinicService);
   private readonly notifications = inject(NotificationService);
-  private readonly clock = inject(DEMO_NOW);
+  private readonly confirmation = inject(ConfirmationService);
+  private readonly clock = inject(CLOCK);
   private readonly destroyRef = inject(DestroyRef);
 
   private readonly ownerId$ = ownerIdParam(this.route);
   private readonly ownerId = toSignal(this.ownerId$, { initialValue: null });
-  private readonly mascotaParam = toSignal(this.route.queryParamMap.pipe(map((params) => params.get('mascota'))), {
-    initialValue: null,
-  });
+  private readonly query = toSignal(this.route.queryParamMap, { initialValue: null });
   private readonly retry$ = new BehaviorSubject<void>(undefined);
+  private readonly refresh$ = new Subject<number>();
 
   protected readonly state = toSignal(
     combineLatest([this.ownerId$, this.retry$]).pipe(
       switchMap(([ownerId]) =>
-        ownerId === null ? of(OWNER_NOT_FOUND) : this.appointments.loadOwnerContext(ownerId).pipe(toViewState<OwnerContext>()),
+        ownerId === null ? of(OWNER_NOT_FOUND) : this.loadContext(ownerId).pipe(toViewState<BookingContext>()),
       ),
     ),
-    { initialValue: LOADING as ViewState<OwnerContext> },
+    { initialValue: LOADING as ViewState<BookingContext> },
   );
   protected readonly skeleton = skeletonVisible(computed(() => this.state().status === 'loading'));
 
@@ -128,19 +153,26 @@ export class CitasComponent {
     const state = this.state();
     return state.status === 'ready' ? state.data : null;
   });
-  // Una mascota inactiva no se agenda.
-  protected readonly pets = computed(() => (this.context()?.pets ?? []).filter((pet) => pet.active));
+  // Citas y disponibilidad recargadas tras agendar, reprogramar o cancelar, sin volver al esqueleto.
+  private readonly refreshed = signal<Pick<BookingContext, 'appointments' | 'availability'> | null>(null);
+  private readonly appointments = computed(() => this.refreshed()?.appointments ?? this.context()?.appointments ?? []);
+  private readonly availability = computed(() => this.refreshed()?.availability ?? this.context()?.availability ?? []);
+  protected readonly clinic = computed(() => this.context()?.clinic ?? null);
 
   protected readonly step = signal(0);
   protected readonly draft = signal<BookingDraft>(EMPTY_DRAFT);
   protected readonly saving = signal(false);
   protected readonly confirmed = signal<Appointment | null>(null);
-  private readonly now = signal(this.clock());
+  // Cita que se está reprogramando; null mientras se agenda una nueva.
+  protected readonly rescheduling = signal<Appointment | null>(null);
+  protected readonly now = signal(this.clock());
 
   protected readonly steps = BOOKING_STEPS;
   protected readonly reasons = BOOKING_REASONS;
-  protected readonly duration = BOOKING_DURATION;
   protected readonly newPet = NEW_PET;
+  protected readonly newPetNameMax = NEW_PET_NAME_MAX;
+  protected readonly notesMax = NOTES_MAX;
+  protected readonly minNoticeHours = MIN_NOTICE_HOURS;
   protected readonly pickClass = PICK_CLASS;
   protected readonly speciesOptions = [
     { label: 'Perro', value: Species.DOG },
@@ -151,8 +183,18 @@ export class CitasComponent {
   protected readonly stepHeading = computed(() => STEP_HEADINGS[this.step()]);
   protected readonly valid = computed(() => isStepValid(this.step(), this.draft()));
   protected readonly isNewPet = computed(() => this.draft().pet === NEW_PET);
+  // Al reprogramar la mascota y el motivo no cambian: el asistente empieza en la fecha.
+  protected readonly firstStep = computed(() => (this.rescheduling() ? DATE_STEP : 0));
 
-  protected readonly selectedPet = computed<Pet | null>(() => this.pets().find((pet) => pet.id === this.draft().pet) ?? null);
+  // Cada mascota con el motivo por el que no se puede agendar (hospitalizada o con cita activa).
+  protected readonly petOptions = computed(() =>
+    (this.context()?.pets ?? []).map((pet) => ({ pet, blocker: petBlocker(pet, this.appointments(), this.now()) })),
+  );
+  private readonly bookablePets = computed(() => this.petOptions().filter((option) => !option.blocker).map((option) => option.pet));
+
+  protected readonly selectedPet = computed<Pet | null>(
+    () => (this.context()?.pets ?? []).find((pet) => pet.id === this.draft().pet) ?? null,
+  );
   protected readonly petName = computed(() => {
     const pet = this.selectedPet();
     if (pet) {
@@ -160,61 +202,47 @@ export class CitasComponent {
     }
     return this.isNewPet() ? this.draft().newPetName.trim() || 'Mascota nueva' : null;
   });
-  protected readonly reason = computed(() => BOOKING_REASONS.find((r) => r.kind === this.draft().kind) ?? null);
+  protected readonly reasonText = computed(() => draftReasonLabel(this.draft()));
 
-  protected readonly days = computed(() => bookableDays(this.now()));
+  protected readonly days = computed(() => bookableDays(this.availability()));
   protected readonly selectedDay = computed(() => this.days().find((day) => day.key === this.draft().day) ?? null);
-  private readonly start = computed(() => {
-    const day = this.selectedDay();
-    const time = this.draft().time;
-    return day && time ? atTime(day.date, time) : null;
-  });
-
-  // Veterinaria de la cita (demo): la que atendió a la mascota o la primera que el dueño conoce.
-  protected readonly vet = computed(() => {
-    const context = this.context();
-    const petId = this.selectedPet()?.id ?? null;
-    return vetForPet(petId, context?.petTreatments.flatMap((entry) => entry.treatments) ?? [], context?.vets ?? []);
-  });
-
   protected readonly slots = computed(() => {
     const day = this.selectedDay();
-    if (!day) {
-      return [];
-    }
-    return slotOptions(day.date, this.appointments.availableSlotsFrom(this.vet(), this.context()?.pets ?? [], day.date));
+    const clinic = this.clinic();
+    return day && clinic ? slotOptions(day, clinic) : [];
   });
-  // Un día abierto sin franjas libres (por ejemplo, hoy ya tarde).
+  // Un día abierto sin franjas libres (por ejemplo, hoy ya tarde o con la agenda llena).
   protected readonly dayFull = computed(() => this.slots().length > 0 && this.slots().every((slot) => slot.disabled));
 
+  protected readonly veterinarianText = computed(() => {
+    const appointment = this.rescheduling();
+    return appointment ? `${appointment.veterinarianName}, si sigue libre` : 'Lo asigna la clínica al confirmar';
+  });
+
   protected readonly reviewItems = computed(() => {
-    const start = this.start();
+    const day = this.selectedDay();
     return [
       { term: 'Mascota', value: this.petName() },
-      { term: 'Motivo', value: this.reason()?.label ?? null },
-      { term: 'Fecha', value: start ? longDayLabel(start) : null },
+      { term: 'Motivo', value: this.reasonText() },
+      { term: 'Fecha', value: day ? longDayLabel(day.date) : null },
       { term: 'Hora', value: this.draft().time },
-      { term: 'Veterinaria', value: this.vet().name },
+      { term: 'Veterinario', value: this.veterinarianText() },
     ];
   });
 
-  // «Citas agendadas»: se recalcula sola al agendar porque el servicio guarda las citas en una señal.
-  protected readonly upcoming = computed(() => {
-    const context = this.context();
-    if (!context) {
-      return [];
-    }
-    const { upcoming } = this.appointments.ownerAppointmentsFrom(context.pets, context.vets, this.ownerId() ?? undefined);
-    return visibleUpcoming(upcoming, new Set(this.appointments.booked().map((a) => a.id)), UPCOMING_LIMIT);
-  });
+  private readonly split = computed(() => splitAppointments(this.appointments(), this.now()));
+  protected readonly upcoming = computed(() => this.split().upcoming);
+  protected readonly past = computed(() => this.split().past.slice(0, PAST_LIMIT));
 
+  private readonly rescheduledDone = signal(false);
+  protected readonly confirmationHeading = computed(() => (this.rescheduledDone() ? 'Cita reprogramada' : 'Cita agendada'));
   protected readonly confirmationText = computed(() => {
     const appointment = this.confirmed();
-    return appointment ? confirmationText(appointment.petName, appointment.start) : '';
+    return appointment ? confirmationText(appointment) : '';
   });
   protected readonly confirmedSticker = computed(() => {
     const appointment = this.confirmed();
-    return appointment && appointment.petId > 0 ? speciesSticker(appointment.species) : 'paw';
+    return appointment && appointment.petId !== null ? speciesSticker(appointment.species) : 'paw';
   });
   protected readonly confirmedKit = computed(() => coatKitFor(this.confirmed()?.petId ?? 1));
 
@@ -223,19 +251,62 @@ export class CitasComponent {
   private readonly heading = viewChild<ElementRef<HTMLElement>>('stepTitle');
 
   protected readonly dayLabel = dayLabel;
+  protected readonly reasonLabel = reasonLabel;
+  protected readonly status = appointmentStatus;
+  protected readonly canChange = (appointment: Appointment) => canChange(appointment, this.now());
+
+  // `?mascota=` y `?reprogramar=` se atienden una sola vez, cuando ya están los datos.
+  private mascotaParamHandled = false;
+  private rescheduleParamHandled = false;
 
   constructor() {
     // Preelige la mascota de `?mascota=` una sola vez: «Agendar otra» deja el asistente en blanco.
     effect(() => {
-      const id = petPreselection(this.mascotaParam(), this.pets());
-      if (id !== null) {
-        untracked(() => this.draft.update((draft) => (draft.pet === null ? { ...draft, pet: id } : draft)));
+      const id = petPreselection(this.query()?.get('mascota') ?? null, this.bookablePets());
+      if (id !== null && !this.mascotaParamHandled) {
+        this.mascotaParamHandled = true;
+        untracked(() => this.draft.update((draft) => (draft.pet === null && !this.rescheduling() ? { ...draft, pet: id } : draft)));
+      }
+    });
+    // Recarga citas y disponibilidad tras cada cambio; una recarga nueva descarta la anterior.
+    this.refresh$
+      .pipe(
+        switchMap((ownerId) =>
+          forkJoin({
+            appointments: this.appointmentService.getByOwnerId(ownerId),
+            availability: this.appointmentService.getAvailability(),
+          }).pipe(
+            catchError((error: unknown) => {
+              this.notifications.error('No se pudieron actualizar tus citas', error);
+              return EMPTY;
+            }),
+          ),
+        ),
+        takeUntilDestroyed(),
+      )
+      .subscribe((data) => this.refreshed.set(data));
+    // Abre la reprogramación de `?reprogramar=` (por ejemplo, desde «Próxima cita» del Inicio).
+    effect(() => {
+      const id = parseRouteId(this.query()?.get('reprogramar') ?? null);
+      const upcoming = this.upcoming();
+      if (id === null || this.rescheduleParamHandled || !this.context()) {
+        return;
+      }
+      this.rescheduleParamHandled = true;
+      const appointment = upcoming.find((candidate) => candidate.id === id);
+      if (appointment && canChange(appointment, this.now())) {
+        untracked(() => this.startReschedule(appointment));
       }
     });
   }
 
   protected retry(): void {
     this.retry$.next();
+  }
+
+  // Un paso ya hecho; el de motivo no cuenta para una mascota nueva, que se lo salta.
+  protected isDone(index: number): boolean {
+    return index < this.step() && !(index === 1 && this.isNewPet() && !this.rescheduling());
   }
 
   protected speciesLabel(species: Species): string {
@@ -246,8 +317,13 @@ export class CitasComponent {
     return coatKitFor(pet.id);
   }
 
+  // Avatar de una cita: la mascota registrada o, si aún no lo está, un id propio de la cita.
+  protected avatarId(appointment: Appointment): number {
+    return appointment.petId ?? -appointment.id;
+  }
+
   protected when(appointment: Appointment): string {
-    return appointmentWhen(appointment.start, this.clock());
+    return appointmentWhen(appointment.start, this.now());
   }
 
   protected valueOf(event: Event): string {
@@ -263,8 +339,9 @@ export class CitasComponent {
   }
 
   protected back(): void {
-    if (this.step() > 0 && !this.saving()) {
-      this.goTo(this.step() - 1);
+    if (this.step() > this.firstStep() && !this.saving()) {
+      // Una mascota nueva no tiene paso de motivo.
+      this.goTo(this.step() === DATE_STEP && this.isNewPet() && !this.rescheduling() ? 0 : this.step() - 1);
     }
   }
 
@@ -273,7 +350,7 @@ export class CitasComponent {
       return;
     }
     if (this.step() < LAST_STEP) {
-      this.goTo(this.step() + 1);
+      this.goTo(this.step() === 0 && this.isNewPet() ? DATE_STEP : this.step() + 1);
     } else {
       this.confirm();
     }
@@ -282,17 +359,54 @@ export class CitasComponent {
   protected reset(): void {
     this.draft.set(EMPTY_DRAFT);
     this.confirmed.set(null);
+    this.rescheduling.set(null);
+    this.rescheduledDone.set(false);
     this.now.set(this.clock());
     this.goTo(0);
   }
 
-  protected reschedule(): void {
-    this.notifications.success('Te enviamos tres horarios alternativos', '');
+  protected startReschedule(appointment: Appointment): void {
+    this.confirmed.set(null);
+    this.rescheduledDone.set(false);
+    this.rescheduling.set(appointment);
+    this.draft.set(rescheduleDraft(appointment));
+    this.goTo(DATE_STEP);
+  }
+
+  protected cancel(appointment: Appointment): void {
+    this.confirmation.confirm({
+      header: `¿Cancelar la cita de ${appointment.petName}?`,
+      message: `La franja del ${this.when(appointment).toLowerCase()} quedará libre para otra persona.`,
+      acceptLabel: 'Cancelar cita',
+      rejectLabel: 'Mantener cita',
+      rejectButtonProps: { outlined: true, severity: 'secondary' },
+      acceptButtonProps: { severity: 'danger' },
+      accept: () => this.doCancel(appointment),
+    });
+  }
+
+  private doCancel(appointment: Appointment): void {
+    this.appointmentService
+      .cancel(appointment.id)
+      .pipe(takeUntilDestroyed(this.destroyRef))
+      .subscribe({
+        next: () => {
+          this.notifications.success('Cita cancelada', `La cita de ${appointment.petName} quedó cancelada.`);
+          if (this.rescheduling()?.id === appointment.id) {
+            this.reset();
+          }
+          this.refresh();
+        },
+        error: (error: unknown) => {
+          this.notifications.error('No se pudo cancelar la cita', error);
+          this.refresh();
+        },
+      });
   }
 
   private goTo(step: number): void {
     this.step.set(step);
-    if (step === 2) {
+    if (step === DATE_STEP) {
       this.now.set(this.clock());
     }
     // El foco sigue al contenido nuevo del paso.
@@ -300,33 +414,67 @@ export class CitasComponent {
   }
 
   private confirm(): void {
+    const ownerId = this.ownerId();
     const draft = this.draft();
-    const start = this.start();
-    const kind = draft.kind;
-    const pet = draft.pet === NEW_PET ? this.newPetFor(draft) : this.selectedPet();
-    if (!start || !kind || !pet) {
+    const appointment = this.rescheduling();
+    if (ownerId === null || !draft.day || !draft.time) {
       return;
     }
+    let request$: Observable<Appointment>;
+    if (appointment) {
+      request$ = this.appointmentService.reschedule(appointment.id, {
+        startTime: apiDateTime(draft.day, draft.time),
+        // Texto vacío (no null): el API conserva las notas con null y las borra con un texto en blanco.
+        ownerNotes: draft.notes.trim(),
+      });
+    } else {
+      const request = bookingRequest(draft);
+      if (!request) {
+        return;
+      }
+      request$ = this.appointmentService.book(ownerId, request);
+    }
     this.saving.set(true);
-    this.appointments
-      .book({ pet, veterinarian: this.vet(), kind, start })
+    request$
       .pipe(
         finalize(() => this.saving.set(false)),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe({
-        next: (appointment) => this.confirmed.set(appointment),
+        next: (result) => {
+          this.rescheduledDone.set(appointment !== null);
+          this.rescheduling.set(null);
+          this.confirmed.set(result);
+          this.refresh();
+        },
         error: (error: unknown) => {
-          // La franja se ocupó mientras tanto: se vuelve a elegir la hora.
-          this.notifications.error('No se pudo agendar la cita', error);
+          // La franja se ocupó o cambió la situación: se vuelve a elegir la hora con datos frescos.
+          this.notifications.error(appointment ? 'No se pudo reprogramar la cita' : 'No se pudo agendar la cita', error);
           this.set({ time: null });
-          this.goTo(2);
+          this.refresh();
+          this.goTo(DATE_STEP);
         },
       });
   }
 
-  private newPetFor(draft: BookingDraft): Pet {
-    const name = this.auth.user()?.name ?? this.context()?.pets[0]?.ownerName ?? '';
-    return newPetFrom(draft, { id: this.ownerId() ?? 0, name });
+  private refresh(): void {
+    const ownerId = this.ownerId();
+    if (ownerId === null) {
+      return;
+    }
+    this.now.set(this.clock());
+    this.refresh$.next(ownerId);
+  }
+
+  private loadContext(ownerId: number): Observable<BookingContext> {
+    return forkJoin({
+      pets: this.petService.getByOwnerId(ownerId),
+      appointments: this.appointmentService.getByOwnerId(ownerId),
+      availability: this.appointmentService.getAvailability(),
+      clinic: this.clinicService.getClinic(),
+    }).pipe(map((context) => {
+      this.refreshed.set(null);
+      return context;
+    }));
   }
 }

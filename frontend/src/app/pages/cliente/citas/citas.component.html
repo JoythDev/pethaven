@@ -1,4 +1,4 @@
-<app-page-header heading="Agendar cita" subtitle="Cuatro pasos, menos de un minuto" [demo]="true" />
+<app-page-header heading="Agendar cita" subtitle="Cuatro pasos, menos de un minuto" />
 
 @let current = state();
 
@@ -19,7 +19,7 @@
       <section app-card>
         @if (confirmed()) {
           <div role="status">
-            <app-empty-state heading="Cita agendada" [description]="confirmationText()">
+            <app-empty-state [heading]="confirmationHeading()" [description]="confirmationText()">
               <app-sticker sticker [name]="confirmedSticker()" [kit]="confirmedKit()" [width]="130" />
               <div action class="flex flex-wrap justify-center gap-2">
                 <a pButton size="small" [routerLink]="homeLink()" label="Volver al inicio"></a>
@@ -28,6 +28,16 @@
             </app-empty-state>
           </div>
         } @else {
+          @if (rescheduling(); as appointment) {
+            <p-message severity="info" styleClass="mb-4 w-full">
+              <ng-template #icon><svg lucideCalendarClock [size]="18" aria-hidden="true"></svg></ng-template>
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <span>Reprogramas la cita de {{ reasonLabel(appointment).toLowerCase() }} de {{ appointment.petName }} del {{ when(appointment).toLowerCase() }}.</span>
+                <button pButton type="button" size="small" severity="secondary" [outlined]="true" label="Descartar cambio" (click)="reset()"></button>
+              </div>
+            </p-message>
+          }
+
           <ol class="mb-4 flex items-center gap-2 overflow-x-auto" aria-label="Pasos para agendar la cita">
             @for (label of steps; track label; let i = $index) {
               @if (i > 0) {
@@ -40,9 +50,9 @@
               >
                 <span
                   class="grid size-[26px] shrink-0 place-items-center rounded-full text-[12.5px]"
-                  [class]="i === step() ? 'bg-accent text-on-accent' : i < step() ? 'bg-accent-soft text-accent-text' : 'bg-sunken'"
+                  [class]="i === step() ? 'bg-accent text-on-accent' : isDone(i) ? 'bg-accent-soft text-accent-text' : 'bg-sunken'"
                 >
-                  @if (i < step()) {
+                  @if (isDone(i)) {
                     <svg lucideCheck [size]="15" [strokeWidth]="3" aria-hidden="true"></svg>
                     <span class="sr-only">Completado:</span>
                   } @else {
@@ -59,11 +69,22 @@
           @switch (step()) {
             @case (0) {
               <div class="grid grid-cols-[repeat(auto-fill,minmax(128px,1fr))] gap-2.5">
-                @for (pet of pets(); track pet.id) {
-                  <button type="button" [class]="pickClass + ' p-3'" [attr.aria-pressed]="draft().pet === pet.id" (click)="set({ pet: pet.id })">
-                    <app-avatar [id]="pet.id" [name]="pet.name" kind="pet" [species]="pet.species" [photoUrl]="pet.photoUrl" [size]="60" />
-                    <span class="max-w-full truncate">{{ pet.name }}</span>
-                    <span class="max-w-full truncate text-[12.5px] leading-[18px] font-medium text-ink-muted">{{ pet.breed }}</span>
+                @for (option of petOptions(); track option.pet.id) {
+                  <button
+                    type="button"
+                    [class]="pickClass + ' p-3'"
+                    [disabled]="!!option.blocker"
+                    [attr.aria-pressed]="draft().pet === option.pet.id"
+                    [attr.aria-describedby]="option.blocker ? 'pet-blocker-' + option.pet.id : null"
+                    (click)="set({ pet: option.pet.id })"
+                  >
+                    <app-avatar [id]="option.pet.id" [name]="option.pet.name" kind="pet" [species]="option.pet.species" [photoUrl]="option.pet.photoUrl" [size]="60" />
+                    <span class="max-w-full truncate">{{ option.pet.name }}</span>
+                    @if (option.blocker) {
+                      <span [id]="'pet-blocker-' + option.pet.id" class="text-[12.5px] leading-[18px] font-medium text-ink-muted">{{ option.blocker }}</span>
+                    } @else {
+                      <span class="max-w-full truncate text-[12.5px] leading-[18px] font-medium text-ink-muted">{{ option.pet.breed }}</span>
+                    }
                   </button>
                 }
                 <button type="button" [class]="pickClass + ' p-3'" [attr.aria-pressed]="isNewPet()" (click)="set({ pet: newPet })">
@@ -80,7 +101,7 @@
                       pInputText
                       id="new-pet-name"
                       autocomplete="off"
-                      maxlength="100"
+                      [attr.maxlength]="newPetNameMax"
                       placeholder="Por ejemplo, Nube"
                       class="w-full"
                       [ngModel]="draft().newPetName"
@@ -100,19 +121,23 @@
                     />
                   </app-form-field>
                 </div>
-                <p class="mt-2 text-[12.5px] leading-[18px] text-ink-muted">Tu veterinario completará la ficha en la primera visita.</p>
+                <p class="mt-2 text-[12.5px] leading-[18px] text-ink-muted">Será su primera consulta. Tu veterinario completará la ficha en la visita.</p>
               }
             }
 
             @case (1) {
               <div class="grid grid-cols-[repeat(auto-fill,minmax(128px,1fr))] gap-2.5">
-                @for (item of reasons; track item.kind) {
-                  <button type="button" [class]="pickClass + ' p-3'" [attr.aria-pressed]="draft().kind === item.kind" (click)="set({ kind: item.kind })">
+                @for (item of reasons; track item.reason) {
+                  <button type="button" [class]="pickClass + ' p-3'" [attr.aria-pressed]="draft().reason === item.reason" (click)="set({ reason: item.reason })">
                     <app-sticker [name]="item.sticker" [width]="46" />
                     <span>{{ item.label }}</span>
                   </button>
                 }
               </div>
+              <p-message severity="warn" styleClass="mt-3.5 w-full">
+                <ng-template #icon><svg lucidePhone [size]="18" aria-hidden="true"></svg></ng-template>
+                <span>¿Es una urgencia? No esperes una franja: llama a la clínica al {{ clinic()?.phone }} o acércate directamente.</span>
+              </p-message>
             }
 
             @case (2) {
@@ -135,7 +160,7 @@
               <h3 class="mt-4 mb-2.5 text-sm leading-5 font-extrabold text-ink">Horarios disponibles</h3>
               @if (selectedDay()) {
                 @if (dayFull()) {
-                  <p class="text-sm leading-5 text-ink-muted">No quedan horarios libres este día. Prueba con otro.</p>
+                  <p class="mb-2.5 text-sm leading-5 text-ink-muted">No quedan horarios libres este día. Prueba con otro.</p>
                 }
                 <div class="grid grid-cols-[repeat(auto-fill,minmax(84px,1fr))] gap-2.5" role="group" aria-label="Horarios disponibles">
                   @for (slot of slots(); track slot.time) {
@@ -150,6 +175,7 @@
                     </button>
                   }
                 </div>
+                <p class="mt-2.5 text-[12.5px] leading-[18px] text-ink-muted">Se agenda con al menos {{ minNoticeHours }} horas de antelación.</p>
               } @else {
                 <p class="text-sm leading-5 text-ink-muted">Primero elige un día.</p>
               }
@@ -157,12 +183,12 @@
 
             @default {
               <dl app-definition-list class="max-w-[420px]" [items]="reviewItems()"></dl>
-              <app-form-field class="mt-3.5 max-w-[520px]" fieldId="booking-notes" label="Notas para la veterinaria" hint="Opcional. Ayuda a preparar la consulta.">
+              <app-form-field class="mt-3.5 max-w-[520px]" fieldId="booking-notes" label="Notas para tu veterinario" hint="Opcional. Ayuda a preparar la consulta.">
                 <textarea
                   pTextarea
                   id="booking-notes"
                   rows="3"
-                  maxlength="500"
+                  [attr.maxlength]="notesMax"
                   placeholder="Síntomas, cambios de apetito, dudas…"
                   class="w-full"
                   aria-describedby="booking-notes-hint"
@@ -175,13 +201,13 @@
 
           <hr class="my-3 border-0 border-t border-line" />
           <div class="flex flex-wrap items-center gap-2">
-            <button pButton type="button" severity="secondary" [outlined]="true" label="Atrás" [disabled]="step() === 0 || saving()" (click)="back()"></button>
+            <button pButton type="button" severity="secondary" [outlined]="true" label="Atrás" [disabled]="step() === firstStep() || saving()" (click)="back()"></button>
             <button
               pButton
               type="button"
               id="btnContinuar"
               class="ml-auto"
-              [label]="step() === lastStep ? 'Confirmar cita' : 'Continuar'"
+              [label]="step() === lastStep ? (rescheduling() ? 'Confirmar cambio' : 'Confirmar cita') : 'Continuar'"
               [disabled]="!valid()"
               [loading]="saving()"
               (click)="next()"
@@ -191,28 +217,66 @@
       </section>
 
       <section app-card heading="Citas agendadas">
-        <app-demo-tag title-extra />
-        @for (appointment of upcoming(); track appointment.id) {
-          <app-list-item [heading]="appointment.reason + ' de ' + appointment.petName" [subtitle]="when(appointment) + ' · ' + appointment.veterinarianName">
-            <app-avatar leading [id]="appointment.petId" [name]="appointment.petName" kind="pet" [species]="appointment.species" />
-            <button
-              trailing
-              pButton
-              type="button"
-              size="small"
-              severity="secondary"
-              [outlined]="true"
-              label="Reprogramar"
-              [attr.aria-label]="'Reprogramar ' + appointment.reason + ' de ' + appointment.petName"
-              (click)="reschedule()"
-            ></button>
-          </app-list-item>
-        } @empty {
-          <app-empty-state heading="Sin citas agendadas" description="Cuando agendes una cita, aparecerá aquí.">
-            <app-sticker sticker name="calendar" [width]="84" />
-          </app-empty-state>
-        }
+        <div class="flex flex-col gap-0.5">
+          @for (appointment of upcoming(); track appointment.id) {
+            <app-list-item [heading]="reasonLabel(appointment) + ' de ' + appointment.petName" [subtitle]="when(appointment) + ' · ' + appointment.veterinarianName">
+              <app-avatar leading [id]="avatarId(appointment)" [name]="appointment.petName" kind="pet" [species]="appointment.species" />
+              <span trailing class="flex flex-wrap justify-end gap-2">
+                @if (canChange(appointment)) {
+                  <button
+                    pButton
+                    type="button"
+                    size="small"
+                    severity="secondary"
+                    [outlined]="true"
+                    label="Reprogramar"
+                    [attr.aria-label]="'Reprogramar ' + reasonLabel(appointment) + ' de ' + appointment.petName"
+                    (click)="startReschedule(appointment)"
+                  ></button>
+                  <button
+                    pButton
+                    type="button"
+                    size="small"
+                    severity="danger"
+                    [text]="true"
+                    label="Cancelar cita"
+                    [attr.aria-label]="'Cancelar ' + reasonLabel(appointment) + ' de ' + appointment.petName"
+                    (click)="cancel(appointment)"
+                  ></button>
+                } @else if (appointment.status === 'IN_PROGRESS') {
+                  <p-tag [severity]="status(appointment).severity" [value]="status(appointment).label" />
+                } @else {
+                  <span class="max-w-[180px] text-right text-[12.5px] leading-[18px] text-ink-muted">Para cambiarla, llama a la clínica</span>
+                }
+              </span>
+            </app-list-item>
+          } @empty {
+            <app-empty-state heading="Sin citas agendadas" description="Cuando agendes una cita, aparecerá aquí.">
+              <app-sticker sticker name="calendar" [width]="84" />
+            </app-empty-state>
+          }
+        </div>
       </section>
+
+      @if (past().length) {
+        <section app-card heading="Historial de citas">
+          <div class="flex flex-col gap-0.5">
+            @for (appointment of past(); track appointment.id) {
+              <div class="min-w-0">
+                <app-list-item [heading]="reasonLabel(appointment) + ' de ' + appointment.petName" [subtitle]="when(appointment) + ' · ' + appointment.veterinarianName">
+                  <app-avatar leading [id]="avatarId(appointment)" [name]="appointment.petName" kind="pet" [species]="appointment.species" />
+                  <p-tag trailing [severity]="status(appointment).severity" [value]="status(appointment).label" />
+                </app-list-item>
+                @if (appointment.clinicalNotes) {
+                  <p class="pb-2 pl-[64px] text-[12.5px] leading-[18px] text-ink-muted">
+                    <span class="font-bold text-ink">Nota de la consulta:</span> {{ appointment.clinicalNotes }}
+                  </p>
+                }
+              </div>
+            }
+          </div>
+        </section>
+      }
     </div>
 
     <app-block hue="honey" kind="summary" class="col-span-12 @min-[960px]:col-span-4">
@@ -240,13 +304,15 @@
       </div>
       <dl app-definition-list>
         <dt>Motivo</dt>
-        <dd>{{ reason()?.label ?? 'Por elegir' }}</dd>
+        <dd>{{ reasonText() ?? 'Por elegir' }}</dd>
         <dt>Día</dt>
         <dd>{{ selectedDay() ? dayLabel(selectedDay()!.date) : 'Por elegir' }}</dd>
         <dt>Hora</dt>
         <dd>{{ draft().time ?? 'Por elegir' }}</dd>
         <dt>Duración</dt>
-        <dd>{{ duration }}</dd>
+        <dd>{{ clinic()?.slotMinutes }} min</dd>
+        <dt>Veterinario</dt>
+        <dd>{{ veterinarianText() }}</dd>
       </dl>
       <hr class="my-3 border-0 border-t border-line" />
       <p class="font-script text-[22px] leading-[1.1] font-semibold">Lleva el carné y llega 10 minutos antes.</p>

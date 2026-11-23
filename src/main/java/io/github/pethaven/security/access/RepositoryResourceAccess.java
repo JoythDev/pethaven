@@ -1,5 +1,6 @@
 package io.github.pethaven.security.access;
 
+import io.github.pethaven.repository.AppointmentRepository;
 import io.github.pethaven.repository.OwnerRepository;
 import io.github.pethaven.repository.PetRepository;
 import io.github.pethaven.repository.TreatmentRepository;
@@ -18,17 +19,20 @@ public class RepositoryResourceAccess implements ResourceAccess {
     private final PetRepository petRepository;
     private final VeterinarianRepository veterinarianRepository;
     private final TreatmentRepository treatmentRepository;
+    private final AppointmentRepository appointmentRepository;
 
     public RepositoryResourceAccess(
             OwnerRepository ownerRepository,
             PetRepository petRepository,
             VeterinarianRepository veterinarianRepository,
-            TreatmentRepository treatmentRepository
+            TreatmentRepository treatmentRepository,
+            AppointmentRepository appointmentRepository
     ) {
         this.ownerRepository = ownerRepository;
         this.petRepository = petRepository;
         this.veterinarianRepository = veterinarianRepository;
         this.treatmentRepository = treatmentRepository;
+        this.appointmentRepository = appointmentRepository;
     }
 
     @Override
@@ -61,5 +65,15 @@ public class RepositoryResourceAccess implements ResourceAccess {
     @Override
     public boolean authoredTreatment(Long treatmentId, String username) {
         return treatmentId != null && treatmentRepository.existsByIdAndVeterinarianUserUsername(treatmentId, username);
+    }
+
+    @Override
+    public boolean ownsAppointment(Long appointmentId, String username) {
+        return appointmentId != null && appointmentRepository.existsByIdAndOwnerUserUsername(appointmentId, username);
+    }
+
+    @Override
+    public boolean attendsAppointment(Long appointmentId, String username) {
+        return appointmentId != null && appointmentRepository.existsByIdAndVeterinarianUserUsername(appointmentId, username);
     }
 }

@@ -35,4 +35,10 @@ public interface ResourceAccess {
 
     /** El tratamiento {@code treatmentId} lo registró el usuario (como su veterinario). */
     boolean authoredTreatment(Long treatmentId, String username);
+
+    /** La cita {@code appointmentId} es del usuario (como su dueño). */
+    boolean ownsAppointment(Long appointmentId, String username);
+
+    /** La cita {@code appointmentId} está asignada al usuario (como su veterinario). */
+    boolean attendsAppointment(Long appointmentId, String username);
 }

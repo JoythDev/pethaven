@@ -263,11 +263,18 @@
 
         <!-- Acciones del formulario: el botón siempre está activo; los errores se muestran en los campos -->
         <div class="flex flex-col gap-3">
-          @if (saveError(); as message) {
-            <app-inline-error [text]="'No se pudo registrar el tratamiento. ' + message" (retry)="guardar()" />
+          @if (pendingAdmission()) {
+            <app-inline-error
+              [text]="'El tratamiento quedó registrado, pero no se pudo cerrar la cita. ' + (closeError() ?? '')"
+              (retry)="retryCloseAppointment()"
+            />
+          } @else {
+            @if (saveError(); as message) {
+              <app-inline-error [text]="'No se pudo registrar el tratamiento. ' + message" (retry)="guardar()" />
+            }
           }
           <div class="flex flex-wrap items-center gap-2">
-            <button pButton id="btnGuardar" type="submit" label="Registrar tratamiento" [loading]="saving()"></button>
+            <button pButton id="btnGuardar" type="submit" label="Registrar tratamiento" [loading]="saving() || closing()" [disabled]="!!pendingAdmission()"></button>
             <button
               pButton
               type="button"

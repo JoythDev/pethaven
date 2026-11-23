@@ -1,18 +1,17 @@
 import { formatDate, formatNumber } from '@angular/common';
-import {
-  APPOINTMENT_STATUS_LABELS,
-  Appointment,
-  AppointmentStatus,
-  DayAgenda,
-  DayCount,
-} from '../../models/demo/appointment.model';
+import { AgendaSlot, Appointment, DayAgenda, DayCount } from '../../models/appointment.model';
+import { Clinic } from '../../models/clinic.model';
 import { Pet } from '../../models/pet.model';
 import { Treatment } from '../../models/treatment.model';
+import { clinicDaySlots } from '../client-appointments/client-appointments';
+import { parseRouteId } from '../http/route-id';
 import { TimelineSegment } from '../day-timeline/day-timeline';
-import { addDays, dayKey, isSameDay, isSunday, startOfDay } from '../demo/demo-date';
-import { TagSeverity } from '../status/pet-status';
+import { addDays, atTime, dayKey, isSameDay, isSunday, startOfDay } from '../time/calendar';
 
-// Lógica pura de la Agenda del veterinario: URL, etiquetas, calendario y detalle de la visita.
+// Lógica pura de la Agenda del veterinario: URL, días a partir de las citas del API y del horario de la
+// clínica, etiquetas, calendario y detalle de la visita.
+
+type ClinicSchedule = Pick<Clinic, 'hours' | 'slotMinutes'>;
 
 const LOCALE = 'es-CO';
 const DAY_PARAM = /^(\d{4})-(\d{2})-(\d{2})$/;
@@ -23,7 +22,7 @@ export type AgendaView = 'dia' | 'semana';
 export interface AgendaState {
   day: Date;
   view: AgendaView;
-  appointmentId: string | null;
+  appointmentId: number | null;
 }
 
 // Lo que necesita de los parámetros de la URL: sirve `ParamMap` y `URLSearchParams`.
@@ -46,11 +45,10 @@ function parseDay(raw: string | null): Date | null {
 
 /** Estado de la agenda según la URL; lo ausente o inválido cae en hoy, vista del día y sin cita. */
 export function parseAgendaParams(params: ParamReader, today: Date): AgendaState {
-  const appointmentId = params.get(PARAM.appointment)?.trim();
   return {
     day: parseDay(params.get(PARAM.day)) ?? startOfDay(today),
     view: params.get(PARAM.view) === 'semana' ? 'semana' : 'dia',
-    appointmentId: appointmentId || null,
+    appointmentId: parseRouteId(params.get(PARAM.appointment)?.trim() ?? null),
   };
 }
 
@@ -63,10 +61,75 @@ export function agendaQueryParams(state: AgendaState, today: Date): Record<strin
   if (state.view === 'semana') {
     params[PARAM.view] = 'semana';
   }
-  if (state.appointmentId) {
-    params[PARAM.appointment] = state.appointmentId;
+  if (state.appointmentId !== null) {
+    params[PARAM.appointment] = String(state.appointmentId);
   }
   return params;
+}
+
+// ---------- Días de la agenda ----------
+
+/** Las canceladas liberan su franja: la agenda las omite. */
+export function agendaAppointments(appointments: Appointment[]): Appointment[] {
+  return appointments
+    .filter((a) => a.status !== 'CANCELLED')
+    .sort((a, b) => a.start.getTime() - b.start.getTime());
+}
+
+/** Agenda de un día: las franjas del horario de la clínica con la cita que ocupa cada una. */
+export function buildDayAgenda(date: Date, appointments: Appointment[], clinic: ClinicSchedule): DayAgenda {
+  const day = agendaAppointments(appointments.filter((a) => isSameDay(a.start, date)));
+  const slots: AgendaSlot[] = clinicDaySlots(date, clinic).map((time) => {
+    const start = atTime(date, time);
+    return {
+      time,
+      start,
+      end: new Date(start.getTime() + clinic.slotMinutes * 60_000),
+      appointment: day.find((a) => a.start.getTime() === start.getTime()) ?? null,
+    };
+  });
+  return {
+    date,
+    closed: slots.length === 0,
+    slots,
+    appointments: day,
+    counts: {
+      total: day.length,
+      completed: day.filter((a) => a.status === 'COMPLETED').length,
+      freeSlots: slots.filter((s) => !s.appointment).length,
+    },
+  };
+}
+
+/** Citas por día desde `from` (puntos del calendario y «Esta semana»). */
+export function countsByDay(appointments: Appointment[], from: Date, days: number, clinic: ClinicSchedule | null): DayCount[] {
+  const first = startOfDay(from);
+  const active = agendaAppointments(appointments);
+  return Array.from({ length: days }, (_, i) => {
+    const date = addDays(first, i);
+    const key = dayKey(date);
+    const day = active.filter((a) => dayKey(a.start) === key);
+    return {
+      date,
+      dateKey: key,
+      count: day.length,
+      completed: day.filter((a) => a.status === 'COMPLETED').length,
+      closed: clinic ? clinicDaySlots(date, clinic).length === 0 : isSunday(date),
+    };
+  });
+}
+
+/** Primer y último día del mes de la fecha. */
+export function monthRange(date: Date): { from: Date; days: number } {
+  return {
+    from: new Date(date.getFullYear(), date.getMonth(), 1),
+    days: new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate(),
+  };
+}
+
+/** Lunes de la semana que contiene la fecha. */
+export function mondayOf(date: Date): Date {
+  return addDays(startOfDay(date), -((date.getDay() + 6) % 7));
 }
 
 function capitalize(text: string): string {
@@ -126,7 +189,7 @@ export function monthGrid(month: Date): (Date | null)[][] {
 
 /** Los seis días de atención (lunes a sábado) de la semana que contiene la fecha. */
 export function weekDays(date: Date): Date[] {
-  const monday = addDays(startOfDay(date), -((date.getDay() + 6) % 7));
+  const monday = mondayOf(date);
   return Array.from({ length: OPEN_DAYS }, (_, i) => addDays(monday, i));
 }
 
@@ -137,7 +200,7 @@ export function initialAppointment(agenda: DayAgenda, now: Date): Appointment | 
     return null;
   }
   if (isSameDay(agenda.date, now)) {
-    const current = list.find((a) => a.start.getTime() + a.durationMinutes * 60_000 > now.getTime());
+    const current = list.find((a) => a.end.getTime() > now.getTime());
     if (current) {
       return current;
     }
@@ -146,7 +209,7 @@ export function initialAppointment(agenda: DayAgenda, now: Date): Appointment | 
 }
 
 /** La cita del id si está en la agenda; si no, la inicial (un id viejo de la URL no rompe nada). */
-export function resolveSelection(agenda: DayAgenda, id: string | null, now: Date): Appointment | null {
+export function resolveSelection(agenda: DayAgenda, id: number | null, now: Date): Appointment | null {
   return agenda.appointments.find((a) => a.id === id) ?? initialAppointment(agenda, now);
 }
 
@@ -165,22 +228,6 @@ export function timelineRows(segments: TimelineSegment[]): TimelineRow[] {
     row += segment.span;
     return placed;
   });
-}
-
-export interface AppointmentStatusTag {
-  label: string;
-  severity: TagSeverity;
-}
-
-const STATUS_SEVERITY: Record<AppointmentStatus, TagSeverity> = {
-  scheduled: 'secondary',
-  confirmed: 'info',
-  'in-progress': 'warn',
-  completed: 'success',
-};
-
-export function appointmentStatusTag(status: AppointmentStatus): AppointmentStatusTag {
-  return { label: APPOINTMENT_STATUS_LABELS[status], severity: STATUS_SEVERITY[status] };
 }
 
 // «12 nov 2026» con la última atención real de la mascota; sin ninguna, «Sin visitas previas».

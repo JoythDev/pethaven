@@ -1,7 +1,6 @@
-import { Appointment, DayAgenda } from '../../models/demo/appointment.model';
-import { SLOT_MINUTES } from '../demo/appointments';
-import { dayNumber, formatTime, isSameDay } from '../demo/demo-date';
+import { APPOINTMENT_REASON_LABELS, APPOINTMENT_STATUS_LABELS, Appointment, DayAgenda } from '../../models/appointment.model';
 import { IdentityHue, identityHue } from '../identity/identity';
+import { dayNumber, formatTime, isSameDay } from '../time/calendar';
 
 // «Resumen del día» (11.6, S25, S30): línea de tiempo con franjas de 30 min, marcas de hora y «ahora».
 // Todo es función pura: la hora actual llega como parámetro.
@@ -10,13 +9,14 @@ const TICK_EVERY_MINUTES = 120;
 const MINUTE_MS = 60_000;
 
 export interface TimelineSegment {
-  // Hora de inicio ('HH:mm') y número de franjas de 30 min que ocupa (una cita de 60 min ocupa dos).
+  // Hora de inicio ('HH:mm') y número de franjas que ocupa (toda cita ocupa una).
   time: string;
   span: number;
   appointment: Appointment | null;
   free: boolean;
   // Franja libre que ya pasó: no se puede agendar.
   past: boolean;
+  // Cita ya cerrada (completada o sin asistencia): se dibuja atenuada.
   completed: boolean;
   hue: IdentityHue | null;
   // Texto del tooltip de PrimeNG (varias líneas) y alternativa de texto para lectores de pantalla.
@@ -56,7 +56,7 @@ export interface DayTimeline {
   ticks: TimelineTick[];
   // Posición de «ahora» en la barra; null fuera del horario de atención o de otro día.
   nowPercent: number | null;
-  figures: { total: number; urgent: number; free: number };
+  figures: { total: number; completed: number; free: number };
   summary: string;
   upNext: UpNext | null;
 }
@@ -74,24 +74,26 @@ export function relativeStart(start: Date, now: Date): string {
   return rest ? `en ${Math.floor(minutes / 60)} h ${rest} min` : `en ${minutes / 60} h`;
 }
 
-function appointmentEnd(a: Appointment): number {
-  return a.start.getTime() + a.durationMinutes * MINUTE_MS;
-}
+const minutesOf = (a: Appointment): number => Math.round((a.end.getTime() - a.start.getTime()) / MINUTE_MS);
 
-function appointmentSegment(a: Appointment, span: number): TimelineSegment {
+// Citas que aún se atienden: las cerradas (completadas o sin asistencia) no son «la que sigue».
+const isOpen = (a: Appointment): boolean => a.status === 'SCHEDULED' || a.status === 'IN_PROGRESS';
+
+function appointmentSegment(a: Appointment): TimelineSegment {
   const time = formatTime(a.start);
-  const tooltip = `${time} · ${a.petName}\n${a.reason} · ${a.durationMinutes} min\n${a.ownerName}`;
-  const flags = [a.urgent ? 'urgencia' : '', a.status === 'completed' ? 'completada' : ''].filter(Boolean);
+  const reason = APPOINTMENT_REASON_LABELS[a.reason];
+  const status = APPOINTMENT_STATUS_LABELS[a.status];
+  const tooltip = `${time} · ${a.petName}\n${reason} · ${minutesOf(a)} min\n${a.ownerName} · ${status}`;
   return {
     time,
-    span,
+    span: 1,
     appointment: a,
     free: false,
     past: false,
-    completed: a.status === 'completed',
-    hue: identityHue(a.petId),
+    completed: !isOpen(a),
+    hue: identityHue(a.petId ?? a.id),
     tooltip,
-    label: [time, a.petName, a.reason, `${a.durationMinutes} minutos`, `dueño ${a.ownerName}`, ...flags].join(', '),
+    label: [time, a.petName, reason, `${minutesOf(a)} minutos`, `dueño ${a.ownerName}`, status.toLowerCase()].join(', '),
   };
 }
 
@@ -127,11 +129,11 @@ function upNextFor(appointment: Appointment, phase: DayPhase, now: Date): UpNext
 }
 
 // Aviso del día sin bloque «Sigue»: depende de si es hoy, ya pasó o aún no llega.
-function endNotice(phase: DayPhase, total: number): DayNotice {
+function endNotice(phase: DayPhase, total: number, completed: number): DayNotice {
   if (total > 0) {
     return phase === 'today'
-      ? { title: 'Terminaste las citas de hoy', note: `Atendiste ${plural(total, 'cita', 'citas')}.` }
-      : { title: 'Día terminado', note: `${total} ${total === 1 ? 'cita atendida' : 'citas atendidas'}.` };
+      ? { title: 'Terminaste las citas de hoy', note: `Atendiste ${plural(completed, 'cita', 'citas')}.` }
+      : { title: 'Día terminado', note: `${completed} ${completed === 1 ? 'cita atendida' : 'citas atendidas'}.` };
   }
   if (phase === 'past') {
     return { title: 'Sin citas este día', note: 'Ese día no tuviste citas.' };
@@ -146,7 +148,7 @@ export function buildDayTimeline(agenda: DayAgenda, now: Date): DayTimeline {
   const sorted = [...agenda.appointments].sort((a, b) => a.start.getTime() - b.start.getTime());
   // Un día pasado no tiene «siguiente»; uno futuro empieza por su primera cita.
   const upNextAppointment =
-    phase === 'past' ? null : (sorted.find((a) => appointmentEnd(a) > now.getTime()) ?? null);
+    phase === 'past' ? null : (sorted.find((a) => isOpen(a) && a.end.getTime() > now.getTime()) ?? null);
   const upNext: UpNext | null = upNextAppointment ? upNextFor(upNextAppointment, phase, now) : null;
 
   if (agenda.closed || agenda.slots.length === 0) {
@@ -154,30 +156,22 @@ export function buildDayTimeline(agenda: DayAgenda, now: Date): DayTimeline {
     return {
       closed: true,
       phase,
-      notice: { title, note: 'Atendemos de lunes a sábado.' },
+      notice: { title, note: 'Ese día no hay franjas de atención.' },
       segments: [],
       ticks: [],
       nowPercent: null,
-      figures: { total: 0, urgent: 0, free: 0 },
+      figures: { total: 0, completed: 0, free: 0 },
       summary: title,
       upNext: null,
     };
   }
 
-  // Una cita larga ocupa varias franjas seguidas: se junta en un solo segmento.
-  const segments: TimelineSegment[] = [];
-  for (const slot of agenda.slots) {
-    if (slot.appointment && !slot.starts && segments.length) {
-      segments[segments.length - 1].span += 1;
-    } else if (slot.appointment) {
-      segments.push(appointmentSegment(slot.appointment, 1));
-    } else {
-      segments.push(freeSegment(slot.time, slot.start.getTime() + SLOT_MINUTES * MINUTE_MS <= now.getTime()));
-    }
-  }
+  const segments: TimelineSegment[] = agenda.slots.map((slot) =>
+    slot.appointment ? appointmentSegment(slot.appointment) : freeSegment(slot.time, slot.end.getTime() <= now.getTime()),
+  );
 
-  const totalMinutes = agenda.slots.length * SLOT_MINUTES;
   const opening = agenda.slots[0].start;
+  const totalMinutes = (agenda.slots[agenda.slots.length - 1].end.getTime() - opening.getTime()) / MINUTE_MS;
   const openingHour = opening.getHours() + opening.getMinutes() / 60;
   const ticks: TimelineTick[] = [];
   for (let offset = 0; offset < totalMinutes; offset += TICK_EVERY_MINUTES) {
@@ -197,11 +191,11 @@ export function buildDayTimeline(agenda: DayAgenda, now: Date): DayTimeline {
   return {
     closed: false,
     phase,
-    notice: upNext ? null : endNotice(phase, agenda.counts.total),
+    notice: upNext ? null : endNotice(phase, agenda.counts.total, agenda.counts.completed),
     segments,
     ticks,
     nowPercent,
-    figures: { total: agenda.counts.total, urgent: agenda.counts.urgent, free },
+    figures: { total: agenda.counts.total, completed: agenda.counts.completed, free },
     summary: `Línea de tiempo del día: ${plural(agenda.counts.total, 'cita', 'citas')} y ${plural(free, 'franja libre', 'franjas libres')}.`,
     upNext,
   };

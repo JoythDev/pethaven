@@ -1,11 +1,12 @@
 import { formatDate } from '@angular/common';
-import { Appointment } from '../../models/demo/appointment.model';
+import { APPOINTMENT_REASON_LABELS, Appointment } from '../../models/appointment.model';
+import { Clinic } from '../../models/clinic.model';
 import { CareItem } from '../../models/demo/care-plan.model';
 import { Vaccine, VaccineCard, VaccineSummary } from '../../models/demo/vaccine.model';
 import { Pet } from '../../models/pet.model';
 import { ClienteTreatment } from '../../models/treatment-cliente.model';
 import { Evolution, evolutionLabel } from '../../models/treatment.model';
-import { dayNumber, formatTime } from '../demo/demo-date';
+import { dayNumber, formatTime } from '../time/calendar';
 import { evolutionSeverity } from '../pet-detail/pet-detail';
 import { TagSeverity } from '../status/pet-status';
 
@@ -68,16 +69,16 @@ export function heroCopy(petName: string, pending: number, total: number): HeroC
 
 const capitalize = (text: string): string => text.charAt(0).toUpperCase() + text.slice(1);
 
-// «Martes 17 · 10:30» (12.2). Pasada una semana se añade el mes para que no haya dudas.
+// «Martes 17 · 10:30» (12.2). A más de una semana, antes o después, se añade el mes para que no haya dudas.
 export function appointmentWhen(start: Date, today: Date): string {
-  const far = dayNumber(start) - dayNumber(today) > 6;
+  const far = Math.abs(dayNumber(start) - dayNumber(today)) > 6;
   const day = capitalize(formatDate(start, far ? 'EEEE d MMM' : 'EEEE d', 'es-CO'));
   return `${day} · ${formatTime(start)}`;
 }
 
 // Etiqueta de cercanía de la cita: En curso, Hoy, Mañana o En N días.
 export function whenTag(appointment: Pick<Appointment, 'start' | 'status'>, today: Date): string {
-  if (appointment.status === 'in-progress') {
+  if (appointment.status === 'IN_PROGRESS') {
     return 'En curso';
   }
   const days = dayNumber(appointment.start) - dayNumber(today);
@@ -169,7 +170,7 @@ export function buildReminders({ petName, pending, next, vaccine }: ReminderSour
     reminders.push({ when: 'Hoy', text: `${pending} ${pending === 1 ? 'cuidado' : 'cuidados'} de ${petName}` });
   }
   if (next) {
-    reminders.push({ when: shortDay(next.start), text: `${next.reason} de ${next.petName}` });
+    reminders.push({ when: shortDay(next.start), text: `${APPOINTMENT_REASON_LABELS[next.reason]} de ${next.petName}` });
   }
   if (petName && vaccine && vaccine.status !== 'ok') {
     reminders.push({
@@ -179,3 +180,43 @@ export function buildReminders({ petName, pending, next, vaccine }: ReminderSour
   }
   return reminders;
 }
+
+const DAY_NAMES: Record<Clinic['hours'][number]['day'], string> = {
+  MONDAY: 'lunes',
+  TUESDAY: 'martes',
+  WEDNESDAY: 'miércoles',
+  THURSDAY: 'jueves',
+  FRIDAY: 'viernes',
+  SATURDAY: 'sábado',
+  SUNDAY: 'domingo',
+};
+
+const WEEK_ORDER: Clinic['hours'][number]['day'][] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+
+// '08:00:00' → '8:00'.
+const shortTime = (time: string): string => time.slice(0, 5).replace(/^0/, '');
+
+/**
+ * Horario de la tarjeta «Tu clínica», agrupando los días seguidos con el mismo horario:
+ * «Lunes a viernes, 8:00 a 17:00 · Sábado, 8:00 a 13:00». Los días sin atención no se nombran.
+ */
+export function clinicHoursText(hours: Clinic['hours']): string {
+  const groups: { from: string; to: string; range: string }[] = [];
+  // Recorre la semana de lunes a domingo, sin depender del orden en que llegan los días.
+  let previousRange: string | null = null;
+  for (const day of WEEK_ORDER) {
+    const entry = hours.find((h) => h.day === day);
+    const range = entry?.open && entry.close ? `${shortTime(entry.open)} a ${shortTime(entry.close)}` : null;
+    const last = groups.at(-1);
+    if (range && last && previousRange === range) {
+      last.to = DAY_NAMES[day];
+    } else if (range) {
+      groups.push({ from: DAY_NAMES[day], to: DAY_NAMES[day], range });
+    }
+    previousRange = range;
+  }
+  return groups
+    .map(({ from, to, range }) => `${capitalize(from === to ? from : `${from} a ${to}`)}, ${range}`)
+    .join(' · ');
+}
+

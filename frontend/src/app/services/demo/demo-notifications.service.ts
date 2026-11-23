@@ -1,5 +1,6 @@
 import { Injectable, computed, inject, signal } from '@angular/core';
-import { Observable, catchError, defer, forkJoin, map, of, tap } from 'rxjs';
+import { Observable, catchError, defer, forkJoin, map, of, switchMap, tap } from 'rxjs';
+import { splitAppointments } from '../../core/client-appointments/client-appointments';
 import { generateDashboardPeriods } from '../../core/demo/dashboard-periods';
 import {
   administratorNotifications,
@@ -7,17 +8,20 @@ import {
   veterinarianNotifications,
 } from '../../core/demo/notifications';
 import { DemoNotification } from '../../models/demo/demo-notification.model';
+import { ClienteTreatment } from '../../models/treatment-cliente.model';
+import { agendaAppointments } from '../../core/vet-agenda/vet-agenda';
+import { AppointmentService } from '../appointment.service';
 import { AdministratorDashboardService } from '../administrator-dashboard.service';
 import { AuthService } from '../auth.service';
 import { DrugService } from '../drug.service';
 import { PetService } from '../pet.service';
 import { VeterinarianService } from '../veterinarian.service';
-import { DemoAppointmentsService } from './demo-appointments.service';
+import { ClienteTreatmentService } from '../treatment-cliente.service';
 import { DemoCarePlanService } from './demo-care-plan.service';
 import { dayKey } from '../../core/demo/demo-date';
 import { DEMO_NOW, demoLatency } from './demo-latency';
 
-// Demo (S14): el API no tiene notificaciones. Se generan por rol con datos reales (mascotas,
+// Demo (S14): el API no tiene notificaciones. Se generan por rol con datos reales (mascotas, citas,
 // medicamentos, veterinarios, totales) y con el resto de los servicios demo; cuáles se leyeron
 // vive solo en memoria. Hay que llamar a `refresh()` para (re)generar la lista.
 @Injectable({ providedIn: 'root' })
@@ -27,7 +31,8 @@ export class DemoNotificationsService {
   private readonly drugService = inject(DrugService);
   private readonly veterinarianService = inject(VeterinarianService);
   private readonly dashboardService = inject(AdministratorDashboardService);
-  private readonly appointments = inject(DemoAppointmentsService);
+  private readonly appointmentService = inject(AppointmentService);
+  private readonly treatmentService = inject(ClienteTreatmentService);
   private readonly carePlan = inject(DemoCarePlanService);
   private readonly now = inject(DEMO_NOW);
 
@@ -78,31 +83,43 @@ export class DemoNotificationsService {
     const today = this.now();
     switch (user.role) {
       case 'OWNER':
-        return this.appointments.loadOwnerContext(user.id).pipe(
-          map((context) =>
-            clientNotifications({
-              today,
-              ownerId: user.id,
-              pets: context.pets,
-              upcoming: this.appointments.ownerAppointmentsFrom(context.pets, context.vets).upcoming,
-              care: context.petTreatments.map(({ pet, treatments }) => ({
-                pet,
-                items: this.carePlan.planFrom(pet, treatments),
-              })),
-              doneCareIds: this.carePlan.doneIds(),
-            }),
+        return forkJoin({
+          pets: this.petService.getByOwnerId(user.id),
+          appointments: this.appointmentService.getByOwnerId(user.id),
+        }).pipe(
+          switchMap(({ pets, appointments }) =>
+            // Un fallo en los tratamientos de una mascota no tumba la lista: esa mascota queda sin cuidados.
+            (pets.length
+              ? forkJoin(
+                  pets.map((pet) =>
+                    this.treatmentService.getByPetId(pet.id).pipe(catchError(() => of<ClienteTreatment[]>([]))),
+                  ),
+                )
+              : of<ClienteTreatment[][]>([])
+            ).pipe(
+              map((lists) =>
+                clientNotifications({
+                  today,
+                  ownerId: user.id,
+                  pets,
+                  upcoming: splitAppointments(appointments, today).upcoming,
+                  care: pets.map((pet, i) => ({ pet, items: this.carePlan.planFrom(pet, lists[i]) })),
+                  doneCareIds: this.carePlan.doneIds(),
+                }),
+              ),
+            ),
           ),
         );
       case 'VETERINARIAN':
         return forkJoin({
-          vet: this.veterinarianService.getById(user.id),
+          appointments: this.appointmentService.getVeterinarianAgenda(user.id, dayKey(today), dayKey(today)),
           pets: this.petService.getAll(),
           drugs: this.drugService.getAll(),
         }).pipe(
-          map(({ vet, pets, drugs }) =>
+          map(({ appointments, pets, drugs }) =>
             veterinarianNotifications({
               today,
-              todayAppointments: this.appointments.agendaFor(vet, pets, today).appointments,
+              todayAppointments: agendaAppointments(appointments),
               pets,
               drugs,
             }),

@@ -1,0 +1,118 @@
+<p-dialog
+  [visible]="true"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="true"
+  [closeOnEscape]="true"
+  [blockScroll]="true"
+  appendTo="body"
+  [header]="title()"
+  closeAriaLabel="Cerrar"
+  styleClass="w-[min(34rem,calc(100vw-2rem))]"
+  (visibleChange)="$event ? null : closed.emit()"
+>
+  @if (loading()) {
+    @if (skeleton()) {
+      <app-skeleton variant="text" [lines]="4" />
+    }
+  } @else if (pet().status === 'error') {
+    <app-inline-error text="No pudimos cargar los datos de la mascota." (retry)="retryPet()" />
+  } @else {
+    <div class="flex flex-col gap-4">
+      <p class="text-sm leading-5 text-ink-muted">{{ reason() }} · {{ appointment().ownerName }}</p>
+
+      @switch (kind()) {
+        @case ('consultation') {
+          <app-form-field fieldId="complete-outcome" label="¿Cómo terminó la consulta?" [error]="outcomeError()">
+            <p-selectbutton
+              ariaLabelledBy="complete-outcome-label"
+              [options]="outcomeOptions"
+              optionLabel="label"
+              optionValue="value"
+              [allowEmpty]="false"
+              [ngModel]="outcome()"
+              (ngModelChange)="outcome.set($event)"
+            />
+          </app-form-field>
+          @if (outcome() === 'ADMISSION') {
+            <p-message severity="info" styleClass="w-full">
+              <ng-template #icon><svg lucideInfo [size]="18" aria-hidden="true"></svg></ng-template>
+              <span
+                >{{ appointment().petName }} queda hospitalizada y se abre el formulario de tratamiento. La cita se completa
+                al registrar el tratamiento.</span
+              >
+            </p-message>
+          }
+        }
+        @case ('discharge') {
+          @if (pendingDischarge()) {
+            <p-message severity="warn" styleClass="w-full">
+              <ng-template #icon><svg lucideTriangleAlert [size]="18" aria-hidden="true"></svg></ng-template>
+              <div class="flex flex-wrap items-center gap-x-4 gap-y-2">
+                <span>{{ appointment().petName }} aún no tiene el alta médica. Dásela antes de entregarla.</span>
+                <button
+                  pButton
+                  type="button"
+                  size="small"
+                  severity="secondary"
+                  [outlined]="true"
+                  label="Dar de alta"
+                  [loading]="discharging()"
+                  (click)="discharge()"
+                ></button>
+              </div>
+            </p-message>
+          } @else {
+            <p class="text-sm leading-5">
+              Al completarla, {{ appointment().petName }} deja de estar hospitalizada y vuelve a casa con su dueño.
+            </p>
+          }
+        }
+      }
+
+      @if (showNotes()) {
+        <app-form-field
+          fieldId="complete-notes"
+          label="Nota clínica"
+          [optional]="!requiresNotes()"
+          [error]="notesError()"
+          [hint]="notesHint()"
+        >
+          <textarea
+            pTextarea
+            id="complete-notes"
+            rows="4"
+            [attr.maxlength]="notesMax"
+            class="w-full"
+            [attr.aria-invalid]="notesError() ? 'true' : null"
+            [attr.aria-describedby]="notesError() ? 'complete-notes-error' : 'complete-notes-hint'"
+            [value]="notes()"
+            (input)="notes.set(valueOf($event))"
+          ></textarea>
+        </app-form-field>
+      }
+
+      @if (saveError(); as error) {
+        <p-message severity="error" styleClass="w-full">
+          <ng-template #icon><svg lucideCircleAlert [size]="18" aria-hidden="true"></svg></ng-template>
+          <span>{{ error }}</span>
+        </p-message>
+      }
+    </div>
+  }
+
+  <ng-template #footer>
+    <div class="flex flex-wrap justify-end gap-2">
+      <button pButton type="button" severity="secondary" [outlined]="true" label="Cancelar" (click)="closed.emit()"></button>
+      <button
+        pButton
+        type="button"
+        [label]="confirmLabel()"
+        [loading]="saving()"
+        [disabled]="loading() || pet().status === 'error' || pendingDischarge()"
+        (click)="confirm()"
+      ></button>
+    </div>
+  </ng-template>
+</p-dialog>

@@ -125,7 +125,7 @@
             fieldId="owner"
             label="Dueño"
             [error]="shown().ownerId ?? null"
-            hint="Si no aparece, créalo primero en Dueños."
+            [hint]="forVisit ? 'El dueño de la cita.' : 'Si no aparece, créalo primero en Dueños.'"
           >
             <p-select
               inputId="owner"
@@ -179,6 +179,8 @@
           </app-form-field>
         </section>
 
+        <!-- La mascota de una cita se registra en casa: no se elige su estado -->
+        @if (!forVisit) {
         <section class="flex flex-col gap-3.5 border-t border-line pt-5" aria-labelledby="grupo-estado">
           <h2 id="grupo-estado" class="font-display text-[17px] leading-[22px] font-semibold text-ink">Estado</h2>
 
@@ -224,6 +226,7 @@
             <p-toggleswitch class="mt-0.5 shrink-0" inputId="active" formControlName="active" />
           </div>
         </section>
+        }
 
         <div class="flex flex-wrap items-center gap-2 border-t border-line pt-5">
           <button pButton id="btnGuardar" type="submit" label="Guardar mascota" [loading]="saving()"></button>
