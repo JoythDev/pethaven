@@ -7,10 +7,15 @@ import io.github.pethaven.repository.UserRepository;
 import io.github.pethaven.security.auth.AuthService;
 import io.github.pethaven.security.auth.dto.AuthResponse;
 import io.github.pethaven.security.auth.dto.LoginRequest;
+import io.github.pethaven.security.auth.dto.OtpChallengeResponse;
+import io.github.pethaven.security.auth.dto.VerifyOtpRequest;
+import io.github.pethaven.support.OtpTestSupport;
+import io.github.pethaven.support.OtpTestSupport.RecordingOtpMailSender;
 import org.assertj.core.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.TestPropertySource;
 
@@ -18,6 +23,7 @@ import org.springframework.test.context.TestPropertySource;
 // Usa su propia base H2 en memoria para no recrear la que comparten los demás tests de integración.
 @SpringBootTest
 @ActiveProfiles("test")
+@Import(OtpTestSupport.class)
 @TestPropertySource(properties = {
         "spring.datasource.url=jdbc:h2:mem:security-seeder-test;DB_CLOSE_DELAY=-1",
         "app.seed.admin.name=Admin Inicial",
@@ -31,6 +37,7 @@ public class SecuritySeederIntegrationTest {
     private final AdministratorRepository administratorRepository;
     private final UserRepository userRepository;
     private final AuthService authService;
+    private final RecordingOtpMailSender mailSender;
 
     @Autowired
     public SecuritySeederIntegrationTest(
@@ -38,13 +45,15 @@ public class SecuritySeederIntegrationTest {
             RoleRepository roleRepository,
             AdministratorRepository administratorRepository,
             UserRepository userRepository,
-            AuthService authService
+            AuthService authService,
+            RecordingOtpMailSender mailSender
     ) {
         this.securitySeeder = securitySeeder;
         this.roleRepository = roleRepository;
         this.administratorRepository = administratorRepository;
         this.userRepository = userRepository;
         this.authService = authService;
+        this.mailSender = mailSender;
     }
 
     @Test
@@ -54,7 +63,11 @@ public class SecuritySeederIntegrationTest {
                 .containsExactlyInAnyOrder(Role.ADMIN, Role.VETERINARIAN, Role.OWNER);
         Assertions.assertThat(administratorRepository.count()).isEqualTo(1);
 
-        AuthResponse login = authService.login(new LoginRequest("first.admin@pethaven.test", "first-admin-password"));
+        // La contraseña abre el desafío y el código recibido por correo termina el inicio de sesión.
+        OtpChallengeResponse challenge =
+                authService.login(new LoginRequest("first.admin@pethaven.test", "first-admin-password"));
+        AuthResponse login = authService.verifyOtp(new VerifyOtpRequest(
+                challenge.challengeId(), mailSender.lastCodeFor("first.admin@pethaven.test")));
         Assertions.assertThat(login.role()).isEqualTo(Role.ADMIN);
         Assertions.assertThat(login.name()).isEqualTo("Admin Inicial");
         Assertions.assertThat(login.token()).isNotBlank();

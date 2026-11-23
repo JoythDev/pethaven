@@ -3,7 +3,11 @@ package io.github.pethaven.security.auth;
 import io.github.pethaven.entity.Role;
 import io.github.pethaven.security.auth.dto.AuthProfileResponse;
 import io.github.pethaven.security.auth.dto.AuthResponse;
+import io.github.pethaven.exception.OtpException;
 import io.github.pethaven.security.auth.dto.LoginRequest;
+import io.github.pethaven.security.auth.dto.OtpChallengeResponse;
+import io.github.pethaven.security.auth.dto.ResendOtpRequest;
+import io.github.pethaven.security.auth.dto.VerifyOtpRequest;
 import io.github.pethaven.security.jwt.JwtProvider;
 import io.github.pethaven.support.WebMvcSecurityTestSupport;
 import org.junit.jupiter.api.Test;
@@ -24,13 +28,15 @@ import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 
 import java.util.Optional;
 
-// Login con Spring Security (POST /api/auth/login) y perfil autenticado (GET /api/auth/me),
+// Login en dos pasos (POST /api/auth/login, /verify-otp y /resend-otp) y perfil autenticado (GET /api/auth/me),
 // ejecutados a través de la cadena de seguridad real.
 @WebMvcTest(AuthController.class)
 @WebMvcSecurityTestSupport
 public class AuthControllerTest {
 
     private static final String LOGIN_URL = "/api/auth/login";
+    private static final String VERIFY_URL = "/api/auth/verify-otp";
+    private static final String RESEND_URL = "/api/auth/resend-otp";
     private static final String ME_URL = "/api/auth/me";
     private static final String EMAIL = "john.doe@example.com";
     private static final String LOGIN_BODY = """
@@ -54,22 +60,37 @@ public class AuthControllerTest {
     // ---------- POST /api/auth/login ----------
 
     @Test
-    public void authController_login_ValidCredentials_Returns200WithTokenAndProfile() throws Exception {
+    public void authController_login_ValidCredentials_Returns200WithTheChallengeAndNoToken() throws Exception {
         // Arrange
         Mockito.when(authService.login(new LoginRequest(EMAIL, "password123")))
-                .thenReturn(new AuthResponse("jwt-token", 7200L, 7L, "John Doe", EMAIL, Role.OWNER));
+                .thenReturn(new OtpChallengeResponse("challenge-1", "j***@example.com", 300L, 60L));
 
         // Act + Assert
         mockMvc.perform(MockMvcRequestBuilders.post(LOGIN_URL)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(LOGIN_BODY))
                 .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.jsonPath("$.token").value("jwt-token"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.expiresIn").value(7200))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.profileId").value(7))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("John Doe"))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.email").value(EMAIL))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.role").value("OWNER"));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.challengeId").value("challenge-1"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.maskedEmail").value("j***@example.com"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.expiresIn").value(300))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.resendAvailableIn").value(60))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.token").doesNotExist());
+    }
+
+    @Test
+    public void authController_login_MailDeliveryFails_Returns503WithErrorBody() throws Exception {
+        // Arrange
+        Mockito.when(authService.login(ArgumentMatchers.any(LoginRequest.class))).thenThrow(OtpException.deliveryFailed());
+
+        // Act + Assert
+        mockMvc.perform(MockMvcRequestBuilders.post(LOGIN_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(LOGIN_BODY))
+                .andExpect(MockMvcResultMatchers.status().isServiceUnavailable())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(503))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message")
+                        .value("No se pudo enviar el código por correo. Intenta de nuevo en unos minutos."))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.path").value(LOGIN_URL));
     }
 
     @Test
@@ -139,6 +160,137 @@ public class AuthControllerTest {
                 """, "password", "La contraseña es obligatoria");
     }
 
+    // ---------- POST /api/auth/verify-otp ----------
+
+    @Test
+    public void authController_verifyOtp_ValidCode_Returns200WithTokenAndProfile() throws Exception {
+        // Arrange
+        Mockito.when(authService.verifyOtp(new VerifyOtpRequest("challenge-1", "482915")))
+                .thenReturn(new AuthResponse("jwt-token", 7200L, 7L, "John Doe", EMAIL, Role.OWNER));
+
+        // Act + Assert
+        mockMvc.perform(MockMvcRequestBuilders.post(VERIFY_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"challengeId": "challenge-1", "code": "482915"}
+                                """))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.token").value("jwt-token"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.expiresIn").value(7200))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.profileId").value(7))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.name").value("John Doe"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.email").value(EMAIL))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.role").value("OWNER"));
+    }
+
+    @Test
+    public void authController_verifyOtp_WrongCode_Returns401WithErrorBody() throws Exception {
+        // Arrange
+        Mockito.when(authService.verifyOtp(ArgumentMatchers.any(VerifyOtpRequest.class)))
+                .thenThrow(OtpException.wrongCode(4));
+
+        // Act + Assert
+        mockMvc.perform(MockMvcRequestBuilders.post(VERIFY_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"challengeId": "challenge-1", "code": "000000"}
+                                """))
+                .andExpect(MockMvcResultMatchers.status().isUnauthorized())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(401))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("El código es incorrecto. Te quedan 4 intentos."))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.path").value(VERIFY_URL));
+    }
+
+    @Test
+    public void authController_verifyOtp_AttemptsExhausted_Returns429WithErrorBody() throws Exception {
+        // Arrange
+        Mockito.when(authService.verifyOtp(ArgumentMatchers.any(VerifyOtpRequest.class)))
+                .thenThrow(OtpException.attemptsExhausted());
+
+        // Act + Assert
+        mockMvc.perform(MockMvcRequestBuilders.post(VERIFY_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"challengeId": "challenge-1", "code": "000000"}
+                                """))
+                .andExpect(MockMvcResultMatchers.status().isTooManyRequests())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(429))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.path").value(VERIFY_URL));
+    }
+
+    @Test
+    public void authController_verifyOtp_AccountDisabledBetweenSteps_Returns403() throws Exception {
+        // Arrange
+        Mockito.when(authService.verifyOtp(ArgumentMatchers.any(VerifyOtpRequest.class)))
+                .thenThrow(new DisabledException("User is disabled"));
+
+        // Act + Assert
+        mockMvc.perform(MockMvcRequestBuilders.post(VERIFY_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"challengeId": "challenge-1", "code": "482915"}
+                                """))
+                .andExpect(MockMvcResultMatchers.status().isForbidden())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("La cuenta está desactivada."));
+    }
+
+    @Test
+    public void authController_verifyOtp_CodeNotSixDigits_Returns400AndDoesNotCallService() throws Exception {
+        assertValidationError(VERIFY_URL, """
+                {"challengeId": "challenge-1", "code": "12ab"}
+                """, "code", "El código debe tener 6 dígitos");
+    }
+
+    @Test
+    public void authController_verifyOtp_BlankChallengeId_Returns400AndDoesNotCallService() throws Exception {
+        assertValidationError(VERIFY_URL, """
+                {"challengeId": "", "code": "482915"}
+                """, "challengeId", "El identificador del desafío es obligatorio");
+    }
+
+    // ---------- POST /api/auth/resend-otp ----------
+
+    @Test
+    public void authController_resendOtp_ValidChallenge_Returns200WithTheRenewedChallenge() throws Exception {
+        // Arrange
+        Mockito.when(authService.resendOtp(new ResendOtpRequest("challenge-1")))
+                .thenReturn(new OtpChallengeResponse("challenge-1", "j***@example.com", 300L, 60L));
+
+        // Act + Assert
+        mockMvc.perform(MockMvcRequestBuilders.post(RESEND_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"challengeId": "challenge-1"}
+                                """))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.challengeId").value("challenge-1"))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.resendAvailableIn").value(60));
+    }
+
+    @Test
+    public void authController_resendOtp_TooSoon_Returns429WithTheSecondsToWait() throws Exception {
+        // Arrange
+        Mockito.when(authService.resendOtp(ArgumentMatchers.any(ResendOtpRequest.class)))
+                .thenThrow(OtpException.resendTooSoon(40));
+
+        // Act + Assert
+        mockMvc.perform(MockMvcRequestBuilders.post(RESEND_URL)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"challengeId": "challenge-1"}
+                                """))
+                .andExpect(MockMvcResultMatchers.status().isTooManyRequests())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value("Espera 40 s antes de pedir otro código."))
+                .andExpect(MockMvcResultMatchers.jsonPath("$.path").value(RESEND_URL));
+    }
+
+    @Test
+    public void authController_resendOtp_BlankChallengeId_Returns400AndDoesNotCallService() throws Exception {
+        assertValidationError(RESEND_URL, """
+                {"challengeId": " "}
+                """, "challengeId", "El identificador del desafío es obligatorio");
+    }
+
     // ---------- GET /api/auth/me ----------
 
     @Test
@@ -190,13 +342,17 @@ public class AuthControllerTest {
     }
 
     private void assertLoginValidationError(String body, String field, String message) throws Exception {
-        mockMvc.perform(MockMvcRequestBuilders.post(LOGIN_URL)
+        assertValidationError(LOGIN_URL, body, field, message);
+    }
+
+    private void assertValidationError(String url, String body, String field, String message) throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.post(url)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.status").value(400))
                 .andExpect(MockMvcResultMatchers.jsonPath("$.errors." + field).value(message))
-                .andExpect(MockMvcResultMatchers.jsonPath("$.path").value(LOGIN_URL));
+                .andExpect(MockMvcResultMatchers.jsonPath("$.path").value(url));
         Mockito.verifyNoInteractions(authService);
     }
 }

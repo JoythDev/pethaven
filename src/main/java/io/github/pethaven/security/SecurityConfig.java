@@ -107,7 +107,8 @@ public class SecurityConfig {
 
         auth
                 // Autenticación
-                .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
+                // Los tres pasos del inicio de sesión son públicos: aún no hay token. Los protege el desafío (id, código, intentos).
+                .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/verify-otp", "/api/auth/resend-otp").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
 
                 // Métricas del negocio

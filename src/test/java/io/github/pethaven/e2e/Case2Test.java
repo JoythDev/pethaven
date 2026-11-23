@@ -17,7 +17,11 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import io.github.pethaven.support.OtpTestSupport;
+import io.github.pethaven.support.OtpTestSupport.RecordingOtpMailSender;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -31,12 +35,17 @@ import org.springframework.test.context.ActiveProfiles;
 @Tag("e2e")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @ActiveProfiles({"test", "e2e"})
+@Import(OtpTestSupport.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class Case2Test {
 
-    private static final String FRONT = "http://localhost:4200";
+    // El frontend de la prueba; -De2e.front=... lo cambia cuando ng serve no corre en el puerto 4200.
+    private static final String FRONT = System.getProperty("e2e.front", "http://localhost:4200");
     private static final String DIAGNOSIS = "Infección respiratoria";
     private static final int UNITS = 3;
+
+    @Autowired
+    private RecordingOtpMailSender mailSender;
 
     private WebDriver driver;
     private WebDriverWait wait;
@@ -71,6 +80,7 @@ public class Case2Test {
         // Login único para todos los roles (Spring Security + JWT); el rol decide el portal.
         driver.get(FRONT + "/login");
         login(DatabaseInit.VET_EMAIL, DatabaseInit.VET_PASSWORD);
+        enterCode(DatabaseInit.VET_EMAIL);
         wait.until(ExpectedConditions.urlContains("/veterinario"));
 
         // 2. Buscar la mascota, abrir su ficha y registrar el tratamiento.
@@ -99,6 +109,7 @@ public class Case2Test {
         logout();
         driver.get(FRONT + "/login");
         login(DatabaseInit.ADMIN_EMAIL, DatabaseInit.ADMIN_PASSWORD);
+        enterCode(DatabaseInit.ADMIN_EMAIL);
         wait.until(ExpectedConditions.presenceOfElementLocated(By.id("totalSales")));
 
         assertThat(digits(By.id("totalSales"))).isEqualTo(String.valueOf(UNITS * DatabaseInit.DRUG_SALE_PRICE));
@@ -141,6 +152,13 @@ public class Case2Test {
         clearAndType(By.id("email"), email);
         clearAndType(By.id("password"), password);
         driver.findElement(By.id("btnLogin")).click();
+    }
+
+    // Segundo paso del login: el código no llega a un correo real, lo guarda el envío falso de las pruebas.
+    private void enterCode(String email) {
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("otpCode")));
+        clearAndType(By.id("otpCode"), mailSender.lastCodeFor(email));
+        driver.findElement(By.id("btnVerify")).click();
     }
 
     private void clearAndType(By locator, String text) {

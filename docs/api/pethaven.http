@@ -6,6 +6,12 @@
 # que crea esta misma colección, para no romper las peticiones siguientes.
 
 @baseUrl = http://localhost:8080
+# Códigos de verificación del login: se copian del log del servidor (OTP_MAIL_PROVIDER=log) tras ejecutar
+# el paso 1 de cada cuenta. Cada código vence a los 5 minutos y sirve una sola vez.
+@adminCode = 000000
+@vetCode = 000000
+@ownerCode = 000000
+@loginCode = 000000
 @ownerId = 1
 # Id del dueño y del medicamento que crean las peticiones POST de este archivo
 # (101 y 524 en una base recién poblada con 100 dueños y 523 medicamentos).
@@ -21,8 +27,10 @@
 # {{loginAdmin.response.body.token}}, {{loginVet.response.body.token}} o
 # {{loginOwner.response.body.token}}. El veterinario es el id 1 y el dueño es el id 1.
 
-### Login de administrador → 200 AuthResponse (role ADMIN)
-# @name loginAdmin
+### Login de administrador, paso 1 → 200 OtpChallengeResponse (el código sale en el log del servidor)
+# El login tiene dos pasos. Ejecuta este, copia el código del log
+# ("[OTP de desarrollo] código para admin@pethaven.com: 123456") en @adminCode y ejecuta el paso 2.
+# @name loginAdminStep1
 POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 Accept: application/json
@@ -32,8 +40,19 @@ Accept: application/json
   "password": "admin12345"
 }
 
-### Login de veterinario → 200 AuthResponse (role VETERINARIAN)
-# @name loginVet
+### Login de administrador, paso 2 → 200 AuthResponse (role ADMIN)
+# @name loginAdmin
+POST {{baseUrl}}/api/auth/verify-otp
+Content-Type: application/json
+Accept: application/json
+
+{
+  "challengeId": "{{loginAdminStep1.response.body.challengeId}}",
+  "code": "{{adminCode}}"
+}
+
+### Login de veterinario, paso 1 → 200 OtpChallengeResponse
+# @name loginVetStep1
 POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 Accept: application/json
@@ -43,8 +62,19 @@ Accept: application/json
   "password": "vet12345"
 }
 
-### Login de dueño → 200 AuthResponse (role OWNER)
-# @name loginOwner
+### Login de veterinario, paso 2 → 200 AuthResponse (role VETERINARIAN)
+# @name loginVet
+POST {{baseUrl}}/api/auth/verify-otp
+Content-Type: application/json
+Accept: application/json
+
+{
+  "challengeId": "{{loginVetStep1.response.body.challengeId}}",
+  "code": "{{vetCode}}"
+}
+
+### Login de dueño, paso 1 → 200 OtpChallengeResponse
+# @name loginOwnerStep1
 POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 Accept: application/json
@@ -52,6 +82,17 @@ Accept: application/json
 {
   "email": "john.doe@example.com",
   "password": "password123"
+}
+
+### Login de dueño, paso 2 → 200 AuthResponse (role OWNER)
+# @name loginOwner
+POST {{baseUrl}}/api/auth/verify-otp
+Content-Type: application/json
+Accept: application/json
+
+{
+  "challengeId": "{{loginOwnerStep1.response.body.challengeId}}",
+  "code": "{{ownerCode}}"
 }
 
 ### ═══════════════════════════════════════════
@@ -642,8 +683,9 @@ Accept: application/json
 # La petición de login lleva nombre (@name) para reutilizar su token en las siguientes
 # con {{login.response.body.token}} (sintaxis de REST Client / cliente HTTP de JetBrains).
 
-### Login de dueño → 200 AuthResponse (token, expiresIn 7200, role OWNER)
-# @name login
+### Login de dueño, paso 1 → 200 OtpChallengeResponse (challengeId, maskedEmail, expiresIn 300)
+# El código llega al correo; en desarrollo sale en el log del servidor. Cópialo en @loginCode.
+# @name loginStep1
 POST {{baseUrl}}/api/auth/login
 Content-Type: application/json
 Accept: application/json
@@ -651,6 +693,56 @@ Accept: application/json
 {
   "email": "john.doe@example.com",
   "password": "password123"
+}
+
+### Verificación con un código incorrecto → 401 (te quedan intentos)
+POST {{baseUrl}}/api/auth/verify-otp
+Content-Type: application/json
+Accept: application/json
+
+{
+  "challengeId": "{{loginStep1.response.body.challengeId}}",
+  "code": "999999"
+}
+
+### Verificación con un código mal formado → 400
+POST {{baseUrl}}/api/auth/verify-otp
+Content-Type: application/json
+Accept: application/json
+
+{
+  "challengeId": "{{loginStep1.response.body.challengeId}}",
+  "code": "12ab"
+}
+
+### Verificación con un desafío inexistente → 401
+POST {{baseUrl}}/api/auth/verify-otp
+Content-Type: application/json
+Accept: application/json
+
+{
+  "challengeId": "no-existe",
+  "code": "123456"
+}
+
+### Reenvío del código antes de que termine la espera → 429 (o 401 si el desafío ya se consumió)
+POST {{baseUrl}}/api/auth/resend-otp
+Content-Type: application/json
+Accept: application/json
+
+{
+  "challengeId": "{{loginStep1.response.body.challengeId}}"
+}
+
+### Login de dueño, paso 2 → 200 AuthResponse (token, expiresIn 7200, role OWNER)
+# @name login
+POST {{baseUrl}}/api/auth/verify-otp
+Content-Type: application/json
+Accept: application/json
+
+{
+  "challengeId": "{{loginStep1.response.body.challengeId}}",
+  "code": "{{loginCode}}"
 }
 
 ### Perfil del usuario autenticado con el token del login anterior → 200 AuthProfileResponse

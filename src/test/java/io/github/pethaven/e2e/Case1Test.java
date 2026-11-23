@@ -17,7 +17,11 @@ import org.openqa.selenium.chrome.ChromeDriver;
 import org.openqa.selenium.chrome.ChromeOptions;
 import org.openqa.selenium.support.ui.ExpectedConditions;
 import org.openqa.selenium.support.ui.WebDriverWait;
+import io.github.pethaven.support.OtpTestSupport;
+import io.github.pethaven.support.OtpTestSupport.RecordingOtpMailSender;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.annotation.DirtiesContext;
 import org.springframework.test.context.ActiveProfiles;
 
@@ -27,15 +31,18 @@ import org.springframework.test.context.ActiveProfiles;
  *
  * Requisito: el frontend debe estar corriendo con ng serve en el puerto 4200
  * (el API de la prueba se levanta en el puerto 8080 del perfil "test").
+ * El login tiene dos pasos: tras la contraseña se escribe el código, que la prueba lee del envío de correo falso.
  * El login del dueño usa correo, no cédula: es lo que pide el sistema.
  */
 @Tag("e2e")
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.DEFINED_PORT)
 @ActiveProfiles({"test", "e2e"})
+@Import(OtpTestSupport.class)
 @DirtiesContext(classMode = DirtiesContext.ClassMode.BEFORE_EACH_TEST_METHOD)
 public class Case1Test {
 
-    private static final String FRONT = "http://localhost:4200";
+    // El frontend de la prueba; -De2e.front=... lo cambia cuando ng serve no corre en el puerto 4200.
+    private static final String FRONT = System.getProperty("e2e.front", "http://localhost:4200");
     private static final String VET_EMAIL = DatabaseInit.VET_EMAIL;
     private static final String VET_PASSWORD = DatabaseInit.VET_PASSWORD;
     private static final String OWNER_DOCUMENT = "1020304050";
@@ -43,6 +50,9 @@ public class Case1Test {
     private static final String OWNER_PASSWORD = "clave12345";
     private static final String PET_NAME = "Firulais";
     private static final String PET_BREED = "Labrador";
+
+    @Autowired
+    private RecordingOtpMailSender mailSender;
 
     private WebDriver driver;
     private WebDriverWait wait;
@@ -81,6 +91,7 @@ public class Case1Test {
 
         clearAndType(By.id("password"), VET_PASSWORD);
         driver.findElement(By.id("btnLogin")).click();
+        enterCode(VET_EMAIL);
         wait.until(ExpectedConditions.urlContains("/veterinario"));
 
         // 2. Registro del cliente: primero con un correo mal escrito, luego corregido.
@@ -119,6 +130,7 @@ public class Case1Test {
         logout();
         driver.get(FRONT + "/login");
         login(OWNER_EMAIL, OWNER_PASSWORD);
+        enterCode(OWNER_EMAIL);
         wait.until(ExpectedConditions.presenceOfElementLocated(By.className("pet-name")));
 
         List<WebElement> names = driver.findElements(By.className("pet-name"));
@@ -144,6 +156,13 @@ public class Case1Test {
         clearAndType(By.id("email"), email);
         clearAndType(By.id("password"), password);
         driver.findElement(By.id("btnLogin")).click();
+    }
+
+    // Segundo paso del login: el código no llega a un correo real, lo guarda el envío falso de las pruebas.
+    private void enterCode(String email) {
+        wait.until(ExpectedConditions.presenceOfElementLocated(By.id("otpCode")));
+        clearAndType(By.id("otpCode"), mailSender.lastCodeFor(email));
+        driver.findElement(By.id("btnVerify")).click();
     }
 
     // clear() no siempre dispara el evento de Angular; CTRL+A y escribir encima sí.

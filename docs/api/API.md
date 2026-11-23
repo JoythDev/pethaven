@@ -26,7 +26,7 @@ Referencia de la API REST de PetHaven: dueños, mascotas, veterinarios, medicame
 
 ## Visión general
 
-Esta API expone la operación de la clínica veterinaria PetHaven (hospitalización de perros y gatos): los dueños y sus mascotas, el equipo de veterinarios, el inventario de medicamentos, el historial de tratamientos y los KPIs del administrador. Todos los roles inician sesión con el mismo login, que entrega un token JWT. Es una API REST con cuerpos JSON: el frontend es una SPA Angular que la consume, y **no hay renderizado en servidor**.
+Esta API expone la operación de la clínica veterinaria PetHaven (hospitalización de perros y gatos): los dueños y sus mascotas, el equipo de veterinarios, el inventario de medicamentos, el historial de tratamientos y los KPIs del administrador. Todos los roles inician sesión con el mismo login en dos pasos (contraseña y un código de un solo uso que llega al correo), que entrega un token JWT. Es una API REST con cuerpos JSON: el frontend es una SPA Angular que la consume, y **no hay renderizado en servidor**.
 
 El backend está construido con **Spring Boot 4.1 sobre Java 21** (Spring Web, Spring Data JPA, Bean Validation, Spring Security con JWT y BCrypt) y persiste en una base **H2 en archivo**. La documentación interactiva la genera springdoc a partir de las anotaciones del código.
 
@@ -61,10 +61,18 @@ La seguridad se configura con variables de entorno. Todas tienen un valor por de
 | `ADMIN_EMAIL` | `app.seed.admin.email` | *(vacío)* | Correo (y usuario de login) del primer administrador |
 | `ADMIN_PASSWORD` | `app.seed.admin.password` | *(vacío)* | Contraseña del primer administrador (8 a 255 caracteres) |
 | `ADMIN_NAME` | `app.seed.admin.name` | `Administrador` | Nombre del primer administrador |
+| `OTP_MAIL_PROVIDER` | `app.otp.mail.provider` | `log` | Cómo sale el código de verificación: `log` lo escribe en el log del servidor (desarrollo y pruebas); `brevo` lo envía por correo con la API de Brevo. El perfil `prod` fija `brevo` |
+| `BREVO_API_KEY` | `app.otp.brevo.api-key` | *(vacío)* | Clave de la API de Brevo. Obligatoria con `brevo`: sin ella la aplicación no arranca |
+| `BREVO_SENDER_EMAIL` | `app.otp.brevo.sender-email` | *(vacío)* | Remitente verificado en Brevo. Obligatorio con `brevo` |
+| `BREVO_SENDER_NAME` | `app.otp.brevo.sender-name` | `PetHaven` | Nombre del remitente |
+| `DEMO_VET_EMAIL`, `DEMO_OWNER_EMAIL`, `DEMO_OWNER2_EMAIL` | `app.demo.vet-email`, `app.demo.owner-email`, `app.demo.owner2-email` | *(vacío)* | Correos reales de la Dra. Valentina Soler, de John Doe y de Jane Doe (cuentas de demostración): el código de verificación llega a esas bandejas. Sin valor, cada cuenta conserva su correo de ejemplo |
+| `DEMO_PASSWORD` | `app.demo.password` | *(vacío)* | Contraseña de esas tres cuentas de demostración. Sin valor, conservan la de los datos de ejemplo |
 
 Al arrancar, antes que cualquier otro cargador, la aplicación crea los roles `ADMIN`, `VETERINARIAN` y `OWNER` si faltan. Si no existe ningún administrador y están definidas `ADMIN_EMAIL` y `ADMIN_PASSWORD`, crea el primero; nunca modifica uno existente. Si solo se define una de las dos, si los valores no son válidos o si el correo ya es el usuario de otra cuenta, el arranque falla con un mensaje que nunca incluye la contraseña. Sin ninguna de las dos, no se crea el administrador y queda una advertencia en el log (en desarrollo los administradores vienen de los datos de prueba).
 
 Cambiar `JWT_SECRET` invalida todos los tokens emitidos: todos los usuarios tienen que volver a iniciar sesión.
+
+Los límites del código de verificación se ajustan con `app.otp.ttl-seconds` (`300`), `app.otp.max-attempts` (`5`), `app.otp.resend-cooldown-seconds` (`60`) y `app.otp.max-resends` (`3`); ver [Inicio de sesión en dos pasos](#inicio-de-sesión-en-dos-pasos). Con `app.demo.sample-admins=false` (valor del perfil `prod`) no se cargan los dos administradores de ejemplo, que tienen correo ficticio y contraseña pública: el único administrador es el de `ADMIN_EMAIL`.
 
 ### Datos de prueba
 
@@ -86,16 +94,39 @@ Credenciales de demostración:
 
 Hay un segundo administrador sembrado (`laura.admin@pethaven.com`, misma contraseña) y un veterinario desactivado (`julian.restrepo@pethaven.com`) para probar el `403`.
 
+El inicio de sesión tiene un segundo paso con un código. En desarrollo (`OTP_MAIL_PROVIDER=log`) el código aparece en el log del servidor, con el formato `[OTP de desarrollo] código para <correo>: 123456`, así que las cuentas con correos ficticios también pueden entrar. En un despliegue, las variables `DEMO_*` sustituyen el correo (y, con `DEMO_PASSWORD`, la contraseña) de la Dra. Valentina Soler, John Doe y Jane Doe por los de una bandeja real, con sus mascotas y tratamientos intactos. Con un solo buzón basta usar alias `+` (`buzon+vet@gmail.com`, `buzon+dueno@gmail.com`, …).
+
 ### Inicio rápido
 
-Toda la API, salvo el login, exige un token. Los ejemplos siguientes inician sesión como veterinario y usan su token; están escritos para bash/zsh (en PowerShell usa `curl.exe` y comillas dobles escapadas).
+Toda la API, salvo el login (que tiene dos pasos), exige un token. Los ejemplos siguientes inician sesión como veterinario y usan su token; están escritos para bash/zsh (en PowerShell usa `curl.exe` y comillas dobles escapadas).
 
-**1. Iniciar sesión**
+**1. Iniciar sesión (paso 1: contraseña)**
 
 ```bash
 curl -i -X POST http://localhost:8080/api/auth/login \
   -H "Content-Type: application/json" \
   -d '{"email":"valentina.soler@pethaven.com","password":"vet12345"}'
+```
+
+Respuesta (`200 OK`): la contraseña es correcta y se envió un código al correo de la cuenta. Todavía no hay token.
+
+```json
+{
+  "challengeId": "3f1c6a52-8d0b-4b77-9a2e-5d0f6c1e7b19",
+  "maskedEmail": "v***@pethaven.com",
+  "expiresIn": 300,
+  "resendAvailableIn": 60
+}
+```
+
+**2. Iniciar sesión (paso 2: código)**
+
+En desarrollo el código aparece en el log del servidor (`[OTP de desarrollo] código para valentina.soler@pethaven.com: 482915`); en un despliegue llega al correo.
+
+```bash
+curl -i -X POST http://localhost:8080/api/auth/verify-otp \
+  -H "Content-Type: application/json" \
+  -d '{"challengeId":"3f1c6a52-8d0b-4b77-9a2e-5d0f6c1e7b19","code":"482915"}'
 ```
 
 Respuesta real (`200 OK`; el token está abreviado):
@@ -113,7 +144,7 @@ Respuesta real (`200 OK`; el token está abreviado):
 
 El token viaja en la cabecera `Authorization` de todas las demás peticiones. Sin él, la API responde `401`; con un rol sin permiso sobre la operación, `403` (ver [Permisos](#permisos)).
 
-**2. Listar dueños**
+**3. Listar dueños**
 
 ```bash
 curl http://localhost:8080/api/owners \
@@ -141,7 +172,7 @@ Respuesta real (`200 OK`, la lista completa trae 100 elementos; se muestran los 
 ]
 ```
 
-**3. Crear un dueño**
+**4. Crear un dueño**
 
 ```bash
 curl -i -X POST http://localhost:8080/api/owners \
@@ -160,7 +191,7 @@ Content-Type: application/json
 {"id":101,"document":"990000001","name":"Nuevo Dueño","email":"nuevo.dueno@example.com","phone":"3000000000"}
 ```
 
-El nuevo dueño ya puede iniciar sesión con su correo y su contraseña, y `GET /api/auth/me` devuelve el perfil de quien tenga el token.
+El nuevo dueño ya puede iniciar sesión con su correo, su contraseña y el código que reciba por correo, y `GET /api/auth/me` devuelve el perfil de quien tenga el token.
 
 ## Convenciones generales
 
@@ -179,7 +210,7 @@ El nuevo dueño ya puede iniciar sesión con su correo y su contraseña, y `GET 
 | Actualización | `PUT` es reemplazo total de los campos editables; los campos que no viajan en la petición se conservan |
 | Colecciones | Sin paginación, orden ni filtros genéricos: cada `GET` de colección devuelve todos los registros |
 | CORS | Solo sobre `/api/**` y para los orígenes de `app.cors.allowed-origins` (por defecto `http://localhost:4200`; variable de entorno `CORS_ALLOWED_ORIGINS`), sin credenciales; expone la cabecera `Location` |
-| Autenticación | Token JWT emitido por `POST /api/auth/login`, enviado como `Authorization: Bearer <token>` y válido 2 horas. Toda la API lo exige salvo el login; qué puede hacer cada rol está en [Permisos](#permisos) |
+| Autenticación | Inicio de sesión en dos pasos (`POST /api/auth/login` y `POST /api/auth/verify-otp`) que emite un token JWT, enviado como `Authorization: Bearer <token>` y válido 2 horas. Toda la API lo exige salvo los pasos del login; qué puede hacer cada rol está en [Permisos](#permisos) |
 | Errores | Un único formato, `ApiErrorResponse`, para cualquier fallo (ver [Errores](#errores)) |
 
 ## Errores
@@ -233,17 +264,19 @@ Todas las respuestas de error comparten el cuerpo `ApiErrorResponse`:
 | `201 Created` | Recurso creado; incluye `Location` salvo en `POST /api/treatments/{id}/drugs` |
 | `204 No Content` | Eliminación exitosa de un dueño o de un medicamento |
 | `400 Bad Request` | Cuerpo o parámetros inválidos: validación de campos (con `errors`), parámetro obligatorio ausente, parámetro con formato inválido o JSON mal formado (por ejemplo `species` fuera del enum) |
-| `401 Unauthorized` | Credenciales inválidas en el login, o ruta protegida sin token o con un token inválido o expirado |
+| `401 Unauthorized` | Credenciales inválidas en el login, código de verificación incorrecto o vencido, o ruta protegida sin token o con un token inválido o expirado |
 | `403 Forbidden` | Login con la contraseña correcta de una cuenta desactivada (veterinario inactivo); usuario autenticado cuyo rol no tiene la operación, o que intenta acceder a un recurso que no es suyo; o método que la API no admite sobre la ruta (ver [Permisos](#permisos)) |
 | `404 Not Found` | No existe el recurso solicitado, o la ruta no está mapeada |
 | `409 Conflict` | Regla de negocio: valor duplicado, borrado bloqueado, mascota o veterinario inactivos, stock insuficiente |
 | `413 Payload Too Large` | El archivo subido supera el tamaño máximo permitido (10 MB) |
 | `415 Unsupported Media Type` | El tipo de contenido de la petición no es `multipart/form-data` en una carga de archivos |
+| `429 Too Many Requests` | Verificación en dos pasos: se agotaron los intentos del código o los reenvíos, o se pidió un reenvío antes de que termine la espera |
 | `500 Internal Server Error` | Fallo inesperado; la causa queda registrada en los logs del servidor |
+| `503 Service Unavailable` | El proveedor de correo no pudo entregar el código de verificación |
 
 ## Permisos
 
-Toda petición a `/api/**` necesita un token, salvo `POST /api/auth/login`. La autorización se aplica en dos capas:
+Toda petición a `/api/**` necesita un token, salvo los tres pasos del login (`POST /api/auth/login`, `/verify-otp` y `/resend-otp`), que se hacen antes de tener uno y se protegen con el desafío de código. La autorización se aplica en dos capas:
 
 1. **Rol:** cada operación admite solo ciertos roles. Una operación que no aparece en la tabla está denegada para todos, incluidos los métodos que la API no implementa (`DELETE /api/pets/1`, `HEAD`, …): responden `403` con token y `401` sin él, nunca `405`.
 2. **Recurso propio:** algunas operaciones exigen además que el recurso sea del usuario autenticado. Si no lo es, o si no existe, responden `403`.
@@ -251,6 +284,8 @@ Toda petición a `/api/**` necesita un token, salvo `POST /api/auth/login`. La a
 | Operación | `ADMIN` | `VETERINARIAN` | `OWNER` |
 |---|---|---|---|
 | `POST /api/auth/login` | Público | Público | Público |
+| `POST /api/auth/verify-otp` | Público | Público | Público |
+| `POST /api/auth/resend-otp` | Público | Público | Público |
 | `GET /api/auth/me` | ✅ | ✅ | ✅ |
 | `GET /api/administrators/dashboard` | ✅ | — | — |
 | `GET /api/drugs`, `GET /api/drugs/{id}` | ✅ | ✅ | — |
@@ -725,7 +760,59 @@ Cuerpo de `POST /api/auth/login`, el mismo para dueños, veterinarios y administ
 }
 ```
 
+#### `OtpChallengeResponse`
+
+Respuesta de `POST /api/auth/login` y de `POST /api/auth/resend-otp`: la contraseña es correcta y se envió un código al correo de la cuenta.
+
+| Campo | Tipo | Obligatorio | Restricciones |
+|---|---|---|---|
+| `challengeId` | string | — | Identificador del desafío (UUID); se envía con el código en `verify-otp` y en `resend-otp` |
+| `maskedEmail` | string | — | Correo al que se envió el código, parcialmente oculto (`j***@gmail.com`) |
+| `expiresIn` | number | — | Segundos de vigencia del código desde su envío (`300`) |
+| `resendAvailableIn` | number | — | Segundos que hay que esperar antes de pedir otro código (`60`) |
+
+```json
+{
+  "challengeId": "3f1c6a52-8d0b-4b77-9a2e-5d0f6c1e7b19",
+  "maskedEmail": "j***@example.com",
+  "expiresIn": 300,
+  "resendAvailableIn": 60
+}
+```
+
+#### `VerifyOtpRequest`
+
+Cuerpo de `POST /api/auth/verify-otp`.
+
+| Campo | Tipo | Obligatorio | Restricciones |
+|---|---|---|---|
+| `challengeId` | string | Sí | No vacío; máximo 36 caracteres |
+| `code` | string | Sí | Exactamente 6 dígitos |
+
+```json
+{
+  "challengeId": "3f1c6a52-8d0b-4b77-9a2e-5d0f6c1e7b19",
+  "code": "482915"
+}
+```
+
+#### `ResendOtpRequest`
+
+Cuerpo de `POST /api/auth/resend-otp`.
+
+| Campo | Tipo | Obligatorio | Restricciones |
+|---|---|---|---|
+| `challengeId` | string | Sí | No vacío; máximo 36 caracteres |
+
+```json
+{
+  "challengeId": "3f1c6a52-8d0b-4b77-9a2e-5d0f6c1e7b19"
+}
+```
+
 #### `AuthResponse`
+
+Respuesta de `POST /api/auth/verify-otp`.
 
 | Campo | Tipo | Obligatorio | Restricciones |
 |---|---|---|---|
@@ -1923,12 +2010,14 @@ Administra un medicamento a un tratamiento: descuenta el inventario, suma las un
 
 ### Autenticación (`/api/auth`)
 
-Un único login para dueños, veterinarios y administradores: devuelve un token JWT y el perfil con su rol, que decide a qué portal entra el usuario.
+Un único login para dueños, veterinarios y administradores, en dos pasos: la contraseña (`POST /api/auth/login`) abre un desafío y envía un código al correo; el código (`POST /api/auth/verify-otp`) entrega el token JWT y el perfil con su rol, que decide a qué portal entra el usuario. Las reglas del código están en [Inicio de sesión en dos pasos](#inicio-de-sesión-en-dos-pasos).
 
 > [!NOTE]
 > Un correo desconocido y una contraseña incorrecta responden igual (`401`, mismo mensaje) para no enumerar usuarios. El estado de la cuenta solo se revela con la contraseña correcta: una cuenta desactivada responde `403` únicamente si la contraseña es válida; con una contraseña incorrecta responde el mismo `401`. Hoy solo los veterinarios tienen estado activo/inactivo. El token dura 2 horas y no hay token de refresco: al expirar hay que volver a iniciar sesión. Si la cuenta se desactiva o se elimina, sus tokens dejan de aceptarse de inmediato.
 
 #### `POST /api/auth/login`
+
+Primer paso: valida la contraseña y envía un código de 6 dígitos al correo de la cuenta. **No devuelve el token.**
 
 **Cuerpo** (`LoginRequest`):
 
@@ -1936,6 +2025,51 @@ Un único login para dueños, veterinarios y administradores: devuelve un token 
 {
   "email": "valentina.soler@pethaven.com",
   "password": "vet12345"
+}
+```
+
+**Respuesta** `200 OK` — `OtpChallengeResponse`:
+
+```json
+{
+  "challengeId": "3f1c6a52-8d0b-4b77-9a2e-5d0f6c1e7b19",
+  "maskedEmail": "v***@pethaven.com",
+  "expiresIn": 300,
+  "resendAvailableIn": 60
+}
+```
+
+Cuentas del seed por rol: `john.doe@example.com` / `password123` (`OWNER`), `valentina.soler@pethaven.com` / `vet12345` (`VETERINARIAN`), `admin@pethaven.com` / `admin12345` (`ADMIN`). En desarrollo el código aparece en el log del servidor.
+
+**Errores**:
+- `400` validación de campos (por ejemplo, correo con formato inválido)
+- `401` correo desconocido o contraseña incorrecta: `Correo o contraseña incorrectos.`
+- `403` contraseña correcta de una cuenta desactivada: `La cuenta está desactivada.`
+- `503` el proveedor de correo no pudo entregar el código: `No se pudo enviar el código por correo. Intenta de nuevo en unos minutos.`
+
+Ejemplo con la cuenta desactivada del seed (`julian.restrepo@pethaven.com` / `vet12345`):
+
+```json
+{
+  "timestamp": "2026-11-07T15:51:39.204Z",
+  "status": 403,
+  "error": "Forbidden",
+  "message": "La cuenta está desactivada.",
+  "path": "/api/auth/login",
+  "errors": {}
+}
+```
+
+#### `POST /api/auth/verify-otp`
+
+Segundo paso: verifica el código recibido por correo, consume el desafío y entrega el token.
+
+**Cuerpo** (`VerifyOtpRequest`):
+
+```json
+{
+  "challengeId": "3f1c6a52-8d0b-4b77-9a2e-5d0f6c1e7b19",
+  "code": "482915"
 }
 ```
 
@@ -1952,25 +2086,32 @@ Un único login para dueños, veterinarios y administradores: devuelve un token 
 }
 ```
 
-Cuentas del seed por rol: `john.doe@example.com` / `password123` (`OWNER`), `valentina.soler@pethaven.com` / `vet12345` (`VETERINARIAN`), `admin@pethaven.com` / `admin12345` (`ADMIN`).
-
 **Errores**:
-- `400` validación de campos (por ejemplo, correo con formato inválido)
-- `401` correo desconocido o contraseña incorrecta: `Correo o contraseña incorrectos.`
-- `403` contraseña correcta de una cuenta desactivada: `La cuenta está desactivada.`
+- `400` validación de campos (por ejemplo, un código que no tiene 6 dígitos): `El código debe tener 6 dígitos`
+- `401` código incorrecto, con los intentos que quedan: `El código es incorrecto. Te quedan 4 intentos.`
+- `401` el desafío no existe, venció o ya se usó: `El código venció o ya no es válido. Inicia sesión de nuevo.`
+- `403` la cuenta se desactivó entre los dos pasos: `La cuenta está desactivada.`
+- `429` se agotaron los intentos (el desafío se invalida): `Superaste el número de intentos. Inicia sesión de nuevo para recibir otro código.`
 
-Ejemplo con la cuenta desactivada del seed (`julian.restrepo@pethaven.com` / `vet12345`):
+#### `POST /api/auth/resend-otp`
+
+Envía un código nuevo para un desafío pendiente. El código anterior deja de valer, los intentos fallidos se reinician y la vigencia se renueva.
+
+**Cuerpo** (`ResendOtpRequest`):
 
 ```json
 {
-  "timestamp": "2026-11-07T15:51:39.204Z",
-  "status": 403,
-  "error": "Forbidden",
-  "message": "La cuenta está desactivada.",
-  "path": "/api/auth/login",
-  "errors": {}
+  "challengeId": "3f1c6a52-8d0b-4b77-9a2e-5d0f6c1e7b19"
 }
 ```
+
+**Respuesta** `200 OK` — `OtpChallengeResponse` (el mismo `challengeId`, con la vigencia y la espera renovadas).
+
+**Errores**:
+- `400` validación de campos
+- `401` el desafío no existe o venció: `El código venció o ya no es válido. Inicia sesión de nuevo.`
+- `429` falta esperar: `Espera 40 s antes de pedir otro código.`; o se alcanzó el máximo de reenvíos: `Alcanzaste el máximo de reenvíos. Inicia sesión de nuevo.`
+- `503` el proveedor de correo no pudo entregar el código. El reenvío fallido no consume un reenvío y el código anterior sigue vigente.
 
 #### `GET /api/auth/me`
 
@@ -2056,6 +2197,17 @@ Los duplicados se detectan antes de escribir y responden `409` con un mensaje ex
 - En `PUT` son opcionales: omitir `password` o enviarlo en blanco conserva la contraseña actual.
 - Al crear, la contraseña es obligatoria y debe tener entre 8 y 255 caracteres.
 
+### Inicio de sesión en dos pasos
+
+- **Paso 1** (`POST /api/auth/login`): valida correo y contraseña con las mismas reglas de siempre (un correo desconocido y una contraseña incorrecta responden igual; una cuenta desactivada responde `403` solo con la contraseña correcta). Si son válidas, crea un desafío, envía el código al correo de la cuenta y devuelve `challengeId`. No se emite ningún token.
+- **Paso 2** (`POST /api/auth/verify-otp`): con el `challengeId` y el código se emite el token. Si la cuenta se desactivó o se eliminó entre los dos pasos, no se emite.
+- **El código:** 6 dígitos generados con un generador criptográficamente seguro. Solo se guarda su hash (HMAC-SHA256 ligado al desafío), nunca el código. Vence a los 5 minutos y se usa una sola vez.
+- **Intentos:** 5 verificaciones fallidas por código; al agotarlas, el desafío se elimina y hay que volver a iniciar sesión (`429`). Los intentos fallidos se conservan aunque la petición responda error.
+- **Reenvíos:** máximo 3 por desafío, con 60 segundos de espera entre uno y otro. Un reenvío invalida el código anterior, reinicia los intentos y renueva la vigencia.
+- **Un desafío por cuenta:** iniciar sesión de nuevo con la misma cuenta descarta el desafío anterior.
+- **Pasos públicos:** `login`, `verify-otp` y `resend-otp` no exigen token porque se hacen antes de tenerlo. Los protege el desafío: un `challengeId` aleatorio que solo recibe quien ya pasó la contraseña, el código y los límites anteriores.
+- **Entrega del código:** con `OTP_MAIL_PROVIDER=brevo` sale por la API HTTP de Brevo; si el proveedor falla, el login responde `503` y no deja un desafío pendiente. Con `log` (desarrollo y pruebas) el código se escribe en el log del servidor y nunca se usa en producción.
+
 ### Valores iniciales
 
 - Una mascota creada nace activa (`active: true`); el estado solo cambia con `PUT /api/pets/{id}/active`.
@@ -2075,7 +2227,8 @@ Seguridad:
 - **Sin token de refresco ni revocación.** El token dura 2 horas. Cerrar sesión borra el token del navegador, pero el servidor no lo invalida: sigue siendo válido hasta que expira. Sí se rechaza de inmediato si la cuenta se desactiva o se elimina.
 - **Token en `localStorage`.** La SPA guarda solo el token en `localStorage` (clave `pethaven.token`): sobrevive a recargas y a cerrar el navegador, pero cualquier script que se ejecute en la página puede leerlo. La vigencia de 2 horas acota el daño de un token filtrado. Los datos del usuario no se guardan: en cada carga se piden con `GET /api/auth/me` y la expiración se lee del claim `exp` del token.
 - **Cerrar sesión es local.** El API es stateless y no revoca tokens: cerrar sesión borra el token del navegador (y de las demás pestañas abiertas), pero una copia del token sigue siendo válida hasta que vence.
-- **Sin límite de intentos de login.** No hay bloqueo ni límite de frecuencia; queda para la fase de endurecimiento del roadmap.
+- **Intentos limitados solo por desafío.** Cada código admite 5 intentos y 3 reenvíos, pero no hay un bloqueo de cuenta ni un límite de frecuencia por dirección IP sobre el paso 1 (la contraseña): quien conozca una contraseña puede pedir códigos repetidamente, lo que envía correos a esa cuenta. Queda para la fase de endurecimiento del roadmap.
+- **Los desafíos viven en la base de datos.** Con el H2 en memoria del despliegue de demostración se pierden al reiniciar: quien esté a mitad de un inicio de sesión debe empezar de nuevo.
 - **Un rol por cuenta.** Una cuenta sin perfil asociado o con un número de roles distinto de uno hace que el login responda `500`. Ninguna operación de la API crea cuentas así; solo pueden aparecer modificando la base a mano.
 - **Primer arranque concurrente.** Si dos instancias arrancan a la vez sobre una base vacía, una puede fallar al crear los roles o el primer administrador por las restricciones de unicidad. Reiniciarla basta, porque la creación es idempotente.
 - **Descarga de fotos y DNS.** La validación contra SSRF resuelve el host antes de descargar, pero el cliente HTTP lo vuelve a resolver al conectar: un DNS que cambie de respuesta entre ambas resoluciones (*DNS rebinding*) podría apuntar a una dirección interna. Fijar la IP no es viable con HTTPS en el cliente HTTP de Java.
