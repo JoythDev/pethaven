@@ -1,7 +1,7 @@
 import { Component, ElementRef, Injector, afterNextRender, computed, inject, input, output, signal } from '@angular/core';
 
-import { addDays, dayKey, isSameDay, isSunday } from '../../../../core/demo/demo-date';
-import { DayCount } from '../../../../models/demo/appointment.model';
+import { addDays, dayKey, isSameDay, isSunday } from '../../../../core/time/calendar';
+import { DayCount } from '../../../../models/appointment.model';
 import { dayCellLabel, monthGrid } from '../../../../core/vet-agenda/vet-agenda';
 
 interface CalendarCell {

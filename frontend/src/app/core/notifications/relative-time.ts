@@ -1,4 +1,4 @@
-import { dayNumber } from '../demo/demo-date';
+import { dayNumber } from '../time/calendar';
 
 const MONTHS = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'] as const;
 const MINUTE = 60_000;

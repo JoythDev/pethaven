@@ -2,17 +2,19 @@ import { Component, DestroyRef, computed, inject, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { Router, RouterLink } from '@angular/router';
 import { LucideClock, LucidePlus } from '@lucide/angular';
-import { BehaviorSubject, Observable, forkJoin, map, switchMap, throwError } from 'rxjs';
+import { BehaviorSubject, Observable, catchError, forkJoin, map, of, switchMap, throwError } from 'rxjs';
 import { ButtonModule } from 'primeng/button';
 import { SelectModule } from 'primeng/select';
 import { TagModule } from 'primeng/tag';
 
 import { buildDayTimeline } from '../../../core/day-timeline/day-timeline';
-import { formatTime, startOfDay } from '../../../core/demo/demo-date';
 import { ViewState, toViewState } from '../../../core/http/view-state';
 import { petStatus } from '../../../core/status/pet-status';
 import { greetingFor } from '../../../core/ui/greeting';
+import { addDays, dayKey, formatTime, startOfDay } from '../../../core/time/calendar';
+import { CLOCK } from '../../../core/time/clock';
 import { skeletonVisible } from '../../../core/ui/skeleton-timing';
+import { buildDayAgenda, countsByDay, mondayOf } from '../../../core/vet-agenda/vet-agenda';
 import {
   HERO_FALLBACK,
   RecentPatient,
@@ -26,12 +28,12 @@ import {
   vetStats,
   weekSummary,
 } from '../../../core/vet-home/vet-home';
-import { Appointment, DayAgenda, DayCount } from '../../../models/demo/appointment.model';
+import { APPOINTMENT_REASON_LABELS, Appointment, DayAgenda, DayCount } from '../../../models/appointment.model';
 import { StockAlerts } from '../../../models/demo/stock-minimum.model';
 import { Pet } from '../../../models/pet.model';
 import { AuthService } from '../../../services/auth.service';
-import { DEMO_NOW } from '../../../services/demo/demo-latency';
-import { DemoAppointmentsService } from '../../../services/demo/demo-appointments.service';
+import { AppointmentService } from '../../../services/appointment.service';
+import { ClinicService } from '../../../services/clinic.service';
 import { DemoStockMinimumService } from '../../../services/demo/demo-stock-minimum.service';
 import { PetService } from '../../../services/pet.service';
 import { VeterinarianService } from '../../../services/veterinarian.service';
@@ -39,7 +41,6 @@ import { formatUnits } from '../../shared/drugs/drug-stock';
 import { AvatarComponent } from '../../shared/avatar/avatar.component';
 import { CardComponent } from '../../shared/card/card.component';
 import { DaySummaryComponent } from '../../shared/day-summary/day-summary.component';
-import { DemoTagComponent } from '../../shared/demo-tag/demo-tag.component';
 import { EmptyStateComponent } from '../../shared/empty-state/empty-state.component';
 import { HeroComponent } from '../../shared/hero/hero.component';
 import { InlineErrorComponent } from '../../shared/inline-error/inline-error.component';
@@ -69,8 +70,8 @@ const STOCK_LIMIT = 5;
 /**
  * Inicio del veterinario (11.6): héroe con el día, «Resumen del día», cuatro indicadores reales
  * (pacientes, tratamientos, pacientes activos y última atención), citas de hoy, pacientes recientes y
- * existencias bajas. Las citas son demo (S3); los indicadores, los pacientes y las existencias son
- * reales. Cada fuente carga y falla por separado.
+ * existencias bajas. Las citas vienen del API (S16); el mínimo de existencias sigue en demo. Cada fuente
+ * carga y falla por separado.
  */
 @Component({
   selector: 'app-dashboard-home',
@@ -84,7 +85,6 @@ const STOCK_LIMIT = 5;
     AvatarComponent,
     CardComponent,
     DaySummaryComponent,
-    DemoTagComponent,
     EmptyStateComponent,
     HeroComponent,
     InlineErrorComponent,
@@ -104,9 +104,10 @@ export class DashboardHomeComponent {
   private readonly router = inject(Router);
   private readonly petService = inject(PetService);
   private readonly veterinarianService = inject(VeterinarianService);
-  private readonly appointments = inject(DemoAppointmentsService);
+  private readonly appointmentService = inject(AppointmentService);
+  private readonly clinicService = inject(ClinicService);
   private readonly stockService = inject(DemoStockMinimumService);
-  private readonly clock = inject(DEMO_NOW);
+  private readonly clock = inject(CLOCK);
 
   // Reloj de la página: avanza cada 30 s para mover «ahora» y «Sigue».
   protected readonly now = signal(this.clock());
@@ -171,23 +172,10 @@ export class DashboardHomeComponent {
       : { heading: 'Hoy no tienes citas', description: 'Cuando agenden una, aparecerá aquí.' };
   });
 
-  // «Esta semana» necesita la semana y las citas ya atendidas de hoy: falla si falla cualquiera.
+  // «Esta semana»: citas de la semana de hoy (lunes a domingo) y las ya completadas.
   protected readonly weekView = computed<ViewState<WeekSummary>>(() => {
     const week = this.week();
-    const agenda = this.agenda();
-    if (week.status === 'error') {
-      return week;
-    }
-    if (agenda.status === 'error') {
-      return agenda;
-    }
-    if (week.status === 'ready' && agenda.status === 'ready') {
-      return {
-        status: 'ready',
-        data: weekSummary(week.data, this.now(), agenda.data.counts.completed),
-      };
-    }
-    return LOADING;
+    return week.status === 'ready' ? { status: 'ready', data: weekSummary(week.data) } : week;
   });
 
   protected readonly stockRows = computed(() => {
@@ -204,6 +192,15 @@ export class DashboardHomeComponent {
     return formatTime(appointment.start);
   }
 
+  protected appointmentReason(appointment: Appointment): string {
+    return APPOINTMENT_REASON_LABELS[appointment.reason];
+  }
+
+  // Una mascota provisional aún no tiene ficha: su cita se atiende desde la Agenda.
+  protected appointmentLink(appointment: Appointment): unknown[] {
+    return appointment.petId === null ? ['/veterinario/agenda'] : ['/veterinario/mascotas', appointment.petId];
+  }
+
   protected status(pet: Pet) {
     return petStatus(pet);
   }
@@ -218,7 +215,6 @@ export class DashboardHomeComponent {
 
   protected retryWeek(): void {
     this.weekRetry.next();
-    this.agendaRetry.next();
   }
 
   protected retryStock(): void {
@@ -257,15 +253,26 @@ export class DashboardHomeComponent {
 
   private loadAgenda(): Observable<DayAgenda> {
     const id = this.vetId();
-    return id === null
-      ? throwError(() => new Error(NOT_A_VET))
-      : this.appointments.getDayAgenda(id, startOfDay(this.clock()));
+    if (id === null) {
+      return throwError(() => new Error(NOT_A_VET));
+    }
+    const today = startOfDay(this.clock());
+    return forkJoin({
+      clinic: this.clinicService.getClinic(),
+      appointments: this.appointmentService.getVeterinarianAgenda(id, dayKey(today), dayKey(today)),
+    }).pipe(map(({ clinic, appointments }) => buildDayAgenda(today, appointments, clinic)));
   }
 
+  // Semana de hoy, de lunes a domingo; si el horario no carga, los domingos cuentan como cerrados.
   private loadWeek(): Observable<DayCount[]> {
     const id = this.vetId();
-    return id === null
-      ? throwError(() => new Error(NOT_A_VET))
-      : this.appointments.getWeekOverview(id, startOfDay(this.clock()));
+    if (id === null) {
+      return throwError(() => new Error(NOT_A_VET));
+    }
+    const monday = mondayOf(this.clock());
+    return forkJoin({
+      clinic: this.clinicService.getClinic().pipe(catchError(() => of(null))),
+      appointments: this.appointmentService.getVeterinarianAgenda(id, dayKey(monday), dayKey(addDays(monday, 6))),
+    }).pipe(map(({ clinic, appointments }) => countsByDay(appointments, monday, 7, clinic)));
   }
 }

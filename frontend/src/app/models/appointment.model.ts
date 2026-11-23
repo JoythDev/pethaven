@@ -101,3 +101,57 @@ export interface AvailabilityDay {
   open: boolean;
   freeSlots: string[];
 }
+
+// Motivos de las citas que reserva el dueño: al completarlas, el veterinario elige ambulatoria o ingreso.
+export const OWNER_REASONS: readonly AppointmentReason[] = [
+  'CONTROL',
+  'VACCINATION',
+  'CONSULTATION',
+  'DEWORMING',
+  'NUTRITION',
+  'FIRST_VISIT',
+];
+
+// Motivos que agenda el veterinario para una mascota hospitalizada (S16.1).
+export type VeterinarianReason = Extract<AppointmentReason, 'DISCHARGE' | 'BRIEFING'>;
+
+// Cita del veterinario con el dueño de una mascota hospitalizada (VeterinarianAppointmentRequest).
+export interface VeterinarianAppointmentRequest {
+  petId: number;
+  reason: VeterinarianReason;
+  startTime: string;
+}
+
+// Cierre de una cita en curso (AppointmentCompletionRequest).
+export interface AppointmentCompletionRequest {
+  outcome: AppointmentOutcome | null;
+  treatmentId: number | null;
+  clinicalNotes: string | null;
+}
+
+// Una franja del horario de la clínica en la agenda del veterinario; `appointment` es la cita que la
+// ocupa (las canceladas la dejan libre).
+export interface AgendaSlot {
+  time: string;
+  start: Date;
+  end: Date;
+  appointment: Appointment | null;
+}
+
+export interface DayAgenda {
+  date: Date;
+  closed: boolean;
+  slots: AgendaSlot[];
+  // Citas del día sin las canceladas, por hora.
+  appointments: Appointment[];
+  counts: { total: number; completed: number; freeSlots: number };
+}
+
+// Citas de un día para el calendario y «Esta semana» (sin las canceladas).
+export interface DayCount {
+  date: Date;
+  dateKey: string;
+  count: number;
+  completed: number;
+  closed: boolean;
+}

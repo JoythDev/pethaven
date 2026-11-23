@@ -1,0 +1,37 @@
+<div class="grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-2" role="group" aria-label="Día de la cita">
+  @for (option of days(); track option.key) {
+    <button
+      type="button"
+      [class]="pickClass + ' px-1.5 py-2'"
+      [disabled]="option.disabled"
+      [attr.aria-pressed]="day() === option.key"
+      [attr.aria-label]="dayLabel(option.date) + (option.disabled ? ', la clínica no atiende' : '')"
+      (click)="dayChange.emit(option.key)"
+    >
+      <span class="text-[12.5px] leading-[18px] font-medium text-ink-muted">{{ option.weekday }}</span>
+      <span class="font-display text-lg leading-6 font-semibold">{{ option.number }}</span>
+    </button>
+  }
+</div>
+
+<h3 class="mt-4 mb-2 text-sm leading-5 font-extrabold text-ink">Horarios libres</h3>
+@if (selectedDay()) {
+  @if (dayFull()) {
+    <p class="mb-2 text-sm leading-5 text-ink-muted">No te quedan horarios libres este día. Prueba con otro.</p>
+  }
+  <div class="grid grid-cols-[repeat(auto-fill,minmax(64px,1fr))] gap-2" role="group" aria-label="Horarios libres">
+    @for (slot of slots(); track slot.time) {
+      <button
+        type="button"
+        [class]="pickClass + ' px-1.5 py-2 tabular-nums'"
+        [disabled]="slot.disabled"
+        [attr.aria-pressed]="time() === slot.time"
+        (click)="timeChange.emit(slot.time)"
+      >
+        {{ slot.time }}
+      </button>
+    }
+  </div>
+} @else {
+  <p class="text-sm leading-5 text-ink-muted">Primero elige un día.</p>
+}

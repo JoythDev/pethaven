@@ -191,6 +191,8 @@ const DAY_NAMES: Record<Clinic['hours'][number]['day'], string> = {
   SUNDAY: 'domingo',
 };
 
+const WEEK_ORDER: Clinic['hours'][number]['day'][] = ['MONDAY', 'TUESDAY', 'WEDNESDAY', 'THURSDAY', 'FRIDAY', 'SATURDAY', 'SUNDAY'];
+
 // '08:00:00' → '8:00'.
 const shortTime = (time: string): string => time.slice(0, 5).replace(/^0/, '');
 
@@ -200,18 +202,18 @@ const shortTime = (time: string): string => time.slice(0, 5).replace(/^0/, '');
  */
 export function clinicHoursText(hours: Clinic['hours']): string {
   const groups: { from: string; to: string; range: string }[] = [];
-  for (const entry of hours) {
-    if (!entry.open || !entry.close) {
-      continue;
-    }
-    const range = `${shortTime(entry.open)} a ${shortTime(entry.close)}`;
+  // Recorre la semana de lunes a domingo, sin depender del orden en que llegan los días.
+  let previousRange: string | null = null;
+  for (const day of WEEK_ORDER) {
+    const entry = hours.find((h) => h.day === day);
+    const range = entry?.open && entry.close ? `${shortTime(entry.open)} a ${shortTime(entry.close)}` : null;
     const last = groups.at(-1);
-    const previous = hours[hours.indexOf(entry) - 1];
-    if (last && last.range === range && previous && DAY_NAMES[previous.day] === last.to) {
-      last.to = DAY_NAMES[entry.day];
-    } else {
-      groups.push({ from: DAY_NAMES[entry.day], to: DAY_NAMES[entry.day], range });
+    if (range && last && previousRange === range) {
+      last.to = DAY_NAMES[day];
+    } else if (range) {
+      groups.push({ from: DAY_NAMES[day], to: DAY_NAMES[day], range });
     }
+    previousRange = range;
   }
   return groups
     .map(({ from, to, range }) => `${capitalize(from === to ? from : `${from} a ${to}`)}, ${range}`)

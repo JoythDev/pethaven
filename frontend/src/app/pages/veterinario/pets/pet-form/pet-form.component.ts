@@ -49,8 +49,11 @@ import {
 import { petStatus } from '../../../../core/status/pet-status';
 import { coatKitFor, speciesSticker } from '../../../../core/stickers/stickers';
 import { skeletonVisible } from '../../../../core/ui/skeleton-timing';
+import { agendaParams } from '../../../../core/vet-appointments/vet-appointments';
+import { Appointment } from '../../../../models/appointment.model';
 import { Owner } from '../../../../models/owner.model';
 import { PET_AGE_MAX, PET_WEIGHT_MAX, PET_WEIGHT_MIN, Pet, PetRequest, Species } from '../../../../models/pet.model';
+import { AppointmentService } from '../../../../services/appointment.service';
 import { AuthService } from '../../../../services/auth.service';
 import { OwnerService } from '../../../../services/owner.service';
 import { PetService } from '../../../../services/pet.service';
@@ -125,6 +128,7 @@ export class PetsFormComponent implements OnInit, HasUnsavedChanges {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly petService = inject(PetService);
+  private readonly appointmentService = inject(AppointmentService);
   private readonly ownerService = inject(OwnerService);
   private readonly formBuilder = inject(NonNullableFormBuilder);
   private readonly notifications = inject(NotificationService);
@@ -159,6 +163,14 @@ export class PetsFormComponent implements OnInit, HasUnsavedChanges {
   private readonly ownersRetry = new BehaviorSubject<void>(undefined);
   private readonly ownersSettled = signal(false);
   private ownerPanelOpen = false;
+
+  // Cita en curso con mascota provisional (`?cita=`, desde la Agenda): el formulario parte de sus datos,
+  // el dueño es el de la cita y la mascota se registra en casa enlazada a ella (S16.6).
+  private readonly visitId =
+    this.initialRawId === null ? parseRouteId(this.route.snapshot.queryParamMap.get('cita')) : null;
+  readonly visit = signal<ViewState<Appointment> | null>(this.visitId === null ? null : { status: 'loading' });
+  private readonly visitRetry = new BehaviorSubject<void>(undefined);
+  protected readonly forVisit = this.visitId !== null;
 
   // Dueño que llegó en `?dueno=` (desde «Registrar mascota»); solo cuenta si existe en la lista.
   private readonly ownerParam = parseOwnerParam(this.route.snapshot.queryParamMap.get('dueno'));
@@ -227,6 +239,9 @@ export class PetsFormComponent implements OnInit, HasUnsavedChanges {
   });
 
   protected readonly view = computed<FormView>(() => {
+    const visit = this.visit();
+    if (visit?.status === 'loading') return 'loading';
+    if (visit?.status === 'error') return 'error';
     const load = this.petLoad();
     if (load === null) return 'form';
     if (load.status === 'not-found' || load.status === 'error') return load.status;
@@ -235,6 +250,10 @@ export class PetsFormComponent implements OnInit, HasUnsavedChanges {
   });
   protected readonly skeleton = skeletonVisible(computed(() => this.view() === 'loading'));
   protected readonly petErrorMessage = computed(() => {
+    const visit = this.visit();
+    if (visit?.status === 'error') {
+      return `No pudimos cargar la cita. ${visit.message}`;
+    }
     const load = this.petLoad();
     return load?.status === 'error' ? load.message : '';
   });
@@ -243,6 +262,13 @@ export class PetsFormComponent implements OnInit, HasUnsavedChanges {
   private readonly previousUrl =
     this.router.getCurrentNavigation()?.previousNavigation?.finalUrl?.toString() ?? null;
   protected readonly back = computed(() => {
+    if (this.forVisit) {
+      const visit = this.visit();
+      const tree = this.router.createUrlTree(['/veterinario/agenda'], {
+        queryParams: visit?.status === 'ready' ? agendaParams(visit.data) : {},
+      });
+      return { url: tree.toString(), label: 'Agenda', tree };
+    }
     // Sin ficha a la que volver (id desconocido), el enlace lleva a la lista.
     const target = backTarget(
       this.previousUrl,
@@ -253,6 +279,7 @@ export class PetsFormComponent implements OnInit, HasUnsavedChanges {
   });
 
   protected readonly heading = computed(() => {
+    if (this.forVisit) return 'Registrar mascota';
     if (this.editId() === null) return 'Nueva mascota';
     const name = this.loadedPet()?.name;
     return name ? `Editar ${name}` : 'Editar mascota';
@@ -260,6 +287,8 @@ export class PetsFormComponent implements OnInit, HasUnsavedChanges {
   protected readonly subtitle = computed(() =>
     this.view() === 'not-found' || this.view() === 'error'
       ? null
+      : this.forVisit
+      ? 'Completa los datos que dejó el dueño al reservar. La mascota queda en casa y enlazada a la cita.'
       : this.editId() === null
       ? 'Registra a un nuevo paciente. Todos los campos son obligatorios, salvo la foto.'
       : 'Cambia los datos que haga falta y guarda. Todos los campos son obligatorios, salvo la foto.',
@@ -318,6 +347,22 @@ export class PetsFormComponent implements OnInit, HasUnsavedChanges {
         }
       });
 
+    // La cita de una mascota provisional: sus datos llenan el formulario.
+    if (this.visitId !== null) {
+      const visitId = this.visitId;
+      this.visitRetry
+        .pipe(
+          switchMap(() => this.appointmentService.getById(visitId).pipe(toViewState<Appointment>())),
+          takeUntilDestroyed(this.destroyRef),
+        )
+        .subscribe((state) => {
+          this.visit.set(state);
+          if (state.status === 'ready') {
+            this.fillFromVisit(state.data);
+          }
+        });
+    }
+
     // Un error o el cambio de un valor ya mostrado se re-evalúa al teclear; un error nuevo, no.
     this.form.valueChanges.pipe(takeUntilDestroyed(this.destroyRef)).subscribe(() => this.refreshShownErrors());
 
@@ -325,10 +370,16 @@ export class PetsFormComponent implements OnInit, HasUnsavedChanges {
     // en Guardar no crea la mascota dos veces. Al terminar avisa y navega a la ficha.
     this.submit$
       .pipe(
-        exhaustMap(({ request, active }) => this.save(request, active)),
+        exhaustMap(({ request, active }) => {
+          const visit = this.visit();
+          return visit?.status === 'ready' ? this.registerForVisit(visit.data, request) : this.save(request, active);
+        }),
         takeUntilDestroyed(this.destroyRef),
       )
       .subscribe((pet) => {
+        if (pet === null) {
+          return;
+        }
         const editando = this.editId() !== null;
         this.notifications.success(
           editando ? 'Mascota actualizada' : 'Mascota registrada',
@@ -366,6 +417,10 @@ export class PetsFormComponent implements OnInit, HasUnsavedChanges {
   }
 
   retryPet(): void {
+    if (this.visit()?.status === 'error') {
+      this.visitRetry.next();
+      return;
+    }
     this.petRetry.next();
   }
 
@@ -498,6 +553,47 @@ export class PetsFormComponent implements OnInit, HasUnsavedChanges {
     });
     this.form.markAsPristine();
     this.shown.set({});
+  }
+
+  // Datos provisionales de la cita; el dueño queda fijo (el API exige el de la cita).
+  private fillFromVisit(visit: Appointment): void {
+    this.ageConfirmed.set(visit.provisionalAge !== null);
+    this.form.patchValue({
+      name: visit.petName,
+      species: visit.species,
+      breed: visit.provisionalBreed ?? '',
+      age: visit.provisionalAge ?? 0,
+      ownerId: visit.ownerId,
+      active: false,
+    });
+    this.form.controls.ownerId.disable();
+    this.form.markAsPristine();
+    this.shown.set({});
+  }
+
+  // Registra la mascota de la cita y vuelve a la Agenda con la cita elegida. Emite null: no sigue el
+  // camino de una mascota nueva (aviso y ficha).
+  private registerForVisit(visit: Appointment, request: PetRequest): Observable<null> {
+    this.saving.set(true);
+    return this.appointmentService.registerPet(visit.id, request).pipe(
+      tap((appointment) => {
+        this.form.markAsPristine();
+        this.notifications.success('Mascota registrada', `${appointment.petName} quedó registrada y enlazada a la cita.`);
+        void this.router.navigate(['/veterinario/agenda'], { queryParams: agendaParams(appointment) });
+      }),
+      map(() => null),
+      catchError((error: unknown) => {
+        if (applyServerErrors(this.form, error)) {
+          this.showAllErrors();
+          this.focusFirstInvalid();
+          this.notifications.warn('Revisa los campos marcados.', '');
+        } else {
+          this.notifications.error('No se pudo registrar la mascota', error);
+        }
+        return EMPTY;
+      }),
+      finalize(() => this.saving.set(false)),
+    );
   }
 
   // Al crear con `?dueno=` deja a ese dueño elegido, sin marcar el formulario como modificado.

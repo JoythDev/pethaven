@@ -1,0 +1,109 @@
+<p-dialog
+  [visible]="true"
+  [modal]="true"
+  [draggable]="false"
+  [resizable]="false"
+  [closable]="true"
+  [closeOnEscape]="true"
+  [blockScroll]="true"
+  appendTo="body"
+  [header]="title()"
+  closeAriaLabel="Cerrar"
+  styleClass="w-[min(40rem,calc(100vw-2rem))]"
+  (visibleChange)="$event ? null : closed.emit()"
+>
+  @if (loading()) {
+    @if (skeleton()) {
+      <app-skeleton variant="text" [lines]="4" />
+    }
+  } @else {
+    <div class="flex flex-col gap-4">
+      @if (movingText(); as text) {
+        <p class="text-sm leading-5 text-ink-muted">{{ text }}</p>
+      } @else {
+        <app-form-field fieldId="appointment-reason" label="Motivo" [error]="reasonError()">
+          <p-selectbutton
+            ariaLabelledBy="appointment-reason-label"
+            [options]="reasonOptions"
+            optionLabel="label"
+            optionValue="value"
+            [allowEmpty]="false"
+            [ngModel]="reason()"
+            (ngModelChange)="reason.set($event)"
+          />
+        </app-form-field>
+
+        <app-form-field
+          fieldId="appointment-pet"
+          label="Mascota hospitalizada"
+          [error]="petError()"
+          hint="La cita es con su dueño y queda a tu nombre."
+        >
+          @let petsState = pets();
+          @if (petsState.status === 'error') {
+            <app-inline-error text="No pudimos cargar las mascotas." (retry)="retryPets()" />
+          } @else {
+            <p-select
+              inputId="appointment-pet"
+              ariaLabelledBy="appointment-pet-label"
+              [options]="petOptions()"
+              optionLabel="label"
+              optionValue="value"
+              placeholder="Elige una mascota"
+              [filter]="true"
+              filterBy="label"
+              filterPlaceholder="Buscar por mascota o dueño"
+              emptyFilterMessage="Ninguna mascota coincide"
+              emptyMessage="No hay mascotas hospitalizadas"
+              appendTo="body"
+              [fluid]="true"
+              [ngModel]="petId()"
+              (ngModelChange)="petId.set($event)"
+            />
+          }
+        </app-form-field>
+      }
+
+      <section aria-labelledby="appointment-slot-title">
+        <h3 id="appointment-slot-title" class="mb-2 text-sm leading-5 font-extrabold text-ink">Fecha y hora</h3>
+        @let daysState = availability();
+        @if (daysState.status === 'error') {
+          <app-inline-error text="No pudimos cargar tus horarios libres." (retry)="retryAvailability()" />
+        } @else if (daysState.status === 'ready') {
+          <app-slot-picker
+            [days]="daysState.data"
+            [clinic]="clinic()"
+            [day]="day()"
+            [time]="time()"
+            (dayChange)="pickDay($event)"
+            (timeChange)="pickTime($event)"
+          />
+        }
+        @if (slotError(); as error) {
+          <p class="mt-2 text-[12.5px] leading-[18px] font-bold text-danger" role="alert">{{ error }}</p>
+        }
+      </section>
+
+      @if (saveError(); as error) {
+        <p-message severity="error" styleClass="w-full">
+          <ng-template #icon><svg lucideCircleAlert [size]="18" aria-hidden="true"></svg></ng-template>
+          <span>{{ error }}</span>
+        </p-message>
+      }
+    </div>
+  }
+
+  <ng-template #footer>
+    <div class="flex flex-wrap justify-end gap-2">
+      <button pButton type="button" severity="secondary" [outlined]="true" label="Cancelar" (click)="closed.emit()"></button>
+      <button
+        pButton
+        type="button"
+        [label]="rescheduling() ? 'Reprogramar' : 'Agendar cita'"
+        [loading]="saving()"
+        [disabled]="loading()"
+        (click)="save()"
+      ></button>
+    </div>
+  </ng-template>
+</p-dialog>

@@ -31,13 +31,12 @@
     }
   </div>
 
-  <!-- Resumen del día (demo): solo se estira junto al héroe; a media anchura conserva su altura -->
+  <!-- Resumen del día: solo se estira junto al héroe; a media anchura conserva su altura -->
   <div class="col-span-12 min-w-0 self-start @min-[680px]:col-span-6 @min-[960px]:col-span-4 @min-[960px]:self-stretch">
     @if (timeline(); as tl) {
       <app-day-summary class="h-full" [timeline]="tl" [date]="todayDate()" />
     } @else if (agendaState.status === 'error') {
       <section app-card heading="Resumen del día" class="h-full">
-        <app-demo-tag title-extra />
         <app-inline-error text="No pudimos cargar tu agenda de hoy." (retry)="retryAgenda()" />
       </section>
     } @else if (agendaSkeleton()) {
@@ -97,10 +96,9 @@
   }
   </div>
 
-  <!-- Citas de hoy (demo) -->
+  <!-- Citas de hoy: en curso o por atender -->
   <div class="col-span-12 @min-[680px]:col-span-6 @min-[960px]:col-span-5 min-w-0">
     <section app-card heading="Citas de hoy" class="h-full">
-      <app-demo-tag title-extra />
       <a action pButton [text]="true" size="small" label="Agenda" routerLink="/veterinario/agenda"></a>
       @if (agendaState.status === 'loading') {
         @if (agendaSkeleton()) {
@@ -115,19 +113,19 @@
           @for (appointment of remaining(); track appointment.id) {
             <app-list-item
               [heading]="appointment.petName"
-              [subtitle]="appointment.reason + ' · ' + appointment.ownerName"
-              [link]="['/veterinario/mascotas', appointment.petId]"
+              [subtitle]="appointmentReason(appointment) + ' · ' + appointment.ownerName"
+              [link]="appointmentLink(appointment)"
             >
               <app-avatar
                 leading
-                [id]="appointment.petId"
+                [id]="appointment.petId ?? appointment.id"
                 [name]="appointment.petName"
                 kind="pet"
                 [species]="appointment.species"
                 [size]="42"
               />
-              @if (appointment.urgent) {
-                <p-tag trailing severity="danger" value="Urgencia" />
+              @if (appointment.status === 'IN_PROGRESS') {
+                <p-tag trailing severity="warn" value="En curso" />
               }
               <p-tag trailing severity="secondary">
                 <span class="inline-flex items-center gap-1 tabular-nums">

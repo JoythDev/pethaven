@@ -113,6 +113,7 @@ Estas funcionalidades no están exigidas por el enunciado, pero ya forman parte 
 | Alta de mascotas | `POST /api/pets/{id}/discharge` deja a la mascota estable y registra el alta (`RECOVERED`) en su historia | ✅ | ✅ | Completado |
 | Historia clínica en PDF | El veterinario ve la historia clínica de la mascota y la descarga en PDF (jsPDF) | ➖ | ✅ | Completado — `/veterinario/mascotas/:id/historia` |
 | Foto de mascota vía API | `GET /api/pets/{id}/photo` sirve la foto desde el backend para poder incluirla en el PDF | ✅ | ✅ | Completado |
+| Citas | El dueño agenda, reprograma y cancela citas de sus mascotas en casa o de una mascota aún no registrada; el veterinario ve su agenda (día, semana y mes), inicia, cierra (ambulatoria, ingreso con tratamiento, alta y entrega o reunión informativa), marca «No asistió», reprograma, cancela y agenda citas con los dueños de mascotas hospitalizadas; avisos por correo y recordatorio diario | ✅ | ✅ | Completado — `/cliente/:ownerId/citas` y `/veterinario/agenda`; reglas en [API · Citas](docs/api/API.md#citas-apiappointments) |
 | Consulta de mascotas por el administrador | Listado de solo lectura de las mascotas desde el portal del administrador; activarlas o desactivarlas es tarea del veterinario | ✅ | ✅ | Completado |
 
 ---

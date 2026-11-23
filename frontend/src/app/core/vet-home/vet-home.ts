@@ -1,8 +1,8 @@
 import { formatDate } from '@angular/common';
-import { Appointment, DayAgenda, DayCount } from '../../models/demo/appointment.model';
+import { Appointment, DayAgenda, DayCount } from '../../models/appointment.model';
 import { Pet } from '../../models/pet.model';
 import { Treatment } from '../../models/treatment.model';
-import { formatTime, startOfDay } from '../demo/demo-date';
+import { formatTime } from '../time/calendar';
 
 // Lógica pura del Inicio del veterinario.
 
@@ -18,10 +18,10 @@ export function firstName(name?: string | null): string | null {
   return word || null;
 }
 
-// Citas de hoy que aún no terminan (en curso o por venir), en orden, hasta el límite.
+// Citas de hoy por atender: en curso o programadas que aún no terminan, en orden, hasta el límite.
 export function remainingAppointments(agenda: DayAgenda, now: Date, limit: number): Appointment[] {
   return agenda.appointments
-    .filter((a) => a.start.getTime() + a.durationMinutes * 60_000 > now.getTime())
+    .filter((a) => a.status === 'IN_PROGRESS' || (a.status === 'SCHEDULED' && a.end.getTime() > now.getTime()))
     .slice(0, limit);
 }
 
@@ -30,7 +30,7 @@ export interface HeroCopy {
   description: string;
 }
 
-// Texto del héroe cuando la agenda no pudo cargar: sigue siendo útil sin los datos demo.
+// Texto del héroe cuando la agenda no pudo cargar: sigue siendo útil sin las citas.
 export const HERO_FALLBACK: HeroCopy = {
   headline: 'Revisa cómo va tu día',
   description: 'No pudimos cargar tus citas, pero puedes seguir con tus pacientes.',
@@ -92,15 +92,10 @@ export interface WeekSummary {
   percent: number;
 }
 
-// Citas de la semana y cuántas ya se atendieron: los días anteriores a hoy cuentan completos
-// (toda cita pasada está completada) y de hoy solo las completadas.
-export function weekSummary(days: DayCount[], today: Date, completedToday: number): WeekSummary {
-  const start = startOfDay(today).getTime();
+// Citas de la semana (sin las canceladas) y cuántas ya se completaron.
+export function weekSummary(days: DayCount[]): WeekSummary {
   const total = days.reduce((sum, day) => sum + day.count, 0);
-  const before = days
-    .filter((day) => startOfDay(day.date).getTime() < start)
-    .reduce((sum, day) => sum + day.count, 0);
-  const attended = before + completedToday;
+  const attended = days.reduce((sum, day) => sum + day.completed, 0);
   return { total, attended, percent: total ? Math.round((attended / total) * 100) : 0 };
 }
 
