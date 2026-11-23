@@ -1,12 +1,13 @@
 <!-- Columnas según el ancho del contenido (container query): 7+5 y 4+4+4 solo caben desde 960 px. -->
 @let p = pet();
 @let weightState = weight();
+@let curve = visibleWeight();
 @let treatmentsState = treatments();
 @let vaccinesState = vaccines();
 @let last = latest();
 
 <div class="grid grid-cols-12 items-stretch gap-[14px]">
-  <!-- Curva de peso (demo) -->
+  <!-- Curva de peso (datos reales) -->
   <div class="col-span-12 min-w-0 @min-[960px]:col-span-7">
     @if (weightState.status === 'loading') {
       @if (weightSkeleton()) {
@@ -14,8 +15,7 @@
       }
     } @else {
       <section app-card heading="Curva de peso" class="h-full">
-        <app-demo-tag title-extra />
-        @if (visibleWeight()) {
+        @if (weightState.status === 'ready') {
           <p-selectbutton
             action
             size="small"
@@ -28,10 +28,17 @@
             (ngModelChange)="weightRange.set($event)"
           />
         }
-        @if (visibleWeight(); as curve) {
+        @if (weightState.status === 'error') {
+          <app-inline-error text="No pudimos cargar la curva de peso." (retry)="retryWeight.emit()" />
+        } @else if (curve) {
           <app-weight-chart [curve]="curve" [petName]="p.name" />
         } @else {
-          <app-inline-error text="No pudimos cargar la curva de peso." (retry)="retryWeight.emit()" />
+          <app-empty-state
+            heading="Aún no hay suficientes pesajes"
+            [description]="weightEmptyText()"
+          >
+            <app-sticker sticker name="food-bowl" [width]="80" />
+          </app-empty-state>
         }
       </section>
     }

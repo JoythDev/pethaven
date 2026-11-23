@@ -31,13 +31,12 @@ import { petStatus } from '../../../../core/status/pet-status';
 import { coatKitFor, speciesSticker } from '../../../../core/stickers/stickers';
 import { skeletonVisible } from '../../../../core/ui/skeleton-timing';
 import { VaccineCard } from '../../../../models/demo/vaccine.model';
-import { WeightCurve } from '../../../../models/demo/weight-curve.model';
 import { Drug } from '../../../../models/drug.model';
 import { Pet, Species } from '../../../../models/pet.model';
 import { Treatment } from '../../../../models/treatment.model';
+import { WeightPoint } from '../../../../models/weight.model';
 import { AuthService } from '../../../../services/auth.service';
 import { DemoVaccinesService } from '../../../../services/demo/demo-vaccines.service';
-import { DemoWeightCurveService } from '../../../../services/demo/demo-weight-curve.service';
 import { DrugService } from '../../../../services/drug.service';
 import { OwnerService } from '../../../../services/owner.service';
 import { PetService } from '../../../../services/pet.service';
@@ -110,7 +109,6 @@ export class PetsDetailComponent {
   private readonly ownerService = inject(OwnerService);
   private readonly treatmentService = inject(TreatmentService);
   private readonly drugService = inject(DrugService);
-  private readonly weightService = inject(DemoWeightCurveService);
   private readonly vaccinesService = inject(DemoVaccinesService);
   private readonly auth = inject(AuthService);
   private readonly messages = inject(MessageService);
@@ -169,13 +167,17 @@ export class PetsDetailComponent {
     ? toSignal(this.drugService.getAvailable().pipe(toViewState<Drug[]>()), { initialValue: LOADING as ViewState<Drug[]> })
     : signal(LOADING as ViewState<Drug[]>);
 
-  // Curva de peso y carné de vacunas (demo): se generan a partir de la mascota real.
   protected readonly weight = toSignal(
-    combineLatest([toObservable(this.pet), this.weightRetry]).pipe(
-      switchMap(([pet]) => this.demoFor(pet, (p) => this.weightService.getCurve(p), toViewState<WeightCurve>())),
+    combineLatest([toObservable(this.petId), this.weightRetry]).pipe(
+      switchMap(([id]) =>
+        id === null
+          ? of(LOADING as ViewState<WeightPoint[]>)
+          : this.petService.getWeights(id).pipe(toViewState<WeightPoint[]>()),
+      ),
     ),
-    { initialValue: LOADING as ViewState<WeightCurve> },
+    { initialValue: LOADING as ViewState<WeightPoint[]> },
   );
+  // Carné de vacunas (demo): se genera a partir de la mascota real.
   protected readonly vaccines = toSignal(
     combineLatest([toObservable(this.pet), this.vaccinesRetry]).pipe(
       switchMap(([pet]) => this.demoFor(pet, (p) => this.vaccinesService.getCard(p), toViewState<VaccineCard>())),

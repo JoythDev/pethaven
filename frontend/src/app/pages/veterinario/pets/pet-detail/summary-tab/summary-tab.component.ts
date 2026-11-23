@@ -1,12 +1,11 @@
 import { DatePipe } from '@angular/common';
-import { Component, computed, input, output, signal } from '@angular/core';
+import { Component, computed, inject, input, output, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { RouterLink } from '@angular/router';
 import { ButtonModule } from 'primeng/button';
 import { SelectButtonModule } from 'primeng/selectbutton';
 import { TagModule } from 'primeng/tag';
 
-import { sliceWeightCurve } from '../../../../../core/demo/weight-curve';
 import { ViewState } from '../../../../../core/http/view-state';
 import { identityHue } from '../../../../../core/identity/identity';
 import { PetAreaConfig, VET_PET_AREA } from '../../../../../core/pets-list/pet-area';
@@ -20,11 +19,13 @@ import {
   vaccineSeverity,
   visitSummary,
 } from '../../../../../core/pet-detail/pet-detail';
+import { CLOCK } from '../../../../../core/time/clock';
 import { skeletonVisible } from '../../../../../core/ui/skeleton-timing';
+import { MIN_CURVE_POINTS, weightCurve } from '../../../../../core/weight-curve/weight-curve';
 import { VaccineCard } from '../../../../../models/demo/vaccine.model';
-import { WEIGHT_RANGES, WeightCurve, WeightRange } from '../../../../../models/demo/weight-curve.model';
 import { Pet, Species } from '../../../../../models/pet.model';
 import { Treatment, evolutionLabel } from '../../../../../models/treatment.model';
+import { WEIGHT_RANGES, WeightPoint, WeightRange } from '../../../../../models/weight.model';
 import { CardComponent } from '../../../../shared/card/card.component';
 import { DefinitionItem, DefinitionListComponent } from '../../../../shared/definition-list/definition-list.component';
 import { DemoTagComponent } from '../../../../shared/demo-tag/demo-tag.component';
@@ -66,7 +67,7 @@ export class SummaryTabComponent {
   /** Área que monta la ficha: decide si se nombra al dueño (y si es un enlace) y cómo se llama la pestaña de tratamientos. */
   readonly area = input<PetAreaConfig>(VET_PET_AREA);
   readonly treatments = input.required<ViewState<Treatment[]>>();
-  readonly weight = input.required<ViewState<WeightCurve>>();
+  readonly weight = input.required<ViewState<WeightPoint[]>>();
   readonly vaccines = input.required<ViewState<VaccineCard>>();
   readonly retryTreatments = output<void>();
   readonly retryWeight = output<void>();
@@ -80,11 +81,15 @@ export class SummaryTabComponent {
 
   protected readonly weightRanges = WEIGHT_RANGES;
   protected readonly weightRange = signal<WeightRange>(6);
-  // La curva generada trae 12 meses; el segmento elige cuántos se ven.
+  private readonly now = inject(CLOCK);
+  // El segmento elige el tramo; null si en él hay muy pocos pesajes para una curva.
   protected readonly visibleWeight = computed(() => {
     const state = this.weight();
-    return state.status === 'ready' ? sliceWeightCurve(state.data, this.weightRange()) : null;
+    return state.status === 'ready' ? weightCurve(state.data, this.weightRange(), this.now()) : null;
   });
+  protected readonly weightEmptyText = computed(
+    () => `La curva aparece con ${MIN_CURVE_POINTS} pesajes en los últimos ${this.weightRange()} meses. Peso actual: ${formatKg(this.pet().weight)}.`,
+  );
 
   protected readonly weightSkeleton = skeletonVisible(computed(() => this.weight().status === 'loading'));
   protected readonly treatmentsSkeleton = skeletonVisible(computed(() => this.treatments().status === 'loading'));

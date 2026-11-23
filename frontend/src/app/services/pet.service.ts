@@ -1,9 +1,11 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
-import { Observable } from 'rxjs';
+import { Observable, map } from 'rxjs';
 import { API_BASE_URL } from '../core/api/api-base-url';
 import { Pet, PetRequest } from '../models/pet.model';
 import { Treatment } from '../models/treatment.model';
+import { WeightPoint, WeightRecordResponse } from '../models/weight.model';
+import { toWeightPoints } from '../core/weight-curve/weight-curve';
 
 // Cliente del API de mascotas. Cada método devuelve un Observable frío:
 // la petición HTTP solo se envía cuando alguien se suscribe.
@@ -37,6 +39,11 @@ export class PetService {
   // PUT /pets/{id}: reemplaza los datos de la mascota y permite reasignar su dueño.
   update(id: number, request: PetRequest): Observable<Pet> {
     return this.http.put<Pet>(`${this.apiUrl}/pets/${id}`, request);
+  }
+
+  // GET /pets/{id}/weights: historial de pesos, del más antiguo al más reciente.
+  getWeights(id: number): Observable<WeightPoint[]> {
+    return this.http.get<WeightRecordResponse[]>(`${this.apiUrl}/pets/${id}/weights`).pipe(map(toWeightPoints));
   }
 
   // GET /pets/{id}/photo: la foto servida por el API (evita el CORS del host original). 404 si no hay.
