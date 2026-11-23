@@ -74,6 +74,15 @@ public class Appointment {
     @Column(name = "clinical_notes", length = 1000, nullable = true)
     private String clinicalNotes;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "outcome", length = 20, nullable = true)
+    private AppointmentOutcome outcome;
+
+    // Tratamiento del ingreso, cuando la consulta terminó hospitalizando a la mascota.
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "treatment_id", nullable = true)
+    private Treatment treatment;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

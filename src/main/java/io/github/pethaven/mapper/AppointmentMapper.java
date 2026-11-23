@@ -36,6 +36,8 @@ public class AppointmentMapper {
             appointment.getVeterinarian().getName(),
             appointment.getOwnerNotes(),
             appointment.getClinicalNotes(),
+            appointment.getOutcome(),
+            appointment.getTreatment() == null ? null : appointment.getTreatment().getId(),
             appointment.getCreatedAt(),
             appointment.getCancelledBy(),
             appointment.getCancelledAt(),

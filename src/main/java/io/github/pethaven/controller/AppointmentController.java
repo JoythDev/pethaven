@@ -1,7 +1,9 @@
 package io.github.pethaven.controller;
 
 import io.github.pethaven.dto.common.ApiErrorResponse;
+import io.github.pethaven.dto.request.AppointmentCompletionRequest;
 import io.github.pethaven.dto.request.AppointmentRescheduleRequest;
+import io.github.pethaven.dto.request.PetRequest;
 import io.github.pethaven.dto.response.AppointmentResponse;
 import io.github.pethaven.dto.response.AvailabilityDayResponse;
 import io.github.pethaven.entity.AppointmentActor;
@@ -118,6 +120,94 @@ public class AppointmentController {
             @Valid @RequestBody AppointmentRescheduleRequest request,
             Authentication authentication) {
         return appointmentService.rescheduleAppointment(id, request, actorOf(authentication));
+    }
+
+    /**
+     * Inicia la consulta de una cita programada para hoy.
+     *
+     * @param id id de la cita
+     * @return la cita en curso
+     */
+    @Operation(summary = "Iniciar una cita", description = "Pasa a «en curso» una cita programada para hoy. Solo el veterinario asignado.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Cita en curso"),
+            @ApiResponse(responseCode = "409", description = "La cita no está programada o no es de hoy",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PreAuthorize("@access.attendsAppointment(#id, authentication.name)")
+    @PutMapping("/{id}/start")
+    public AppointmentResponse startAppointment(
+            @Parameter(description = "Id de la cita", example = "1") @PathVariable Long id) {
+        return appointmentService.startAppointment(id);
+    }
+
+    /**
+     * Completa una cita en curso con su resultado y su nota clínica.
+     *
+     * @param id      id de la cita
+     * @param request resultado, tratamiento del ingreso y nota clínica
+     * @return la cita completada
+     */
+    @Operation(summary = "Completar una cita",
+            description = "Cierra una cita en curso. Consulta del dueño: ambulatoria (con nota clínica) o ingreso (con el tratamiento registrado). Alta / entrega: exige el alta médica y saca a la mascota de hospitalización. Reunión informativa: con nota clínica.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Cita completada"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos (validación)",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "404", description = "No existe la cita o el tratamiento indicados",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "La cita no está en curso o faltan datos de su resultado",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PreAuthorize("@access.attendsAppointment(#id, authentication.name)")
+    @PutMapping("/{id}/complete")
+    public AppointmentResponse completeAppointment(
+            @Parameter(description = "Id de la cita", example = "1") @PathVariable Long id,
+            @Valid @RequestBody AppointmentCompletionRequest request) {
+        return appointmentService.completeAppointment(id, request);
+    }
+
+    /**
+     * Marca como no asistida una cita programada cuya hora ya pasó.
+     *
+     * @param id id de la cita
+     * @return la cita marcada
+     */
+    @Operation(summary = "Marcar «No asistió»", description = "Marca una cita programada cuya hora ya pasó. Solo el veterinario asignado.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Cita marcada como no asistida"),
+            @ApiResponse(responseCode = "409", description = "La cita no está programada o su hora aún no llega",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PreAuthorize("@access.attendsAppointment(#id, authentication.name)")
+    @PutMapping("/{id}/no-show")
+    public AppointmentResponse markNoShow(
+            @Parameter(description = "Id de la cita", example = "1") @PathVariable Long id) {
+        return appointmentService.markNoShow(id);
+    }
+
+    /**
+     * Registra la mascota provisional de una cita en curso y la enlaza a la cita.
+     *
+     * @param id      id de la cita
+     * @param request datos completos de la mascota (a nombre del dueño de la cita)
+     * @return la cita con su mascota registrada
+     */
+    @Operation(summary = "Registrar la mascota de una cita",
+            description = "Durante la consulta, registra la mascota que llegó con datos provisionales (no hospitalizada) y la enlaza a la cita.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Mascota registrada y enlazada"),
+            @ApiResponse(responseCode = "400", description = "Datos inválidos (validación)",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class))),
+            @ApiResponse(responseCode = "409", description = "La mascota ya está registrada, la cita no está en curso o el dueño no coincide",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PreAuthorize("@access.attendsAppointment(#id, authentication.name)")
+    @PostMapping("/{id}/pet")
+    public AppointmentResponse registerProvisionalPet(
+            @Parameter(description = "Id de la cita", example = "1") @PathVariable Long id,
+            @Valid @RequestBody PetRequest request) {
+        return appointmentService.registerProvisionalPet(id, request);
     }
 
     private static AppointmentActor actorOf(Authentication authentication) {

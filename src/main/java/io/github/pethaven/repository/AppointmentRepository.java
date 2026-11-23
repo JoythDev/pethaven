@@ -14,6 +14,27 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
 
     List<Appointment> findByOwnerIdOrderByStartTimeAsc(Long ownerId);
 
+    List<Appointment> findByVeterinarianIdAndStartTimeGreaterThanEqualAndStartTimeLessThanOrderByStartTimeAsc(
+            Long veterinarianId, LocalDateTime fromInclusive, LocalDateTime toExclusive);
+
+    // Inicio de cada franja que el veterinario tiene ocupada en el rango.
+    @Query("""
+            SELECT a.startTime
+            FROM Appointment a
+            WHERE a.veterinarian.id = :veterinarianId
+              AND a.startTime >= :fromInclusive
+              AND a.startTime < :toExclusive
+              AND a.occupiesSlot = TRUE
+            """)
+    List<LocalDateTime> findBusySlotStartsOfVeterinarianBetween(
+            @Param("veterinarianId") Long veterinarianId,
+            @Param("fromInclusive") LocalDateTime fromInclusive,
+            @Param("toExclusive") LocalDateTime toExclusive);
+
+    boolean existsByVeterinarianIdAndStartTimeAndOccupiesSlotTrue(Long veterinarianId, LocalDateTime startTime);
+
+    boolean existsByTreatmentId(Long treatmentId);
+
     // Veterinarios activos con la franja ocupada.
     @Query("""
             SELECT a.veterinarian.id

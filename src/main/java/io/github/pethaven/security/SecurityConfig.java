@@ -125,6 +125,12 @@ public class SecurityConfig {
                 .hasAnyRole(vet, owner)
                 .requestMatchers(HttpMethod.PUT, "/api/appointments/*/cancel", "/api/appointments/*/reschedule")
                 .hasAnyRole(vet, owner)
+                .requestMatchers(HttpMethod.PUT, "/api/appointments/*/start", "/api/appointments/*/complete",
+                        "/api/appointments/*/no-show").hasRole(vet)
+                .requestMatchers(HttpMethod.POST, "/api/appointments/*/pet").hasRole(vet)
+                .requestMatchers(HttpMethod.GET, "/api/veterinarians/*/appointments", "/api/veterinarians/*/availability")
+                .hasRole(vet)
+                .requestMatchers(HttpMethod.POST, "/api/veterinarians/*/appointments").hasRole(vet)
                 .requestMatchers(HttpMethod.GET, "/api/owners/*/appointments").hasAnyRole(vet, owner)
                 .requestMatchers(HttpMethod.POST, "/api/owners/*/appointments").hasRole(owner)
 

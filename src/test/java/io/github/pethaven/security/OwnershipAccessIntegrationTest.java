@@ -299,6 +299,50 @@ public class OwnershipAccessIntegrationTest {
     }
 
     @Test
+    public void veterinarian_StartsOrClosesAnotherVeterinariansAppointment_Returns403() throws Exception {
+        expectDenied(MockMvcRequestBuilders.put("/api/appointments/{id}/start", appointment.getId()), asVet(otherVet));
+        expectDenied(MockMvcRequestBuilders.put("/api/appointments/{id}/no-show", appointment.getId()), asVet(otherVet));
+        expectDenied(MockMvcRequestBuilders.put("/api/appointments/{id}/complete", appointment.getId())
+                .contentType(MediaType.APPLICATION_JSON).content("{}"), asVet(otherVet));
+        expectDenied(MockMvcRequestBuilders.post("/api/appointments/{id}/pet", appointment.getId())
+                .contentType(MediaType.APPLICATION_JSON).content("""
+                        {"name":"Kira","ownerId":%d,"species":"CAT","breed":"Criollo","age":2,"weight":3.4}
+                        """.formatted(owner.getId())), asVet(otherVet));
+    }
+
+    @Test
+    public void veterinarian_StartsAssignedAppointment_PassesAuthorization() throws Exception {
+        // The start may still be refused by business rules (409 if it is not today), never by access.
+        int status = perform(MockMvcRequestBuilders.put("/api/appointments/{id}/start", appointment.getId()), asVet(vet))
+                .andReturn().getResponse().getStatus();
+        org.assertj.core.api.Assertions.assertThat(status).isNotEqualTo(403);
+    }
+
+    @Test
+    public void veterinarian_ReadsOwnAgenda_IsAllowedAndAnotherVeterinariansAgenda_Returns403() throws Exception {
+        String from = LocalDateTime.now().toLocalDate().toString();
+        String to = LocalDateTime.now().toLocalDate().plusDays(6).toString();
+        perform(MockMvcRequestBuilders.get("/api/veterinarians/{id}/appointments", vet.getId()).param("from", from).param("to", to),
+                asVet(vet))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$[0].id").value(appointment.getId()));
+        expectDenied(MockMvcRequestBuilders.get("/api/veterinarians/{id}/appointments", otherVet.getId())
+                .param("from", from).param("to", to), asVet(vet));
+        expectDenied(MockMvcRequestBuilders.get("/api/veterinarians/{id}/availability", otherVet.getId())
+                .param("from", from).param("to", to), asVet(vet));
+    }
+
+    @Test
+    public void veterinarian_SchedulesInAnotherVeterinariansName_Returns403() throws Exception {
+        expectDenied(MockMvcRequestBuilders.post("/api/veterinarians/{id}/appointments", otherVet.getId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"petId":%d,"reason":"BRIEFING","startTime":"%s"}
+                        """.formatted(pet.getId(), LocalDateTime.now().plusDays(2).withHour(9).withMinute(0).withSecond(0).withNano(0))),
+                asVet(vet));
+    }
+
+    @Test
     public void anyone_ReadsAppointmentThatDoesNotExist_Returns403() throws Exception {
         expectDenied(MockMvcRequestBuilders.get("/api/appointments/{id}", 999_999L), asOwner(owner));
     }

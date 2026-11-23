@@ -1,13 +1,18 @@
 package io.github.pethaven.service;
 
 import io.github.pethaven.config.ClinicScheduleProperties;
+import io.github.pethaven.dto.request.AppointmentCompletionRequest;
 import io.github.pethaven.dto.request.AppointmentRequest;
 import io.github.pethaven.dto.request.AppointmentRescheduleRequest;
+import io.github.pethaven.dto.request.PetRequest;
 import io.github.pethaven.dto.request.ProvisionalPetRequest;
+import io.github.pethaven.dto.request.VeterinarianAppointmentRequest;
 import io.github.pethaven.dto.response.AppointmentResponse;
 import io.github.pethaven.dto.response.AvailabilityDayResponse;
+import io.github.pethaven.dto.response.PetResponse;
 import io.github.pethaven.entity.Appointment;
 import io.github.pethaven.entity.AppointmentActor;
+import io.github.pethaven.entity.AppointmentOutcome;
 import io.github.pethaven.entity.AppointmentReason;
 import io.github.pethaven.entity.AppointmentStatus;
 import io.github.pethaven.entity.Owner;
@@ -60,6 +65,8 @@ public class AppointmentServiceMockTest {
     @Mock
     private PetService petService;
     @Mock
+    private VeterinarianService veterinarianService;
+    @Mock
     private VeterinarianRepository veterinarianRepository;
     @Mock
     private TreatmentRepository treatmentRepository;
@@ -81,7 +88,7 @@ public class AppointmentServiceMockTest {
                 14, 2),
                 Clock.fixed(Instant.parse("2026-11-23T13:00:00Z"), ZoneId.of("UTC")));
         appointmentService = new AppointmentServiceImpl(appointmentRepository, new AppointmentMapper(schedule), schedule,
-                ownerService, petService, veterinarianRepository, treatmentRepository);
+                ownerService, petService, veterinarianService, veterinarianRepository, treatmentRepository);
 
         owner = RepositoryTestData.owner();
         owner.setId(1L);
@@ -557,5 +564,341 @@ public class AppointmentServiceMockTest {
         Mockito.when(appointmentRepository.findById(5L)).thenReturn(Optional.of(scheduled(5L, TUESDAY_9, vet1)));
 
         Assertions.assertThat(appointmentService.getAppointmentById(5L).veterinarianName()).isEqualTo(vet1.getName());
+    }
+
+    // ---------- Agenda del veterinario ----------
+
+    private Appointment inProgress(AppointmentReason reason) {
+        Appointment appointment = scheduled(5L, MONDAY.atTime(9, 0), vet1);
+        appointment.setReason(reason);
+        appointment.setStatus(AppointmentStatus.IN_PROGRESS);
+        Mockito.when(appointmentRepository.findById(5L)).thenReturn(Optional.of(appointment));
+        return appointment;
+    }
+
+    private void stubSaveReturningSameAppointment() {
+        Mockito.when(appointmentRepository.save(ArgumentMatchers.any(Appointment.class)))
+                .thenAnswer(invocation -> invocation.getArgument(0));
+    }
+
+    @Test
+    public void getAppointmentsByVeterinarianId_QueriesTheWholeDaysOfTheRange() {
+        Mockito.when(veterinarianService.getVeterinarianEntity(21L)).thenReturn(vet1);
+        Mockito.when(appointmentRepository.findByVeterinarianIdAndStartTimeGreaterThanEqualAndStartTimeLessThanOrderByStartTimeAsc(
+                21L, MONDAY.atStartOfDay(), MONDAY.plusDays(7).atStartOfDay()))
+                .thenReturn(List.of(scheduled(5L, TUESDAY_9, vet1)));
+
+        Assertions.assertThat(appointmentService.getAppointmentsByVeterinarianId(21L, MONDAY, MONDAY.plusDays(6)))
+                .extracting(AppointmentResponse::id).containsExactly(5L);
+    }
+
+    @Test
+    public void getVeterinarianAvailability_FutureSlotsTheVetHasFree() {
+        Mockito.when(veterinarianService.getVeterinarianEntity(21L)).thenReturn(vet1);
+        Mockito.when(appointmentRepository.findBusySlotStartsOfVeterinarianBetween(
+                21L, MONDAY.atStartOfDay(), MONDAY.plusDays(7).atStartOfDay())).thenReturn(List.of(MONDAY.atTime(8, 30)));
+
+        List<AvailabilityDayResponse> days = appointmentService.getVeterinarianAvailability(21L, MONDAY, MONDAY.plusDays(6));
+
+        Assertions.assertThat(days).hasSize(7);
+        // Sin la antelación del dueño: la franja de las 8:00 (ahora) sigue libre; la de las 8:30 está ocupada.
+        Assertions.assertThat(days.getFirst().freeSlots()).hasSize(17)
+                .startsWith(LocalTime.of(8, 0), LocalTime.of(9, 0));
+        Assertions.assertThat(days.getLast().open()).isFalse();
+        Assertions.assertThat(days.getLast().freeSlots()).isEmpty();
+    }
+
+    // ---------- Citas de mascotas hospitalizadas ----------
+
+    private void stubHospitalizedPetAndVet() {
+        pet.setActive(true);
+        Mockito.when(veterinarianService.getVeterinarianEntity(21L)).thenReturn(vet1);
+        Mockito.when(petService.getPetEntity(10L)).thenReturn(pet);
+    }
+
+    @Test
+    public void scheduleForHospitalizedPet_FreeSlot_CreatesItForTheVetAndThePetsOwner() {
+        stubHospitalizedPetAndVet();
+        stubSaveReturningArgument();
+
+        AppointmentResponse response = appointmentService.scheduleForHospitalizedPet(21L,
+                new VeterinarianAppointmentRequest(10L, AppointmentReason.DISCHARGE, MONDAY.atTime(8, 30)));
+
+        Assertions.assertThat(response.reason()).isEqualTo(AppointmentReason.DISCHARGE);
+        Assertions.assertThat(response.veterinarianId()).isEqualTo(21L);
+        Assertions.assertThat(response.ownerId()).isEqualTo(1L);
+        Assertions.assertThat(response.petId()).isEqualTo(10L);
+        Assertions.assertThat(response.status()).isEqualTo(AppointmentStatus.SCHEDULED);
+    }
+
+    @Test
+    public void scheduleForHospitalizedPet_OwnerReason_Returns409() {
+        Mockito.when(veterinarianService.getVeterinarianEntity(21L)).thenReturn(vet1);
+
+        assertConflict(() -> appointmentService.scheduleForHospitalizedPet(21L,
+                        new VeterinarianAppointmentRequest(10L, AppointmentReason.CONTROL, TUESDAY_9)),
+                "El veterinario solo agenda citas de alta o reuniones informativas.");
+    }
+
+    @Test
+    public void scheduleForHospitalizedPet_PetAtHome_Returns409() {
+        Mockito.when(veterinarianService.getVeterinarianEntity(21L)).thenReturn(vet1);
+        Mockito.when(petService.getPetEntity(10L)).thenReturn(pet);
+
+        assertConflict(() -> appointmentService.scheduleForHospitalizedPet(21L,
+                        new VeterinarianAppointmentRequest(10L, AppointmentReason.BRIEFING, TUESDAY_9)),
+                "La mascota '" + pet.getName() + "' no está hospitalizada: su dueño reserva sus citas.");
+    }
+
+    @Test
+    public void scheduleForHospitalizedPet_InactiveVet_Returns409() {
+        vet1.setActive(false);
+        Mockito.when(veterinarianService.getVeterinarianEntity(21L)).thenReturn(vet1);
+
+        assertConflict(() -> appointmentService.scheduleForHospitalizedPet(21L,
+                        new VeterinarianAppointmentRequest(10L, AppointmentReason.BRIEFING, TUESDAY_9)),
+                "El veterinario '" + vet1.getName() + "' no está activo: no puede agendar citas.");
+    }
+
+    @Test
+    public void scheduleForHospitalizedPet_InvalidPastOrBusySlot_Returns409() {
+        stubHospitalizedPetAndVet();
+        Mockito.when(appointmentRepository.existsByVeterinarianIdAndStartTimeAndOccupiesSlotTrue(21L, TUESDAY_9))
+                .thenReturn(true);
+
+        assertConflict(() -> appointmentService.scheduleForHospitalizedPet(21L,
+                        new VeterinarianAppointmentRequest(10L, AppointmentReason.BRIEFING, TUESDAY_9.plusMinutes(10))),
+                "La hora elegida no corresponde a una franja del horario de atención.");
+        assertConflict(() -> appointmentService.scheduleForHospitalizedPet(21L,
+                        new VeterinarianAppointmentRequest(10L, AppointmentReason.BRIEFING, MONDAY.minusDays(1).atTime(9, 0).minusDays(1))),
+                "La hora de la cita ya pasó.");
+        assertConflict(() -> appointmentService.scheduleForHospitalizedPet(21L,
+                        new VeterinarianAppointmentRequest(10L, AppointmentReason.BRIEFING, TUESDAY_9)),
+                "Ya tienes una cita en esa franja: elige otra.");
+    }
+
+    // ---------- Iniciar y «No asistió» ----------
+
+    @Test
+    public void startAppointment_Today_IsInProgress() {
+        Appointment appointment = scheduled(5L, MONDAY.atTime(16, 0), vet1);
+        Mockito.when(appointmentRepository.findById(5L)).thenReturn(Optional.of(appointment));
+        stubSaveReturningSameAppointment();
+
+        Assertions.assertThat(appointmentService.startAppointment(5L).status()).isEqualTo(AppointmentStatus.IN_PROGRESS);
+    }
+
+    @Test
+    public void startAppointment_AnotherDayOrNotScheduled_Returns409() {
+        Mockito.when(appointmentRepository.findById(5L)).thenReturn(Optional.of(scheduled(5L, TUESDAY_9, vet1)));
+        assertConflict(() -> appointmentService.startAppointment(5L),
+                "Solo se puede iniciar una cita el día en que está programada.");
+
+        Appointment cancelled = scheduled(6L, MONDAY.atTime(9, 0), vet1);
+        cancelled.setStatus(AppointmentStatus.CANCELLED);
+        Mockito.when(appointmentRepository.findById(6L)).thenReturn(Optional.of(cancelled));
+        assertConflict(() -> appointmentService.startAppointment(6L), "Solo se puede iniciar una cita programada.");
+    }
+
+    @Test
+    public void markNoShow_TimeAlreadyPassed_IsNoShowAndKeepsTheSlot() {
+        Appointment appointment = scheduled(5L, MONDAY.atTime(8, 0), vet1);
+        Mockito.when(appointmentRepository.findById(5L)).thenReturn(Optional.of(appointment));
+        stubSaveReturningSameAppointment();
+
+        Assertions.assertThat(appointmentService.markNoShow(5L).status()).isEqualTo(AppointmentStatus.NO_SHOW);
+        Assertions.assertThat(appointment.getOccupiesSlot()).isTrue();
+    }
+
+    @Test
+    public void markNoShow_BeforeItsTime_Returns409() {
+        Mockito.when(appointmentRepository.findById(5L)).thenReturn(Optional.of(scheduled(5L, MONDAY.atTime(8, 30), vet1)));
+
+        assertConflict(() -> appointmentService.markNoShow(5L),
+                "Solo se puede marcar «No asistió» cuando ya pasó la hora de la cita.");
+    }
+
+    // ---------- Registrar la mascota provisional ----------
+
+    private PetRequest petRequest(Long ownerId) {
+        return new PetRequest("Kira", ownerId, Species.CAT, "Criollo", 2, 3.4, null);
+    }
+
+    @Test
+    public void registerProvisionalPet_InProgress_CreatesThePetAtHomeAndLinksIt() {
+        Appointment appointment = inProgress(AppointmentReason.FIRST_VISIT);
+        appointment.setPet(null);
+        appointment.setProvisionalPetName("Kira");
+        Pet created = RepositoryTestData.pet(owner);
+        created.setId(30L);
+        PetResponse createdResponse = Mockito.mock(PetResponse.class);
+        Mockito.when(createdResponse.id()).thenReturn(30L);
+        Mockito.when(petService.createPet(petRequest(1L))).thenReturn(createdResponse);
+        Mockito.when(petService.getPetEntity(30L)).thenReturn(created);
+        stubSaveReturningSameAppointment();
+
+        AppointmentResponse response = appointmentService.registerProvisionalPet(5L, petRequest(1L));
+
+        Assertions.assertThat(response.petId()).isEqualTo(30L);
+        Assertions.assertThat(response.provisionalPet()).isFalse();
+        Assertions.assertThat(created.isActive()).isFalse();
+    }
+
+    @Test
+    public void registerProvisionalPet_AlreadyRegisteredNotInProgressOrAnotherOwner_Returns409() {
+        Appointment appointment = inProgress(AppointmentReason.FIRST_VISIT);
+        assertConflict(() -> appointmentService.registerProvisionalPet(5L, petRequest(1L)),
+                "La mascota de esta cita ya está registrada.");
+
+        appointment.setPet(null);
+        assertConflict(() -> appointmentService.registerProvisionalPet(5L, petRequest(2L)),
+                "La mascota debe quedar a nombre del dueño de la cita.");
+
+        appointment.setStatus(AppointmentStatus.SCHEDULED);
+        assertConflict(() -> appointmentService.registerProvisionalPet(5L, petRequest(1L)),
+                "Registra la mascota durante la consulta: inicia la cita primero.");
+        Mockito.verify(petService, Mockito.never()).createPet(ArgumentMatchers.any());
+    }
+
+    // ---------- Completar ----------
+
+    @Test
+    public void completeAppointment_Ambulatory_SavesOutcomeAndClinicalNote() {
+        inProgress(AppointmentReason.CONTROL);
+        stubSaveReturningSameAppointment();
+
+        AppointmentResponse response = appointmentService.completeAppointment(5L,
+                new AppointmentCompletionRequest(AppointmentOutcome.AMBULATORY, null, "  Control sin novedades  "));
+
+        Assertions.assertThat(response.status()).isEqualTo(AppointmentStatus.COMPLETED);
+        Assertions.assertThat(response.outcome()).isEqualTo(AppointmentOutcome.AMBULATORY);
+        Assertions.assertThat(response.clinicalNotes()).isEqualTo("Control sin novedades");
+        Assertions.assertThat(response.treatmentId()).isNull();
+    }
+
+    @Test
+    public void completeAppointment_AmbulatoryWithoutNoteOrWithTreatment_Returns409() {
+        inProgress(AppointmentReason.CONTROL);
+
+        assertConflict(() -> appointmentService.completeAppointment(5L,
+                        new AppointmentCompletionRequest(AppointmentOutcome.AMBULATORY, null, " ")),
+                "Registra la nota clínica de la consulta.");
+        assertConflict(() -> appointmentService.completeAppointment(5L,
+                        new AppointmentCompletionRequest(AppointmentOutcome.AMBULATORY, 16L, "Nota")),
+                "Una consulta ambulatoria no lleva tratamiento.");
+    }
+
+    @Test
+    public void completeAppointment_ConsultationWithoutOutcomeOrPet_Returns409() {
+        Appointment appointment = inProgress(AppointmentReason.FIRST_VISIT);
+        assertConflict(() -> appointmentService.completeAppointment(5L, new AppointmentCompletionRequest(null, null, "Nota")),
+                "Indica si la consulta fue ambulatoria o terminó en ingreso.");
+
+        appointment.setPet(null);
+        assertConflict(() -> appointmentService.completeAppointment(5L,
+                        new AppointmentCompletionRequest(AppointmentOutcome.AMBULATORY, null, "Nota")),
+                "Registra la mascota antes de completar la cita.");
+    }
+
+    @Test
+    public void completeAppointment_Admission_LinksTheTreatment() {
+        inProgress(AppointmentReason.CONSULTATION);
+        Treatment treatment = RepositoryTestData.treatment(pet, vet1, MONDAY.atTime(9, 20), null);
+        treatment.setId(16L);
+        Mockito.when(treatmentRepository.findById(16L)).thenReturn(Optional.of(treatment));
+        stubSaveReturningSameAppointment();
+
+        AppointmentResponse response = appointmentService.completeAppointment(5L,
+                new AppointmentCompletionRequest(AppointmentOutcome.ADMISSION, 16L, null));
+
+        Assertions.assertThat(response.outcome()).isEqualTo(AppointmentOutcome.ADMISSION);
+        Assertions.assertThat(response.treatmentId()).isEqualTo(16L);
+        Assertions.assertThat(response.status()).isEqualTo(AppointmentStatus.COMPLETED);
+    }
+
+    @Test
+    public void completeAppointment_AdmissionWithMissingWrongOrEarlierTreatment_IsRejected() {
+        inProgress(AppointmentReason.CONSULTATION);
+        assertConflict(() -> appointmentService.completeAppointment(5L,
+                        new AppointmentCompletionRequest(AppointmentOutcome.ADMISSION, null, null)),
+                "Registra el tratamiento del ingreso antes de completar la cita.");
+
+        Mockito.when(treatmentRepository.findById(99L)).thenReturn(Optional.empty());
+        Assertions.assertThatThrownBy(() -> appointmentService.completeAppointment(5L,
+                        new AppointmentCompletionRequest(AppointmentOutcome.ADMISSION, 99L, null)))
+                .isInstanceOf(ResourceNotFoundException.class);
+
+        Pet otherPet = RepositoryTestData.pet(owner);
+        otherPet.setId(11L);
+        Treatment ofOtherPet = RepositoryTestData.treatment(otherPet, vet1, MONDAY.atTime(9, 20), null);
+        Mockito.when(treatmentRepository.findById(17L)).thenReturn(Optional.of(ofOtherPet));
+        assertConflict(() -> appointmentService.completeAppointment(5L,
+                        new AppointmentCompletionRequest(AppointmentOutcome.ADMISSION, 17L, null)),
+                "El tratamiento no es de la mascota de la cita.");
+
+        Treatment earlier = RepositoryTestData.treatment(pet, vet1, MONDAY.minusDays(2).atTime(9, 0), null);
+        Mockito.when(treatmentRepository.findById(18L)).thenReturn(Optional.of(earlier));
+        assertConflict(() -> appointmentService.completeAppointment(5L,
+                        new AppointmentCompletionRequest(AppointmentOutcome.ADMISSION, 18L, null)),
+                "El tratamiento es anterior a la cita.");
+
+        Treatment linked = RepositoryTestData.treatment(pet, vet1, MONDAY.atTime(9, 20), null);
+        Mockito.when(treatmentRepository.findById(19L)).thenReturn(Optional.of(linked));
+        Mockito.when(appointmentRepository.existsByTreatmentId(19L)).thenReturn(true);
+        assertConflict(() -> appointmentService.completeAppointment(5L,
+                        new AppointmentCompletionRequest(AppointmentOutcome.ADMISSION, 19L, null)),
+                "El tratamiento ya está enlazado a otra cita.");
+    }
+
+    @Test
+    public void completeAppointment_DischargeAfterMedicalDischarge_TakesThePetHome() {
+        pet.setActive(true);
+        pet.setDisease(null);
+        inProgress(AppointmentReason.DISCHARGE);
+        stubSaveReturningSameAppointment();
+
+        AppointmentResponse response = appointmentService.completeAppointment(5L, new AppointmentCompletionRequest(null, null, null));
+
+        Assertions.assertThat(response.status()).isEqualTo(AppointmentStatus.COMPLETED);
+        Assertions.assertThat(response.outcome()).isNull();
+        Assertions.assertThat(pet.isActive()).isFalse();
+    }
+
+    @Test
+    public void completeAppointment_DischargeWithoutMedicalDischargeOrWithOutcome_Returns409() {
+        pet.setActive(true);
+        pet.setDisease("Otitis");
+        inProgress(AppointmentReason.DISCHARGE);
+
+        assertConflict(() -> appointmentService.completeAppointment(5L, new AppointmentCompletionRequest(null, null, null)),
+                "La mascota '" + pet.getName() + "' aún no tiene el alta médica: dásela antes de entregarla.");
+        assertConflict(() -> appointmentService.completeAppointment(5L,
+                        new AppointmentCompletionRequest(AppointmentOutcome.AMBULATORY, null, "Nota")),
+                "Las citas de mascotas hospitalizadas no llevan resultado de consulta.");
+        Assertions.assertThat(pet.isActive()).isTrue();
+    }
+
+    @Test
+    public void completeAppointment_Briefing_RequiresTheNoteAndKeepsThePetHospitalized() {
+        pet.setActive(true);
+        inProgress(AppointmentReason.BRIEFING);
+        assertConflict(() -> appointmentService.completeAppointment(5L, new AppointmentCompletionRequest(null, null, null)),
+                "Registra la nota clínica de la reunión.");
+
+        stubSaveReturningSameAppointment();
+        AppointmentResponse response = appointmentService.completeAppointment(5L,
+                new AppointmentCompletionRequest(null, null, "Evoluciona bien"));
+
+        Assertions.assertThat(response.clinicalNotes()).isEqualTo("Evoluciona bien");
+        Assertions.assertThat(pet.isActive()).isTrue();
+    }
+
+    @Test
+    public void completeAppointment_NotInProgress_Returns409() {
+        Mockito.when(appointmentRepository.findById(5L)).thenReturn(Optional.of(scheduled(5L, MONDAY.atTime(9, 0), vet1)));
+
+        assertConflict(() -> appointmentService.completeAppointment(5L,
+                        new AppointmentCompletionRequest(AppointmentOutcome.AMBULATORY, null, "Nota")),
+                "Solo se puede completar una cita en curso.");
     }
 }

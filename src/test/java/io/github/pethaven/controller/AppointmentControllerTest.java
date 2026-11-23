@@ -1,9 +1,12 @@
 package io.github.pethaven.controller;
 
+import io.github.pethaven.dto.request.AppointmentCompletionRequest;
 import io.github.pethaven.dto.request.AppointmentRescheduleRequest;
+import io.github.pethaven.dto.request.PetRequest;
 import io.github.pethaven.dto.response.AppointmentResponse;
 import io.github.pethaven.dto.response.AvailabilityDayResponse;
 import io.github.pethaven.entity.AppointmentActor;
+import io.github.pethaven.entity.AppointmentOutcome;
 import io.github.pethaven.entity.AppointmentReason;
 import io.github.pethaven.entity.AppointmentStatus;
 import io.github.pethaven.entity.Role;
@@ -51,7 +54,7 @@ public class AppointmentControllerTest {
     static AppointmentResponse appointment(Long id, AppointmentStatus status) {
         return new AppointmentResponse(id, START, START.plusMinutes(30), AppointmentReason.CONTROL, status,
                 10L, "Buddy", Species.DOG, false, null, null, 1L, "Laura Gómez", "3001234567",
-                21L, "Dra. Valentina Soler", "Cojea", null, START.minusDays(2), null, null, null);
+                21L, "Dra. Valentina Soler", "Cojea", null, null, null, START.minusDays(2), null, null, null);
     }
 
     // ---------- GET /api/appointments/availability ----------
@@ -180,5 +183,76 @@ public class AppointmentControllerTest {
                 .andExpect(MockMvcResultMatchers.status().isBadRequest())
                 .andExpect(MockMvcResultMatchers.jsonPath("$.errors.ownerNotes")
                         .value("Las notas no pueden superar los 500 caracteres"));
+    }
+
+    // ---------- Ciclo de vida (veterinario) ----------
+
+    @Test
+    @WithMockUser(roles = Role.VETERINARIAN)
+    public void startAppointment_Returns200InProgress() throws Exception {
+        Mockito.when(appointmentService.startAppointment(5L)).thenReturn(appointment(5L, AppointmentStatus.IN_PROGRESS));
+
+        mockMvc.perform(MockMvcRequestBuilders.put("/api/appointments/5/start"))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("IN_PROGRESS"));
+    }
+
+    @Test
+    @WithMockUser(roles = Role.VETERINARIAN)
+    public void markNoShow_RuleFails_Returns409() throws Exception {
+        String message = "Solo se puede marcar «No asistió» cuando ya pasó la hora de la cita.";
+        Mockito.when(appointmentService.markNoShow(5L)).thenThrow(new IllegalOperationException(message));
+
+        mockMvc.perform(MockMvcRequestBuilders.put("/api/appointments/5/no-show"))
+                .andExpect(MockMvcResultMatchers.status().isConflict())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.message").value(message));
+    }
+
+    @Test
+    @WithMockUser(roles = Role.VETERINARIAN)
+    public void completeAppointment_PassesOutcomeTreatmentAndNote() throws Exception {
+        Mockito.when(appointmentService.completeAppointment(ArgumentMatchers.eq(5L), ArgumentMatchers.any()))
+                .thenReturn(appointment(5L, AppointmentStatus.COMPLETED));
+
+        mockMvc.perform(MockMvcRequestBuilders.put("/api/appointments/5/complete").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"outcome\":\"ADMISSION\",\"treatmentId\":16,\"clinicalNotes\":\"Ingresa\"}"))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.status").value("COMPLETED"));
+        Mockito.verify(appointmentService).completeAppointment(5L,
+                new AppointmentCompletionRequest(AppointmentOutcome.ADMISSION, 16L, "Ingresa"));
+    }
+
+    @Test
+    @WithMockUser(roles = Role.VETERINARIAN)
+    public void completeAppointment_NoteTooLong_Returns400() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.put("/api/appointments/5/complete").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"clinicalNotes\":\"" + "a".repeat(1001) + "\"}"))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errors.clinicalNotes")
+                        .value("La nota clínica no puede superar los 1000 caracteres"));
+        Mockito.verifyNoInteractions(appointmentService);
+    }
+
+    @Test
+    @WithMockUser(roles = Role.VETERINARIAN)
+    public void registerProvisionalPet_ValidPet_Returns200() throws Exception {
+        Mockito.when(appointmentService.registerProvisionalPet(ArgumentMatchers.eq(5L), ArgumentMatchers.any()))
+                .thenReturn(appointment(5L, AppointmentStatus.IN_PROGRESS));
+
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/appointments/5/pet").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Kira\",\"ownerId\":1,\"species\":\"CAT\",\"breed\":\"Criollo\",\"age\":2,\"weight\":3.4}"))
+                .andExpect(MockMvcResultMatchers.status().isOk());
+        Mockito.verify(appointmentService).registerProvisionalPet(5L,
+                new PetRequest("Kira", 1L, Species.CAT, "Criollo", 2, 3.4, null));
+    }
+
+    @Test
+    @WithMockUser(roles = Role.VETERINARIAN)
+    public void registerProvisionalPet_InvalidPet_Returns400() throws Exception {
+        mockMvc.perform(MockMvcRequestBuilders.post("/api/appointments/5/pet").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"name\":\"Kira\",\"ownerId\":1,\"species\":\"CAT\"}"))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest())
+                .andExpect(MockMvcResultMatchers.jsonPath("$.errors.breed").value("La raza es obligatoria"));
+        Mockito.verifyNoInteractions(appointmentService);
     }
 }

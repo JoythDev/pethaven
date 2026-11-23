@@ -124,6 +124,25 @@ public class AppointmentRepositoryTest {
     }
 
     @Test
+    public void veterinarianAgendaQueries_OnlyThatVetAndRange() {
+        Appointment inRange = save(vet, SLOT, AppointmentStatus.SCHEDULED);
+        Appointment cancelled = save(vet, SLOT.plusMinutes(30), AppointmentStatus.CANCELLED);
+        save(vet, SLOT.plusDays(1), AppointmentStatus.SCHEDULED);
+        save(inactiveVet, SLOT, AppointmentStatus.SCHEDULED);
+        LocalDateTime from = SLOT.toLocalDate().atStartOfDay();
+        LocalDateTime to = from.plusDays(1);
+
+        Assertions.assertThat(appointmentRepository
+                        .findByVeterinarianIdAndStartTimeGreaterThanEqualAndStartTimeLessThanOrderByStartTimeAsc(vet.getId(), from, to))
+                .extracting(Appointment::getId).containsExactly(inRange.getId(), cancelled.getId());
+        Assertions.assertThat(appointmentRepository.findBusySlotStartsOfVeterinarianBetween(vet.getId(), from, to))
+                .containsExactly(SLOT);
+        Assertions.assertThat(appointmentRepository.existsByVeterinarianIdAndStartTimeAndOccupiesSlotTrue(vet.getId(), SLOT)).isTrue();
+        Assertions.assertThat(appointmentRepository.existsByVeterinarianIdAndStartTimeAndOccupiesSlotTrue(
+                vet.getId(), SLOT.plusMinutes(30))).isFalse();
+    }
+
+    @Test
     public void findByOwnerIdOrderByStartTimeAsc_OrdersTheOwnersAppointmentsByStart() {
         Appointment later = save(vet, SLOT.plusDays(2), AppointmentStatus.SCHEDULED);
         Appointment earlier = save(vet, SLOT, AppointmentStatus.CANCELLED);

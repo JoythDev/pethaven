@@ -116,6 +116,13 @@ public class PermissionMatrixWebTest {
                 Arguments.of(HttpMethod.PUT, "/api/appointments/1/reschedule", Set.of(V, O)),
                 Arguments.of(HttpMethod.GET, "/api/owners/1/appointments", Set.of(V, O)),
                 Arguments.of(HttpMethod.POST, "/api/owners/1/appointments", Set.of(O)),
+                Arguments.of(HttpMethod.PUT, "/api/appointments/1/start", Set.of(V)),
+                Arguments.of(HttpMethod.PUT, "/api/appointments/1/complete", Set.of(V)),
+                Arguments.of(HttpMethod.PUT, "/api/appointments/1/no-show", Set.of(V)),
+                Arguments.of(HttpMethod.POST, "/api/appointments/1/pet", Set.of(V)),
+                Arguments.of(HttpMethod.GET, "/api/veterinarians/1/appointments", Set.of(V)),
+                Arguments.of(HttpMethod.GET, "/api/veterinarians/1/availability", Set.of(V)),
+                Arguments.of(HttpMethod.POST, "/api/veterinarians/1/appointments", Set.of(V)),
 
                 Arguments.of(HttpMethod.GET, "/api/drugs", Set.of(A, V)),
                 Arguments.of(HttpMethod.GET, "/api/drugs/1", Set.of(A, V)),

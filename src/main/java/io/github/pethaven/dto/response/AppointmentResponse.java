@@ -1,6 +1,7 @@
 package io.github.pethaven.dto.response;
 
 import io.github.pethaven.entity.AppointmentActor;
+import io.github.pethaven.entity.AppointmentOutcome;
 import io.github.pethaven.entity.AppointmentReason;
 import io.github.pethaven.entity.AppointmentStatus;
 import io.github.pethaven.entity.Species;
@@ -29,6 +30,8 @@ import java.time.LocalDateTime;
  * @param veterinarianName   nombre del veterinario asignado
  * @param ownerNotes         notas del dueño (puede ser null)
  * @param clinicalNotes      nota clínica del veterinario (puede ser null)
+ * @param outcome            resultado de la consulta (solo citas del dueño completadas; puede ser null)
+ * @param treatmentId        tratamiento del ingreso (solo con outcome ADMISSION; puede ser null)
  * @param createdAt          fecha de la reserva
  * @param cancelledBy        quién la canceló (null si no está cancelada)
  * @param cancelledAt        cuándo se canceló (null si no está cancelada)
@@ -89,6 +92,12 @@ public record AppointmentResponse(
 
         @Schema(description = "Nota clínica del veterinario (puede ser null)", example = "Control sin novedades.")
         String clinicalNotes,
+
+        @Schema(description = "Resultado de la consulta (null si no aplica)", example = "AMBULATORY")
+        AppointmentOutcome outcome,
+
+        @Schema(description = "Tratamiento del ingreso (null si no aplica)", example = "16")
+        Long treatmentId,
 
         @Schema(description = "Fecha de la reserva", example = "2026-11-22T15:04:00")
         LocalDateTime createdAt,
