@@ -7,7 +7,7 @@ import {
   AvailabilityDay,
 } from '../../models/appointment.model';
 import { Clinic, DayOfWeek } from '../../models/clinic.model';
-import { Pet, Species } from '../../models/pet.model';
+import { Pet, Species, isHospitalized } from '../../models/pet.model';
 import { parseRouteId } from '../http/route-id';
 import { StickerName } from '../stickers/stickers';
 import { atTime, formatTime } from '../time/calendar';
@@ -100,7 +100,7 @@ export function isActiveAppointment(appointment: Appointment, now: Date): boolea
  * veterinario y cada mascota tiene como máximo una cita activa.
  */
 export function petBlocker(pet: Pet, appointments: Appointment[], now: Date): string | null {
-  if (pet.active) {
+  if (isHospitalized(pet)) {
     return 'Hospitalizada: tu veterinario agenda sus citas';
   }
   const active = appointments.find((appointment) => appointment.petId === pet.id && isActiveAppointment(appointment, now));

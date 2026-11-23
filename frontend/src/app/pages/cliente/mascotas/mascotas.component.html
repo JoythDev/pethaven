@@ -72,7 +72,7 @@
             <a pButton class="min-w-0 flex-1" [routerLink]="petLink(pet.id)" [attr.aria-label]="'Ver ficha de ' + pet.name">
               <span class="p-button-label">Ver ficha</span>
             </a>
-            @if (!pet.active) {
+            @if (!isHospitalized(pet)) {
               <a
                 pButton
                 severity="secondary"

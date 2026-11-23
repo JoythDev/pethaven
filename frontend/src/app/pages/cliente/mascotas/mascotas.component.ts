@@ -18,7 +18,7 @@ import { coatKitFor, speciesSticker } from '../../../core/stickers/stickers';
 import { CLOCK } from '../../../core/time/clock';
 import { skeletonVisible } from '../../../core/ui/skeleton-timing';
 import { Appointment } from '../../../models/appointment.model';
-import { Pet, Species } from '../../../models/pet.model';
+import { Pet, Species, isHospitalized } from '../../../models/pet.model';
 import { ClienteTreatment } from '../../../models/treatment-cliente.model';
 import { AppointmentService } from '../../../services/appointment.service';
 import { PetService } from '../../../services/pet.service';
@@ -104,6 +104,7 @@ export class MascotasComponent {
   protected readonly formatKg = formatKg;
   protected readonly petStatus = petStatus;
   protected readonly hue = identityHue;
+  protected readonly isHospitalized = isHospitalized;
 
   protected speciesLabel(species: Species): string {
     return species === Species.CAT ? 'Gato' : 'Perro';
