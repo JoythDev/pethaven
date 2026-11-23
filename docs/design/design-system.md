@@ -861,7 +861,11 @@ Search filters as the user types (debounced 250ms). Search text, filters, sort, 
 - For multi-step tasks such as booking an appointment. Stepper on top, step content, footer navigation, live summary beside it.
 - Each step asks one question. Choices are picker tiles where there are six or fewer options.
 - The last step is a review of all choices before the commit. Success replaces the wizard with a confirmation state (sticker, what happened, next actions).
-- Booking for a new pet: the "Mascota" step includes a "Mascota nueva" tile that collects name and species only; the veterinarian completes the record at the visit. Clients cannot create or edit pet records elsewhere.
+- Booking for a new pet: the "Mascota" step includes a "Mascota nueva" tile that collects name and species only; the veterinarian completes the record at the visit. Clients cannot create or edit pet records elsewhere. A new pet skips the "Motivo" step: its reason is always "Primera consulta".
+- A pet that cannot be booked stays visible as a disabled tile with the reason in its caption ("Hospitalizada: tu veterinario agenda sus citas", "Ya tiene cita el …").
+- The "Motivo" step does not offer urgencies: a warning inline alert under the tiles gives the clinic phone instead.
+- Rescheduling reuses the wizard from the "Fecha y hora" step, with an info inline alert that names the appointment being moved and a "Descartar cambio" action. Cancelling an appointment uses the confirm dialog ("¿Cancelar la cita de Lola?", primary "Cancelar cita", secondary "Mantener cita").
+- Day tiles and time slots come from the clinic schedule; slots without a free veterinarian or inside the minimum notice are disabled, never hidden.
 
 ### 11.6 Dashboards
 
@@ -1003,6 +1007,11 @@ Use Angular's `es-CO` locale pipes; do not format by hand.
 | Vaccine | Vence en N días | warning |
 | Vaccine | Pendiente, Vencida | danger |
 | Veterinarian | Activo / Inactivo | success / neutral |
+| Appointment | Programada | info |
+| Appointment | En curso | warning |
+| Appointment | Completada | success |
+| Appointment | Cancelada | neutral |
+| Appointment | No asistió | danger |
 
 ---
 

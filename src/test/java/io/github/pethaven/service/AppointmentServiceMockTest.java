@@ -537,6 +537,19 @@ public class AppointmentServiceMockTest {
     }
 
     @Test
+    public void rescheduleAppointment_OwnerSendsBlankNotes_ClearsThem() {
+        Appointment appointment = scheduled(5L, TUESDAY_9, vet1);
+        appointment.setOwnerNotes("Cojea");
+        Mockito.when(appointmentRepository.findById(5L)).thenReturn(Optional.of(appointment));
+        stubSaveReturningArgument();
+
+        AppointmentResponse response = appointmentService.rescheduleAppointment(5L,
+                new AppointmentRescheduleRequest(TUESDAY_9, ""), AppointmentActor.OWNER);
+
+        Assertions.assertThat(response.ownerNotes()).isNull();
+    }
+
+    @Test
     public void rescheduleAppointment_Cancelled_Returns409() {
         Appointment appointment = scheduled(5L, TUESDAY_9, vet1);
         appointment.setStatus(AppointmentStatus.CANCELLED);

@@ -811,7 +811,7 @@ Cuerpo para `PUT /api/appointments/{id}/reschedule`.
 | Campo | Tipo | Obligatorio | Restricciones |
 |---|---|---|---|
 | `startTime` | string | Sí | Inicio exacto de una franja del horario |
-| `ownerNotes` | string \| null | No | Solo el dueño; `null` conserva las notas. Si la envía el veterinario → `409`. Máx. 500 caracteres |
+| `ownerNotes` | string \| null | No | Solo el dueño; `null` conserva las notas y un texto en blanco las borra. Si la envía el veterinario → `409`. Máx. 500 caracteres |
 
 #### `AppointmentResponse`
 
