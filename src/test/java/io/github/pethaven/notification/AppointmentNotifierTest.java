@@ -44,7 +44,7 @@ public class AppointmentNotifierTest {
     @BeforeEach
     public void setUp() {
         emailSender = Mockito.mock(EmailSender.class);
-        notifier = new AppointmentNotifier(emailSender, Runnable::run);
+        notifier = new AppointmentNotifier(emailSender, Runnable::run, List.of("example.com", " "));
         Owner owner = RepositoryTestData.owner();
         owner.setName("Laura <b>Gómez</b>");
         owner.setEmail("laura@pethaven.test");
@@ -150,6 +150,16 @@ public class AppointmentNotifierTest {
     }
 
     @Test
+    public void ownerOnASuppressedDomain_GetsNoEmail() {
+        appointment.getOwner().setEmail("Alice.Smith@EXAMPLE.com");
+
+        notifier.booked(appointment);
+        notifier.reminder(appointment);
+
+        Mockito.verifyNoInteractions(emailSender);
+    }
+
+    @Test
     public void providerFailure_IsSwallowed() {
         Mockito.doThrow(new IllegalStateException("caído")).when(emailSender).send(Mockito.any());
 
@@ -162,7 +172,7 @@ public class AppointmentNotifierTest {
     public void reminderScheduler_TomorrowsScheduledAppointments_NotifiesAndMarksThem() {
         AppointmentRepository repository = Mockito.mock(AppointmentRepository.class);
         ClinicSchedule schedule = new ClinicSchedule(new ClinicScheduleProperties(ZoneId.of("America/Bogota"), 30,
-                Map.of(DayOfWeek.TUESDAY, "08:00-17:00"), 14, 2),
+                Map.of(DayOfWeek.TUESDAY, "08:00-17:00"), 14, 2, "PetHaven Chapinero", "Calle 63", "601 555 0123"),
                 Clock.fixed(Instant.parse("2026-11-23T23:00:00Z"), ZoneId.of("UTC")));
         appointment.setId(7L);
         Appointment alreadyHandled = RepositoryTestData.appointment(appointment.getOwner(), appointment.getPet(),

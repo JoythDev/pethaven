@@ -58,6 +58,18 @@ public class ClinicSchedule {
         return slot;
     }
 
+    /** Hora de apertura del día de la semana, o null si la clínica no atiende ese día. */
+    public LocalTime openingTime(DayOfWeek day) {
+        LocalTime[] hours = openingHours.get(day);
+        return hours == null ? null : hours[0];
+    }
+
+    /** Hora de cierre del día de la semana, o null si la clínica no atiende ese día. */
+    public LocalTime closingTime(DayOfWeek day) {
+        LocalTime[] hours = openingHours.get(day);
+        return hours == null ? null : hours[1];
+    }
+
     public boolean isOpen(LocalDate date) {
         return openingHours.containsKey(date.getDayOfWeek());
     }

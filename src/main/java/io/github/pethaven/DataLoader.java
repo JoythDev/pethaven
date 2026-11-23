@@ -223,7 +223,10 @@ public class DataLoader implements CommandLineRunner {
         ownerRepository.save(Owner.builder().name("Guillermo Fuster").document("173815723").phone("640567891").email("guillermo.fuster@example.com").user(account("guillermo.fuster@example.com", "pass1234", Role.OWNER)).build());
         ownerRepository.save(Owner.builder().name("Rodrigo Alcántara").document("284926834").phone("650567892").email("rodrigo.alcantara@example.com").user(account("rodrigo.alcantara@example.com", "ejemplo123", Role.OWNER)).build());
 
-        ownerPool = ownerRepository.findAll();
+        // John Doe y Jane Doe reciben solo las mascotas del guion de citas (DemoAppointmentLoader).
+        ownerPool = ownerRepository.findAll().stream()
+                .filter(owner -> !owner.getDocument().equals("123456789") && !owner.getDocument().equals("987654321"))
+                .toList();
 
         // ====================================
         // ==== Cargar mascotas de ejemplo ====

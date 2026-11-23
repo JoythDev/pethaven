@@ -88,7 +88,7 @@ public class AppointmentServiceMockTest {
                 Map.of(DayOfWeek.MONDAY, "08:00-17:00", DayOfWeek.TUESDAY, "08:00-17:00",
                         DayOfWeek.WEDNESDAY, "08:00-17:00", DayOfWeek.THURSDAY, "08:00-17:00",
                         DayOfWeek.FRIDAY, "08:00-17:00", DayOfWeek.SATURDAY, "08:00-13:00"),
-                14, 2),
+                14, 2, "PetHaven Chapinero", "Calle 63", "601 555 0123"),
                 Clock.fixed(Instant.parse("2026-11-23T13:00:00Z"), ZoneId.of("UTC")));
         appointmentService = new AppointmentServiceImpl(appointmentRepository, new AppointmentMapper(schedule), schedule,
                 ownerService, petService, veterinarianService, veterinarianRepository, treatmentRepository,

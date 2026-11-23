@@ -111,6 +111,9 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/auth/login", "/api/auth/verify-otp", "/api/auth/resend-otp").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
 
+                // Datos de la clínica (sede y horario): información pública
+                .requestMatchers(HttpMethod.GET, "/api/clinic").permitAll()
+
                 // Métricas del negocio
                 .requestMatchers(HttpMethod.GET, "/api/administrators/dashboard").hasRole(admin)
 

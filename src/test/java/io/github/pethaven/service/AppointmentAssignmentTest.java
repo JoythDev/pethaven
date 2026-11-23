@@ -58,7 +58,7 @@ public class AppointmentAssignmentTest {
     @BeforeEach
     public void setUp() {
         ClinicSchedule schedule = new ClinicSchedule(new ClinicScheduleProperties(ZoneId.of("America/Bogota"), 30,
-                Map.of(DayOfWeek.TUESDAY, "08:00-17:00"), 14, 2),
+                Map.of(DayOfWeek.TUESDAY, "08:00-17:00"), 14, 2, "PetHaven Chapinero", "Calle 63", "601 555 0123"),
                 Clock.fixed(Instant.parse("2026-11-23T13:00:00Z"), ZoneId.of("UTC")));
         assignment = new AppointmentAssignment(appointmentRepository, veterinarianRepository, treatmentRepository, schedule,
                 appointmentNotifier);

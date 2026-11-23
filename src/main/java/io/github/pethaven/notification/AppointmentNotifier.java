@@ -4,6 +4,7 @@ import io.github.pethaven.entity.Appointment;
 import io.github.pethaven.entity.AppointmentReason;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
@@ -12,6 +13,7 @@ import org.springframework.web.util.HtmlUtils;
 import java.nio.charset.StandardCharsets;
 import java.time.format.DateTimeFormatter;
 import java.util.EnumMap;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.concurrent.Executor;
@@ -39,10 +41,22 @@ public class AppointmentNotifier {
 
     private final EmailSender emailSender;
     private final Executor executor;
+    private final List<String> suppressedDomains;
 
-    public AppointmentNotifier(EmailSender emailSender, @Qualifier("applicationTaskExecutor") Executor executor) {
+    /**
+     * @param suppressedDomains dominios a los que nunca se envían avisos (los correos de las cuentas de ejemplo)
+     */
+    public AppointmentNotifier(
+            EmailSender emailSender,
+            @Qualifier("applicationTaskExecutor") Executor executor,
+            @Value("${app.mail.suppressed-domains:example.com}") List<String> suppressedDomains
+    ) {
         this.emailSender = emailSender;
         this.executor = executor;
+        this.suppressedDomains = suppressedDomains.stream()
+                .map(domain -> domain.trim().toLowerCase(Locale.ROOT))
+                .filter(domain -> !domain.isEmpty())
+                .toList();
     }
 
     public void booked(Appointment appointment) {
@@ -68,6 +82,10 @@ public class AppointmentNotifier {
     }
 
     private void notify(Appointment appointment, String subjectTemplate, String bodyTemplate, String detail) {
+        if (isSuppressed(appointment.getOwner().getEmail())) {
+            log.info("Aviso de cita omitido: el correo del dueño es de un dominio de ejemplo.");
+            return;
+        }
         EmailMessage message = compose(appointment, subjectTemplate, bodyTemplate, detail);
         if (TransactionSynchronizationManager.isSynchronizationActive()) {
             TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
@@ -101,6 +119,11 @@ public class AppointmentNotifier {
                 + "<p>Hola " + escape(ownerName) + ", " + bodyTemplate.formatted((Object[]) escaped) + "</p>"
                 + "<p style=\"color:#6b5a4c\">PetHaven</p></div>";
         return new EmailMessage(appointment.getOwner().getEmail(), subjectTemplate.formatted(petName), text, html);
+    }
+
+    private boolean isSuppressed(String email) {
+        String domain = email.substring(email.lastIndexOf('@') + 1).toLowerCase(Locale.ROOT);
+        return suppressedDomains.contains(domain);
     }
 
     private static String escape(String value) {

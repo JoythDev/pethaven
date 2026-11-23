@@ -14,6 +14,9 @@ import java.util.Map;
  * @param hours           horario por día con el formato {@code HH:mm-HH:mm}; un día sin entrada está cerrado
  * @param bookingDays     días hacia adelante que puede reservar el dueño (hoy incluido)
  * @param minNoticeHours  antelación mínima del dueño para reservar, reprogramar o cancelar
+ * @param name            nombre de la sede
+ * @param address         dirección de la sede
+ * @param phone           teléfono de la sede
  */
 @ConfigurationProperties(prefix = "app.clinic")
 public record ClinicScheduleProperties(
@@ -21,5 +24,8 @@ public record ClinicScheduleProperties(
         int slotMinutes,
         Map<DayOfWeek, String> hours,
         int bookingDays,
-        int minNoticeHours
+        int minNoticeHours,
+        String name,
+        String address,
+        String phone
 ) { }
