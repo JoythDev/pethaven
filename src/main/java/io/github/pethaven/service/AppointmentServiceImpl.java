@@ -35,7 +35,6 @@ import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
@@ -55,6 +54,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final VeterinarianService veterinarianService;
     private final VeterinarianRepository veterinarianRepository;
     private final TreatmentRepository treatmentRepository;
+    private final AppointmentAssignment appointmentAssignment;
 
     @Autowired
     public AppointmentServiceImpl(
@@ -65,7 +65,8 @@ public class AppointmentServiceImpl implements AppointmentService {
             PetService petService,
             VeterinarianService veterinarianService,
             VeterinarianRepository veterinarianRepository,
-            TreatmentRepository treatmentRepository
+            TreatmentRepository treatmentRepository,
+            AppointmentAssignment appointmentAssignment
     ) {
         this.appointmentRepository = appointmentRepository;
         this.appointmentMapper = appointmentMapper;
@@ -75,6 +76,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         this.veterinarianService = veterinarianService;
         this.veterinarianRepository = veterinarianRepository;
         this.treatmentRepository = treatmentRepository;
+        this.appointmentAssignment = appointmentAssignment;
     }
 
     @Override
@@ -147,8 +149,7 @@ public class AppointmentServiceImpl implements AppointmentService {
             }
             appointment.setPet(pet);
             appointment.setReason(request.reason());
-            treatmentRepository.findFirstByPetIdOrderByDateDesc(pet.getId())
-                    .ifPresent(last -> preferredVeterinarians.add(last.getVeterinarian().getId()));
+            appointmentAssignment.lastVeterinarianIdOf(pet).ifPresent(preferredVeterinarians::add);
         } else {
             if (request.reason() != null && request.reason() != AppointmentReason.FIRST_VISIT) {
                 throw new IllegalOperationException(REASON_NOT_BOOKABLE_MESSAGE);
@@ -217,9 +218,8 @@ public class AppointmentServiceImpl implements AppointmentService {
             preferredVeterinarians.add(appointment.getVeterinarian().getId());
             // Las citas de mascotas hospitalizadas son del veterinario que las agendó.
             boolean keepVeterinarian = appointment.getReason().isForHospitalizedPet();
-            if (!keepVeterinarian && appointment.getPet() != null) {
-                treatmentRepository.findFirstByPetIdOrderByDateDesc(appointment.getPet().getId())
-                        .ifPresent(last -> preferredVeterinarians.add(last.getVeterinarian().getId()));
+            if (!keepVeterinarian) {
+                appointmentAssignment.lastVeterinarianIdOf(appointment.getPet()).ifPresent(preferredVeterinarians::add);
             }
             appointment.setVeterinarian(assignVeterinarian(newStart, preferredVeterinarians, keepVeterinarian));
             appointment.setStartTime(newStart);
@@ -457,24 +457,11 @@ public class AppointmentServiceImpl implements AppointmentService {
         }
     }
 
-    // Elige, entre los veterinarios activos libres en la franja, el primero de los preferidos que esté libre;
-    // si ninguno lo está, cualquiera libre (salvo que deba ser uno de los preferidos).
     private Veterinarian assignVeterinarian(LocalDateTime start, List<Long> preferredIds, boolean onlyPreferred) {
-        Set<Long> busy = new HashSet<>(appointmentRepository.findBusyActiveVeterinarianIds(start));
-        List<Veterinarian> free = veterinarianRepository.findByActiveTrueOrderByIdAsc().stream()
-                .filter(veterinarian -> !busy.contains(veterinarian.getId()))
-                .toList();
-        for (Long preferredId : preferredIds) {
-            for (Veterinarian veterinarian : free) {
-                if (Objects.equals(veterinarian.getId(), preferredId)) {
-                    return veterinarian;
-                }
-            }
-        }
-        if (onlyPreferred) {
-            throw new IllegalOperationException("El veterinario de la cita no tiene libre esa franja: elige otra.");
-        }
-        return free.stream().findFirst().orElseThrow(() -> new IllegalOperationException(SLOT_TAKEN_MESSAGE));
+        return appointmentAssignment.pickFreeVeterinarian(start, preferredIds, onlyPreferred)
+                .orElseThrow(() -> new IllegalOperationException(onlyPreferred
+                        ? "El veterinario de la cita no tiene libre esa franja: elige otra."
+                        : SLOT_TAKEN_MESSAGE));
     }
 
     // La restricción única de la franja resuelve dos reservas simultáneas: la segunda falla al guardar.

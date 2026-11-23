@@ -1618,7 +1618,7 @@ Reemplaza los datos editables del veterinario. El estado (`active`) y el contado
 
 #### `PUT /api/veterinarians/{id}/active`
 
-Cambia el estado laboral del veterinario (por ejemplo, vacaciones o incapacidad).
+Cambia el estado laboral del veterinario (por ejemplo, vacaciones o incapacidad). Al desactivarlo, sus citas programadas que aún no empiezan pasan a otro veterinario libre o se cancelan (ver [Reglas de negocio · Citas](#citas-1)).
 
 **Parámetros**
 
@@ -2424,6 +2424,7 @@ Devuelve el perfil del usuario autenticado por el token. Permite al frontend rec
   - `DISCHARGE`: exige el alta médica (`disease: null`, ver `POST /api/pets/{id}/discharge`) y, al completarse, deja la mascota en su casa (`active: false`).
   - `BRIEFING`: se completa con la nota clínica; la mascota sigue hospitalizada.
 - **Mascota provisional:** durante la consulta, `POST /api/appointments/{id}/pet` la registra a nombre del dueño de la cita, en su casa (`active: false`), y la enlaza a la cita, que conserva los datos provisionales. Una cita con mascota provisional no se completa hasta registrarla.
+- **Veterinario desactivado:** `PUT /api/veterinarians/{id}/active?active=false` libera, en la misma transacción, sus citas `SCHEDULED` que aún no empiezan: cada una pasa a otro veterinario activo libre en esa franja (el último que atendió a la mascota si está libre; si no, el libre de menor `id`) o, si no hay ninguno, se cancela con `cancelledBy: "SYSTEM"` y `cancellationReason: "Veterinario no disponible"`. Las citas cuya hora ya empezó (aunque sigan `SCHEDULED`), en curso o cerradas no cambian: si quedó alguna sin atender, se cancela o se marca «No asistió». Reactivarlo no recupera las citas que se movieron.
 - **Cambios simultáneos de una cita:** la cita lleva bloqueo optimista; si dos cambios de la misma cita se cruzan (por ejemplo, cancelar y reprogramar), el segundo responde `409` `El recurso cambió mientras lo editabas: vuelve a cargarlo e inténtalo de nuevo.`
 
 ### Unicidad
@@ -2469,6 +2470,7 @@ Los duplicados se detectan antes de escribir y responden `409` con un mensaje ex
 - **Sin versionado.** Las rutas no llevan versión (`/api`, no `/api/v1`).
 - **Sin borrado de mascotas ni veterinarios.** Solo desactivación.
 - **Citas bajo contención.** Si varias reservas compiten por la misma franja, todas eligen al mismo veterinario libre y solo una gana: las demás responden `409` aunque otro veterinario siguiera libre, y el dueño debe reintentar. Tampoco hay una restricción en la base que impida dos reservas simultáneas de la misma mascota en franjas distintas; el límite de una cita activa se comprueba antes de guardar.
+- **Reserva simultánea a una desactivación.** Si un dueño reserva con un veterinario justo mientras el administrador lo desactiva, la reserva puede confirmarse con ese veterinario ya inactivo; esa cita no se mueve sola y conviene reprogramarla.
 - **CORS restringido.** Por defecto solo se permite el origen `http://localhost:4200`, sin credenciales; en despliegue se define `CORS_ALLOWED_ORIGINS` con el dominio del frontend.
 
 Seguridad:

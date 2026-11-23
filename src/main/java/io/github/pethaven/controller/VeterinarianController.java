@@ -145,7 +145,7 @@ public class VeterinarianController {
      * @return el veterinario actualizado
      */
     @Operation(summary = "Activar o desactivar veterinario",
-            description = "Cambia el estado laboral del veterinario (activo o inactivo, p. ej. vacaciones o incapacidad).")
+            description = "Cambia el estado laboral del veterinario (activo o inactivo, p. ej. vacaciones o incapacidad). Al desactivarlo, sus citas programadas que aún no empiezan pasan a otro veterinario libre en esa franja o se cancelan.")
     @ApiResponses({
             @ApiResponse(responseCode = "200", description = "Estado actualizado"),
             @ApiResponse(responseCode = "400", description = "Parámetro active inválido",

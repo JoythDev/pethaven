@@ -8,6 +8,7 @@ import io.github.pethaven.dto.request.TreatmentRequest;
 import io.github.pethaven.dto.request.VeterinarianRequest;
 import io.github.pethaven.dto.response.AppointmentResponse;
 import io.github.pethaven.entity.Appointment;
+import io.github.pethaven.entity.AppointmentActor;
 import io.github.pethaven.entity.AppointmentOutcome;
 import io.github.pethaven.entity.AppointmentReason;
 import io.github.pethaven.entity.AppointmentStatus;
@@ -31,6 +32,7 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.time.LocalDateTime;
 import java.util.List;
 
 // Flujos completos de la consulta contra la base de datos: mascota provisional que termina en ingreso y alta / entrega.
@@ -125,5 +127,38 @@ public class AppointmentServiceIntegrationTest {
         Assertions.assertThat(petRepository.findById(pet.getId()).orElseThrow().isActive()).isFalse();
         Assertions.assertThat(appointmentRepository.findById(appointment.getId()).orElseThrow().getStatus())
                 .isEqualTo(AppointmentStatus.COMPLETED);
+    }
+
+    @Test
+    public void deactivatingAVet_ReassignsFutureAppointmentsOrCancelsWhenNoVetIsFree() {
+        Long otherVetId = veterinarianService.createVeterinarian(
+                new VeterinarianRequest("777000777", "Other Vet", "appointment.vet2@pethaven.test", "password123", "General", null)).id();
+        Veterinarian otherVet = veterinarianRepository.findById(otherVetId).orElseThrow();
+        Pet pet = petRepository.save(RepositoryTestData.pet(owner));
+        LocalDateTime freeSlot = clinicSchedule.now().plusDays(3).withHour(9).withMinute(0).withSecond(0).withNano(0);
+        LocalDateTime fullSlot = freeSlot.plusHours(1);
+        LocalDateTime past = clinicSchedule.now().minusDays(1).withSecond(0).withNano(0);
+        Appointment toReassign = appointmentRepository.save(RepositoryTestData.appointment(owner, pet, vet, freeSlot));
+        Appointment toCancel = appointmentRepository.save(RepositoryTestData.appointment(owner, pet, vet, fullSlot));
+        Appointment pastOne = appointmentRepository.save(RepositoryTestData.appointment(owner, pet, vet, past));
+        // El otro veterinario ya está ocupado en la segunda franja.
+        appointmentRepository.save(RepositoryTestData.appointment(owner, null, otherVet, fullSlot));
+        // Los demás veterinarios activos del contexto compartido también podrían estar libres: se excluyen de la prueba.
+        veterinarianRepository.findByActiveTrueOrderByIdAsc().stream()
+                .filter(other -> !other.getId().equals(vet.getId()) && !other.getId().equals(otherVetId))
+                .forEach(other -> other.setActive(false));
+
+        veterinarianService.switchVeterinarianActiveStatus(vet.getId(), false);
+
+        Appointment reassigned = appointmentRepository.findById(toReassign.getId()).orElseThrow();
+        Assertions.assertThat(reassigned.getVeterinarian().getId()).isEqualTo(otherVetId);
+        Assertions.assertThat(reassigned.getStatus()).isEqualTo(AppointmentStatus.SCHEDULED);
+        Appointment cancelled = appointmentRepository.findById(toCancel.getId()).orElseThrow();
+        Assertions.assertThat(cancelled.getStatus()).isEqualTo(AppointmentStatus.CANCELLED);
+        Assertions.assertThat(cancelled.getCancelledBy()).isEqualTo(AppointmentActor.SYSTEM);
+        Assertions.assertThat(cancelled.getCancellationReason()).isEqualTo("Veterinario no disponible");
+        Assertions.assertThat(cancelled.getOccupiesSlot()).isNull();
+        Assertions.assertThat(appointmentRepository.findById(pastOne.getId()).orElseThrow().getVeterinarian().getId())
+                .isEqualTo(vet.getId());
     }
 }

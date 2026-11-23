@@ -88,7 +88,8 @@ public class AppointmentServiceMockTest {
                 14, 2),
                 Clock.fixed(Instant.parse("2026-11-23T13:00:00Z"), ZoneId.of("UTC")));
         appointmentService = new AppointmentServiceImpl(appointmentRepository, new AppointmentMapper(schedule), schedule,
-                ownerService, petService, veterinarianService, veterinarianRepository, treatmentRepository);
+                ownerService, petService, veterinarianService, veterinarianRepository, treatmentRepository,
+                new AppointmentAssignment(appointmentRepository, veterinarianRepository, treatmentRepository, schedule));
 
         owner = RepositoryTestData.owner();
         owner.setId(1L);

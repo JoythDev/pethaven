@@ -21,16 +21,19 @@ public class VeterinarianServiceImpl implements VeterinarianService {
     private final VeterinarianRepository veterinarianRepository;
     private final VeterinarianMapper veterinarianMapper;
     private final UserAccountService userAccountService;
+    private final AppointmentAssignment appointmentAssignment;
 
     @Autowired
     public VeterinarianServiceImpl(
             VeterinarianRepository veterinarianRepository,
             VeterinarianMapper veterinarianMapper,
-            UserAccountService userAccountService
+            UserAccountService userAccountService,
+            AppointmentAssignment appointmentAssignment
     ) {
         this.veterinarianRepository = veterinarianRepository;
         this.veterinarianMapper = veterinarianMapper;
         this.userAccountService = userAccountService;
+        this.appointmentAssignment = appointmentAssignment;
     }
 
     @Override
@@ -120,6 +123,10 @@ public class VeterinarianServiceImpl implements VeterinarianService {
         // La cuenta de login sigue al perfil: desactivado no inicia sesión y sus tokens dejan de servir.
         veterinarian.getUser().setEnabled(active);
         veterinarianRepository.save(veterinarian);
+        if (!active) {
+            // Sus citas futuras pasan a otro veterinario libre o se cancelan, en esta misma transacción.
+            appointmentAssignment.releaseFutureAppointmentsOf(veterinarian);
+        }
         return veterinarianMapper.toResponse(veterinarian);
     }
 

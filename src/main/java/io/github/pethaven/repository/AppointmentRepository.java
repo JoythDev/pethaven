@@ -1,6 +1,7 @@
 package io.github.pethaven.repository;
 
 import io.github.pethaven.entity.Appointment;
+import io.github.pethaven.entity.AppointmentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -34,6 +35,9 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     boolean existsByVeterinarianIdAndStartTimeAndOccupiesSlotTrue(Long veterinarianId, LocalDateTime startTime);
 
     boolean existsByTreatmentId(Long treatmentId);
+
+    List<Appointment> findByVeterinarianIdAndStatusAndStartTimeGreaterThanEqualOrderByStartTimeAsc(
+            Long veterinarianId, AppointmentStatus status, LocalDateTime fromInclusive);
 
     // Veterinarios activos con la franja ocupada.
     @Query("""

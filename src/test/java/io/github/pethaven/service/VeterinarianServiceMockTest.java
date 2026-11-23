@@ -46,13 +46,16 @@ public class VeterinarianServiceMockTest {
     private UserRepository userRepository;
     @Mock
     private RoleRepository roleRepository;
+    @Mock
+    private AppointmentAssignment appointmentAssignment;
 
     private VeterinarianServiceImpl veterinarianService;
 
     @BeforeEach
     public void setUp() {
         UserAccountService userAccountService = new UserAccountServiceImpl(userRepository, roleRepository, PASSWORD_ENCODER);
-        veterinarianService = new VeterinarianServiceImpl(veterinarianRepository, new VeterinarianMapper(), userAccountService);
+        veterinarianService = new VeterinarianServiceImpl(veterinarianRepository, new VeterinarianMapper(), userAccountService,
+                appointmentAssignment);
     }
 
     // ---------- Helpers ----------
@@ -529,6 +532,8 @@ public class VeterinarianServiceMockTest {
         Assertions.assertThat(captor.getValue().isActive()).isFalse();
         // La cuenta de login se deshabilita con el perfil: no puede iniciar sesión y sus tokens dejan de servir.
         Assertions.assertThat(captor.getValue().getUser().isEnabled()).isFalse();
+        // Sus citas futuras se liberan en la misma operación (S16.11).
+        Mockito.verify(appointmentAssignment).releaseFutureAppointmentsOf(existing);
     }
 
     @Test
@@ -553,6 +558,7 @@ public class VeterinarianServiceMockTest {
         Assertions.assertThat(captor.getValue()).isSameAs(existing);
         Assertions.assertThat(captor.getValue().isActive()).isTrue();
         Assertions.assertThat(captor.getValue().getUser().isEnabled()).isTrue();
+        Mockito.verifyNoInteractions(appointmentAssignment);
     }
 
     @Test
