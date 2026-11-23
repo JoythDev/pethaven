@@ -5,6 +5,7 @@ import io.github.pethaven.entity.AppointmentActor;
 import io.github.pethaven.entity.AppointmentStatus;
 import io.github.pethaven.entity.Pet;
 import io.github.pethaven.entity.Veterinarian;
+import io.github.pethaven.notification.AppointmentNotifier;
 import io.github.pethaven.repository.AppointmentRepository;
 import io.github.pethaven.repository.TreatmentRepository;
 import io.github.pethaven.repository.VeterinarianRepository;
@@ -30,17 +31,20 @@ public class AppointmentAssignment {
     private final VeterinarianRepository veterinarianRepository;
     private final TreatmentRepository treatmentRepository;
     private final ClinicSchedule clinicSchedule;
+    private final AppointmentNotifier appointmentNotifier;
 
     public AppointmentAssignment(
             AppointmentRepository appointmentRepository,
             VeterinarianRepository veterinarianRepository,
             TreatmentRepository treatmentRepository,
-            ClinicSchedule clinicSchedule
+            ClinicSchedule clinicSchedule,
+            AppointmentNotifier appointmentNotifier
     ) {
         this.appointmentRepository = appointmentRepository;
         this.veterinarianRepository = veterinarianRepository;
         this.treatmentRepository = treatmentRepository;
         this.clinicSchedule = clinicSchedule;
+        this.appointmentNotifier = appointmentNotifier;
     }
 
     /** Id del último veterinario que atendió a la mascota, si tiene historial. */
@@ -93,6 +97,7 @@ public class AppointmentAssignment {
                 appointment.setCancelledBy(AppointmentActor.SYSTEM);
                 appointment.setCancelledAt(now);
                 appointment.setCancellationReason(UNAVAILABLE_VETERINARIAN_REASON);
+                appointmentNotifier.cancelled(appointment);
             }
             changed.add(appointmentRepository.save(appointment));
         }

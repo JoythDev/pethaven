@@ -20,6 +20,7 @@ import io.github.pethaven.entity.Veterinarian;
 import io.github.pethaven.exception.IllegalOperationException;
 import io.github.pethaven.exception.ResourceNotFoundException;
 import io.github.pethaven.mapper.AppointmentMapper;
+import io.github.pethaven.notification.AppointmentNotifier;
 import io.github.pethaven.repository.AppointmentRepository;
 import io.github.pethaven.repository.TreatmentRepository;
 import io.github.pethaven.repository.VeterinarianRepository;
@@ -55,6 +56,7 @@ public class AppointmentServiceImpl implements AppointmentService {
     private final VeterinarianRepository veterinarianRepository;
     private final TreatmentRepository treatmentRepository;
     private final AppointmentAssignment appointmentAssignment;
+    private final AppointmentNotifier appointmentNotifier;
 
     @Autowired
     public AppointmentServiceImpl(
@@ -66,7 +68,8 @@ public class AppointmentServiceImpl implements AppointmentService {
             VeterinarianService veterinarianService,
             VeterinarianRepository veterinarianRepository,
             TreatmentRepository treatmentRepository,
-            AppointmentAssignment appointmentAssignment
+            AppointmentAssignment appointmentAssignment,
+            AppointmentNotifier appointmentNotifier
     ) {
         this.appointmentRepository = appointmentRepository;
         this.appointmentMapper = appointmentMapper;
@@ -77,6 +80,7 @@ public class AppointmentServiceImpl implements AppointmentService {
         this.veterinarianRepository = veterinarianRepository;
         this.treatmentRepository = treatmentRepository;
         this.appointmentAssignment = appointmentAssignment;
+        this.appointmentNotifier = appointmentNotifier;
     }
 
     @Override
@@ -169,7 +173,9 @@ public class AppointmentServiceImpl implements AppointmentService {
 
         ensureOwnerCanBook(request.startTime());
         appointment.setVeterinarian(assignVeterinarian(request.startTime(), preferredVeterinarians, false));
-        return appointmentMapper.toResponse(saveOccupyingSlot(appointment));
+        Appointment saved = saveOccupyingSlot(appointment);
+        appointmentNotifier.booked(saved);
+        return appointmentMapper.toResponse(saved);
     }
 
     @Override
@@ -184,7 +190,9 @@ public class AppointmentServiceImpl implements AppointmentService {
         appointment.setOccupiesSlot(null);
         appointment.setCancelledBy(actor);
         appointment.setCancelledAt(clinicSchedule.now());
-        return appointmentMapper.toResponse(appointmentRepository.save(appointment));
+        Appointment saved = appointmentRepository.save(appointment);
+        appointmentNotifier.cancelled(saved);
+        return appointmentMapper.toResponse(saved);
     }
 
     // Reprogramar mueve la misma cita: conserva al veterinario si sigue libre en la nueva franja.
@@ -213,7 +221,8 @@ public class AppointmentServiceImpl implements AppointmentService {
             }
         }
 
-        if (!newStart.equals(appointment.getStartTime())) {
+        boolean moved = !newStart.equals(appointment.getStartTime());
+        if (moved) {
             List<Long> preferredVeterinarians = new ArrayList<>();
             preferredVeterinarians.add(appointment.getVeterinarian().getId());
             // Las citas de mascotas hospitalizadas son del veterinario que las agendó.
@@ -223,8 +232,13 @@ public class AppointmentServiceImpl implements AppointmentService {
             }
             appointment.setVeterinarian(assignVeterinarian(newStart, preferredVeterinarians, keepVeterinarian));
             appointment.setStartTime(newStart);
+            appointment.setReminderSentAt(null);
         }
-        return appointmentMapper.toResponse(saveOccupyingSlot(appointment));
+        Appointment saved = saveOccupyingSlot(appointment);
+        if (moved) {
+            appointmentNotifier.rescheduled(saved);
+        }
+        return appointmentMapper.toResponse(saved);
     }
 
     @Override
@@ -291,7 +305,9 @@ public class AppointmentServiceImpl implements AppointmentService {
                 .reason(request.reason())
                 .createdAt(now)
                 .build();
-        return appointmentMapper.toResponse(saveOccupyingSlot(appointment, VET_SLOT_TAKEN_MESSAGE));
+        Appointment saved = saveOccupyingSlot(appointment, VET_SLOT_TAKEN_MESSAGE);
+        appointmentNotifier.booked(saved);
+        return appointmentMapper.toResponse(saved);
     }
 
     @Override

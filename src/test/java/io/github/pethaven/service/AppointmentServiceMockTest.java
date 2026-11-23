@@ -23,6 +23,7 @@ import io.github.pethaven.entity.Veterinarian;
 import io.github.pethaven.exception.IllegalOperationException;
 import io.github.pethaven.exception.ResourceNotFoundException;
 import io.github.pethaven.mapper.AppointmentMapper;
+import io.github.pethaven.notification.AppointmentNotifier;
 import io.github.pethaven.repository.AppointmentRepository;
 import io.github.pethaven.repository.TreatmentRepository;
 import io.github.pethaven.repository.VeterinarianRepository;
@@ -70,6 +71,8 @@ public class AppointmentServiceMockTest {
     private VeterinarianRepository veterinarianRepository;
     @Mock
     private TreatmentRepository treatmentRepository;
+    @Mock
+    private AppointmentNotifier appointmentNotifier;
 
     private AppointmentServiceImpl appointmentService;
 
@@ -89,7 +92,9 @@ public class AppointmentServiceMockTest {
                 Clock.fixed(Instant.parse("2026-11-23T13:00:00Z"), ZoneId.of("UTC")));
         appointmentService = new AppointmentServiceImpl(appointmentRepository, new AppointmentMapper(schedule), schedule,
                 ownerService, petService, veterinarianService, veterinarianRepository, treatmentRepository,
-                new AppointmentAssignment(appointmentRepository, veterinarianRepository, treatmentRepository, schedule));
+                new AppointmentAssignment(appointmentRepository, veterinarianRepository, treatmentRepository, schedule,
+                        appointmentNotifier),
+                appointmentNotifier);
 
         owner = RepositoryTestData.owner();
         owner.setId(1L);
@@ -209,6 +214,7 @@ public class AppointmentServiceMockTest {
         Assertions.assertThat(response.ownerNotes()).isEqualTo("Cojea un poco");
         Assertions.assertThat(response.createdAt()).isEqualTo(MONDAY.atTime(8, 0));
         Mockito.verify(appointmentRepository).saveAndFlush(ArgumentMatchers.argThat(saved -> saved.getOccupiesSlot()));
+        Mockito.verify(appointmentNotifier).booked(ArgumentMatchers.argThat(saved -> saved.getStartTime().equals(TUESDAY_9)));
     }
 
     @Test
@@ -230,6 +236,7 @@ public class AppointmentServiceMockTest {
 
         assertConflict(() -> appointmentService.bookAppointment(1L, petRequest(AppointmentReason.CONTROL, TUESDAY_9)),
                 SLOT_TAKEN_MESSAGE);
+        Mockito.verifyNoInteractions(appointmentNotifier);
     }
 
     @Test
@@ -371,6 +378,7 @@ public class AppointmentServiceMockTest {
         Assertions.assertThat(response.cancelledBy()).isEqualTo(AppointmentActor.OWNER);
         Assertions.assertThat(response.cancelledAt()).isEqualTo(MONDAY.atTime(8, 0));
         Assertions.assertThat(appointment.getOccupiesSlot()).isNull();
+        Mockito.verify(appointmentNotifier).cancelled(appointment);
     }
 
     @Test
@@ -417,6 +425,7 @@ public class AppointmentServiceMockTest {
     @Test
     public void rescheduleAppointment_OwnerToFreeSlot_KeepsVetAndUpdatesNotes() {
         Appointment appointment = scheduled(5L, TUESDAY_9, vet2);
+        appointment.setReminderSentAt(MONDAY.atTime(8, 0));
         Mockito.when(appointmentRepository.findById(5L)).thenReturn(Optional.of(appointment));
         stubActiveVets(List.of(), TUESDAY_9.plusHours(1));
         stubSaveReturningArgument();
@@ -428,6 +437,8 @@ public class AppointmentServiceMockTest {
         Assertions.assertThat(response.veterinarianId()).isEqualTo(22L);
         Assertions.assertThat(response.ownerNotes()).isEqualTo("Mejor más tarde");
         Assertions.assertThat(response.id()).isEqualTo(5L);
+        Assertions.assertThat(appointment.getReminderSentAt()).isNull();
+        Mockito.verify(appointmentNotifier).rescheduled(appointment);
     }
 
     @Test
@@ -522,7 +533,7 @@ public class AppointmentServiceMockTest {
 
         Assertions.assertThat(response.veterinarianId()).isEqualTo(21L);
         Assertions.assertThat(response.ownerNotes()).isEqualTo("Solo cambio notas");
-        Mockito.verifyNoInteractions(veterinarianRepository);
+        Mockito.verifyNoInteractions(veterinarianRepository, appointmentNotifier);
     }
 
     @Test
@@ -630,6 +641,7 @@ public class AppointmentServiceMockTest {
         Assertions.assertThat(response.ownerId()).isEqualTo(1L);
         Assertions.assertThat(response.petId()).isEqualTo(10L);
         Assertions.assertThat(response.status()).isEqualTo(AppointmentStatus.SCHEDULED);
+        Mockito.verify(appointmentNotifier).booked(ArgumentMatchers.any(Appointment.class));
     }
 
     @Test

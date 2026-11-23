@@ -17,6 +17,7 @@ import io.github.pethaven.entity.Owner;
 import io.github.pethaven.entity.Pet;
 import io.github.pethaven.entity.Species;
 import io.github.pethaven.entity.Veterinarian;
+import io.github.pethaven.notification.AppointmentReminderScheduler;
 import io.github.pethaven.repository.AppointmentRepository;
 import io.github.pethaven.repository.DrugRepository;
 import io.github.pethaven.repository.OwnerRepository;
@@ -24,6 +25,7 @@ import io.github.pethaven.repository.PetRepository;
 import io.github.pethaven.repository.VeterinarianRepository;
 import io.github.pethaven.support.RepositoryTestData;
 import org.assertj.core.api.Assertions;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -63,6 +65,10 @@ public class AppointmentServiceIntegrationTest {
     private VeterinarianRepository veterinarianRepository;
     @Autowired
     private DrugRepository drugRepository;
+    @Autowired
+    private AppointmentReminderScheduler reminderScheduler;
+    @Autowired
+    private EntityManager entityManager;
 
     private Owner owner;
     private Veterinarian vet;
@@ -160,5 +166,18 @@ public class AppointmentServiceIntegrationTest {
         Assertions.assertThat(cancelled.getOccupiesSlot()).isNull();
         Assertions.assertThat(appointmentRepository.findById(pastOne.getId()).orElseThrow().getVeterinarian().getId())
                 .isEqualTo(vet.getId());
+    }
+
+    @Test
+    public void reminderScheduler_MarksTomorrowsAppointmentsOnlyOnce() {
+        Pet pet = petRepository.save(RepositoryTestData.pet(owner));
+        Appointment tomorrow = appointmentRepository.save(RepositoryTestData.appointment(
+                owner, pet, vet, clinicSchedule.today().plusDays(1).atTime(9, 0)));
+
+        Assertions.assertThat(reminderScheduler.sendTomorrowReminders()).isGreaterThanOrEqualTo(1);
+        // La marca es una actualización directa en la base: se relee sin la copia en memoria.
+        entityManager.clear();
+        Assertions.assertThat(appointmentRepository.findById(tomorrow.getId()).orElseThrow().getReminderSentAt()).isNotNull();
+        Assertions.assertThat(reminderScheduler.sendTomorrowReminders()).isZero();
     }
 }

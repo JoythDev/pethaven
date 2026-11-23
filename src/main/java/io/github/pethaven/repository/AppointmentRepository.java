@@ -3,6 +3,7 @@ package io.github.pethaven.repository;
 import io.github.pethaven.entity.Appointment;
 import io.github.pethaven.entity.AppointmentStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -35,6 +36,20 @@ public interface AppointmentRepository extends JpaRepository<Appointment, Long> 
     boolean existsByVeterinarianIdAndStartTimeAndOccupiesSlotTrue(Long veterinarianId, LocalDateTime startTime);
 
     boolean existsByTreatmentId(Long treatmentId);
+
+    List<Appointment> findByStatusAndStartTimeGreaterThanEqualAndStartTimeLessThanAndReminderSentAtIsNull(
+            AppointmentStatus status, LocalDateTime fromInclusive, LocalDateTime toExclusive);
+
+    // Marca el recordatorio solo si la cita sigue programada y sin recordatorio: 1 si la marcó esta llamada.
+    @Modifying
+    @Query("""
+            UPDATE Appointment a
+            SET a.reminderSentAt = :sentAt
+            WHERE a.id = :id
+              AND a.status = io.github.pethaven.entity.AppointmentStatus.SCHEDULED
+              AND a.reminderSentAt IS NULL
+            """)
+    int markReminderSent(@Param("id") Long id, @Param("sentAt") LocalDateTime sentAt);
 
     List<Appointment> findByVeterinarianIdAndStatusAndStartTimeGreaterThanEqualOrderByStartTimeAsc(
             Long veterinarianId, AppointmentStatus status, LocalDateTime fromInclusive);

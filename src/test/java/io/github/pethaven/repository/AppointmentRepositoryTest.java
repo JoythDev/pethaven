@@ -143,6 +143,31 @@ public class AppointmentRepositoryTest {
     }
 
     @Test
+    public void reminderQuery_ScheduledOfThatDayWithoutReminder() {
+        Appointment pending = save(vet, SLOT, AppointmentStatus.SCHEDULED);
+        Appointment reminded = save(vet, SLOT.plusMinutes(30), AppointmentStatus.SCHEDULED);
+        reminded.setReminderSentAt(NOW);
+        appointmentRepository.saveAndFlush(reminded);
+        save(vet, SLOT.plusHours(1), AppointmentStatus.CANCELLED);
+        save(vet, SLOT.plusDays(1), AppointmentStatus.SCHEDULED);
+        LocalDateTime day = SLOT.toLocalDate().atStartOfDay();
+
+        Assertions.assertThat(appointmentRepository.findByStatusAndStartTimeGreaterThanEqualAndStartTimeLessThanAndReminderSentAtIsNull(
+                        AppointmentStatus.SCHEDULED, day, day.plusDays(1)))
+                .extracting(Appointment::getId).containsExactly(pending.getId());
+    }
+
+    @Test
+    public void markReminderSent_OnlyOncePerScheduledAppointment() {
+        Appointment scheduled = save(vet, SLOT, AppointmentStatus.SCHEDULED);
+        Appointment cancelled = save(vet, SLOT.plusMinutes(30), AppointmentStatus.CANCELLED);
+
+        Assertions.assertThat(appointmentRepository.markReminderSent(scheduled.getId(), NOW)).isEqualTo(1);
+        Assertions.assertThat(appointmentRepository.markReminderSent(scheduled.getId(), NOW)).isZero();
+        Assertions.assertThat(appointmentRepository.markReminderSent(cancelled.getId(), NOW)).isZero();
+    }
+
+    @Test
     public void findByOwnerIdOrderByStartTimeAsc_OrdersTheOwnersAppointmentsByStart() {
         Appointment later = save(vet, SLOT.plusDays(2), AppointmentStatus.SCHEDULED);
         Appointment earlier = save(vet, SLOT, AppointmentStatus.CANCELLED);

@@ -83,6 +83,10 @@ public class Appointment {
     @JoinColumn(name = "treatment_id", nullable = true)
     private Treatment treatment;
 
+    // Momento en que se envió el recordatorio del día anterior (null mientras no se haya enviado).
+    @Column(name = "reminder_sent_at", nullable = true)
+    private LocalDateTime reminderSentAt;
+
     @Column(name = "created_at", nullable = false)
     private LocalDateTime createdAt;
 

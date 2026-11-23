@@ -7,6 +7,7 @@ import io.github.pethaven.entity.AppointmentStatus;
 import io.github.pethaven.entity.Owner;
 import io.github.pethaven.entity.Pet;
 import io.github.pethaven.entity.Veterinarian;
+import io.github.pethaven.notification.AppointmentNotifier;
 import io.github.pethaven.repository.AppointmentRepository;
 import io.github.pethaven.repository.TreatmentRepository;
 import io.github.pethaven.repository.VeterinarianRepository;
@@ -43,6 +44,8 @@ public class AppointmentAssignmentTest {
     private VeterinarianRepository veterinarianRepository;
     @Mock
     private TreatmentRepository treatmentRepository;
+    @Mock
+    private AppointmentNotifier appointmentNotifier;
 
     private AppointmentAssignment assignment;
 
@@ -57,7 +60,8 @@ public class AppointmentAssignmentTest {
         ClinicSchedule schedule = new ClinicSchedule(new ClinicScheduleProperties(ZoneId.of("America/Bogota"), 30,
                 Map.of(DayOfWeek.TUESDAY, "08:00-17:00"), 14, 2),
                 Clock.fixed(Instant.parse("2026-11-23T13:00:00Z"), ZoneId.of("UTC")));
-        assignment = new AppointmentAssignment(appointmentRepository, veterinarianRepository, treatmentRepository, schedule);
+        assignment = new AppointmentAssignment(appointmentRepository, veterinarianRepository, treatmentRepository, schedule,
+                appointmentNotifier);
         owner = RepositoryTestData.owner();
         pet = RepositoryTestData.pet(owner);
         pet.setId(10L);
@@ -97,6 +101,7 @@ public class AppointmentAssignmentTest {
         Assertions.assertThat(appointment.getVeterinarian()).isSameAs(vet3);
         Assertions.assertThat(appointment.getStatus()).isEqualTo(AppointmentStatus.SCHEDULED);
         Assertions.assertThat(appointment.getOccupiesSlot()).isTrue();
+        Mockito.verifyNoInteractions(appointmentNotifier);
     }
 
     @Test
@@ -129,6 +134,7 @@ public class AppointmentAssignmentTest {
         Assertions.assertThat(appointment.getCancelledAt()).isEqualTo(NOW);
         Assertions.assertThat(appointment.getCancellationReason()).isEqualTo("Veterinario no disponible");
         Assertions.assertThat(appointment.getVeterinarian()).isSameAs(leaving);
+        Mockito.verify(appointmentNotifier).cancelled(appointment);
     }
 
     @Test
