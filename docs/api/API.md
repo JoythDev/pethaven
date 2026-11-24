@@ -81,7 +81,7 @@ Los límites del código de verificación se ajustan con `app.otp.ttl-seconds` (
 
 ### Datos de prueba
 
-El arranque carga datos de ejemplo: **100 dueños, 155 mascotas, 6 veterinarios (5 activos y 1 inactivo), 2 administradores, 523 medicamentos importados desde el Excel al arrancar, 17 tratamientos más un alta (15 repartidos desde el `2026-10-01` y 2 del guion de citas) y unas 20 citas** calculadas desde el momento del arranque (ver [Guion de demostración de citas](#guion-de-demostración-de-citas)). Los tratamientos del seed ya descuentan inventario y suman atenciones, igual que lo hace la API, así que el stock y las unidades vendidas de un medicamento pueden ser menores que su valor inicial.
+El arranque carga datos de ejemplo: **100 dueños, 155 mascotas, 6 veterinarios (5 activos y 1 inactivo), 2 administradores, 523 medicamentos importados desde el Excel al arrancar, 17 tratamientos más un alta (15 repartidos desde el `2026-10-01` y 2 del guion de citas) y unas 20 citas** calculadas desde el momento del arranque (ver [Guion de demostración de citas](#guion-de-demostración-de-citas)). Además, cada mascota tiene unos 12 meses de pesajes mensuales de ejemplo antes de su primer pesaje real, para que la curva de peso tenga datos. Los tratamientos del seed ya descuentan inventario y suman atenciones, igual que lo hace la API, así que el stock y las unidades vendidas de un medicamento pueden ser menores que su valor inicial.
 
 El catálogo `data/medicamentos-veterinaria.xlsx` se importa al arrancar, antes de los datos de ejemplo, con el mismo mecanismo de [`POST /api/drugs/import`](#post-apidrugsimport). El archivo se procesa como una carga masiva normal: si se vuelve a subir el mismo catálogo, los nombres ya existen y la petición responde `409`.
 
@@ -313,7 +313,7 @@ Toda petición a `/api/**` necesita un token, salvo los tres pasos del login (`P
 | `POST /api/owners`, `DELETE /api/owners/{id}` | — | ✅ | — |
 | `PUT /api/owners/{id}` | — | ✅ | Solo el suyo, sin cambiar `document` ni `email` |
 | `GET /api/pets` | ✅ | ✅ | — |
-| `GET /api/pets/{id}`, `GET /api/pets/{id}/treatments`, `GET /api/pets/{id}/photo` | ✅ | ✅ | Solo sus mascotas |
+| `GET /api/pets/{id}`, `GET /api/pets/{id}/treatments`, `GET /api/pets/{id}/weights`, `GET /api/pets/{id}/photo` | ✅ | ✅ | Solo sus mascotas |
 | `POST /api/pets`, `PUT /api/pets/{id}`, `PUT /api/pets/{id}/active` | — | ✅ | — |
 | `POST /api/pets/{id}/discharge` | — | Solo con su propio `veterinarianId` | — |
 | `GET /api/treatments`, `GET /api/treatments/{id}`, `GET /api/treatments/{id}/drugs` | ✅ | ✅ | — |
@@ -354,6 +354,7 @@ Toda petición a `/api/**` necesita un token, salvo los tres pasos del login (`P
 erDiagram
     OWNER ||--o{ PET : "tiene"
     PET ||--o{ TREATMENT : "recibe"
+    PET ||--o{ WEIGHT_RECORD : "se pesa en"
     VETERINARIAN ||--o{ TREATMENT : "atiende"
     TREATMENT ||--o{ TREATMENT_DRUG : "incluye"
     DRUG ||--o{ TREATMENT_DRUG : "se administra en"
@@ -402,6 +403,7 @@ Semántica de borrado:
 - **Tratamiento → medicamentos administrados:** cascada de JPA; los tratamientos no se actualizan ni se eliminan por API, son un registro médico inmutable.
 - **Medicamento → medicamentos administrados:** sin cascada. Un medicamento asociado a tratamientos no se puede eliminar (`409`).
 - **Dueño o mascota → citas:** borrado en cascada a nivel de base de datos (las citas de un dueño que se borra desaparecen con él).
+- **Mascota → historial de pesos:** borrado en cascada a nivel de base de datos; el historial se va con la mascota cuando se borra su dueño.
 - **Mascotas y veterinarios:** no tienen borrado. Se desactivan (`active`) para conservar su historial.
 
 ## Esquemas
@@ -523,6 +525,24 @@ Cuerpo para `POST /api/pets` y `PUT /api/pets/{id}`. El estado `active` no forma
   "active": true,
   "ownerId": 31,
   "ownerName": "Diego Aguilar"
+}
+```
+
+#### WeightRecordResponse
+
+Un pesaje del historial de la mascota (ver [Historial de pesos](#historial-de-pesos)).
+
+| Campo | Tipo | Formato | Notas |
+|---|---|---|---|
+| `id` | number | — | — |
+| `date` | string | `yyyy-MM-ddTHH:mm:ss` | Momento del pesaje |
+| `weight` | number | — | Kilogramos |
+
+```json
+{
+  "id": 412,
+  "date": "2026-08-05T10:30:00",
+  "weight": 12.4
 }
 ```
 
@@ -1483,6 +1503,28 @@ Da de alta a la mascota: ya mejoró y no necesita medicamentos. Queda estable (`
 - `409` el veterinario está inactivo: `El veterinario 'Dr. Julián Restrepo' no está activo: no puede dar de alta.`
 - `400` falta `veterinarianId` o no es numérico
 
+#### `GET /api/pets/{id}/weights`
+
+Devuelve el historial de pesos de la mascota, del más antiguo al más reciente (a igual fecha, en el orden en que se registraron). Ver [Historial de pesos](#historial-de-pesos).
+
+**Parámetros**
+
+| Nombre | Ubicación | Tipo | Obligatorio | Descripción |
+|---|---|---|---|---|
+| `id` | path | number | Sí | Id de la mascota |
+
+**Respuesta** `200 OK` — `array<WeightRecordResponse>`:
+
+```json
+[
+  { "id": 398, "date": "2026-07-04T09:12:00", "weight": 12.9 },
+  { "id": 412, "date": "2026-08-05T10:30:00", "weight": 12.4 }
+]
+```
+
+**Errores**:
+- `404` la mascota no existe
+
 #### `GET /api/pets/{id}/photo`
 
 Descarga la foto de la mascota desde su `photoUrl` y la sirve desde el API. Existe porque varios hosts de imágenes (p. ej. placedog.net) no permiten CORS, y la SPA necesita leer la imagen para ponerla en el PDF de la historia clínica.
@@ -2434,6 +2476,11 @@ Devuelve el perfil del usuario autenticado por el token. Permite al frontend rec
 - Al crear un tratamiento se incrementa `attentions` del veterinario en 1.
 - Los tratamientos son inmutables: no hay `PUT` ni `DELETE`. Solo se crean y se consultan.
 - El listado de tratamientos de una mascota o de un veterinario devuelve también sus medicamentos administrados.
+
+### Historial de pesos
+
+- Cada pesaje queda en el historial de la mascota (`GET /api/pets/{id}/weights`): al registrarla (`POST /api/pets`), al cambiar su peso (`PUT /api/pets/{id}`, solo si `weight` cambia), con cada tratamiento (con la fecha del tratamiento) y con el alta (el último peso conocido).
+- El historial no se edita ni se borra por API.
 
 ### Alta y evolución
 

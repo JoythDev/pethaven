@@ -4,8 +4,10 @@ import io.github.pethaven.dto.common.ApiErrorResponse;
 import io.github.pethaven.dto.request.PetRequest;
 import io.github.pethaven.dto.response.PetResponse;
 import io.github.pethaven.dto.response.TreatmentResponse;
+import io.github.pethaven.dto.response.WeightRecordResponse;
 import io.github.pethaven.service.PetService;
 import io.github.pethaven.service.TreatmentService;
+import io.github.pethaven.service.WeightHistoryService;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -34,14 +36,17 @@ public class PetController {
 
     private final PetService petService;
     private final TreatmentService treatmentService;
+    private final WeightHistoryService weightHistoryService;
 
     @Autowired
     public PetController(
             PetService petService,
-            TreatmentService treatmentService
+            TreatmentService treatmentService,
+            WeightHistoryService weightHistoryService
     ) {
         this.petService = petService;
         this.treatmentService = treatmentService;
+        this.weightHistoryService = weightHistoryService;
     }
 
     /**
@@ -170,6 +175,27 @@ public class PetController {
             @Parameter(description = "Id de la mascota", example = "1") @PathVariable Long id) {
         petService.getPetById(id);
         return treatmentService.getTreatmentsByPetId(id);
+    }
+
+    /**
+     * Lista el historial de pesos de una mascota.
+     *
+     * @param id id de la mascota
+     * @return pesajes del más antiguo al más reciente
+     */
+    @Operation(summary = "Historial de pesos de una mascota",
+            description = "Devuelve los pesajes de la mascota del más antiguo al más reciente: su registro, cada cambio de peso y cada tratamiento (incluida el alta). Falla con 404 si la mascota no existe.")
+    @ApiResponses({
+            @ApiResponse(responseCode = "200", description = "Historial de pesos"),
+            @ApiResponse(responseCode = "404", description = "No existe una mascota con ese id",
+                    content = @Content(schema = @Schema(implementation = ApiErrorResponse.class)))
+    })
+    @PreAuthorize("hasAnyRole('ADMIN', 'VETERINARIAN') or @access.ownsPet(#id, authentication.name)")
+    @GetMapping("/{id}/weights")
+    public List<WeightRecordResponse> getWeightsByPetId(
+            @Parameter(description = "Id de la mascota", example = "1") @PathVariable Long id) {
+        petService.getPetById(id);
+        return weightHistoryService.getWeightsByPetId(id);
     }
 
     /**

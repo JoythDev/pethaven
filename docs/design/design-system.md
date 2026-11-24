@@ -751,6 +751,7 @@ Used for treatment history and activity.
 - Line: 3px stroke, 4.5px points (7px when selected), area fill `accent-soft`. Bars: 7px top radius, 2px gap inside a group.
 - Colors per 2.6. Theme colors are read from CSS custom properties and re-applied when the theme changes.
 - Each chart has a text alternative: an `aria-label` that summarizes the trend and, for key charts, a "Ver como tabla" toggle.
+- Weight curve: one point per weigh-in at its real date on a linear time axis (6 or 12 months up to today); the caption compares the selected point with the previous weigh-in. With fewer than two weigh-ins in the range it shows an empty state with the current weight instead of a chart.
 
 ### 10.19 Meters
 
@@ -1220,4 +1221,4 @@ Proposed by the author and approved in review. They are final.
 | Landing page redesign | Deferred. Section 9.10 will define marketing surfaces when it starts |
 | Chart series 4 to 6 | Not contrast-tested against both surfaces |
 | Muted text on hues in dark theme | Derived value not measured |
-| Demo-only features | Appointments (client booking wizard, scheduled appointments, rescheduling, next appointment, veterinarian agenda, "Resumen del día", "Citas de hoy" and "Esta semana") are real since the appointments feature and no longer carry the "Demo" tag. These ship in the UI with example data and are marked with a "Demo" tag; their backend and real implementation are pending: daily care plan, weight curve, vaccine card, minimum stock and inventory alerts, dashboard period selector with sales, profit and occupancy charts, global search and notifications. Replenishment orders and the live waiting room are out of scope |
+| Demo-only features | Appointments (client booking wizard, scheduled appointments, rescheduling, next appointment, veterinarian agenda, "Resumen del día", "Citas de hoy" and "Esta semana") are real since the appointments feature, and the weight curve since the weight history feature; neither carries the "Demo" tag any more. These ship in the UI with example data and are marked with a "Demo" tag; their backend and real implementation are pending: daily care plan, vaccine card, minimum stock and inventory alerts, dashboard period selector with sales, profit and occupancy charts, global search and notifications. Replenishment orders and the live waiting room are out of scope |

@@ -49,6 +49,8 @@ public class TreatmentServiceMockTest {
     private DrugRepository drugRepository;
     @Mock
     private TreatmentDrugService treatmentDrugService;
+    @Mock
+    private WeightHistoryService weightHistoryService;
 
     private TreatmentServiceImpl treatmentService;
 
@@ -72,7 +74,8 @@ public class TreatmentServiceMockTest {
                 petService,
                 veterinarianService,
                 drugRepository,
-                treatmentDrugService);
+                treatmentDrugService,
+                weightHistoryService);
     }
 
     // ---------- Helpers ----------
@@ -184,6 +187,8 @@ public class TreatmentServiceMockTest {
         Assertions.assertThat(vet.getAttentions()).isEqualTo(1);
         Assertions.assertThat(pet.getDisease()).isEqualTo("Otitis externa");
         Assertions.assertThat(pet.getWeight()).isEqualTo(12.4);
+        // El peso de la consulta queda en el historial con la fecha del tratamiento.
+        Mockito.verify(weightHistoryService).record(pet, 12.4, saved.getDate());
     }
 
     @Test
@@ -488,6 +493,8 @@ public class TreatmentServiceMockTest {
         Assertions.assertThat(result.notes()).isEqualTo("Alta: la mascota queda estable.");
         Assertions.assertThat(result.drugs()).isEmpty();
 
+        // El alta también es un pesaje del historial.
+        Mockito.verify(weightHistoryService).record(pet, 10.5, saved.getDate());
         // El alta no suma atenciones ni administra medicamentos.
         Mockito.verifyNoInteractions(veterinarianRepository, treatmentDrugService);
     }
@@ -558,7 +565,8 @@ public class TreatmentServiceMockTest {
         Mockito.verify(treatmentRepository).findById(99L);
         // Una consulta no debe tocar ningún otro colaborador.
         Mockito.verifyNoInteractions(petService, veterinarianService, veterinarianRepository, drugRepository,
-                treatmentDrugService);
+                treatmentDrugService,
+                weightHistoryService);
     }
 
     @Test

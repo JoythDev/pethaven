@@ -4,19 +4,19 @@ import { ButtonModule } from 'primeng/button';
 import { ChartModule } from 'primeng/chart';
 
 import { themeChartColors } from '../../../core/charts/chart-colors';
-import { WeightCurve } from '../../../models/demo/weight-curve.model';
-import { chartSummary, monthLabel, pointCaption } from './weight-chart';
+import { WeightCurve } from '../../../models/weight.model';
+import { axisLabel, chartSummary, pointCaption } from './weight-chart';
 
 const LOCALE = 'es-CO';
 const FONT = '"Nunito Sans", sans-serif';
 const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
 
 /**
- * Curva de peso (10.18): línea con área, valores en el eje vertical (S24), punto elegido más grande
+ * Curva de peso (10.18): línea con área, un punto por pesaje en su fecha real (eje horizontal lineal
+ * en milisegundos, sin adaptador de fechas), valores en el eje vertical (S24), punto elegido más grande
  * con su valor y variación arriba, y «Ver como tabla» como alternativa de texto. Los colores salen de
  * las variables CSS y se vuelven a leer al cambiar el tema. Chart.js se carga en diferido al pintar el
- * primer gráfico, así que no entra en el paquete inicial. La tarjeta (título, etiqueta Demo) la pone
- * quien lo usa.
+ * primer gráfico, así que no entra en el paquete inicial. La tarjeta (título) la pone quien lo usa.
  */
 @Component({
   selector: 'app-weight-chart',
@@ -53,10 +53,9 @@ export class WeightChartComponent {
     const colors = this.colors();
     const selected = this.selected();
     return {
-      labels: points.map((point) => monthLabel(point.date)),
       datasets: [
         {
-          data: points.map((point) => point.weight),
+          data: points.map((point) => ({ x: point.date.getTime(), y: point.weight })),
           fill: true,
           borderColor: colors.accent,
           backgroundColor: colors.soft,
@@ -74,7 +73,7 @@ export class WeightChartComponent {
   });
 
   protected readonly options = computed(() => {
-    const { points, axis } = this.curve();
+    const { points, axis, from, to } = this.curve();
     const colors = this.colors();
     const tick = { color: colors.muted, font: { family: FONT, size: 12, weight: 700 } };
     return {
@@ -102,7 +101,14 @@ export class WeightChartComponent {
         },
       },
       scales: {
-        x: { grid: { display: false }, border: { color: colors.grid }, ticks: tick },
+        x: {
+          type: 'linear',
+          min: from.getTime(),
+          max: to.getTime(),
+          grid: { display: false },
+          border: { color: colors.grid },
+          ticks: { ...tick, maxTicksLimit: 6, callback: (value: number | string) => axisLabel(Number(value)) },
+        },
         y: {
           min: axis.min,
           max: axis.max,

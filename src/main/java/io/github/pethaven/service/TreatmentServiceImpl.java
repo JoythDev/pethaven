@@ -29,6 +29,7 @@ public class TreatmentServiceImpl implements TreatmentService {
     private final VeterinarianService veterinarianService;
     private final DrugRepository drugRepository;
     private final TreatmentDrugService treatmentDrugService;
+    private final WeightHistoryService weightHistoryService;
 
     @Autowired
     public TreatmentServiceImpl(
@@ -38,7 +39,8 @@ public class TreatmentServiceImpl implements TreatmentService {
             PetService petService,
             VeterinarianService veterinarianService,
             DrugRepository drugRepository,
-            TreatmentDrugService treatmentDrugService
+            TreatmentDrugService treatmentDrugService,
+            WeightHistoryService weightHistoryService
     ) {
         this.treatmentRepository = treatmentRepository;
         this.treatmentMapper = treatmentMapper;
@@ -47,6 +49,7 @@ public class TreatmentServiceImpl implements TreatmentService {
         this.veterinarianService = veterinarianService;
         this.drugRepository = drugRepository;
         this.treatmentDrugService = treatmentDrugService;
+        this.weightHistoryService = weightHistoryService;
     }
 
     @Override
@@ -104,6 +107,7 @@ public class TreatmentServiceImpl implements TreatmentService {
         treatment.setVeterinarian(veterinarian);
 
         Treatment saved = treatmentRepository.save(treatment);
+        weightHistoryService.record(pet, saved.getWeight(), saved.getDate());
         treatmentDrugService.administerDrugs(saved, request.drugs());
 
         veterinarian.setAttentions(veterinarian.getAttentions() + 1);
@@ -137,7 +141,9 @@ public class TreatmentServiceImpl implements TreatmentService {
                 .notes("Alta: la mascota queda estable.")
                 .build();
         pet.setDisease(null);
-        return treatmentMapper.toResponse(treatmentRepository.save(discharge));
+        Treatment saved = treatmentRepository.save(discharge);
+        weightHistoryService.record(pet, saved.getWeight(), saved.getDate());
+        return treatmentMapper.toResponse(saved);
     }
 
     // Si la mascota llega estable es un ingreso: no hay con qué comparar, así que no lleva evolución.

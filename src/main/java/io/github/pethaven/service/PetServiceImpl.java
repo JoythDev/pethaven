@@ -20,6 +20,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
@@ -37,6 +38,7 @@ public class PetServiceImpl implements PetService {
     private final PetRepository petRepository;
     private final PetMapper petMapper;
     private final OwnerService ownerService;
+    private final WeightHistoryService weightHistoryService;
 
     // SVG queda fuera a propósito: puede traer scripts y se serviría desde el origen del API.
     private static final Set<String> PHOTO_TYPES =
@@ -73,21 +75,25 @@ public class PetServiceImpl implements PetService {
             PetRepository petRepository,
             PetMapper petMapper,
             OwnerService ownerService,
+            WeightHistoryService weightHistoryService,
             OutboundUrlPolicy outboundUrlPolicy
     ) {
-        this(petRepository, petMapper, ownerService, outboundUrlPolicy, DOWNLOAD_BUDGET);
+        this(petRepository, petMapper, ownerService, weightHistoryService, outboundUrlPolicy, DOWNLOAD_BUDGET);
     }
 
     PetServiceImpl(PetRepository petRepository, PetMapper petMapper, OwnerService ownerService,
-                   OutboundUrlPolicy outboundUrlPolicy, Duration downloadBudget) {
-        this(petRepository, petMapper, ownerService, outboundUrlPolicy, downloadBudget, PetServiceImpl::httpFetch);
+                   WeightHistoryService weightHistoryService, OutboundUrlPolicy outboundUrlPolicy, Duration downloadBudget) {
+        this(petRepository, petMapper, ownerService, weightHistoryService, outboundUrlPolicy, downloadBudget,
+                PetServiceImpl::httpFetch);
     }
 
     PetServiceImpl(PetRepository petRepository, PetMapper petMapper, OwnerService ownerService,
-                   OutboundUrlPolicy outboundUrlPolicy, Duration downloadBudget, PhotoFetcher photoFetcher) {
+                   WeightHistoryService weightHistoryService, OutboundUrlPolicy outboundUrlPolicy,
+                   Duration downloadBudget, PhotoFetcher photoFetcher) {
         this.petRepository = petRepository;
         this.petMapper = petMapper;
         this.ownerService = ownerService;
+        this.weightHistoryService = weightHistoryService;
         this.outboundUrlPolicy = outboundUrlPolicy;
         this.downloadBudget = downloadBudget;
         this.photoFetcher = photoFetcher;
@@ -128,6 +134,7 @@ public class PetServiceImpl implements PetService {
         Owner owner = ownerService.getOwnerEntity(request.ownerId());
         pet.setOwner(owner);
         Pet saved = petRepository.save(pet);
+        weightHistoryService.record(saved, saved.getWeight(), LocalDateTime.now());
         return petMapper.toResponse(saved);
     }
 
@@ -136,9 +143,13 @@ public class PetServiceImpl implements PetService {
     public PetResponse updatePet(Long id, PetRequest updatedPet) {
         Pet existing = getPetEntity(id);
         Owner owner = ownerService.getOwnerEntity(updatedPet.ownerId());
+        boolean weightChanged = !existing.getWeight().equals(updatedPet.weight());
         petMapper.applyUpdate(updatedPet, existing);
         existing.setOwner(owner);
         Pet updated = petRepository.save(existing);
+        if (weightChanged) {
+            weightHistoryService.record(updated, updated.getWeight(), LocalDateTime.now());
+        }
         return petMapper.toResponse(updated);
     }
 
