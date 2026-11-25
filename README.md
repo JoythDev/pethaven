@@ -21,6 +21,18 @@
 
 ---
 
+## Video de presentación
+
+Un recorrido de casi cinco minutos por PetHaven: el problema que resuelve, los tres portales funcionando sobre la aplicación real y los extras que se muestran en vivo.
+
+<div align="center">
+<a href="https://youtu.be/_tdoiYyxiOo"><img src="https://img.youtube.com/vi/_tdoiYyxiOo/maxresdefault.jpg" alt="Ver el video de presentación de PetHaven en YouTube" width="720"/></a>
+<br/>
+<sub><a href="https://youtu.be/_tdoiYyxiOo">▶ Ver en YouTube</a></sub>
+</div>
+
+---
+
 ## Sobre PetHaven
 
 PetHaven es una clínica veterinaria especializada en la **hospitalización de perros y gatos** que necesitan reposo y tratamiento dentro de sus instalaciones. Sus pacientes se quedan varios días bajo cuidado constante, mientras los veterinarios administran tratamientos hasta su recuperación.
